@@ -53,22 +53,26 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 	const isProduction = import.meta.env.MODE === 'production'
 	const absoluteSrc = getAbsoluteFilePath(src, isProduction)
 
-	const {
-		XMP: { Creator: creator, Credit: credit, Label: label },
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- exiftool returns untyped data
-	} = (await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
-		// eslint-disable-next-line ts/naming-convention
-		XMP: {
+	try {
+		const {
+			XMP: { Creator: creator, Credit: credit, Label: label } = {},
+			// eslint-disable-next-line ts/no-unsafe-type-assertion -- exiftool returns untyped data
+		} = (await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
 			// eslint-disable-next-line ts/naming-convention
-			Creator?: string | string[] | undefined
-			// eslint-disable-next-line ts/naming-convention
-			Credit?: string | undefined
-			// eslint-disable-next-line ts/naming-convention
-			Label?: string | undefined
+			XMP?: {
+				// eslint-disable-next-line ts/naming-convention
+				Creator?: string | string[] | undefined
+				// eslint-disable-next-line ts/naming-convention
+				Credit?: string | undefined
+				// eslint-disable-next-line ts/naming-convention
+				Label?: string | undefined
+			}
 		}
-	}
 
-	return { creator: Array.isArray(creator) ? creator[0] : creator, credit, label }
+		return { creator: Array.isArray(creator) ? creator[0] : creator, credit, label }
+	} catch {
+		return { creator: undefined, credit: undefined, label: undefined }
+	}
 }
 
 /**
