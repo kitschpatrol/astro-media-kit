@@ -148,6 +148,7 @@ const captionProps: CaptionProps = {
 					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
 				)}
 				<noscript>
+					{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions provided via hls-video above; noscript fallback is minimal */}
 					<video {...videoAttributes}>
 						<source src={videoInfo.hlsUrl} type="application/x-mpegURL" />
 						<source src={videoInfo.mp4Url} type="video/mp4" />

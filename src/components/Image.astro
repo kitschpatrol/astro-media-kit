@@ -35,6 +35,7 @@ if (isDarkLightImageMetadata(resolvedImage)) {
 
 const imageMetadata = resolvedImage
 
+/* eslint-disable ts/no-unsafe-assignment -- Astro props destructuring is not fully typed by the ESLint parser */
 const captionProps: CaptionProps = {
 	creator,
 	organization,
@@ -43,11 +44,13 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback,
 }
+/* eslint-enable ts/no-unsafe-assignment */
 
 // Assemble props for AstroImage. The assertion is necessary because Astro's
 // Image component accepts LocalImageProps | RemoteImageProps, and TypeScript's
 // exactOptionalPropertyTypes can't reconcile spread props with union types.
 // See: https://github.com/withastro/astro/issues/10780
+// eslint-disable-next-line ts/consistent-type-assertions, ts/no-unsafe-type-assertion -- Astro #10780
 const astroImageProps = { src: imageMetadata, ...imageRestProps } as LocalImageProps
 ---
 

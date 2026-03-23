@@ -9,12 +9,12 @@ import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import * as mime from 'mrmime'
 import type { DarkLightImageMetadata } from '../types'
-
-type GetImageResult = Awaited<ReturnType<typeof getImage>>
 import type { Props as CaptionProps } from './Caption.astro'
 import Caption from './Caption.astro'
 import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } from './utils/image'
 import Zoomer from './Zoomer.astro'
+
+type GetImageResult = Awaited<ReturnType<typeof getImage>>
 
 const defaultFormats = ['webp'] as const
 const defaultFallbackFormat = 'png' as const
@@ -29,8 +29,8 @@ async function resolveSrc(
 	src: ImageMetadata | Promise<{ default: ImageMetadata }> | string,
 ): Promise<ImageMetadata | string> {
 	if (typeof src === 'object' && 'then' in src) {
-		const resource = await src
-		return resource.default ?? resource
+		const resolved = await src
+		return resolved.default
 	}
 
 	return src
@@ -62,6 +62,7 @@ export type Props = {
 	widths?: number[] | undefined
 }
 
+/* eslint-disable ts/no-unsafe-assignment -- Astro props destructuring is not fully typed by the ESLint parser */
 const {
 	alt,
 	class: className,
@@ -78,6 +79,7 @@ const {
 	typeFallback = 'image',
 	...imageProps
 } = Astro.props
+/* eslint-enable ts/no-unsafe-assignment */
 
 // Resolve source to ImageMetadata
 let imageMetadata: ImageMetadata
@@ -86,17 +88,21 @@ let imageMetadataDark: ImageMetadata | undefined
 if (isDarkLightImageMetadata(src)) {
 	// { dark, light } object passed directly
 	imageMetadata = src.light
-	imageMetadataDark = srcDarkProp
-		? isImageMetadataObject(srcDarkProp)
+	if (srcDarkProp) {
+		imageMetadataDark = isImageMetadataObject(srcDarkProp)
 			? srcDarkProp
-			: ((await resolveImageSource(srcDarkProp)) as ImageMetadata)
-		: src.dark
+			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
+				((await resolveImageSource(srcDarkProp)) as ImageMetadata)
+	} else {
+		imageMetadataDark = src.dark
+	}
 } else if (isImageMetadataObject(src)) {
 	imageMetadata = src
 	if (srcDarkProp) {
 		imageMetadataDark = isImageMetadataObject(srcDarkProp)
 			? srcDarkProp
-			: ((await resolveImageSource(srcDarkProp)) as ImageMetadata)
+			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
+				((await resolveImageSource(srcDarkProp)) as ImageMetadata)
 	}
 } else {
 	// String path
@@ -110,11 +116,6 @@ if (isDarkLightImageMetadata(src)) {
 	} else {
 		imageMetadata = resolved
 	}
-}
-
-// Validate alt text
-if (alt === undefined || alt === null) {
-	throw new Error('Image is missing required "alt" property.')
 }
 
 // Props to pass to getImage
@@ -140,7 +141,7 @@ if (useResponsive) {
 	getImageProps.layout ??= imageConfig.layout
 	getImageProps.fit ??= imageConfig.objectFit ?? 'cover'
 	getImageProps.position ??= imageConfig.objectPosition ?? 'center'
-} else if (imageConfig.objectFit || imageConfig.objectPosition) {
+} else if (imageConfig.objectFit ?? imageConfig.objectPosition) {
 	getImageProps.fit ??= imageConfig.objectFit
 	getImageProps.position ??= imageConfig.objectPosition
 }
@@ -149,6 +150,7 @@ if (useResponsive) {
 for (const key in getImageProps) {
 	if (key.startsWith('data-astro-cid')) {
 		// @ts-expect-error Astro island props aren't typed
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- dynamic key access requires assertion
 		pictureAttributes[key] = getImageProps[key as keyof typeof getImageProps]
 	}
 }
@@ -185,6 +187,7 @@ if (imageMetadataDark) {
 }
 
 // Clone src object to avoid Astro thinking the image is used outside optimization pipeline
+// eslint-disable-next-line ts/no-unsafe-assignment -- clone is a private undocumented prop
 const clonedSrc = isESMImportedImage(originalSrc)
 	? // @ts-expect-error clone is a private prop on ImageMetadata
 		(originalSrc.clone ?? originalSrc)
@@ -194,6 +197,7 @@ const clonedSrc = isESMImportedImage(originalSrc)
 let resultFallbackFormat = fallbackFormatProp ?? defaultFallbackFormat
 if (
 	!fallbackFormatProp &&
+	// eslint-disable-next-line ts/no-unsafe-argument -- clonedSrc type is narrowed by isESMImportedImage but ESLint doesn't see it
 	isESMImportedImage(clonedSrc) &&
 	(specialFormatsFallback as readonly string[]).includes(clonedSrc.format)
 ) {
@@ -231,7 +235,7 @@ const { class: imgClassName, ...imgAttributes } = {
 
 const hasDarkMode = optimizedImagesDark !== undefined
 
-// Caption props
+/* eslint-disable ts/no-unsafe-assignment -- Astro props destructuring is not fully typed by the ESLint parser */
 const captionProps: CaptionProps = {
 	creator,
 	organization,
@@ -240,12 +244,13 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback,
 }
+/* eslint-enable ts/no-unsafe-assignment */
 
 // Helper to build srcset attribute for a source
 function buildSrcsetAttribute(image: GetImageResult): string {
 	const { densities, widths } = imageProps
-	if (densities || (!densities && !widths && !useResponsive)) {
-		return `${image.src}${image.srcSet.values.length > 0 ? ', ' + image.srcSet.attribute : ''}`
+	if (densities ?? (!widths && !useResponsive)) {
+		return `${image.src}${image.srcSet.values.length > 0 ? `, ${image.srcSet.attribute}` : ''}`
 	}
 
 	return image.srcSet.attribute
@@ -280,7 +285,7 @@ function getMimeType(image: GetImageResult): string {
 					/>
 				))
 			}
-			<img src={fallbackImage.src} {...imgAttributes} class={imgClassName} />
+			<img alt={alt} src={fallbackImage.src} {...imgAttributes} class={imgClassName} />
 		</picture>
 	</Zoomer>
 	<slot />

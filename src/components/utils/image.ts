@@ -53,9 +53,9 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 	const isProduction = import.meta.env.MODE === 'production'
 	const absoluteSrc = getAbsoluteFilePath(src, isProduction)
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion
 	const {
 		XMP: { Creator: creator, Credit: credit, Label: label },
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- exiftool returns untyped data
 	} = (await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
 		// eslint-disable-next-line ts/naming-convention
 		XMP: {
@@ -82,14 +82,12 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
  * Checks if the given source is a { dark, light } image metadata pair.
  */
 export function isDarkLightImageMetadata(src: unknown): src is DarkLightImageMetadata {
-	return (
-		typeof src === 'object' &&
-		src !== null &&
-		'light' in src &&
-		'dark' in src &&
-		isImageMetadataObject((src as DarkLightImageMetadata).light) &&
-		isImageMetadataObject((src as DarkLightImageMetadata).dark)
-	)
+	if (typeof src !== 'object' || src === null || !('light' in src) || !('dark' in src)) {
+		return false
+	}
+
+	const candidate = src as Record<string, unknown>
+	return isImageMetadataObject(candidate.light) && isImageMetadataObject(candidate.dark)
 }
 
 // Helpers
