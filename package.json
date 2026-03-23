@@ -58,7 +58,7 @@
 		"astro": "^6.0.8",
 		"bumpp": "^11.0.1",
 		"typescript": "~5.9.3",
-		"vitest": "^4.1.0"
+		"vitest": "^4.1.1"
 	},
 	"peerDependencies": {
 		"astro": "^6.0.0"

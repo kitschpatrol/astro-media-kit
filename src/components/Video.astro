@@ -1,13 +1,5 @@
 ---
-import {
-	BUNNY_API_ACCESS_KEY,
-	BUNNY_HOSTNAME,
-	BUNNY_LIBRARY_ID,
-	CLOUDFLARE_STREAM_ACCOUNT_ID,
-	CLOUDFLARE_STREAM_API_TOKEN,
-	MUX_TOKEN_ID,
-	MUX_TOKEN_SECRET,
-} from 'astro:env/server'
+import { getSecret } from 'astro:env/server'
 import type { Props as CaptionProps } from './Caption.astro'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
@@ -45,17 +37,17 @@ const {
 
 const config: ServiceConfig = {
 	bunny: {
-		apiAccessKey: BUNNY_API_ACCESS_KEY,
-		hostname: BUNNY_HOSTNAME,
-		libraryId: BUNNY_LIBRARY_ID,
+		apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
+		hostname: getSecret('BUNNY_HOSTNAME') ?? '',
+		libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
 	},
 	cloudflare: {
-		accountId: CLOUDFLARE_STREAM_ACCOUNT_ID ?? '',
-		apiToken: CLOUDFLARE_STREAM_API_TOKEN ?? '',
+		accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
+		apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
 	},
 	mux: {
-		accessToken: MUX_TOKEN_ID ?? '',
-		secret: MUX_TOKEN_SECRET ?? '',
+		accessToken: getSecret('MUX_TOKEN_ID') ?? '',
+		secret: getSecret('MUX_TOKEN_SECRET') ?? '',
 	},
 }
 
