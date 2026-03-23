@@ -7,6 +7,7 @@ ignoreWorkspaceRootCheck: true
 
 onlyBuiltDependencies:
   - esbuild
+  - puppeteer
   - sharp
   - unrs-resolver
 

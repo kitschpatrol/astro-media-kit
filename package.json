@@ -52,6 +52,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@kitschpatrol/vite-plugin-tldraw": "^5.1.4",
 		"@mux/mux-node": "^12.8.1",
 		"@sindresorhus/is": "^7.2.0",
 		"@types/node": "~24.12.0",
