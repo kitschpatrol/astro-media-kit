@@ -12,6 +12,13 @@ export default eslintConfig(
 		type: 'lib',
 	},
 	{
+		files: ['src/components/*.astro.d.ts'],
+		rules: {
+			'ts/naming-convention': 'off',
+			'unicorn/filename-case': 'off',
+		},
+	},
+	{
 		files: ['playground/package.json', 'playground-starlight/package.json'],
 		rules: {
 			'json-package/require-keywords': 'off',

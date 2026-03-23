@@ -25,15 +25,26 @@
 	"sideEffects": false,
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts",
-		"./components/*": "./src/components/*",
-		"./utilities/*": "./src/utilities/*"
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./components": {
+			"types": "./dist/components.d.ts",
+			"default": "./dist/components.js"
+		},
+		"./components/*": "./dist/components/*",
+		"./integration": {
+			"types": "./dist/integration/index.d.ts",
+			"default": "./dist/integration/index.js"
+		},
+		"./utilities/*": "./dist/utilities/*"
 	},
 	"files": [
-		"src/*"
+		"dist"
 	],
 	"scripts": {
-		"build": "astro sync",
+		"build": "astro sync && tsdown",
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
 		"fix": "ksc fix",
 		"lint": "ksc lint ; astro check",
@@ -52,10 +63,13 @@
 		"photoswipe": "^5.4.4"
 	},
 	"devDependencies": {
+		"@arethetypeswrong/core": "^0.18.2",
 		"@astrojs/check": "^0.9.8",
 		"@kitschpatrol/shared-config": "^6.0.3",
 		"astro": "^6.0.8",
 		"bumpp": "^11.0.1",
+		"publint": "^0.3.18",
+		"tsdown": "^0.21.4",
 		"typescript": "~5.9.3",
 		"vitest": "^4.1.1"
 	},

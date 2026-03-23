@@ -1,12 +1,14 @@
 /* eslint-disable ts/naming-convention */
 import mdx from '@astrojs/mdx'
 import mdxKit from 'astro-mdx-kit'
+import mediaKit from 'astro-media-kit/integration'
 import { defineConfig } from 'astro/config'
 
 process.env.BROWSER = 'chromium'
 
 export default defineConfig({
 	integrations: [
+		mediaKit(),
 		mdxKit({
 			attributes: true,
 			captionImages: true,
