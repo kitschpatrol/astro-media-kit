@@ -24,6 +24,7 @@
 	"exclude": [
 		"**/dist/",
 		"**/bin/",
+		"**/node_modules/",
 		"references/**",
 		"playground/**/*.mdx",
 		"playground-starlight/**/*.mdx"

@@ -62,7 +62,6 @@ export type Props = {
 	widths?: number[] | undefined
 }
 
-/* eslint-disable ts/no-unsafe-assignment -- Astro props destructuring is not fully typed by the ESLint parser */
 const {
 	alt,
 	class: className,
@@ -79,7 +78,6 @@ const {
 	typeFallback = 'image',
 	...imageProps
 } = Astro.props
-/* eslint-enable ts/no-unsafe-assignment */
 
 // Resolve source to ImageMetadata
 let imageMetadata: ImageMetadata
@@ -235,7 +233,6 @@ const { class: imgClassName, ...imgAttributes } = {
 
 const hasDarkMode = optimizedImagesDark !== undefined
 
-/* eslint-disable ts/no-unsafe-assignment -- Astro props destructuring is not fully typed by the ESLint parser */
 const captionProps: CaptionProps = {
 	creator,
 	organization,
@@ -244,7 +241,6 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback,
 }
-/* eslint-enable ts/no-unsafe-assignment */
 
 // Helper to build srcset attribute for a source
 function buildSrcsetAttribute(image: GetImageResult): string {
