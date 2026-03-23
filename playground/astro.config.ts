@@ -8,7 +8,9 @@ process.env.BROWSER = 'chromium'
 
 export default defineConfig({
 	integrations: [
-		mediaKit(),
+		mediaKit({
+			autoImport: true,
+		}),
 		mdxKit({
 			attributes: true,
 			captionImages: true,

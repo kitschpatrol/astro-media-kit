@@ -79,7 +79,20 @@ const {
 	...imageProps
 } = Astro.props
 
-// Resolve source to ImageMetadata
+// Resolve src — relative string paths only work with the mediaKit() auto-import integration.
+function assertNotRelativePath(path: unknown): void {
+	if (typeof path === 'string' && (path.startsWith('./') || path.startsWith('../'))) {
+		throw new Error(
+			`Picture received a relative string path "${path}". ` +
+			'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
+			'or import the image and pass the ImageMetadata object directly.',
+		)
+	}
+}
+
+assertNotRelativePath(src)
+assertNotRelativePath(srcDarkProp)
+
 let imageMetadata: ImageMetadata
 let imageMetadataDark: ImageMetadata | undefined
 

@@ -1,4 +1,5 @@
 import type { AstroIntegration } from 'astro'
+import { readFile } from 'node:fs/promises'
 
 const FRONTMATTER_REGEX = /^---\r?\n[\s\S]*?\n?---/
 
@@ -167,20 +168,24 @@ export function transformAstroSource(
 
 /**
  * Vite plugin that applies the auto-import transform to `.astro` files.
+ *
+ * Uses the `load` hook to intercept raw `.astro` source before Astro's
+ * own compiler transforms it to JavaScript. This is necessary because
+ * Astro's vite-plugin-astro also uses `enforce: 'pre'` and runs first
+ * in the transform pipeline, so by the time `transform` is called the
+ * frontmatter has already been compiled away.
  */
 function vitePluginMediaKitAutoImport(componentNames: string[]) {
 	return {
 		enforce: 'pre' as const,
-		name: 'astro-media-kit:auto-import',
-		transform: {
-			filter: {
-				id: /\.astro$/,
-			},
-			handler(source: string) {
-				const result = transformAstroSource(source, componentNames)
-				if (result === undefined) return
-				return { code: result, map: undefined }
-			},
+		async load(id: string) {
+			if (!id.endsWith('.astro')) return
+			const source = await readFile(id, 'utf8')
+			const result = transformAstroSource(source, componentNames)
+			if (result === undefined) return
+			// Return the transformed raw .astro source — Astro's compiler will process it next
+			return { code: result, map: undefined }
 		},
+		name: 'astro-media-kit:auto-import',
 	}
 }

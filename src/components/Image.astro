@@ -26,7 +26,17 @@ const {
 	...imageRestProps
 } = Astro.props
 
-// Resolve string paths to ImageMetadata
+// Resolve src — if it's still a string at this point, either the mediaKit() integration
+// isn't registered (which auto-imports string paths), or it's an absolute filesystem path.
+// Relative paths like "../assets/foo.jpg" only work with the auto-import integration.
+if (typeof src === 'string' && (src.startsWith('./') || src.startsWith('../'))) {
+	throw new Error(
+		`Image received a relative string path "${src}". ` +
+		'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
+		'or import the image and pass the ImageMetadata object directly.',
+	)
+}
+
 const resolvedImage = isImageMetadataObject(src) ? src : await resolveImageSource(src)
 
 if (isDarkLightImageMetadata(resolvedImage)) {
