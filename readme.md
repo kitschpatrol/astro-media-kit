@@ -2,20 +2,20 @@
 
 <!-- title -->
 
-# frontiernerds-com
+# astro-media-kit
 
 <!-- /title -->
 
 <!-- badges -->
 
-[![NPM Package frontiernerds-com](https://img.shields.io/npm/v/frontiernerds-com.svg)](https://npmjs.com/package/frontiernerds-com)
+[![NPM Package astro-media-kit](https://img.shields.io/npm/v/astro-media-kit.svg)](https://npmjs.com/package/astro-media-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <!-- /badges -->
 
 <!-- short-description -->
 
-**A web project.**
+**Astro components for images and video.**
 
 <!-- /short-description -->
 
@@ -39,7 +39,7 @@ _State anyone or anything that significantly helped with the development of your
 
 ## Contributing
 
-[Issues](https://github.com/kitschpatrol/frontiernerds-com/issues) and pull requests are welcome.
+[Issues](https://github.com/kitschpatrol/astro-media-kit/issues) and pull requests are welcome.
 
 <!-- /contributing -->
 

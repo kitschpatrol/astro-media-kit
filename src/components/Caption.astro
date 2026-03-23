@@ -1,20 +1,9 @@
 ---
 import type { ImageMetadata } from 'astro'
-// eslint-disable-next-line depend/ban-dependencies
-import capitalize from 'lodash/capitalize'
+import type { MediaType } from '../types'
 import { getCreditFromXmpTags } from './utils/image'
-// Helper component to wrap media components in a caption and credit.
 
-const _validTypes = [
-	'animation',
-	'diagram',
-	'illustration',
-	'image',
-	'photo',
-	'render',
-	'screenshot',
-	'video',
-] as const
+const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
 export type Props = {
 	/** The individual who created the image */
@@ -22,10 +11,11 @@ export type Props = {
 	/** The organization to which the image is owed */
 	organization?: string | undefined
 	showCredit?: boolean | undefined
-	src?: ImageMetadata | string | undefined // For exif lookup
-	type?: (typeof _validTypes)[number] | undefined
-	/** If both the prop and the exif data are undefined... */
-	typeFallback?: (typeof _validTypes)[number] | undefined
+	/** Image source for XMP metadata lookup */
+	src?: ImageMetadata | string | undefined
+	type?: MediaType | undefined
+	/** Fallback type if both the prop and the XMP data are undefined */
+	typeFallback?: MediaType | undefined
 }
 
 const { creator, organization, showCredit = true, src, type, typeFallback } = Astro.props

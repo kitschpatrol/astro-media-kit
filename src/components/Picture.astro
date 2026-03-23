@@ -1,99 +1,287 @@
 ---
-// Automatically imports images from the assets folder
-// Any children become the caption, and wrap the output in a figure.
-// <Picture widths={[100, 1200, 3840]} src='../assets/tiny.jpeg' alt='Tiny in the window light.'/>
-// Caption goes <b>here</b>!
-// </Picture>
+// Custom Picture component with dark mode support.
+// Renders <picture> directly using Astro's getImage() API (the same approach
+// as Astro's built-in Picture.astro), extended with prefers-color-scheme
+// media queries for light/dark image variants.
 
-// It's only compatible with local images
+import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { HTMLAttributes } from 'astro/types'
+import { getImage, imageConfig } from 'astro:assets'
+import * as mime from 'mrmime'
+import type { DarkLightImageMetadata } from '../types'
 
-import type { ComponentProps } from 'astro/types'
-// See https://github.com/withastro/astro/blob/main/packages/astro/components/Picture.astro
-import { Picture as AstroPicture } from 'astro:assets'
+type GetImageResult = Awaited<ReturnType<typeof getImage>>
 import type { Props as CaptionProps } from './Caption.astro'
 import Caption from './Caption.astro'
-import { getImageFromAssets, isImageMetadataObject } from './utils/image'
+import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } from './utils/image'
 import Zoomer from './Zoomer.astro'
 
-type AstroPictureProps = ComponentProps<typeof AstroPicture>
-type ZoomerProps = ComponentProps<typeof Zoomer>
+const defaultFormats = ['webp'] as const
+const defaultFallbackFormat = 'png' as const
+const specialFormatsFallback = ['gif', 'svg', 'jpg', 'jpeg'] as const
 
-export type Props = Omit<AstroPictureProps, 'src' | 'srcDark'> &
-	Omit<CaptionProps, 'src'> &
-	ZoomerProps & {
-		src: ImageMetadata | string
-		srcDark?: string | undefined
+// Inlined from Astro internals — trivial helpers, avoids importing from internal paths
+function isESMImportedImage(src: ImageMetadata | string): src is ImageMetadata {
+	return typeof src === 'object' || (typeof src === 'function' && 'src' in src)
+}
+
+async function resolveSrc(
+	src: ImageMetadata | Promise<{ default: ImageMetadata }> | string,
+): Promise<ImageMetadata | string> {
+	if (typeof src === 'object' && 'then' in src) {
+		const resource = await src
+		return resource.default ?? resource
 	}
 
-const { creator, enableZoom, organization, showCredit, src, srcDark, type, ...rest } = Astro.props
-const { typeFallback, ...pureRest } = rest
+	return src
+}
 
-const imageAsset = isImageMetadataObject(src) ? src : await getImageFromAssets(src, srcDark, true)
+export type Props = {
+	alt: string
+	class?: string | undefined
+	// Caption props
+	creator?: CaptionProps['creator']
+	decoding?: 'async' | 'auto' | 'sync' | undefined
+	densities?: Array<`${number}x` | number> | undefined
+	// Zoomer props
+	enableZoom?: boolean | undefined
+	fallbackFormat?: ImageOutputFormat | undefined
+	fit?: string | undefined
+	formats?: ImageOutputFormat[] | undefined
+	layout?: 'constrained' | 'fixed' | 'full-width' | 'none' | 'responsive' | undefined
+	loading?: 'eager' | 'lazy' | undefined
+	organization?: CaptionProps['organization']
+	pictureAttributes?: HTMLAttributes<'picture'> | undefined
+	position?: string | undefined
+	showCredit?: CaptionProps['showCredit']
+	sizes?: string | undefined
+	src: DarkLightImageMetadata | ImageMetadata | string
+	srcDark?: ImageMetadata | string | undefined
+	type?: CaptionProps['type']
+	typeFallback?: CaptionProps['typeFallback']
+	widths?: number[] | undefined
+}
 
-// Check if image metadata has light and dark keys, but give
-// precedence to the srcDark prop if present
-const hasDark = 'light' in imageAsset && 'dark' in imageAsset
-const imageMetadata = hasDark ? imageAsset.light : imageAsset
-const imageMetadataDark = srcDark ?? (hasDark ? imageAsset.dark : undefined)
+const {
+	alt,
+	class: className,
+	creator,
+	enableZoom = false,
+	fallbackFormat: fallbackFormatProp,
+	formats = defaultFormats,
+	organization,
+	pictureAttributes: pictureAttributesProp = {},
+	showCredit,
+	src,
+	srcDark: srcDarkProp,
+	type,
+	typeFallback = 'image',
+	...imageProps
+} = Astro.props
 
-// eslint-disable-next-line ts/no-unsafe-type-assertion
-const astroPictureProps: AstroPictureProps = {
-	fallbackFormat: 'jpeg', // Todo revisit, what about images with transparency? need to detect.
-	formats: imageMetadata.format === 'svg' ? ['svg'] : ['webp', 'jpeg'],
-	// Formats: ['avif', 'webp', 'jpeg'],
-	// Small Phone: 1080 × 2340
-	// Medium Phone: 1170 × 2532
-	// Big Phone: 1284 × 2778
-	// 5k: 3840 × 2160
-	// 5k: 5120 × 2880
-	src: imageMetadata,
-	srcDark: imageMetadataDark,
-	// Special case for SVGs, which shouldn't be resized
-	widths: imageMetadata.format === 'svg' ? undefined : [1080, 3840],
-	// Widths: [1080, 1920, 3840, 5120],
-	// To consider:
-	// fallbackFormat,
-	// aspectRatio,
-	// fit,
-	// background,
-	// position,
-	// formats = ['avif', 'webp'],
-	// loading = 'lazy',
-	// decoding = 'async',
-	// No longer need aspect ratio since width and height is set on the image?
-	// https://www.smashingmagazine.com/2020/03/setting-height-width-images-important-again/#comment-1680936701279613036
-	// https://github.com/withastro/astro/pull/4797#ref-commit-1acfe14
-	// pictureAttributes: {
-	// 	style: {
-	// 		// AspectRatio: imageMetadata.width / imageMetadata.height,
-	// 		height: 'auto',
-	// 		maxWidth: '100%',
-	// 	},
-	// },
-	// Putting slot here messed things up
-	...pureRest,
-} as unknown as AstroPictureProps
+// Resolve source to ImageMetadata
+let imageMetadata: ImageMetadata
+let imageMetadataDark: ImageMetadata | undefined
 
+if (isDarkLightImageMetadata(src)) {
+	// { dark, light } object passed directly
+	imageMetadata = src.light
+	imageMetadataDark = srcDarkProp
+		? isImageMetadataObject(srcDarkProp)
+			? srcDarkProp
+			: ((await resolveImageSource(srcDarkProp)) as ImageMetadata)
+		: src.dark
+} else if (isImageMetadataObject(src)) {
+	imageMetadata = src
+	if (srcDarkProp) {
+		imageMetadataDark = isImageMetadataObject(srcDarkProp)
+			? srcDarkProp
+			: ((await resolveImageSource(srcDarkProp)) as ImageMetadata)
+	}
+} else {
+	// String path
+	const resolved = srcDarkProp
+		? await resolveImageSource(src, srcDarkProp)
+		: await resolveImageSource(src)
+
+	if (isDarkLightImageMetadata(resolved)) {
+		imageMetadata = resolved.light
+		imageMetadataDark = resolved.dark
+	} else {
+		imageMetadata = resolved
+	}
+}
+
+// Validate alt text
+if (alt === undefined || alt === null) {
+	throw new Error('Image is missing required "alt" property.')
+}
+
+// Props to pass to getImage
+const getImageProps = {
+	alt,
+	...imageProps,
+}
+
+// Propagate scoped style class to picture element
+const pictureAttributes = { ...pictureAttributesProp }
+const scopedStyleClass = className?.match(/\bastro-\w{8}\b/)?.[0]
+if (scopedStyleClass) {
+	pictureAttributes.class = pictureAttributes.class
+		? `${pictureAttributes.class} ${scopedStyleClass}`
+		: scopedStyleClass
+}
+
+// Handle responsive layout (same as Astro's Picture)
+const layout = imageProps.layout ?? imageConfig.layout ?? 'none'
+const useResponsive = layout !== 'none'
+
+if (useResponsive) {
+	getImageProps.layout ??= imageConfig.layout
+	getImageProps.fit ??= imageConfig.objectFit ?? 'cover'
+	getImageProps.position ??= imageConfig.objectPosition ?? 'center'
+} else if (imageConfig.objectFit || imageConfig.objectPosition) {
+	getImageProps.fit ??= imageConfig.objectFit
+	getImageProps.position ??= imageConfig.objectPosition
+}
+
+// Propagate data-astro-cid-* attributes to picture element
+for (const key in getImageProps) {
+	if (key.startsWith('data-astro-cid')) {
+		// @ts-expect-error Astro island props aren't typed
+		pictureAttributes[key] = getImageProps[key as keyof typeof getImageProps]
+	}
+}
+
+// Generate optimized images for each format (light variant)
+const originalSrc = await resolveSrc(imageMetadata)
+const optimizedImages: GetImageResult[] = await Promise.all(
+	formats.map(async (format) =>
+		getImage({
+			...getImageProps,
+			densities: imageProps.densities,
+			format,
+			src: originalSrc,
+			widths: imageProps.widths,
+		}),
+	),
+)
+
+// Generate optimized images for dark variant (if present)
+let optimizedImagesDark: GetImageResult[] | undefined
+if (imageMetadataDark) {
+	const originalSrcDark = await resolveSrc(imageMetadataDark)
+	optimizedImagesDark = await Promise.all(
+		formats.map(async (format) =>
+			getImage({
+				...getImageProps,
+				densities: imageProps.densities,
+				format,
+				src: originalSrcDark,
+				widths: imageProps.widths,
+			}),
+		),
+	)
+}
+
+// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
+const clonedSrc = isESMImportedImage(originalSrc)
+	? // @ts-expect-error clone is a private prop on ImageMetadata
+		(originalSrc.clone ?? originalSrc)
+	: originalSrc
+
+// Determine fallback format
+let resultFallbackFormat = fallbackFormatProp ?? defaultFallbackFormat
+if (
+	!fallbackFormatProp &&
+	isESMImportedImage(clonedSrc) &&
+	(specialFormatsFallback as readonly string[]).includes(clonedSrc.format)
+) {
+	resultFallbackFormat = clonedSrc.format
+}
+
+// Generate fallback image (always light variant)
+const fallbackImage = await getImage({
+	...getImageProps,
+	densities: imageProps.densities,
+	format: resultFallbackFormat,
+	src: originalSrc,
+	widths: imageProps.widths,
+})
+
+const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
+const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
+
+if (imageProps.sizes) {
+	sourceAdditionalAttributes.sizes = imageProps.sizes
+}
+
+if (fallbackImage.srcSet.values.length > 0) {
+	imgAdditionalAttributes.srcset = fallbackImage.srcSet.attribute
+}
+
+if (import.meta.env.DEV) {
+	imgAdditionalAttributes['data-image-component'] = 'true'
+}
+
+const { class: imgClassName, ...imgAttributes } = {
+	...imgAdditionalAttributes,
+	...fallbackImage.attributes,
+}
+
+const hasDarkMode = optimizedImagesDark !== undefined
+
+// Caption props
 const captionProps: CaptionProps = {
 	creator,
 	organization,
 	showCredit,
-	// eslint-disable-next-line ts/no-unsafe-type-assertion
-	src: ('light' in imageMetadata ? imageMetadata.light : imageMetadata) as ImageMetadata | string,
+	src: imageMetadata,
 	type,
-	typeFallback: typeFallback ?? 'image',
+	typeFallback,
 }
 
-const zoomerProps: ZoomerProps = {
-	enableZoom,
+// Helper to build srcset attribute for a source
+function buildSrcsetAttribute(image: GetImageResult): string {
+	const { densities, widths } = imageProps
+	if (densities || (!densities && !widths && !useResponsive)) {
+		return `${image.src}${image.srcSet.values.length > 0 ? ', ' + image.srcSet.attribute : ''}`
+	}
+
+	return image.srcSet.attribute
 }
 
-// There doesn't seem to be a way around the `...rest as any` cast
+function getMimeType(image: GetImageResult): string {
+	return mime.lookup(image.options.format ?? image.src) ?? `image/${image.options.format}`
+}
 ---
 
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} slot="media-component">
-		<AstroPicture {...astroPictureProps} slot="media-component" />
+	<Zoomer enableZoom={enableZoom} slot="media-component">
+		<picture {...pictureAttributes} slot="media-component">
+			{
+				hasDarkMode &&
+					optimizedImagesDark!.map((image) => (
+						<source
+							media="(prefers-color-scheme: dark)"
+							srcset={buildSrcsetAttribute(image)}
+							type={getMimeType(image)}
+							{...sourceAdditionalAttributes}
+						/>
+					))
+			}
+			{
+				optimizedImages.map((image) => (
+					<source
+						media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
+						srcset={buildSrcsetAttribute(image)}
+						type={getMimeType(image)}
+						{...sourceAdditionalAttributes}
+					/>
+				))
+			}
+			<img src={fallbackImage.src} {...imgAttributes} class={imgClassName} />
+		</picture>
 	</Zoomer>
 	<slot />
 </Caption>

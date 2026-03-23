@@ -9,16 +9,6 @@ export default eslintConfig(
 			'playground-starlight/**/*.mdx',
 			'references/**/*',
 		],
-		ts: {
-			overrides: {
-				'depend/ban-dependencies': [
-					'error',
-					{
-						allowed: ['lodash'],
-					},
-				],
-			},
-		},
 		type: 'lib',
 	},
 	{
