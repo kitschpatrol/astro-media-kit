@@ -1,0 +1,5 @@
+export { default as Caption } from './components/Caption.astro'
+export { default as Image } from './components/Image.astro'
+export { default as Picture } from './components/Picture.astro'
+export { default as Video } from './components/Video.astro'
+export { default as Zoomer } from './components/Zoomer.astro'

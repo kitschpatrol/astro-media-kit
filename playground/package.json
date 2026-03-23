@@ -1,0 +1,38 @@
+{
+	"name": "astro-media-kit-playground",
+	"private": true,
+	"description": "Astro project playground to evaluate astro-media-kit.",
+	"license": "MIT",
+	"author": {
+		"name": "Eric Mika",
+		"email": "eric@ericmika.com",
+		"url": "https://ericmika.com"
+	},
+	"sideEffects": false,
+	"type": "module",
+	"scripts": {
+		"astro": "astro",
+		"build": "astro build",
+		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
+		"dev": "poptab ; astro dev --open",
+		"preview": "poptab ; astro preview --open"
+	},
+	"devDependencies": {
+		"@astrojs/mdx": "^5.0.2",
+		"@types/node": "~24.12.0",
+		"astro": "^6.0.8",
+		"astro-mdx-kit": "link:../../astro-mdx-kit",
+		"astro-media-kit": "link:..",
+		"poptab": "^1.0.4",
+		"sharp": "^0.34.5"
+	},
+	"engines": {
+		"node": ">=20.19.0"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": ">=22.18.0"
+		}
+	}
+}

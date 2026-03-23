@@ -1,0 +1,99 @@
+---
+// Automatically imports images from the assets folder
+// Any children become the caption, and wrap the output in a figure.
+// <Picture widths={[100, 1200, 3840]} src='../assets/tiny.jpeg' alt='Tiny in the window light.'/>
+// Caption goes <b>here</b>!
+// </Picture>
+
+// It's only compatible with local images
+
+import type { ComponentProps } from 'astro/types'
+// See https://github.com/withastro/astro/blob/main/packages/astro/components/Picture.astro
+import { Picture as AstroPicture } from 'astro:assets'
+import type { Props as CaptionProps } from './Caption.astro'
+import Caption from './Caption.astro'
+import { getImageFromAssets, isImageMetadataObject } from './utils/image'
+import Zoomer from './Zoomer.astro'
+
+type AstroPictureProps = ComponentProps<typeof AstroPicture>
+type ZoomerProps = ComponentProps<typeof Zoomer>
+
+export type Props = Omit<AstroPictureProps, 'src' | 'srcDark'> &
+	Omit<CaptionProps, 'src'> &
+	ZoomerProps & {
+		src: ImageMetadata | string
+		srcDark?: string | undefined
+	}
+
+const { creator, enableZoom, organization, showCredit, src, srcDark, type, ...rest } = Astro.props
+const { typeFallback, ...pureRest } = rest
+
+const imageAsset = isImageMetadataObject(src) ? src : await getImageFromAssets(src, srcDark, true)
+
+// Check if image metadata has light and dark keys, but give
+// precedence to the srcDark prop if present
+const hasDark = 'light' in imageAsset && 'dark' in imageAsset
+const imageMetadata = hasDark ? imageAsset.light : imageAsset
+const imageMetadataDark = srcDark ?? (hasDark ? imageAsset.dark : undefined)
+
+// eslint-disable-next-line ts/no-unsafe-type-assertion
+const astroPictureProps: AstroPictureProps = {
+	fallbackFormat: 'jpeg', // Todo revisit, what about images with transparency? need to detect.
+	formats: imageMetadata.format === 'svg' ? ['svg'] : ['webp', 'jpeg'],
+	// Formats: ['avif', 'webp', 'jpeg'],
+	// Small Phone: 1080 × 2340
+	// Medium Phone: 1170 × 2532
+	// Big Phone: 1284 × 2778
+	// 5k: 3840 × 2160
+	// 5k: 5120 × 2880
+	src: imageMetadata,
+	srcDark: imageMetadataDark,
+	// Special case for SVGs, which shouldn't be resized
+	widths: imageMetadata.format === 'svg' ? undefined : [1080, 3840],
+	// Widths: [1080, 1920, 3840, 5120],
+	// To consider:
+	// fallbackFormat,
+	// aspectRatio,
+	// fit,
+	// background,
+	// position,
+	// formats = ['avif', 'webp'],
+	// loading = 'lazy',
+	// decoding = 'async',
+	// No longer need aspect ratio since width and height is set on the image?
+	// https://www.smashingmagazine.com/2020/03/setting-height-width-images-important-again/#comment-1680936701279613036
+	// https://github.com/withastro/astro/pull/4797#ref-commit-1acfe14
+	// pictureAttributes: {
+	// 	style: {
+	// 		// AspectRatio: imageMetadata.width / imageMetadata.height,
+	// 		height: 'auto',
+	// 		maxWidth: '100%',
+	// 	},
+	// },
+	// Putting slot here messed things up
+	...pureRest,
+} as unknown as AstroPictureProps
+
+const captionProps: CaptionProps = {
+	creator,
+	organization,
+	showCredit,
+	// eslint-disable-next-line ts/no-unsafe-type-assertion
+	src: ('light' in imageMetadata ? imageMetadata.light : imageMetadata) as ImageMetadata | string,
+	type,
+	typeFallback: typeFallback ?? 'image',
+}
+
+const zoomerProps: ZoomerProps = {
+	enableZoom,
+}
+
+// There doesn't seem to be a way around the `...rest as any` cast
+---
+
+<Caption {...captionProps}>
+	<Zoomer {...zoomerProps} slot="media-component">
+		<AstroPicture {...astroPictureProps} slot="media-component" />
+	</Zoomer>
+	<slot />
+</Caption>

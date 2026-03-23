@@ -1,0 +1,31 @@
+---
+import { extractLargestImageUrl } from './utils/image'
+
+type Props = {
+	enableZoom?: boolean | undefined
+}
+
+const { enableZoom = false } = Astro.props
+
+let mediaComponentHtml = ''
+let zoomSrc = ''
+
+if (enableZoom) {
+	if (!Astro.slots.has('media-component')) {
+		throw new Error('Zoomer component requires a media-component slot when enableZoom is true.')
+	}
+
+	mediaComponentHtml = await Astro.slots.render('media-component')
+	zoomSrc = extractLargestImageUrl(mediaComponentHtml)
+}
+---
+
+{
+	enableZoom ? (
+		<a href={zoomSrc}>
+			<Fragment set:html={mediaComponentHtml} />
+		</a>
+	) : (
+		<slot name="media-component" />
+	)
+}

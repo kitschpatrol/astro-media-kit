@@ -1,0 +1,61 @@
+---
+// Automatically imports images from the assets folder
+import type { ComponentProps } from 'astro/types'
+// See https://github.com/withastro/astro/blob/main/packages/astro/components/Image.astro
+import { Image as AstroImage } from 'astro:assets'
+// It's only compatible with local images
+import type { ImageMetadata } from 'astro'
+import type { Props as CaptionProps } from './Caption.astro'
+import Caption from './Caption.astro'
+import { getImageFromAssets, isImageMetadataObject } from './utils/image'
+type AstroImageProps = ComponentProps<typeof AstroImage>
+
+type Props = Omit<AstroImageProps, 'src'> &
+	Omit<CaptionProps, 'src'> & {
+		src: ImageMetadata | string
+	}
+
+const {
+	creator,
+	organization,
+	showCredit = true,
+	src,
+	type,
+	typeFallback = 'image',
+	...rest
+} = Astro.props
+
+// TODO how to detect tldr svgs and aphex images that don't look like imageMetadata?
+
+const imageMetadata = isImageMetadataObject(src) ? src : await getImageFromAssets(src)
+
+if ('dark' in imageMetadata || 'light' in imageMetadata) {
+	throw new Error('No light / dark mode support in Image component. Use Picture component instead.')
+}
+
+// TODO what's up with the forced cast...
+// https://github.com/withastro/astro/issues/10780
+/* eslint-disable ts/no-unsafe-assignment */
+
+// eslint-disable-next-line ts/no-unsafe-type-assertion
+const astroImageProps: AstroImageProps = {
+	src: imageMetadata,
+	...rest,
+} as unknown as AstroImageProps
+
+const captionProps: CaptionProps = {
+	creator,
+	organization,
+	showCredit,
+	src: imageMetadata,
+	type,
+	typeFallback,
+}
+
+/* eslint-enable ts/no-unsafe-assignment */
+---
+
+<Caption {...captionProps}>
+	<AstroImage {...astroImageProps} />
+	<slot />
+</Caption>

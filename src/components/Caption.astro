@@ -1,0 +1,87 @@
+---
+import type { ImageMetadata } from 'astro'
+// eslint-disable-next-line depend/ban-dependencies
+import capitalize from 'lodash/capitalize'
+import { getCreditFromXmpTags } from './utils/image'
+// Helper component to wrap media components in a caption and credit.
+
+const _validTypes = [
+	'animation',
+	'diagram',
+	'illustration',
+	'image',
+	'photo',
+	'render',
+	'screenshot',
+	'video',
+] as const
+
+export type Props = {
+	/** The individual who created the image */
+	creator?: string | undefined
+	/** The organization to which the image is owed */
+	organization?: string | undefined
+	showCredit?: boolean | undefined
+	src?: ImageMetadata | string | undefined // For exif lookup
+	type?: (typeof _validTypes)[number] | undefined
+	/** If both the prop and the exif data are undefined... */
+	typeFallback?: (typeof _validTypes)[number] | undefined
+}
+
+const { creator, organization, showCredit = true, src, type, typeFallback } = Astro.props
+
+// Try to resolve credit components from exif if not provided
+// Note clunky rename from "credit" in the XMP tag to "organization"
+// and "label" to "type"
+const {
+	creator: exifCreator,
+	credit: exifOrganization,
+	label: exifType,
+} = src !== undefined &&
+showCredit &&
+(organization === undefined || creator === undefined || type === undefined)
+	? await getCreditFromXmpTags(src)
+	: { creator: undefined, credit: undefined, label: undefined }
+
+const resolvedOrganization = organization ?? exifOrganization
+const resolvedCreator = creator ?? exifCreator
+const resolvedType = type ?? exifType ?? typeFallback
+
+// Render the credit nicely
+
+const creditLine =
+	resolvedCreator !== undefined || resolvedOrganization !== undefined
+		? [
+				resolvedType === undefined ? undefined : capitalize(resolvedType),
+				[resolvedCreator, resolvedOrganization].filter(Boolean).join(' / '),
+			]
+				.filter(Boolean)
+				.join(': ')
+		: undefined
+
+// Can't get rid of children in markdown, so we inspect what's in the slot
+const hasCaption = Boolean(
+	// eslint-disable-next-line unicorn/no-await-expression-member
+	Astro.slots.default && (await Astro.slots.render('default')).trim().length > 0,
+)
+
+const hasCredit = showCredit && creditLine !== undefined
+---
+
+{
+	hasCaption || hasCredit ? (
+		<figure>
+			<slot name="media-component" />
+			<figcaption>
+				{hasCaption && (
+					<span class="caption">
+						<slot />
+					</span>
+				)}
+				{hasCredit && <span class="credit">{creditLine}</span>}
+			</figcaption>
+		</figure>
+	) : (
+		<slot name="media-component" />
+	)
+}
