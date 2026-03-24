@@ -1,9 +1,12 @@
 ---
+import aphexTest from '~aphex/Tiny/tiny'
 import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
 import testDark from '../assets/test-dark.jpeg'
 import tldrTest from '../assets/test-sketch.tldr'
+import tldrTestDark from '../assets/test-sketch.tldr?dark=true&tldr'
 import test from '../assets/test.jpeg'
+import tigerDark from '../assets/tiger-dark.svg'
 import tiger from '../assets/tiger.svg'
 ---
 
@@ -141,8 +144,18 @@ import tiger from '../assets/tiger.svg'
 					<td class="check">Tldraw sketch (light)</td>
 				</tr>
 				<tr>
+					<td>Auto-import dark .tldr</td>
+					<td><Image alt="auto tldr" src="../assets/test-sketch.tldr?dark=true&tldr" /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
 					<td>Explicit .tldr</td>
 					<td><Image alt="explicit tldr" src={tldrTest} /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Explicit dark .tldr</td>
+					<td><Image alt="explicit tldr" src={tldrTestDark} /></td>
 					<td class="check">Tldraw sketch (light)</td>
 				</tr>
 			</tbody>
@@ -321,7 +334,7 @@ import tiger from '../assets/tiger.svg'
 							alt="svg dark ai"
 							formats={['webp']}
 							src="../assets/tiger.svg"
-							srcDark="../assets/test.jpeg"
+							srcDark="../assets/tiger-dark.svg"
 						/></td
 					>
 					<td class="check">Tiger (light), photo (dark)</td>
@@ -329,7 +342,7 @@ import tiger from '../assets/tiger.svg'
 				<tr>
 					<td>SVG srcDark (imported)</td>
 					<td class="cb"
-						><Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={test} /></td
+						><Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={tigerDark} /></td
 					>
 					<td class="check">Same as above</td>
 				</tr>
