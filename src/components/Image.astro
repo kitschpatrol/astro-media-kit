@@ -10,7 +10,7 @@ import { Image as AstroImage } from 'astro:assets'
 import type { DarkLightImageMetadata } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
 import Caption from './Caption.astro'
-import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } from './utils/image'
+import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource, unwrapImageMetadata } from './utils/image'
 
 // Only use LocalImageProps since we always resolve to ImageMetadata (local images)
 export type Props = Omit<CaptionProps, 'src'> &
@@ -50,7 +50,7 @@ if (typeof src === 'string' && (src.startsWith('./') || src.startsWith('../'))) 
 const resolvedImage = isDarkLightImageMetadata(src)
 	? src.light
 	: isImageMetadataObject(src)
-		? src
+		? unwrapImageMetadata(src)
 		: await resolveImageSource(src)
 
 const imageMetadata = isDarkLightImageMetadata(resolvedImage) ? resolvedImage.light : resolvedImage

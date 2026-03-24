@@ -92,20 +92,11 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 				tldrSrcPath = importPath
 			}
 
-			// SVGs need the astroContentImageFlag query so Astro emits ImageMetadata
-			// instead of an inline SVG component (which would break our components).
-			// Note: .tldr files do NOT get this flag here — they're resolved by
-			// unplugin-tldraw's resolveId to cached SVG files, which are outside
-			// src/ and don't trigger Astro's SVG-as-component behavior.
-			const resolvedPath = pathWithoutQuery.endsWith('.svg')
-				? `${importPath}${importPath.includes('?') ? '&' : '?'}astroContentImageFlag`
-				: importPath
-
 			let entry = imports.get(importPath)
 			if (!entry) {
 				entry = {
 					name: `__ami_${imports.size}`,
-					path: resolvedPath,
+					path: importPath,
 				}
 				imports.set(importPath, entry)
 			}

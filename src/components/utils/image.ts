@@ -22,12 +22,12 @@ export async function resolveImageSource(
 	srcDark?: ImageMetadata | string,
 ): Promise<DarkLightImageMetadata | ImageMetadata> {
 	const lightMetadata = isImageMetadataObject(src)
-		? src
+		? unwrapImageMetadata(src)
 		: await probeImageMetadata(getAbsoluteFilePath(src))
 
 	if (srcDark !== undefined) {
 		const darkMetadata = isImageMetadataObject(srcDark)
-			? srcDark
+			? unwrapImageMetadata(srcDark)
 			: await probeImageMetadata(getAbsoluteFilePath(srcDark))
 
 		assertLightDarkImageParity(lightMetadata, darkMetadata)
@@ -76,10 +76,38 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 }
 
 /**
- * Checks if the given source is an ImageMetadata object.
+ * Checks if the given source is an ImageMetadata object, including
+ * Astro's SVG component wrappers which nest metadata under `.meta`.
  */
 export function isImageMetadataObject(src: unknown): src is ImageMetadata {
-	return typeof src === 'object' && src !== null && 'src' in src && typeof src.src === 'string'
+	if (src === null || src === undefined) return false
+	if (typeof src !== 'object' && typeof src !== 'function') return false
+	if ('src' in src && typeof src.src === 'string') return true
+	// Astro wraps SVG imports in createSvgComponent in production builds,
+	// placing ImageMetadata under .meta instead of at the top level.
+	if ('meta' in src && typeof src.meta === 'object' && src.meta !== null) {
+		return 'src' in src.meta && typeof src.meta.src === 'string'
+	}
+
+	return false
+}
+
+/**
+ * Extracts a plain ImageMetadata object from a value, unwrapping Astro's SVG
+ * component wrapper if necessary. SVG components are functions with metadata
+ * properties spread on them — this extracts just the data as a plain object.
+ */
+export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
+	// Plain object with .src — already correct
+	if (typeof src === 'object' && 'src' in src && typeof src.src === 'string') return src
+	// SVG component function: metadata is spread on the function AND available as .meta
+	// Extract .meta (a plain object) rather than returning the function
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- validated by isImageMetadataObject
+	if ('meta' in src) return (src as unknown as { meta: ImageMetadata }).meta
+	// Fallback: extract known properties into a plain object
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- we've validated src has ImageMetadata shape
+	const { format, height, src: imgSrc, width } = src as ImageMetadata
+	return { format, height, src: imgSrc, width }
 }
 
 /**

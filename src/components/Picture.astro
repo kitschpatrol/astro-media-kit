@@ -12,7 +12,7 @@ import type { DarkLightImageMetadata } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
 import { needsBackgroundDarkVariant, opaqueFormats } from '../utilities/dark-variant'
 import Caption from './Caption.astro'
-import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } from './utils/image'
+import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource, unwrapImageMetadata } from './utils/image'
 import Zoomer from './Zoomer.astro'
 
 type GetImageResult = Awaited<ReturnType<typeof getImage>>
@@ -114,17 +114,17 @@ if (isDarkLightImageMetadata(src)) {
 	imageMetadata = src.light
 	if (srcDarkSource) {
 		imageMetadataDark = isImageMetadataObject(srcDarkSource)
-			? srcDarkSource
+			? unwrapImageMetadata(srcDarkSource)
 			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
 				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 	} else if (!darkDisabled) {
 		imageMetadataDark = src.dark
 	}
 } else if (isImageMetadataObject(src)) {
-	imageMetadata = src
+	imageMetadata = unwrapImageMetadata(src)
 	if (srcDarkSource) {
 		imageMetadataDark = isImageMetadataObject(srcDarkSource)
-			? srcDarkSource
+			? unwrapImageMetadata(srcDarkSource)
 			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
 				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 	}
