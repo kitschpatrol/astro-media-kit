@@ -6,7 +6,8 @@ import type { TldrawConfig } from './tldraw.js'
 export type { AphexConfig } from './aphex.js'
 export type { AutoImportConfig } from './auto-import.js'
 export { transformAstroSource } from './auto-import.js'
-export type { TldrawConfig, TldrawImageOptions } from './tldraw.js'
+export type { TldrawConfig } from './tldraw.js'
+export type { TldrawImageOptions } from './tldraw.js'
 
 /**
  * Configuration for the astro-media-kit integration.
@@ -27,7 +28,7 @@ export type MediaKitConfig = {
 	 */
 	autoImport?: AutoImportConfig | boolean
 	/**
-	 * Enable tldraw `.tldr` file support via `@kitschpatrol/tldraw-cli`.
+	 * Enable tldraw `.tldr` file support via `@kitschpatrol/unplugin-tldraw`.
 	 * When enabled, `.tldr` file imports are converted to SVG/PNG images
 	 * and fed into Astro's image pipeline, working with both `<Image>`
 	 * and `<Picture>` components.
@@ -81,7 +82,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					const { vitePluginMediaKitAphex } = await import('./aphex.js')
 					updateConfig({
 						vite: {
-							plugins: [await vitePluginMediaKitAphex(aphexConfig)],
+							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
+							plugins: [(await vitePluginMediaKitAphex(aphexConfig)) as never],
 						},
 					})
 				}
@@ -90,7 +92,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					const { vitePluginMediaKitTldraw } = await import('./tldraw.js')
 					updateConfig({
 						vite: {
-							plugins: [vitePluginMediaKitTldraw(tldrawConfig)],
+							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
+							plugins: [(await vitePluginMediaKitTldraw(tldrawConfig)) as never],
 						},
 					})
 				}

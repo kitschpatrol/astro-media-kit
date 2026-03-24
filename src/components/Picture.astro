@@ -178,7 +178,7 @@ for (const key in getImageProps) {
 }
 
 // Only pass background to getImage for opaque formats (JPEG) where transparency is lost
-const opaqueFormats = new Set(['jpg', 'jpeg'])
+const opaqueFormats = new Set(['jpeg', 'jpg'])
 function compositingBackground(format: string, bg: string | undefined): Record<string, string> {
 	return bg && opaqueFormats.has(format) ? { background: bg } : {}
 }
@@ -292,7 +292,9 @@ function getMimeType(image: GetImageResult): string {
 
 // Build inline background-color style for transparent images
 if (backgroundDark && !background) {
-	console.warn('[astro-media-kit] backgroundDark is set without background — light mode will be transparent.')
+	console.warn(
+		'[astro-media-kit] backgroundDark is set without background — light mode will be transparent.',
+	)
 }
 
 let backgroundStyle: string | undefined
@@ -329,7 +331,13 @@ if (background && backgroundDark) {
 					/>
 				))
 			}
-			<img alt={alt} src={fallbackImage.src} {...imgAttributes} class={imgClassName} style={backgroundStyle} />
+			<img
+				alt={alt}
+				src={fallbackImage.src}
+				{...imgAttributes}
+				class={imgClassName}
+				style={backgroundStyle}
+			/>
 		</picture>
 	</Zoomer>
 	<slot />

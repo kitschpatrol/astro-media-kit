@@ -1,16 +1,19 @@
-import type { Options as UnpluginAphexOptions } from '@kitschpatrol/unplugin-aphex/vite'
+import type aphexVitePluginFn from '@kitschpatrol/unplugin-aphex/vite'
+
+/** Options type extracted from the unplugin-aphex Vite plugin function. */
+type UnpluginAphexOptions = NonNullable<Parameters<typeof aphexVitePluginFn>[0]>
 
 /**
  * Configuration for Apple Photos (`~aphex/`) import support.
  * Passes through to `@kitschpatrol/unplugin-aphex`.
  */
-export type AphexConfig = {
+export type AphexConfig = Omit<UnpluginAphexOptions, 'returnMetadata'> & {
 	/**
 	 * Enable Apple Photos `~aphex/` import support.
 	 * @default true
 	 */
 	enabled?: boolean
-} & Omit<UnpluginAphexOptions, 'returnMetadata'>
+}
 
 /**
  * Creates the Vite plugin for `~aphex/` Apple Photos imports.

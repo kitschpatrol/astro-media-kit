@@ -66,7 +66,9 @@ const captionProps: CaptionProps = {
 
 // Build inline background-color style for transparent images
 if (backgroundDark && !background) {
-	console.warn('[astro-media-kit] backgroundDark is set without background — light mode will be transparent.')
+	console.warn(
+		'[astro-media-kit] backgroundDark is set without background — light mode will be transparent.',
+	)
 }
 
 let backgroundStyle: string | undefined
@@ -79,7 +81,7 @@ if (background && backgroundDark) {
 }
 
 // Only pass background for compositing when the output format is opaque (JPEG)
-const opaqueFormats = new Set(['jpg', 'jpeg'])
+const opaqueFormats = new Set(['jpeg', 'jpg'])
 const outputFormat = imageRestProps.format ?? imageMetadata.format
 const compositingBackground = background && opaqueFormats.has(outputFormat) ? { background } : {}
 

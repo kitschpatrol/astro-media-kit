@@ -3,11 +3,16 @@ import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
 ---
 
+<Image alt="Dark test" creator="Me" src="../assets/test-sketch.tldr?dark=true&tldr" />
+
+<Picture
+	alt="Light/dark test"
+	src="../assets/test-sketch.tldr"
+	srcDark="../assets/test-sketch.tldr?dark=true&tldr"
+/>
+
 <div style="background: red">
 	Image
-
-	<Image alt="Blep" creator="Me" src="~aphex/Tiny/tiny" />
-	<Picture alt="Blep" creator="Me" src="~aphex/Tiny/tiny" />
 
 	<Image alt="Blep" creator="Me" src="../assets/test.jpeg" />
 
