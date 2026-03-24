@@ -32,8 +32,8 @@ const {
 if (typeof src === 'string' && (src.startsWith('./') || src.startsWith('../'))) {
 	throw new Error(
 		`Image received a relative string path "${src}". ` +
-		'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
-		'or import the image and pass the ImageMetadata object directly.',
+			'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
+			'or import the image and pass the ImageMetadata object directly.',
 	)
 }
 

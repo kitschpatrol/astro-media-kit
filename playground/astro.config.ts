@@ -10,6 +10,7 @@ export default defineConfig({
 	integrations: [
 		mediaKit({
 			autoImport: true,
+			tldraw: true,
 		}),
 		mdxKit({
 			attributes: true,
