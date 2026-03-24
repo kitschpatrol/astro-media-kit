@@ -68,7 +68,7 @@ const {
 	creator,
 	enableZoom = false,
 	fallbackFormat: fallbackFormatProp,
-	formats = defaultFormats,
+	formats: formatsProp,
 	organization,
 	pictureAttributes: pictureAttributesProp = {},
 	showCredit,
@@ -128,6 +128,11 @@ if (isDarkLightImageMetadata(src)) {
 		imageMetadata = resolved
 	}
 }
+
+// When input is SVG and user hasn't explicitly set formats, keep SVG format
+// to preserve vector quality (converting SVG → webp defeats the purpose).
+const formats =
+	formatsProp ?? (imageMetadata.format === 'svg' ? (['svg'] as const) : defaultFormats)
 
 // Props to pass to getImage
 const getImageProps = {
