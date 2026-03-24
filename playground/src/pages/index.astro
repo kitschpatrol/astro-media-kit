@@ -88,7 +88,7 @@ import tiger from '../assets/tiger.svg'
 			img {
 				display: block;
 				max-width: 160px;
-				max-height: 120px;
+				height: auto;
 			}
 
 			.check {
@@ -158,6 +158,16 @@ import tiger from '../assets/tiger.svg'
 					<td><Image alt="explicit tldr" src={tldrTestDark} /></td>
 					<td class="check">Tldraw sketch (light)</td>
 				</tr>
+				<tr>
+					<td>Auto-import aphex</td>
+					<td><Image alt="auto aphex" src="~aphex/Tiny/tiny" /></td>
+					<td class="check">Apple Photos image</td>
+				</tr>
+				<tr>
+					<td>Explicit import aphex</td>
+					<td><Image alt="explicit aphex" src={aphexTest} /></td>
+					<td class="check">Same image</td>
+				</tr>
 			</tbody>
 		</table>
 
@@ -189,7 +199,24 @@ import tiger from '../assets/tiger.svg'
 			</tbody>
 		</table>
 
-		<h2>3. Picture — .tldr auto dark</h2>
+		<h2>3. Picture — Aphex (Apple Photos)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>Picture (auto-import)</td>
+					<td><Picture alt="aphex ai" src="~aphex/Tiny/tiny" /></td>
+					<td class="check">Apple Photos image</td>
+				</tr>
+				<tr>
+					<td>Picture (imported)</td>
+					<td><Picture alt="aphex imp" src={aphexTest} /></td>
+					<td class="check">Same image</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>4. Picture — .tldr auto dark</h2>
 		<table>
 			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 			<tbody>
@@ -217,7 +244,7 @@ import tiger from '../assets/tiger.svg'
 			</tbody>
 		</table>
 
-		<h2>4. Picture — background compositing</h2>
+		<h2>5. Picture — background compositing</h2>
 		<table>
 			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 			<tbody>
@@ -323,7 +350,7 @@ import tiger from '../assets/tiger.svg'
 			</tbody>
 		</table>
 
-		<h2>5. Picture — SVG + explicit srcDark</h2>
+		<h2>6. Picture — SVG + explicit srcDark</h2>
 		<table>
 			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 			<tbody>
@@ -349,7 +376,7 @@ import tiger from '../assets/tiger.svg'
 			</tbody>
 		</table>
 
-		<h2>6. Image — background (CSS only)</h2>
+		<h2>7. Image — background (CSS only)</h2>
 		<table>
 			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 			<tbody>
