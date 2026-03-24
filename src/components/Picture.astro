@@ -38,6 +38,10 @@ async function resolveSrc(
 
 export type Props = {
 	alt: string
+	/** CSS background color for the image (visible behind transparent areas). */
+	background?: string | undefined
+	/** Dark mode background color override. Uses `light-dark()` with `background`. */
+	backgroundDark?: string | undefined
 	class?: string | undefined
 	// Caption props
 	creator?: CaptionProps['creator']
@@ -64,6 +68,8 @@ export type Props = {
 
 const {
 	alt,
+	background,
+	backgroundDark,
 	class: className,
 	creator,
 	enableZoom = false,
@@ -171,12 +177,19 @@ for (const key in getImageProps) {
 	}
 }
 
+// Only pass background to getImage for opaque formats (JPEG) where transparency is lost
+const opaqueFormats = new Set(['jpg', 'jpeg'])
+function compositingBackground(format: string, bg: string | undefined): Record<string, string> {
+	return bg && opaqueFormats.has(format) ? { background: bg } : {}
+}
+
 // Generate optimized images for each format (light variant)
 const originalSrc = await resolveSrc(imageMetadata)
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
 			...getImageProps,
+			...compositingBackground(format, background),
 			densities: imageProps.densities,
 			format,
 			src: originalSrc,
@@ -188,11 +201,13 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 // Generate optimized images for dark variant (if present)
 let optimizedImagesDark: GetImageResult[] | undefined
 if (imageMetadataDark) {
+	const darkBackground = backgroundDark ?? background
 	const originalSrcDark = await resolveSrc(imageMetadataDark)
 	optimizedImagesDark = await Promise.all(
 		formats.map(async (format) =>
 			getImage({
 				...getImageProps,
+				...compositingBackground(format, darkBackground),
 				densities: imageProps.densities,
 				format,
 				src: originalSrcDark,
@@ -223,6 +238,7 @@ if (
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...getImageProps,
+	...compositingBackground(resultFallbackFormat, background),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
 	src: originalSrc,
@@ -273,6 +289,20 @@ function buildSrcsetAttribute(image: GetImageResult): string {
 function getMimeType(image: GetImageResult): string {
 	return mime.lookup(image.options.format ?? image.src) ?? `image/${image.options.format}`
 }
+
+// Build inline background-color style for transparent images
+if (backgroundDark && !background) {
+	console.warn('[astro-media-kit] backgroundDark is set without background — light mode will be transparent.')
+}
+
+let backgroundStyle: string | undefined
+if (background && backgroundDark) {
+	backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
+} else if (backgroundDark) {
+	backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
+} else if (background) {
+	backgroundStyle = `background-color:${background}`
+}
 ---
 
 <Caption {...captionProps}>
@@ -299,7 +329,7 @@ function getMimeType(image: GetImageResult): string {
 					/>
 				))
 			}
-			<img alt={alt} src={fallbackImage.src} {...imgAttributes} class={imgClassName} />
+			<img alt={alt} src={fallbackImage.src} {...imgAttributes} class={imgClassName} style={backgroundStyle} />
 		</picture>
 	</Zoomer>
 	<slot />

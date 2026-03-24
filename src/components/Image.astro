@@ -15,10 +15,16 @@ import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } f
 // Only use LocalImageProps since we always resolve to ImageMetadata (local images)
 export type Props = Omit<CaptionProps, 'src'> &
 	Omit<LocalImageProps, 'src'> & {
+		/** CSS background color for the image (visible behind transparent areas). */
+		background?: string | undefined
+		/** Dark mode background color override. Uses `light-dark()` with `background`. */
+		backgroundDark?: string | undefined
 		src: DarkLightImageMetadata | ImageMetadata | string
 	}
 
 const {
+	background,
+	backgroundDark,
 	creator,
 	organization,
 	showCredit = true,
@@ -58,12 +64,36 @@ const captionProps: CaptionProps = {
 	typeFallback,
 }
 
+// Build inline background-color style for transparent images
+if (backgroundDark && !background) {
+	console.warn('[astro-media-kit] backgroundDark is set without background — light mode will be transparent.')
+}
+
+let backgroundStyle: string | undefined
+if (background && backgroundDark) {
+	backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
+} else if (backgroundDark) {
+	backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
+} else if (background) {
+	backgroundStyle = `background-color:${background}`
+}
+
+// Only pass background for compositing when the output format is opaque (JPEG)
+const opaqueFormats = new Set(['jpg', 'jpeg'])
+const outputFormat = imageRestProps.format ?? imageMetadata.format
+const compositingBackground = background && opaqueFormats.has(outputFormat) ? { background } : {}
+
 // Assemble props for AstroImage. The assertion is necessary because Astro's
 // Image component accepts LocalImageProps | RemoteImageProps, and TypeScript's
 // exactOptionalPropertyTypes can't reconcile spread props with union types.
 // See: https://github.com/withastro/astro/issues/10780
 // eslint-disable-next-line ts/consistent-type-assertions, ts/no-unsafe-type-assertion -- Astro #10780
-const astroImageProps = { src: imageMetadata, ...imageRestProps } as LocalImageProps
+const astroImageProps = {
+	src: imageMetadata,
+	style: backgroundStyle,
+	...compositingBackground,
+	...imageRestProps,
+} as LocalImageProps
 ---
 
 <Caption {...captionProps}>

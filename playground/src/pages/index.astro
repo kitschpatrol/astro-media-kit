@@ -10,7 +10,15 @@ import Picture from 'astro-media-kit/components/Picture.astro'
 
 	<Image alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
 
-	<Image alt="Blep" creator="Me" src="../assets/tiger.svg" />
+	<Image alt="Blep" background="blue" creator="Me" src="../assets/tiger.svg" />
+
+	<Image
+		alt="Blep"
+		background="#eee"
+		backgroundDark="#333"
+		creator="Me"
+		src="../assets/tiger.svg"
+	/>
 
 	Picture
 
@@ -22,5 +30,30 @@ import Picture from 'astro-media-kit/components/Picture.astro'
 
 	<Picture alt="Blep" creator="Me" src="../assets/tiger.svg" />
 
-	<Picture alt="Blep" creator="Me" formats={['webp']} src="../assets/tiger.svg" />
+	<Picture
+		alt="Blep"
+		background="yellow"
+		backgroundDark="purple"
+		creator="Me"
+		src="../assets/tiger.svg"
+	/>
+
+	<Picture
+		alt="Blep"
+		background="yellow"
+		backgroundDark="purple"
+		creator="Me"
+		formats={['webp']}
+		src="../assets/tiger.svg"
+	/>
+
+	<Picture
+		alt="Blep"
+		background="yellow"
+		backgroundDark="purple"
+		creator="Me"
+		formats={['jpg']}
+		src="../assets/tiger.svg"
+		srcDark="../assets/tiger.svg"
+	/>
 </div>
