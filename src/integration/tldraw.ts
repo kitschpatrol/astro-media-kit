@@ -51,7 +51,7 @@ function resolveConfig(config: TldrawConfig): ResolvedTldrawConfig {
 		cacheEnabled: config.cacheEnabled ?? true,
 		defaultImageOptions: {
 			dark: false,
-			format: 'png',
+			format: 'svg',
 			stripStyle: false,
 			transparent: false,
 			...stripUndefined(config.defaultImageOptions),
@@ -146,8 +146,12 @@ export function vitePluginMediaKitTldraw(config: TldrawConfig) {
 			}
 
 			// Re-export from the generated image file — Astro's astro:assets:esm
-			// plugin will handle the image import and produce proper ImageMetadata
-			return `export { default } from ${JSON.stringify(cachedFilePath)}`
+			// plugin will handle the image import and produce proper ImageMetadata.
+			// The astroContentImageFlag query tells Astro to emit SVGs as metadata
+			// proxies (like content collection images) rather than as inline components.
+			const importPath =
+				format === 'svg' ? `${cachedFilePath}?astroContentImageFlag` : cachedFilePath
+			return `export { default } from ${JSON.stringify(importPath)}`
 		},
 		name: 'astro-media-kit:tldraw',
 	}
