@@ -1,78 +1,363 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
+import testDark from '../assets/test-dark.jpeg'
+import tldrTest from '../assets/test-sketch.tldr'
+import test from '../assets/test.jpeg'
+import tiger from '../assets/tiger.svg?astroContentImageFlag'
 ---
 
-<Image alt="Dark test" creator="Me" src="../assets/test-sketch.tldr?dark=true&tldr" />
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width" name="viewport" />
+		<title>astro-media-kit visual tests</title>
+		<style>
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
 
-<Picture alt="Light/dark test" src="../assets/test-sketch.tldr" />
+			body {
+				padding: 2rem;
+				font-family:
+					system-ui,
+					-apple-system,
+					sans-serif;
+				color: light-dark(#1a1a1a, #e5e5e5);
+				color-scheme: light dark;
+				background: light-dark(#fafafa, #111);
+			}
 
-<Picture
-	alt="Light/dark test"
-	src="../assets/test-sketch.tldr"
-	srcDark="../assets/test-sketch.tldr?dark=true&tldr"
-/>
+			h1 {
+				margin-bottom: 0.5rem;
+				font-size: 1.5rem;
+			}
 
-<div style="background: red">
-	Image
+			h2 {
+				margin: 2rem 0 0.75rem;
+				padding-bottom: 0.5rem;
+				border-bottom: 1px solid light-dark(#ddd, #333);
+				font-size: 1.1rem;
+			}
 
-	<Image alt="Blep" creator="Me" src="../assets/test.jpeg" />
+			p.note {
+				margin-bottom: 1.5rem;
+				font-size: 0.8rem;
+				color: light-dark(#666, #999);
+			}
 
-	<Image alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
+			table {
+				border-collapse: collapse;
+				width: 100%;
+				margin-bottom: 2rem;
+				font-size: 0.8rem;
+			}
 
-	<Image alt="Blep" background="blue" creator="Me" src="../assets/tiger.svg" />
+			th {
+				padding: 0.5rem;
+				border: 1px solid light-dark(#ddd, #333);
+				font-weight: 600;
+				text-align: left;
+				white-space: nowrap;
+				background: light-dark(#f0f0f0, #1a1a1a);
+			}
 
-	<Image
-		alt="Blep"
-		background="#eee"
-		backgroundDark="#333"
-		creator="Me"
-		src="../assets/tiger.svg"
-	/>
+			td {
+				padding: 0.5rem;
+				border: 1px solid light-dark(#ddd, #333);
+				vertical-align: top;
+			}
 
-	Picture
+			td:first-child {
+				max-width: 280px;
+				font-family: ui-monospace, monospace;
+				font-size: 0.7rem;
+				color: light-dark(#555, #aaa);
+				white-space: nowrap;
+			}
 
-	<Picture alt="Blep" creator="Me" src="../assets/test.jpeg" />
+			figure {
+				margin: 0;
+			}
 
-	<Picture alt="Blep" creator="Me" src="../assets/test.jpeg" srcDark="../assets/test-dark.jpeg" />
+			img {
+				display: block;
+				max-width: 160px;
+				max-height: 120px;
+			}
 
-	<Picture alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
+			.check {
+				margin-top: 0.25rem;
+				font-size: 0.7rem;
+				color: light-dark(#666, #999);
+			}
 
-	<Picture alt="Blep" creator="Me" src="../assets/tiger.svg" />
+			.cb {
+				background-image: conic-gradient(
+					light-dark(#ccc, #444) 90deg,
+					transparent 90deg 180deg,
+					light-dark(#ccc, #444) 180deg 270deg,
+					transparent 270deg
+				);
+				background-size: 12px 12px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>astro-media-kit visual test matrix</h1>
+		<p class="note">
+			Toggle system dark mode to verify dark variants. Checkerboard = transparency preserved.
+		</p>
 
-	<Picture
-		alt="Blep"
-		background="yellow"
-		backgroundDark="purple"
-		creator="Me"
-		src="../assets/tiger.svg"
-	/>
+		<h2>1. Image — basic imports</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>Auto-import JPEG</td>
+					<td><Image alt="auto jpeg" src="../assets/test.jpeg" /></td>
+					<td class="check">Photo renders</td>
+				</tr>
+				<tr>
+					<td>Explicit import JPEG</td>
+					<td><Image alt="explicit jpeg" src={test} /></td>
+					<td class="check">Same photo</td>
+				</tr>
+				<tr>
+					<td>Auto-import SVG</td>
+					<td class="cb"><Image alt="auto svg" src="../assets/tiger.svg" /></td>
+					<td class="check">Tiger, transparent</td>
+				</tr>
+				<tr>
+					<td>Explicit import SVG</td>
+					<td class="cb"><Image alt="explicit svg" src={tiger} /></td>
+					<td class="check">Same tiger</td>
+				</tr>
+				<tr>
+					<td>Auto-import .tldr</td>
+					<td><Image alt="auto tldr" src="../assets/test-sketch.tldr" /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Explicit .tldr</td>
+					<td><Image alt="explicit tldr" src={tldrTest} /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+			</tbody>
+		</table>
 
-	<Picture
-		alt="Blep"
-		background="yellow"
-		backgroundDark="purple"
-		creator="Me"
-		formats={['webp']}
-		src="../assets/tiger.svg"
-	/>
+		<h2>2. Picture — dark mode (JPEG)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>No dark</td>
+					<td><Picture alt="no dark" src="../assets/test.jpeg" /></td>
+					<td class="check">Same in light &amp; dark</td>
+				</tr>
+				<tr>
+					<td>Explicit srcDark (auto-import)</td>
+					<td
+						><Picture
+							alt="dark ai"
+							src="../assets/test.jpeg"
+							srcDark="../assets/test-dark.jpeg"
+						/></td
+					>
+					<td class="check">Different image in dark</td>
+				</tr>
+				<tr>
+					<td>Explicit srcDark (imported)</td>
+					<td><Picture alt="dark imp" src={test} srcDark={testDark} /></td>
+					<td class="check">Same as above</td>
+				</tr>
+			</tbody>
+		</table>
 
-	<Picture
-		alt="Blep"
-		background="yellow"
-		backgroundDark="purple"
-		creator="Me"
-		formats={['jpg']}
-		src="../assets/tiger.svg"
-		srcDark="../assets/tiger.svg"
-	/>
+		<h2>3. Picture — .tldr auto dark</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>.tldr auto dark</td>
+					<td><Picture alt="tldr auto" src="../assets/test-sketch.tldr" /></td>
+					<td class="check">Auto light/dark variants</td>
+				</tr>
+				<tr>
+					<td>.tldr explicit srcDark</td>
+					<td
+						><Picture
+							alt="tldr explicit"
+							src="../assets/test-sketch.tldr"
+							srcDark="../assets/test-sketch.tldr?dark=true&tldr"
+						/></td
+					>
+					<td class="check">Same as auto</td>
+				</tr>
+				<tr>
+					<td>.tldr srcDark={'{false}'}</td>
+					<td><Picture alt="tldr disabled" src="../assets/test-sketch.tldr" srcDark={false} /></td>
+					<td class="check">Light only</td>
+				</tr>
+			</tbody>
+		</table>
 
-	<Picture
-		alt="Blep"
-		background="yellow"
-		backgroundDark="purple"
-		creator="Me"
-		formats={['jpg']}
-		src="../assets/tiger.svg"
-	/>
-</div>
+		<h2>4. Picture — background compositing</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG → webp, no bg</td>
+					<td class="cb"><Picture alt="svg no bg" src="../assets/tiger.svg" /></td>
+					<td class="check">Transparent both modes</td>
+				</tr>
+				<tr>
+					<td>SVG → webp, bg only</td>
+					<td><Picture alt="svg bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+					<td class="check">CSS bg both modes</td>
+				</tr>
+				<tr>
+					<td>SVG → webp, bg + bgDark</td>
+					<td
+						><Picture
+							alt="svg bgdark webp"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">CSS light-dark() (no variant)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg only</td>
+					<td
+						><Picture
+							alt="svg bg jpg"
+							background="#e8e4d0"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Composited beige, same both</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg + bgDark</td>
+					<td
+						><Picture
+							alt="svg bgdark jpg"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Beige (light), brown (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bgDark only</td>
+					<td
+						><Picture
+							alt="svg bgdark only"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Default (light), brown (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, same bg &amp; bgDark</td>
+					<td
+						><Picture
+							alt="svg same"
+							background="#e8e4d0"
+							backgroundDark="#e8e4d0"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Same beige (no variant)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg+bgDark, srcDark={'{false}'}</td>
+					<td
+						><Picture
+							alt="svg disabled"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+							srcDark={false}
+						/></td
+					>
+					<td class="check">Beige only (disabled)</td>
+				</tr>
+				<tr>
+					<td>SVG → [webp, jpg], bg+bgDark</td>
+					<td
+						><Picture
+							alt="svg mixed"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['webp', 'jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Dark img for jpg, CSS for webp</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>5. Picture — SVG + explicit srcDark</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG srcDark (auto-import)</td>
+					<td class="cb"
+						><Picture
+							alt="svg dark ai"
+							formats={['webp']}
+							src="../assets/tiger.svg"
+							srcDark="../assets/test.jpeg"
+						/></td
+					>
+					<td class="check">Tiger (light), photo (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG srcDark (imported)</td>
+					<td class="cb"
+						><Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={test} /></td
+					>
+					<td class="check">Same as above</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>6. Image — background (CSS only)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG, background</td>
+					<td><Image alt="img bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+					<td class="check">CSS bg behind SVG</td>
+				</tr>
+				<tr>
+					<td>SVG, bg + bgDark</td>
+					<td
+						><Image
+							alt="img bgdark"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">CSS light-dark() bg</td>
+				</tr>
+			</tbody>
+		</table>
+	</body>
+</html>
