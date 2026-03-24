@@ -53,8 +53,6 @@ export type Props = {
 	creator?: CaptionProps['creator']
 	decoding?: 'async' | 'auto' | 'sync' | undefined
 	densities?: Array<`${number}x` | number> | undefined
-	// Zoomer props
-	enableZoom?: boolean | undefined
 	fallbackFormat?: ImageOutputFormat | undefined
 	fit?: string | undefined
 	formats?: ImageOutputFormat[] | undefined
@@ -71,6 +69,7 @@ export type Props = {
 	type?: CaptionProps['type']
 	typeFallback?: CaptionProps['typeFallback']
 	widths?: number[] | undefined
+	zoom?: boolean | string | undefined
 }
 
 const {
@@ -79,7 +78,6 @@ const {
 	backgroundDark,
 	class: className,
 	creator,
-	enableZoom = false,
 	fallbackFormat: fallbackFormatProp,
 	formats: formatsProp,
 	organization,
@@ -89,6 +87,7 @@ const {
 	srcDark: srcDarkProp,
 	type,
 	typeFallback = 'image',
+	zoom,
 	...imageProps
 } = Astro.props
 
@@ -323,7 +322,7 @@ if (background && backgroundDark) {
 ---
 
 <Caption {...captionProps}>
-	<Zoomer enableZoom={enableZoom} slot="media-component">
+	<Zoomer slot="media-component" zoom={zoom}>
 		<picture {...pictureAttributes} slot="media-component">
 			{
 				hasDarkMode &&

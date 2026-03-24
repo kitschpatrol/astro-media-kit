@@ -1,5 +1,5 @@
 export type Props = {
-	enableZoom?: boolean | undefined
+	zoom?: boolean | string | undefined
 }
 
 declare const Zoomer: (props: Props) => unknown

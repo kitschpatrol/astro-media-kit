@@ -9,7 +9,6 @@ export type Props = {
 	creator?: CaptionProps['creator']
 	decoding?: 'async' | 'auto' | 'sync' | undefined
 	densities?: Array<`${number}x` | number> | undefined
-	enableZoom?: boolean | undefined
 	fallbackFormat?: ImageOutputFormat | undefined
 	fit?: string | undefined
 	formats?: ImageOutputFormat[] | undefined
@@ -25,6 +24,7 @@ export type Props = {
 	type?: CaptionProps['type']
 	typeFallback?: CaptionProps['typeFallback']
 	widths?: number[] | undefined
+	zoom?: boolean | string | undefined
 }
 
 declare const Picture: (props: Props) => unknown

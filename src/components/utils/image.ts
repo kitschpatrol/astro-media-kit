@@ -162,40 +162,54 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 	return entries
 }
 
+export type ZoomTarget = {
+	height: number
+	srcset: string
+	url: string
+	width: number
+}
+
 /**
- * Extracts the largest image URL from a `<picture>` element HTML string.
- * Searches through all `<source>` and `<img>` srcset attributes to find
- * the URL with the highest width descriptor.
- * @param html - HTML string containing a `<picture>` element
- * @returns The URL of the largest image
+ * Extracts zoom target info from a rendered `<picture>` or `<img>` HTML string.
+ * Returns the largest image URL with its dimensions and a combined srcset string
+ * for PhotoSwipe's responsive zoom. Excludes dark-mode `<source>` elements.
+ * @param html - HTML string containing a `<picture>` or `<img>` element
  */
-export function extractLargestImageUrl(html: string): string {
+export function extractZoomTarget(html: string): ZoomTarget {
 	const { document } = parseHTML(html)
 
 	const allEntries: SrcsetEntry[] = []
 
+	// Collect srcset entries from <source> elements, skipping dark-mode variants
 	const sources = document.querySelectorAll('source[srcset]')
 	for (const source of sources) {
+		const media = source.getAttribute('media')
+		if (media?.includes('prefers-color-scheme: dark')) continue
+
 		const srcset = source.getAttribute('srcset')
 		if (srcset) {
 			allEntries.push(...parseSrcset(srcset))
 		}
 	}
 
+	// Get aspect ratio from the <img> element
 	const img = document.querySelector('img')
+	let aspectRatio = 1
 	if (img) {
+		const imgWidth = Number.parseInt(img.getAttribute('width') ?? '0', 10)
+		const imgHeight = Number.parseInt(img.getAttribute('height') ?? '0', 10)
+		if (imgWidth > 0 && imgHeight > 0) {
+			aspectRatio = imgHeight / imgWidth
+		}
+
 		const srcset = img.getAttribute('srcset')
 		if (srcset) {
 			allEntries.push(...parseSrcset(srcset))
 		}
 
 		const src = img.getAttribute('src')
-		const width = img.getAttribute('width')
-		if (src && width) {
-			allEntries.push({
-				url: src,
-				width: Number.parseInt(width, 10),
-			})
+		if (src && imgWidth > 0) {
+			allEntries.push({ url: src, width: imgWidth })
 		}
 	}
 
@@ -206,5 +220,13 @@ export function extractLargestImageUrl(html: string): string {
 	// eslint-disable-next-line unicorn/no-array-reduce
 	const largest = allEntries.reduce((max, entry) => (entry.width > max.width ? entry : max))
 
-	return largest.url
+	// Build combined srcset string for PhotoSwipe responsive zoom
+	const srcset = allEntries.map((entry) => `${entry.url} ${String(entry.width)}w`).join(', ')
+
+	return {
+		height: Math.round(largest.width * aspectRatio),
+		srcset,
+		url: largest.url,
+		width: largest.width,
+	}
 }

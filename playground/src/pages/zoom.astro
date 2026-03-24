@@ -1,0 +1,23 @@
+---
+import Image from 'astro-media-kit/components/Image.astro'
+import Picture from 'astro-media-kit/components/Picture.astro'
+---
+
+<style>
+	img {
+		display: block;
+		max-width: 160px;
+		height: auto;
+	}
+</style>
+
+<figure>
+	<Image zoom={true} alt="auto jpeg" src="../assets/test.jpeg" />
+	<figcaption>Caption</figcaption>
+</figure>
+
+<Image zoom={true} alt="auto jpeg" src="../assets/tiger.svg" />
+
+<Picture zoom={true} alt="auto jpeg" src="../assets/tiger.svg" />
+
+<Picture zoom={true} alt="auto jpeg" src="../assets/test.jpeg" />

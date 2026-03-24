@@ -16,6 +16,7 @@ import {
 	resolveImageSource,
 	unwrapImageMetadata,
 } from './utils/image'
+import Zoomer from './Zoomer.astro'
 
 // Only use LocalImageProps since we always resolve to ImageMetadata (local images)
 export type Props = Omit<CaptionProps, 'src'> &
@@ -25,6 +26,7 @@ export type Props = Omit<CaptionProps, 'src'> &
 		/** Dark mode background color override. Uses `light-dark()` with `background`. */
 		backgroundDark?: string | undefined
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		zoom?: boolean | string | undefined
 	}
 
 const {
@@ -36,6 +38,7 @@ const {
 	src,
 	type,
 	typeFallback = 'image',
+	zoom,
 	...imageRestProps
 } = Astro.props
 
@@ -104,6 +107,8 @@ const astroImageProps = {
 ---
 
 <Caption {...captionProps}>
-	<AstroImage {...astroImageProps} slot="media-component" />
+	<Zoomer slot="media-component" zoom={zoom}>
+		<AstroImage {...astroImageProps} slot="media-component" />
+	</Zoomer>
 	<slot />
 </Caption>

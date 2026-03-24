@@ -1,31 +1,81 @@
 ---
-import { extractLargestImageUrl } from './utils/image'
+import { extractZoomTarget } from './utils/image'
 
 type Props = {
-	enableZoom?: boolean | undefined
+	zoom?: boolean | string | undefined
 }
 
-const { enableZoom = false } = Astro.props
+const { zoom = false } = Astro.props
 
 let mediaComponentHtml = ''
-let zoomSrc = ''
+let zoomUrl = ''
+let zoomWidth = 0
+let zoomHeight = 0
+let zoomSrcset = ''
+let galleryName: string | undefined
 
-if (enableZoom) {
+if (zoom) {
 	if (!Astro.slots.has('media-component')) {
-		throw new Error('Zoomer component requires a media-component slot when enableZoom is true.')
+		throw new Error('Zoomer component requires a media-component slot when zoom is enabled.')
 	}
 
 	mediaComponentHtml = await Astro.slots.render('media-component')
-	zoomSrc = extractLargestImageUrl(mediaComponentHtml)
+	const target = extractZoomTarget(mediaComponentHtml)
+	zoomUrl = target.url
+	zoomWidth = target.width
+	zoomHeight = target.height
+	zoomSrcset = target.srcset
+
+	if (typeof zoom === 'string') {
+		galleryName = zoom
+	}
 }
 ---
 
 {
-	enableZoom ? (
-		<a href={zoomSrc}>
+	zoom ? (
+		<a
+			class="pswp-zoom"
+			data-pswp-gallery={galleryName}
+			data-pswp-height={zoomHeight}
+			data-pswp-srcset={zoomSrcset}
+			data-pswp-width={zoomWidth}
+			href={zoomUrl}
+		>
 			<Fragment set:html={mediaComponentHtml} />
 		</a>
 	) : (
 		<slot name="media-component" />
 	)
 }
+
+<script>
+	import PhotoSwipeLightbox from 'photoswipe/lightbox'
+	import 'photoswipe/style.css'
+
+	// Standalone images (zoom={true}, no gallery grouping)
+	new PhotoSwipeLightbox({
+		gallery: 'a.pswp-zoom:not([data-pswp-gallery])',
+		pswpModule: () => import('photoswipe'),
+	}).init()
+
+	// Grouped galleries — one Lightbox per unique gallery name
+	const galleryNames = new Set(
+		[...document.querySelectorAll<HTMLAnchorElement>('a.pswp-zoom[data-pswp-gallery]')].map(
+			(element) => element.dataset.pswpGallery!,
+		),
+	)
+	for (const name of galleryNames) {
+		new PhotoSwipeLightbox({
+			children: `a.pswp-zoom[data-pswp-gallery="${name}"]`,
+			gallery: 'body',
+			pswpModule: () => import('photoswipe'),
+		}).init()
+	}
+</script>
+
+<style>
+	a.pswp-zoom {
+		cursor: zoom-in;
+	}
+</style>
