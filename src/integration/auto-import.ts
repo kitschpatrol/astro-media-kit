@@ -1,3 +1,5 @@
+/* eslint-disable complexity */
+
 import { readFile } from 'node:fs/promises'
 
 const FRONTMATTER_REGEX = /^---\r?\n[\s\S]*?\n?---/
@@ -65,7 +67,8 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 
 		// Track .tldr src for auto dark mode on <Picture>
 		let tldrSrcPath: string | undefined
-		let hasSrcDark = false
+		// Detect srcDark in any form: string value, expression, or bare attribute
+		const hasSrcDark = /\bsrcDark[\s=]/.test(tagContent)
 
 		// Find src="..." and srcDark="..." within this tag
 		const attributeRegex = /\b(src|srcDark)=(?:"([^"]+)"|'([^']+)')/g
@@ -74,8 +77,6 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 			const attributeName = attributeMatch[1]!
 			const importPath = attributeMatch[2] ?? attributeMatch[3]
 			if (!importPath) continue
-
-			if (attributeName === 'srcDark') hasSrcDark = true
 
 			if (
 				importPath.startsWith('http://') ||

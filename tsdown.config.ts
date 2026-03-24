@@ -31,6 +31,7 @@ export default defineConfig({
 		'src/components/utils/bunny.ts',
 		'src/components/utils/cloudflare.ts',
 		'src/components/utils/mux.ts',
+		'src/utilities/dark-variant.ts',
 		'src/utilities/image-probe.ts',
 		'src/utilities/path.ts',
 		'src/utilities/passthrough-image-endpoint.ts',

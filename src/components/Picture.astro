@@ -10,6 +10,7 @@ import { getImage, imageConfig } from 'astro:assets'
 import * as mime from 'mrmime'
 import type { DarkLightImageMetadata } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
+import { needsBackgroundDarkVariant, opaqueFormats } from '../utilities/dark-variant'
 import Caption from './Caption.astro'
 import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource } from './utils/image'
 import Zoomer from './Zoomer.astro'
@@ -60,7 +61,8 @@ export type Props = {
 	showCredit?: CaptionProps['showCredit']
 	sizes?: string | undefined
 	src: DarkLightImageMetadata | ImageMetadata | string
-	srcDark?: ImageMetadata | string | undefined
+	/** Dark mode image source. Pass `false` to disable auto dark mode generation. */
+	srcDark?: boolean | ImageMetadata | string | undefined
 	type?: CaptionProps['type']
 	typeFallback?: CaptionProps['typeFallback']
 	widths?: number[] | undefined
@@ -97,7 +99,12 @@ function assertNotRelativePath(path: unknown): void {
 }
 
 assertNotRelativePath(src)
-assertNotRelativePath(srcDarkProp)
+
+// Normalize srcDark: true/undefined = auto, false = disabled, other = explicit source
+const darkDisabled = srcDarkProp === false
+const srcDarkSource =
+	typeof srcDarkProp === 'boolean' || srcDarkProp === undefined ? undefined : srcDarkProp
+assertNotRelativePath(srcDarkSource)
 
 let imageMetadata: ImageMetadata
 let imageMetadataDark: ImageMetadata | undefined
@@ -105,31 +112,31 @@ let imageMetadataDark: ImageMetadata | undefined
 if (isDarkLightImageMetadata(src)) {
 	// { dark, light } object passed directly
 	imageMetadata = src.light
-	if (srcDarkProp) {
-		imageMetadataDark = isImageMetadataObject(srcDarkProp)
-			? srcDarkProp
+	if (srcDarkSource) {
+		imageMetadataDark = isImageMetadataObject(srcDarkSource)
+			? srcDarkSource
 			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-				((await resolveImageSource(srcDarkProp)) as ImageMetadata)
-	} else {
+				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
+	} else if (!darkDisabled) {
 		imageMetadataDark = src.dark
 	}
 } else if (isImageMetadataObject(src)) {
 	imageMetadata = src
-	if (srcDarkProp) {
-		imageMetadataDark = isImageMetadataObject(srcDarkProp)
-			? srcDarkProp
+	if (srcDarkSource) {
+		imageMetadataDark = isImageMetadataObject(srcDarkSource)
+			? srcDarkSource
 			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-				((await resolveImageSource(srcDarkProp)) as ImageMetadata)
+				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 	}
 } else {
 	// String path
-	const resolved = srcDarkProp
-		? await resolveImageSource(src, srcDarkProp)
+	const resolved = srcDarkSource
+		? await resolveImageSource(src, srcDarkSource)
 		: await resolveImageSource(src)
 
 	if (isDarkLightImageMetadata(resolved)) {
 		imageMetadata = resolved.light
-		imageMetadataDark = resolved.dark
+		imageMetadataDark = darkDisabled ? undefined : resolved.dark
 	} else {
 		imageMetadata = resolved
 	}
@@ -178,7 +185,6 @@ for (const key in getImageProps) {
 }
 
 // Only pass background to getImage for opaque formats (JPEG) where transparency is lost
-const opaqueFormats = new Set(['jpeg', 'jpg'])
 function compositingBackground(format: string, bg: string | undefined): Record<string, string> {
 	return bg && opaqueFormats.has(format) ? { background: bg } : {}
 }
@@ -198,11 +204,15 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 	),
 )
 
-// Generate optimized images for dark variant (if present)
+// Generate optimized images for dark variant when:
+// 1. A separate dark source image is provided (srcDark), or
+// 2. backgroundDark differs from background on an opaque format (same source, different composited bg)
+const needsDarkVariant =
+	imageMetadataDark ?? needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled)
 let optimizedImagesDark: GetImageResult[] | undefined
-if (imageMetadataDark) {
+if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background
-	const originalSrcDark = await resolveSrc(imageMetadataDark)
+	const originalSrcDark = imageMetadataDark ? await resolveSrc(imageMetadataDark) : originalSrc
 	optimizedImagesDark = await Promise.all(
 		formats.map(async (format) =>
 			getImage({

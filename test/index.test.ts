@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { transformAstroSource } from '../src/integration/index.ts'
+import { needsBackgroundDarkVariant } from '../src/utilities/dark-variant.ts'
 
 const defaultComponents = ['Image', 'Picture']
 
@@ -200,6 +201,17 @@ const title = 'Hello'
 		expect(result).not.toContain('srcDark')
 	})
 
+	it('does not auto-generate srcDark for .tldr when srcDark={false}', () => {
+		const source = `---
+---
+<Picture src="../assets/sketch.tldr" srcDark={false} alt="Sketch" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
+		expect(result).not.toContain('dark=true')
+		expect(result).not.toContain('srcDark={__ami')
+	})
+
 	it('auto-generates srcDark for .tldr with existing query params', () => {
 		const source = `---
 ---
@@ -211,5 +223,40 @@ const title = 'Hello'
 			'import __ami_1 from "../assets/sketch.tldr?frame=my-frame&tldr&dark=true&tldr"',
 		)
 		expect(result).toContain('srcDark={__ami_1}')
+	})
+})
+
+describe('needsBackgroundDarkVariant', () => {
+	it('returns true for opaque format with different backgroundDark', () => {
+		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', false)).toBe(true)
+		expect(needsBackgroundDarkVariant(['jpeg'], 'white', 'black', false)).toBe(true)
+	})
+
+	it('returns true when opaque format is among transparent formats', () => {
+		expect(needsBackgroundDarkVariant(['webp', 'jpg'], 'white', 'black', false)).toBe(true)
+	})
+
+	it('returns false for transparent-only formats', () => {
+		expect(needsBackgroundDarkVariant(['webp'], 'white', 'black', false)).toBe(false)
+		expect(needsBackgroundDarkVariant(['png'], 'white', 'black', false)).toBe(false)
+		expect(needsBackgroundDarkVariant(['avif'], 'white', 'black', false)).toBe(false)
+		expect(needsBackgroundDarkVariant(['svg'], 'white', 'black', false)).toBe(false)
+		expect(needsBackgroundDarkVariant(['webp', 'png', 'avif'], 'white', 'black', false)).toBe(false)
+	})
+
+	it('returns false when backgroundDark is not set', () => {
+		expect(needsBackgroundDarkVariant(['jpg'], 'white', undefined, false)).toBe(false)
+	})
+
+	it('returns false when backgroundDark equals background', () => {
+		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'white', false)).toBe(false)
+	})
+
+	it('returns false when darkDisabled is true', () => {
+		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', true)).toBe(false)
+	})
+
+	it('returns true when background is undefined but backgroundDark is set', () => {
+		expect(needsBackgroundDarkVariant(['jpg'], undefined, 'black', false)).toBe(true)
 	})
 })
