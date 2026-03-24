@@ -53,6 +53,7 @@
 	},
 	"dependencies": {
 		"@kitschpatrol/tldraw-cli": "^5.0.13",
+		"@kitschpatrol/unplugin-aphex": "link:../unplugin-aphex",
 		"@mux/mux-node": "^12.8.1",
 		"@sindresorhus/is": "^7.2.0",
 		"@types/node": "~24.12.0",

@@ -9,6 +9,7 @@ process.env.BROWSER = 'chromium'
 export default defineConfig({
 	integrations: [
 		mediaKit({
+			aphex: true,
 			autoImport: true,
 			tldraw: true,
 		}),
