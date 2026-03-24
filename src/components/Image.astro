@@ -7,7 +7,7 @@
 import type { ImageMetadata } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import { Image as AstroImage } from 'astro:assets'
-import type { DarkLightImageMetadata } from '../types'
+import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
 import Caption from './Caption.astro'
 import {
@@ -24,7 +24,7 @@ export type Props = Omit<CaptionProps, 'src'> &
 		background?: string | undefined
 		/** Dark mode background color override. Uses `light-dark()` with `background`. */
 		backgroundDark?: string | undefined
-		src: DarkLightImageMetadata | ImageMetadata | string
+		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 	}
 
 const {

@@ -8,7 +8,7 @@ import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import * as mime from 'mrmime'
-import type { DarkLightImageMetadata } from '../types'
+import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
 import { needsBackgroundDarkVariant, opaqueFormats } from '../utilities/dark-variant'
 import Caption from './Caption.astro'
@@ -65,9 +65,9 @@ export type Props = {
 	position?: string | undefined
 	showCredit?: CaptionProps['showCredit']
 	sizes?: string | undefined
-	src: DarkLightImageMetadata | ImageMetadata | string
+	src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 	/** Dark mode image source. Pass `false` to disable auto dark mode generation. */
-	srcDark?: boolean | ImageMetadata | string | undefined
+	srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
 	type?: CaptionProps['type']
 	typeFallback?: CaptionProps['typeFallback']
 	widths?: number[] | undefined
