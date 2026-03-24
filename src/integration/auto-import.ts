@@ -74,11 +74,17 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 				continue
 			}
 
+			// SVGs need the astroContentImageFlag query so Astro emits ImageMetadata
+			// instead of an inline SVG component (which would break our components)
+			const resolvedPath = importPath.endsWith('.svg')
+				? `${importPath}?astroContentImageFlag`
+				: importPath
+
 			let entry = imports.get(importPath)
 			if (!entry) {
 				entry = {
 					name: `__ami_${imports.size}`,
-					path: importPath,
+					path: resolvedPath,
 				}
 				imports.set(importPath, entry)
 			}

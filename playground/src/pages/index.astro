@@ -3,14 +3,24 @@ import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
 ---
 
-Image
+<div style="background: red">
+	Image
 
-<Image alt="Blep" creator="Me" src="../assets/test.jpeg" />
+	<Image alt="Blep" creator="Me" src="../assets/test.jpeg" />
 
-<Image alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
+	<Image alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
 
-Picture
+	<Image alt="Blep" creator="Me" src="../assets/tiger.svg" />
 
-<Picture alt="Blep" creator="Me" src="../assets/test.jpeg" />
+	Picture
 
-<Picture alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
+	<Picture alt="Blep" creator="Me" src="../assets/test.jpeg" />
+
+	<Picture alt="Blep" creator="Me" src="../assets/test.jpeg" srcDark="../assets/test-dark.jpeg" />
+
+	<Picture alt="Blep" creator="Me" src="../assets/test-sketch.tldr" />
+
+	<Picture alt="Blep" creator="Me" src="../assets/tiger.svg" />
+
+	<Picture alt="Blep" creator="Me" formats={['webp']} src="../assets/tiger.svg" />
+</div>
