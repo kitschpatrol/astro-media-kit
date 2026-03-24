@@ -1,6 +1,6 @@
 /* eslint-disable ts/naming-convention */
 import mdx from '@astrojs/mdx'
-import mdxKit from 'astro-mdx-kit'
+import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit from 'astro-media-kit/integration'
 import { defineConfig } from 'astro/config'
 
@@ -15,7 +15,6 @@ export default defineConfig({
 		}),
 		mdxKit({
 			attributes: true,
-			captionImages: true,
 			directives: {
 				Block: 'src/components/Block.astro',
 				CustomImage: {
@@ -25,11 +24,12 @@ export default defineConfig({
 			},
 			elements: {
 				h1: 'src/components/Heading.astro',
-				// Temp off
-				// img: {
-				// 	component: 'Picture',
-				// 	componentModule: 'astro:assets',
-				// },
+				img: {
+					autoImport: ['src', tldrawDarkImport],
+					caption: 'figure',
+					component: 'Picture',
+					componentModule: 'astro-media-kit/components',
+				},
 			},
 			unwrapImages: true,
 		}),
