@@ -1,11 +1,12 @@
+/* eslint-disable ts/naming-convention */
 import type { AstroIntegration } from 'astro'
 import type { AphexConfig } from './aphex.js'
-import type { AutoImportConfig } from './auto-import.js'
+import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
 import type { TldrawConfig } from './tldraw.js'
 
 export type { AphexConfig } from './aphex.js'
-export type { AutoImportConfig } from './auto-import.js'
-export { transformAstroSource } from './auto-import.js'
+export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
+export { tldrawDarkImport, transformAstroSource } from './auto-import.js'
 export type { TldrawConfig } from './tldraw.js'
 export type { TldrawImageOptions } from './tldraw.js'
 
@@ -23,10 +24,22 @@ export type MediaKitConfig = {
 	aphex?: AphexConfig | boolean
 	/**
 	 * Configure auto-importing of image assets in `.astro` files.
-	 * Set to `false` to disable, or pass an object to customize.
+	 *
+	 * - `true` — enable with default component config (`Image: ['src'], Picture: ['src']`)
+	 * - `false` — disable
+	 * - `AutoImportPluginConfig` — full config with component-to-entries mapping
+	 * @example
+	 * ```ts
+	 * autoImport: {
+	 *   components: {
+	 *     Image: ['src'],
+	 *     Picture: ['src', tldrawDarkImport],
+	 *   },
+	 * }
+	 * ```
 	 * @default true
 	 */
-	autoImport?: AutoImportConfig | boolean
+	autoImport?: AutoImportPluginConfig | boolean
 	/**
 	 * Enable tldraw `.tldr` file support via `@kitschpatrol/unplugin-tldraw`.
 	 * When enabled, `.tldr` file imports are converted to SVG/PNG images
@@ -36,6 +49,34 @@ export type MediaKitConfig = {
 	 * @default false
 	 */
 	tldraw?: boolean | TldrawConfig
+}
+
+const DEFAULT_AUTO_IMPORT_ENTRIES: AutoImportConfig = 'src'
+
+const DEFAULT_COMPONENT_CONFIGS: Record<string, AutoImportConfig> = {
+	Image: DEFAULT_AUTO_IMPORT_ENTRIES,
+	Picture: DEFAULT_AUTO_IMPORT_ENTRIES,
+}
+
+function resolveAutoImportEntry(entry: AutoImportEntry): {
+	fromProp: string
+	toProp: string
+	transform?: (path: string) => string | undefined
+} {
+	if (typeof entry === 'string') {
+		return { fromProp: entry, toProp: entry }
+	}
+
+	return {
+		fromProp: entry.from,
+		toProp: entry.to,
+		...(entry.transform ? { transform: entry.transform } : {}),
+	}
+}
+
+function resolveAutoImportEntries(config: AutoImportConfig) {
+	const entries = Array.isArray(config) ? config : [config]
+	return entries.map((entry) => resolveAutoImportEntry(entry))
 }
 
 /**
@@ -57,10 +98,24 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const autoImport = config?.autoImport ?? true
 	const autoImportEnabled =
 		autoImport !== false && (autoImport === true || autoImport.enabled !== false)
-	const componentNames =
+
+	// Resolve component configs to the internal format
+	const rawComponentConfigs =
 		typeof autoImport === 'object'
-			? (autoImport.components ?? ['Image', 'Picture'])
-			: ['Image', 'Picture']
+			? // eslint-disable-next-line ts/no-unnecessary-condition
+				(autoImport.components ?? DEFAULT_COMPONENT_CONFIGS)
+			: DEFAULT_COMPONENT_CONFIGS
+	const resolvedComponentConfigs: Record<
+		string,
+		Array<{
+			fromProp: string
+			toProp: string
+			transform?: (path: string) => string | undefined
+		}>
+	> = {}
+	for (const [name, entries] of Object.entries(rawComponentConfigs)) {
+		resolvedComponentConfigs[name] = resolveAutoImportEntries(entries)
+	}
 
 	const tldraw = config?.tldraw ?? false
 	const tldrawEnabled = tldraw !== false && (tldraw === true || tldraw.enabled !== false)
@@ -73,7 +128,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					const { vitePluginMediaKitAutoImport } = await import('./auto-import.js')
 					updateConfig({
 						vite: {
-							plugins: [vitePluginMediaKitAutoImport(componentNames)],
+							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs)],
 						},
 					})
 				}

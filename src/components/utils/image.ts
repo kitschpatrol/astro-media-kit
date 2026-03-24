@@ -105,8 +105,7 @@ export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- validated by isImageMetadataObject
 	if ('meta' in src) return (src as unknown as { meta: ImageMetadata }).meta
 	// Fallback: extract known properties into a plain object
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- we've validated src has ImageMetadata shape
-	const { format, height, src: imgSrc, width } = src as ImageMetadata
+	const { format, height, src: imgSrc, width } = src
 	return { format, height, src: imgSrc, width }
 }
 

@@ -12,7 +12,12 @@ import type { DarkLightImageMetadata } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
 import { needsBackgroundDarkVariant, opaqueFormats } from '../utilities/dark-variant'
 import Caption from './Caption.astro'
-import { isDarkLightImageMetadata, isImageMetadataObject, resolveImageSource, unwrapImageMetadata } from './utils/image'
+import {
+	isDarkLightImageMetadata,
+	isImageMetadataObject,
+	resolveImageSource,
+	unwrapImageMetadata,
+} from './utils/image'
 import Zoomer from './Zoomer.astro'
 
 type GetImageResult = Awaited<ReturnType<typeof getImage>>

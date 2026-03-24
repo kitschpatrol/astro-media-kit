@@ -52,6 +52,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@astrojs/compiler": "3.0.1",
 		"@kitschpatrol/unplugin-aphex": "link:../unplugin-aphex",
 		"@kitschpatrol/unplugin-tldraw": "link:../unplugin-tldraw",
 		"@mux/mux-node": "^12.8.1",

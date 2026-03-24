@@ -10,7 +10,12 @@ export default defineConfig({
 	integrations: [
 		mediaKit({
 			aphex: true,
-			autoImport: true,
+			autoImport: {
+				components: {
+					Image: 'src',
+					Picture: ['src', tldrawDarkImport],
+				},
+			},
 			tldraw: true,
 		}),
 		mdxKit({

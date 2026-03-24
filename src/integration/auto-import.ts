@@ -1,27 +1,80 @@
-/* eslint-disable complexity */
-
+import type { AttributeNode, ComponentNode, FrontmatterNode, Node } from '@astrojs/compiler/types'
+import { parse } from '@astrojs/compiler'
+import { is, serialize } from '@astrojs/compiler/utils'
 import { readFile } from 'node:fs/promises'
 
-const FRONTMATTER_REGEX = /^---\r?\n[\s\S]*?\n?---/
-
-// Use magic-string instead?
+/**
+ * A single auto-import entry describing how a prop value should be
+ * imported as an ESM module.
+ *
+ * - `string` — The prop name to import (e.g. `'src'`). Replaces the string value in-place.
+ * - `{ from, to }` — Read from `from` prop, import it, set on `to` prop.
+ * - `{ from, to, transform }` — Like above, but transform the path first.
+ *   Return `undefined` from `transform` to skip the derived import.
+ */
+export type AutoImportEntry =
+	| string
+	| {
+			from: string
+			to: string
+			/** Transform the import path before generating the import. Return `undefined` to skip. */
+			transform?: (path: string) => string | undefined
+	  }
 
 /**
- * Auto-import configuration for the media-kit integration.
+ * Auto-import configuration: a single entry or array of entries.
  */
-export type AutoImportConfig = {
+export type AutoImportConfig = AutoImportEntry | AutoImportEntry[]
+
+/**
+ * Resolved auto-import entry with normalized prop names.
+ */
+type ResolvedEntry = {
+	fromProp: string
+	toProp: string
+	transform?: (path: string) => string | undefined
+}
+
+/**
+ * Configuration for the auto-import Vite plugin.
+ */
+export type AutoImportPluginConfig = {
 	/**
-	 * Component names whose `src` and `srcDark` string props should be
-	 * auto-imported. Defaults to `['Image', 'Picture']`.
+	 * Map of component names to their auto-import entries.
+	 * @example
+	 * ```ts
+	 * { Picture: ['src', tldrawDarkImport], Image: ['src'] }
+	 * ```
 	 */
-	components?: string[]
+	components: Record<string, AutoImportConfig>
 	/**
 	 * Enable auto-importing of image assets in `.astro` files.
-	 * When enabled, static string `src` and `srcDark` props are
-	 * automatically rewritten to imported variables.
 	 * @default true
 	 */
 	enabled?: boolean
+}
+
+/**
+ * Auto-import entry that generates a dark variant for `.tldr` files
+ * via `@kitschpatrol/unplugin-tldraw`.
+ * @example
+ * ```ts
+ * mediaKit({
+ *   autoImport: {
+ *     components: {
+ *       Picture: ['src', tldrawDarkImport],
+ *     },
+ *   },
+ * })
+ * ```
+ */
+export const tldrawDarkImport: AutoImportEntry = {
+	from: 'src',
+	to: 'srcDark',
+	transform(path: string) {
+		if (!/\.tldr(?:\?|$)/.test(path)) return
+		return `${path}${path.includes('?') ? '&' : '?'}dark=true&tldr`
+	},
 }
 
 type ImportEntry = {
@@ -29,151 +82,169 @@ type ImportEntry = {
 	path: string
 }
 
+function isImportablePath(path: string): boolean {
+	return !path.startsWith('http://') && !path.startsWith('https://') && !path.startsWith('data:')
+}
+
+function makeExpressionAttribute(name: string, value: string): AttributeNode {
+	return {
+		kind: 'expression',
+		name,
+		raw: '',
+		type: 'attribute',
+		value,
+	}
+}
+
+function findQuotedAttribute(attributes: AttributeNode[], name: string): AttributeNode | undefined {
+	return attributes.find((a) => a.name === name && a.kind === 'quoted')
+}
+
+function walkNodes(node: Node, visitor: (node: Node) => void): void {
+	visitor(node)
+	if ('children' in node) {
+		for (const child of node.children) {
+			walkNodes(child, visitor)
+		}
+	}
+}
+
 /**
- * Transforms `.astro` source to auto-import image assets for media-kit components.
- * Scans for `<Image src="path" />` and `<Picture srcDark="path" />`
- * patterns, injects corresponding import statements into the frontmatter,
- * and rewrites the string attributes to use imported variables.
- * @returns The transformed source, or `undefined` if no changes were needed.
+ * Collect imports from a single component node, mutating its attributes in place.
+ * Returns true if any attributes were modified.
  */
-export function transformAstroSource(source: string, componentNames: string[]): string | undefined {
-	const frontmatterMatch = FRONTMATTER_REGEX.exec(source)
-	if (!frontmatterMatch) return undefined
+function processComponent(
+	node: ComponentNode,
+	entries: ResolvedEntry[],
+	imports: Map<string, ImportEntry>,
+): boolean {
+	const existingProps = new Set(node.attributes.map((attribute) => attribute.name))
 
-	const frontmatterEnd = frontmatterMatch.index + frontmatterMatch[0].length
-	const templateSection = source.slice(frontmatterEnd)
+	const primaryEntries = entries.filter((entry) => !entry.transform)
+	const derivedEntries = entries.filter((entry) => entry.transform)
 
-	const imports = new Map<string, ImportEntry>()
-	const replacements: Array<{ end: number; newValue: string; start: number }> = []
+	if (primaryEntries.length === 0) return false
 
-	const componentNamesPattern = componentNames.join('|')
+	// Use the first primary entry's value as the anchor path for derived entries
+	const anchorEntry = primaryEntries[0]!
+	const anchorAttribute = findQuotedAttribute(node.attributes, anchorEntry.fromProp)
+	if (!anchorAttribute || !isImportablePath(anchorAttribute.value)) return false
 
-	// Match opening tags for target components (handles multiline and self-closing)
-	const componentTagRegex = new RegExp(
-		String.raw`<(?:${componentNamesPattern})\b([\s\S]*?)(/?>)`,
-		'g',
-	)
+	const anchorPath = anchorAttribute.value
+	let modified = false
 
-	let tagMatch: RegExpExecArray | undefined
-	while ((tagMatch = componentTagRegex.exec(templateSection) ?? undefined) !== undefined) {
-		const tagContent = tagMatch[1]
-		if (!tagContent) continue
+	// Process primary entries — replace quoted string attrs with expression imports
+	for (const entry of primaryEntries) {
+		const attribute = findQuotedAttribute(node.attributes, entry.fromProp)
+		if (!attribute || !isImportablePath(attribute.value)) continue
 
-		const fullTag = tagMatch[0]
-		const isPicture = /^<Picture\b/i.test(fullTag)
+		const importEntry = getOrCreateImport(imports, attribute.value)
 
-		// Position of the tag's attribute content within the full source
-		const tagContentStart = frontmatterEnd + tagMatch.index + tagMatch[0].indexOf(tagContent)
-
-		// Track .tldr src for auto dark mode on <Picture>
-		let tldrSrcPath: string | undefined
-		// Detect srcDark in any form: string value, expression, or bare attribute
-		const hasSrcDark = /\bsrcDark[\s=]/.test(tagContent)
-
-		// Find src="..." and srcDark="..." within this tag
-		const attributeRegex = /\b(src|srcDark)=(?:"([^"]+)"|'([^']+)')/g
-		let attributeMatch: RegExpExecArray | undefined
-		while ((attributeMatch = attributeRegex.exec(tagContent) ?? undefined) !== undefined) {
-			const attributeName = attributeMatch[1]!
-			const importPath = attributeMatch[2] ?? attributeMatch[3]
-			if (!importPath) continue
-
-			if (
-				importPath.startsWith('http://') ||
-				importPath.startsWith('https://') ||
-				importPath.startsWith('data:')
-			) {
-				continue
-			}
-
-			// Track .tldr src paths for auto dark mode generation
-			const pathWithoutQuery = importPath.split('?')[0]!
-			if (attributeName === 'src' && pathWithoutQuery.endsWith('.tldr')) {
-				tldrSrcPath = importPath
-			}
-
-			let entry = imports.get(importPath)
-			if (!entry) {
-				entry = {
-					name: `__ami_${imports.size}`,
-					path: importPath,
-				}
-				imports.set(importPath, entry)
-			}
-
-			const attributeValueStart = tagContentStart + attributeMatch.index
-			const attributeValueEnd = attributeValueStart + attributeMatch[0].length
-
-			replacements.push({
-				end: attributeValueEnd,
-				newValue: `${attributeName}={${entry.name}}`,
-				start: attributeValueStart,
-			})
+		if (entry.fromProp === entry.toProp) {
+			// In-place: src="./foo.png" → src={__ami_0}
+			attribute.kind = 'expression'
+			attribute.value = importEntry.name
+		} else {
+			// Remap: keep original string attr, add new expression attr
+			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
 		}
 
-		// Auto dark mode: for <Picture> with a .tldr src and no explicit srcDark,
-		// generate a dark variant import and inject the srcDark attribute.
-		if (isPicture && tldrSrcPath && !hasSrcDark) {
-			const darkImportPath = `${tldrSrcPath}${tldrSrcPath.includes('?') ? '&' : '?'}dark=true&tldr`
+		modified = true
+	}
 
-			let darkEntry = imports.get(darkImportPath)
-			if (!darkEntry) {
-				darkEntry = {
-					name: `__ami_${imports.size}`,
-					path: darkImportPath,
-				}
-				imports.set(darkImportPath, darkEntry)
+	// Process derived entries — use anchor path + transform to generate new props
+	for (const entry of derivedEntries) {
+		if (existingProps.has(entry.toProp)) {
+			// Prop already exists — import its value if it's a quoted string
+			const attribute = findQuotedAttribute(node.attributes, entry.toProp)
+			if (attribute && isImportablePath(attribute.value)) {
+				const importEntry = getOrCreateImport(imports, attribute.value)
+				attribute.kind = 'expression'
+				attribute.value = importEntry.name
+				modified = true
 			}
+		} else {
+			// Derive from anchor path via transform
+			const transformedPath = entry.transform!(anchorPath)
+			if (transformedPath === undefined) continue
 
-			// Insert srcDark attribute just before the tag's closing /> or >
-			const closingMatch = tagMatch[2]!
-			const closingStart = frontmatterEnd + tagMatch.index + fullTag.lastIndexOf(closingMatch)
-			replacements.push({
-				end: closingStart,
-				newValue: `srcDark={${darkEntry.name}} `,
-				start: closingStart,
-			})
+			const importEntry = getOrCreateImport(imports, transformedPath)
+			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
+			modified = true
 		}
 	}
 
-	if (replacements.length === 0) return undefined
+	return modified
+}
 
+function getOrCreateImport(imports: Map<string, ImportEntry>, importPath: string): ImportEntry {
+	let entry = imports.get(importPath)
+	if (!entry) {
+		entry = { name: `__ami_${imports.size}`, path: importPath }
+		imports.set(importPath, entry)
+	}
+
+	return entry
+}
+
+/**
+ * Transforms `.astro` source to auto-import assets for configured components.
+ *
+ * Parses the AST with `@astrojs/compiler`, modifies component attributes
+ * in-place (replacing quoted string props with expression references to
+ * generated imports), then serializes the modified AST back to source.
+ * @returns The transformed source, or `undefined` if no changes were needed.
+ */
+export async function transformAstroSource(
+	source: string,
+	componentConfigs: Record<string, ResolvedEntry[]>,
+): Promise<string | undefined> {
+	const { ast } = await parse(source)
+
+	let frontmatterNode: FrontmatterNode | undefined
+	const imports = new Map<string, ImportEntry>()
+	let modified = false
+
+	walkNodes(ast, (node) => {
+		if (is.frontmatter(node)) {
+			frontmatterNode = node
+		}
+
+		if (is.component(node)) {
+			const entries = componentConfigs[node.name]
+			if (entries && processComponent(node, entries, imports)) {
+				modified = true
+			}
+		}
+	})
+
+	// eslint-disable-next-line ts/no-unnecessary-condition
+	if (!frontmatterNode || !modified) return undefined
+
+	// Append import statements to frontmatter
 	const importStatements = [...imports.values()]
 		.map((entry) => `import ${entry.name} from ${JSON.stringify(entry.path)}`)
 		.join('\n')
 
-	// Apply replacements from end to start to preserve positions
-	let result = source
-	for (const replacement of replacements.toReversed()) {
-		result =
-			result.slice(0, replacement.start) + replacement.newValue + result.slice(replacement.end)
-	}
+	frontmatterNode.value += `${importStatements}\n`
 
-	// Inject imports before the closing ---
-	const insertPoint = frontmatterEnd - 3
-	result = result.slice(0, insertPoint) + importStatements + '\n' + result.slice(insertPoint)
-
-	return result
+	return serialize(ast)
 }
 
 /**
  * Vite plugin that applies the auto-import transform to `.astro` files.
  *
  * Uses the `load` hook to intercept raw `.astro` source before Astro's
- * own compiler transforms it to JavaScript. This is necessary because
- * Astro's vite-plugin-astro also uses `enforce: 'pre'` and runs first
- * in the transform pipeline, so by the time `transform` is called the
- * frontmatter has already been compiled away.
+ * own compiler transforms it to JavaScript.
  */
-export function vitePluginMediaKitAutoImport(componentNames: string[]) {
+export function vitePluginMediaKitAutoImport(componentConfigs: Record<string, ResolvedEntry[]>) {
 	return {
 		enforce: 'pre' as const,
 		async load(id: string) {
 			if (!id.endsWith('.astro')) return
 			const source = await readFile(id, 'utf8')
-			const result = transformAstroSource(source, componentNames)
+			const result = await transformAstroSource(source, componentConfigs)
 			if (result === undefined) return
-			// Return the transformed raw .astro source — Astro's compiler will process it next
 			return { code: result, map: undefined }
 		},
 		name: 'astro-media-kit:auto-import',
