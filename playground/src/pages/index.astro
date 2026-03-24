@@ -5,6 +5,8 @@ import Picture from 'astro-media-kit/components/Picture.astro'
 
 <Image alt="Dark test" creator="Me" src="../assets/test-sketch.tldr?dark=true&tldr" />
 
+<Picture alt="Light/dark test" src="../assets/test-sketch.tldr" />
+
 <Picture
 	alt="Light/dark test"
 	src="../assets/test-sketch.tldr"
@@ -63,5 +65,14 @@ import Picture from 'astro-media-kit/components/Picture.astro'
 		formats={['jpg']}
 		src="../assets/tiger.svg"
 		srcDark="../assets/tiger.svg"
+	/>
+
+	<Picture
+		alt="Blep"
+		background="yellow"
+		backgroundDark="purple"
+		creator="Me"
+		formats={['jpg']}
+		src="../assets/tiger.svg"
 	/>
 </div>

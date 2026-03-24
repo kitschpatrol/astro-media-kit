@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 
 const FRONTMATTER_REGEX = /^---\r?\n[\s\S]*?\n?---/
 
+// Use magic-string instead?
+
 /**
  * Auto-import configuration for the media-kit integration.
  */
@@ -55,8 +57,15 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 		const tagContent = tagMatch[1]
 		if (!tagContent) continue
 
+		const fullTag = tagMatch[0]
+		const isPicture = /^<Picture\b/i.test(fullTag)
+
 		// Position of the tag's attribute content within the full source
 		const tagContentStart = frontmatterEnd + tagMatch.index + tagMatch[0].indexOf(tagContent)
+
+		// Track .tldr src for auto dark mode on <Picture>
+		let tldrSrcPath: string | undefined
+		let hasSrcDark = false
 
 		// Find src="..." and srcDark="..." within this tag
 		const attributeRegex = /\b(src|srcDark)=(?:"([^"]+)"|'([^']+)')/g
@@ -66,6 +75,8 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 			const importPath = attributeMatch[2] ?? attributeMatch[3]
 			if (!importPath) continue
 
+			if (attributeName === 'srcDark') hasSrcDark = true
+
 			if (
 				importPath.startsWith('http://') ||
 				importPath.startsWith('https://') ||
@@ -74,12 +85,17 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 				continue
 			}
 
+			// Track .tldr src paths for auto dark mode generation
+			const pathWithoutQuery = importPath.split('?')[0]!
+			if (attributeName === 'src' && pathWithoutQuery.endsWith('.tldr')) {
+				tldrSrcPath = importPath
+			}
+
 			// SVGs need the astroContentImageFlag query so Astro emits ImageMetadata
 			// instead of an inline SVG component (which would break our components).
 			// Note: .tldr files do NOT get this flag here — they're resolved by
 			// unplugin-tldraw's resolveId to cached SVG files, which are outside
 			// src/ and don't trigger Astro's SVG-as-component behavior.
-			const pathWithoutQuery = importPath.split('?')[0]!
 			const resolvedPath = pathWithoutQuery.endsWith('.svg')
 				? `${importPath}${importPath.includes('?') ? '&' : '?'}astroContentImageFlag`
 				: importPath
@@ -100,6 +116,30 @@ export function transformAstroSource(source: string, componentNames: string[]): 
 				end: attributeValueEnd,
 				newValue: `${attributeName}={${entry.name}}`,
 				start: attributeValueStart,
+			})
+		}
+
+		// Auto dark mode: for <Picture> with a .tldr src and no explicit srcDark,
+		// generate a dark variant import and inject the srcDark attribute.
+		if (isPicture && tldrSrcPath && !hasSrcDark) {
+			const darkImportPath = `${tldrSrcPath}${tldrSrcPath.includes('?') ? '&' : '?'}dark=true&tldr`
+
+			let darkEntry = imports.get(darkImportPath)
+			if (!darkEntry) {
+				darkEntry = {
+					name: `__ami_${imports.size}`,
+					path: darkImportPath,
+				}
+				imports.set(darkImportPath, darkEntry)
+			}
+
+			// Insert srcDark attribute just before the tag's closing /> or >
+			const closingMatch = tagMatch[2]!
+			const closingStart = frontmatterEnd + tagMatch.index + fullTag.lastIndexOf(closingMatch)
+			replacements.push({
+				end: closingStart,
+				newValue: `srcDark={${darkEntry.name}} `,
+				start: closingStart,
 			})
 		}
 	}

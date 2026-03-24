@@ -153,4 +153,63 @@ const title = 'Hello'
 		expect(result).toContain('src={__ami_0}')
 		expect(result).toContain('src={__ami_1}')
 	})
+
+	it('auto-generates srcDark for .tldr src on Picture', () => {
+		const source = `---
+---
+<Picture src="../assets/sketch.tldr" alt="Sketch" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
+		expect(result).toContain('import __ami_1 from "../assets/sketch.tldr?dark=true&tldr"')
+		expect(result).toContain('src={__ami_0}')
+		expect(result).toContain('srcDark={__ami_1}')
+	})
+
+	it('does not auto-generate srcDark for .tldr on Image', () => {
+		const source = `---
+---
+<Image src="../assets/sketch.tldr" alt="Sketch" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
+		expect(result).not.toContain('dark=true')
+		expect(result).not.toContain('srcDark')
+	})
+
+	it('does not auto-generate srcDark for .tldr when srcDark is already set', () => {
+		const source = `---
+---
+<Picture src="../assets/sketch.tldr" srcDark="../assets/custom-dark.tldr" alt="Sketch" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
+		expect(result).toContain('import __ami_1 from "../assets/custom-dark.tldr"')
+		expect(result).toContain('srcDark={__ami_1}')
+		// Should not have the auto-generated dark import
+		expect(result).not.toContain('dark=true&tldr')
+	})
+
+	it('does not auto-generate srcDark for non-.tldr files on Picture', () => {
+		const source = `---
+---
+<Picture src="../assets/photo.png" alt="Photo" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/photo.png"')
+		expect(result).not.toContain('srcDark')
+	})
+
+	it('auto-generates srcDark for .tldr with existing query params', () => {
+		const source = `---
+---
+<Picture src="../assets/sketch.tldr?frame=my-frame&tldr" alt="Sketch" />
+`
+		const result = transformAstroSource(source, defaultComponents)
+		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr?frame=my-frame&tldr"')
+		expect(result).toContain(
+			'import __ami_1 from "../assets/sketch.tldr?frame=my-frame&tldr&dark=true&tldr"',
+		)
+		expect(result).toContain('srcDark={__ami_1}')
+	})
 })
