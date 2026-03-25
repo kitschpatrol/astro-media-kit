@@ -177,6 +177,7 @@ export async function bunnyGetVideoInfo(
 		guid,
 		hasMP4Fallback: hasMp4Fallback,
 		height,
+		length: duration,
 		status,
 		thumbnailFileName,
 		title,
@@ -229,10 +230,12 @@ export async function bunnyGetVideoInfo(
 
 	return {
 		captions: captionsWithUrls,
+		duration,
 		height,
 		hlsUrl: `https://${config.hostname}/${guid}/playlist.m3u8`,
 		mp4Url: `https://${config.hostname}/${guid}/play_${fallbackResolution}p.mp4`,
 		posterUrl: `https://${config.hostname}/${guid}/${thumbnailFileName}`,
+		title,
 		width,
 	}
 }

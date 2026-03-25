@@ -146,11 +146,13 @@ export async function cloudflareGetVideoInfo(
 	// https://customer-rtmeeqsartjwt6p8.cloudflarestream.com/81841bee83618bdde9278ab586e3568b/text/en.vtt
 
 	return {
-		captions: [], // TODO unsupported
+		captions: [], // TODO unsupported — signed URLs required for VTT access
+		duration: videoInfo.duration,
 		height: videoInfo.input.height,
 		hlsUrl,
 		mp4Url,
 		posterUrl,
+		title: videoInfo.meta.name ?? videoInfo.publicDetails.title,
 		width: videoInfo.input.width,
 	}
 }

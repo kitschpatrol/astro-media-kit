@@ -8,73 +8,104 @@ import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
 type ControlStyles = 'full' | 'minimal' | 'none'
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
 
-export type Props = Omit<CaptionProps, 'src'> & {
+type SharedProps = Omit<CaptionProps, 'src'> & {
 	autoPlay?: boolean
 	controlStyle?: ControlStyles
 	label?: string
 	loop?: boolean
 	muted?: boolean
-	service?: Service
-} & ({ mediaId: string; mediaTitle?: never } | { mediaId?: never; mediaTitle: string })
+	preload?: 'auto' | 'metadata' | 'none'
+}
+
+export type Props = SharedProps &
+	(
+		| { mediaId: string; mediaTitle?: never; poster?: never; service?: Service; src?: never }
+		| { mediaId?: never; mediaTitle: string; poster?: never; service?: Service; src?: never }
+		| { mediaId?: never; mediaTitle?: never; poster?: string; service?: never; src: string }
+	)
 
 const {
 	autoPlay = false,
 	controlStyle = 'full',
 	creator,
-	mediaTitle,
-	label = mediaTitle ?? 'Video',
+	label,
 	loop = false,
 	mediaId,
+	mediaTitle,
 	muted = true,
 	organization,
-	// Default service may be inferred from mediaId, but not from media title
-	// Fall back to Bunny since that's what we use for most things
-	service = mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny',
+	poster,
+	preload = 'metadata',
+	service,
 	showCredit = true,
+	src,
 	type,
 	typeFallback,
 } = Astro.props
 
-const config: ServiceConfig = {
-	bunny: {
-		apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
-		hostname: getSecret('BUNNY_HOSTNAME') ?? '',
-		libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
-	},
-	cloudflare: {
-		accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
-		apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
-	},
-	mux: {
-		accessToken: getSecret('MUX_TOKEN_ID') ?? '',
-		secret: getSecret('MUX_TOKEN_SECRET') ?? '',
-	},
+const isLocal = src !== undefined
+const resolvedService: Service | undefined = isLocal
+	? undefined
+	: (service ?? (mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny'))
+
+// Resolve video info from service or local source
+let videoInfo: undefined | VideoInfo
+
+if (isLocal) {
+	videoInfo = {
+		captions: [],
+		duration: -1,
+		height: 0,
+		hlsUrl: '',
+		mp4Url: '',
+		posterUrl: poster ?? '',
+		title: label,
+		width: 0,
+	}
+} else {
+	const config: ServiceConfig = {
+		bunny: {
+			apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
+			hostname: getSecret('BUNNY_HOSTNAME') ?? '',
+			libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
+		},
+		cloudflare: {
+			accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
+			apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
+		},
+		mux: {
+			accessToken: getSecret('MUX_TOKEN_ID') ?? '',
+			secret: getSecret('MUX_TOKEN_SECRET') ?? '',
+		},
+	}
+
+	try {
+		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService!, config)
+	} catch (error) {
+		const identifier = mediaId ?? mediaTitle
+		console.error(
+			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
 }
 
-let videoInfo: undefined | VideoInfo
-try {
-	videoInfo = await getVideoInfo(mediaId ?? mediaTitle, service, config)
-} catch {}
+const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
 
-// Const { captions, height, hlsUrl, mp4Url, posterUrl, width } = videoInfo
-// Const aspectRatio = width / height
+const hasCaptions = (videoInfo?.captions.length ?? 0) > 0
 
 const videoAttributes: VideoAttributes = {
-	'aria-label': label, // From props, for accessibility
-	autoplay: autoPlay || undefined, // From props
-	crossorigin: 'anonymous', // Required for captions, but breaks mp4 playback in cloudflare, weird
+	'aria-label': resolvedLabel,
+	autoplay: autoPlay || undefined,
+	crossorigin: resolvedService === 'cloudflare' && !hasCaptions ? undefined : 'anonymous',
 	disablepictureinpicture: 'true',
-	height: videoInfo?.height, // From video info
-	loop: loop || undefined, // From props
-	muted: muted || undefined, // From props
+	height: isLocal ? undefined : videoInfo?.height,
+	loop: loop || undefined,
+	muted: muted || undefined,
 	playsinline: 'true',
-	poster: videoInfo?.posterUrl, // From video info
-	preload: 'auto',
-	width: videoInfo?.width, // From video info
-}
-
-if (videoInfo === undefined) {
-	console.error(`Video component with mediaID "${mediaId}" failed to load.`)
+	poster: isLocal ? (poster ?? undefined) : videoInfo?.posterUrl,
+	preload,
+	width: isLocal ? undefined : videoInfo?.width,
 }
 
 const captionProps: CaptionProps = {
@@ -85,6 +116,13 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback: typeFallback ?? 'video',
 }
+
+const aspectRatio =
+	videoInfo?.width && videoInfo.height ? `${videoInfo.width} / ${videoInfo.height}` : undefined
+
+// HLS-video-element extends CustomVideoElement (native <video> wrapper),
+// handling HLS via hls.js, native HLS (Safari), and plain MP4/WebM sources.
+const videoSrc = isLocal ? src : videoInfo?.hlsUrl
 ---
 
 <style>
@@ -98,6 +136,7 @@ const captionProps: CaptionProps = {
 	/* See https://github.com/muxinc/media-chrome/issues/1254 */
 	media-controller {
 		--media-time-range-hover-bottom: 0;
+		width: 100%;
 	}
 
 	/* Don't hide the cursor when inactive, unless fullscreen. */
@@ -119,8 +158,9 @@ const captionProps: CaptionProps = {
 				class:list={[controlStyle, { autoplay: autoPlay }]}
 				inert={controlStyle === 'none' ? 'true' : undefined}
 				slot="media-component"
+				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
 			>
-				<hls-video {...videoAttributes} slot="media" src={videoInfo.hlsUrl}>
+				<hls-video {...videoAttributes} slot="media" src={videoSrc}>
 					{videoInfo.captions.map((caption) => (
 						<track kind="captions" {...caption} />
 					))}
@@ -132,7 +172,7 @@ const captionProps: CaptionProps = {
 						<media-volume-range />
 						<media-time-range />
 						<media-time-display />
-						{videoInfo.captions.length > 0 && <media-captions-button />}
+						{hasCaptions && <media-captions-button />}
 						<media-fullscreen-button />
 					</media-control-bar>
 				)}
@@ -144,14 +184,15 @@ const captionProps: CaptionProps = {
 				{controlStyle === 'minimal' && (
 					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
 				)}
-				<noscript>
-					{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions provided via hls-video above; noscript fallback is minimal */}
-					<video {...videoAttributes}>
-						<source src={videoInfo.hlsUrl} type="application/x-mpegURL" />
-						<source src={videoInfo.mp4Url} type="video/mp4" />
-						Your browser does not support HTML5 video.
-					</video>
-				</noscript>
+				{!isLocal && videoInfo.mp4Url && (
+					<noscript>
+						{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+						<video {...videoAttributes} crossorigin={undefined}>
+							<source src={videoInfo.mp4Url} type="video/mp4" />
+							Your browser does not support HTML5 video.
+						</video>
+					</noscript>
+				)}
 			</media-controller>
 			<slot />
 		</Caption>

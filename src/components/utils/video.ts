@@ -12,10 +12,13 @@ export type VideoInfo = {
 		src: string
 		srclang: string
 	}>
+	/** Duration in seconds, -1 if unknown */
+	duration: number
 	height: number
 	hlsUrl: string
 	mp4Url: string
 	posterUrl: string
+	title: string | undefined
 	width: number
 }
 
@@ -28,6 +31,35 @@ export type ServiceConfig = {
 export type Service = keyof ServiceConfig
 
 /**
+ * Validates that required credentials are present for the given service.
+ * Throws with actionable message naming missing env vars.
+ */
+export function validateServiceConfig(service: Service, config: ServiceConfig): void {
+	const checks: Record<Service, Array<{ envVar: string; value: string }>> = {
+		bunny: [
+			{ envVar: 'BUNNY_API_ACCESS_KEY', value: config.bunny.apiAccessKey },
+			{ envVar: 'BUNNY_HOSTNAME', value: config.bunny.hostname },
+			{ envVar: 'BUNNY_LIBRARY_ID', value: config.bunny.libraryId },
+		],
+		cloudflare: [
+			{ envVar: 'CLOUDFLARE_STREAM_ACCOUNT_ID', value: config.cloudflare.accountId },
+			{ envVar: 'CLOUDFLARE_STREAM_API_TOKEN', value: config.cloudflare.apiToken },
+		],
+		mux: [
+			{ envVar: 'MUX_TOKEN_ID', value: config.mux.accessToken },
+			{ envVar: 'MUX_TOKEN_SECRET', value: config.mux.secret },
+		],
+	}
+
+	const missing = checks[service].filter((c) => !c.value).map((c) => c.envVar)
+	if (missing.length > 0) {
+		throw new Error(
+			`Missing env vars for "${service}" video service: ${missing.join(', ')}. Set these as secrets via astro:env or as environment variables.`,
+		)
+	}
+}
+
+/**
  * Normalizes different services into params that matter for the media player
  */
 export async function getVideoInfo(
@@ -35,6 +67,8 @@ export async function getVideoInfo(
 	service: Service,
 	config: ServiceConfig,
 ): Promise<VideoInfo> {
+	validateServiceConfig(service, config)
+
 	switch (service) {
 		case 'bunny': {
 			const videoInfo = await bunnyGetVideoInfo(mediaIdOrTitle, config[service])

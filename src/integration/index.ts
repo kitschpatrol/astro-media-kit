@@ -1,5 +1,6 @@
 /* eslint-disable ts/naming-convention */
 import type { AstroIntegration } from 'astro'
+import type { Service } from '../components/utils/video.js'
 import type { AphexConfig } from './aphex.js'
 import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
 import type { TldrawConfig } from './tldraw.js'
@@ -49,6 +50,17 @@ export type MediaKitConfig = {
 	 * @default false
 	 */
 	tldraw?: boolean | TldrawConfig
+	/**
+	 * Configure video service env schema injection.
+	 * Adds `env.schema` entries for the specified service(s) so Astro
+	 * validates that required credentials are set at build time.
+	 * - `'bunny'` / `'cloudflare'` / `'mux'` — single service
+	 * - `Service[]` — multiple services
+	 * - `true` — all services
+	 * - `false` — no schema injection (default)
+	 * @default false
+	 */
+	video?: boolean | Service | Service[]
 }
 
 const DEFAULT_AUTO_IMPORT_ENTRIES: AutoImportConfig = 'src'
@@ -121,9 +133,51 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const tldrawEnabled = tldraw !== false && (tldraw === true || tldraw.enabled !== false)
 	const tldrawConfig: TldrawConfig = typeof tldraw === 'object' ? tldraw : {}
 
+	const video = config?.video ?? false
+	const videoServices: Service[] =
+		video === true
+			? ['bunny', 'cloudflare', 'mux']
+			: video === false
+				? []
+				: Array.isArray(video)
+					? video
+					: [video]
+
 	return {
 		hooks: {
 			async 'astro:config:setup'({ updateConfig }) {
+				if (videoServices.length > 0) {
+					const { envField } = await import('astro/config')
+					const envSchemaForService: Record<
+						Service,
+						Record<string, ReturnType<typeof envField.string>>
+					> = {
+						bunny: {
+							BUNNY_API_ACCESS_KEY: envField.string({ access: 'secret', context: 'server' }),
+							BUNNY_HOSTNAME: envField.string({ access: 'secret', context: 'server' }),
+							BUNNY_LIBRARY_ID: envField.string({ access: 'secret', context: 'server' }),
+						},
+						cloudflare: {
+							CLOUDFLARE_STREAM_ACCOUNT_ID: envField.string({
+								access: 'secret',
+								context: 'server',
+							}),
+							CLOUDFLARE_STREAM_API_TOKEN: envField.string({ access: 'secret', context: 'server' }),
+						},
+						mux: {
+							MUX_TOKEN_ID: envField.string({ access: 'secret', context: 'server' }),
+							MUX_TOKEN_SECRET: envField.string({ access: 'secret', context: 'server' }),
+						},
+					}
+
+					let schema: Record<string, ReturnType<typeof envField.string>> = {}
+					for (const s of videoServices) {
+						schema = { ...schema, ...envSchemaForService[s] }
+					}
+
+					updateConfig({ env: { schema } })
+				}
+
 				if (autoImportEnabled) {
 					const { vitePluginMediaKitAutoImport } = await import('./auto-import.js')
 					updateConfig({

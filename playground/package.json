@@ -15,6 +15,7 @@
 		"build": "astro build",
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
 		"dev": "poptab ; astro dev --open",
+		"init": "op inject -i .template.env -o .env",
 		"preview": "poptab ; astro preview --open"
 	},
 	"devDependencies": {
