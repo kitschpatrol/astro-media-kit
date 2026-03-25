@@ -92,19 +92,20 @@ if (isLocal) {
 
 const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
 
-const hasCaptions = (videoInfo?.captions.length ?? 0) > 0
+// Video.js v10 handles HLS/DASH natively via SPF engine
+const videoSrc = isLocal ? src : videoInfo?.hlsUrl
 
 const videoAttributes: VideoAttributes = {
 	'aria-label': resolvedLabel,
 	autoplay: autoPlay || undefined,
-	crossorigin: resolvedService === 'cloudflare' && !hasCaptions ? undefined : 'anonymous',
-	disablepictureinpicture: 'true',
+	crossorigin: 'anonymous',
 	height: isLocal ? undefined : videoInfo?.height,
 	loop: loop || undefined,
 	muted: muted || undefined,
 	playsinline: 'true',
 	poster: isLocal ? (poster ?? undefined) : videoInfo?.posterUrl,
 	preload,
+	src: videoSrc,
 	width: isLocal ? undefined : videoInfo?.width,
 }
 
@@ -120,80 +121,73 @@ const captionProps: CaptionProps = {
 const aspectRatio =
 	videoInfo?.width && videoInfo.height ? `${videoInfo.width} / ${videoInfo.height}` : undefined
 
-// HLS-video-element extends CustomVideoElement (native <video> wrapper),
-// handling HLS via hls.js, native HLS (Safari), and plain MP4/WebM sources.
-const videoSrc = isLocal ? src : videoInfo?.hlsUrl
+const skinStyle = aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined
 ---
 
 <style>
-	/* Never show the control bar when auto-playing, unless the video has played. */
-	media-controller.autoplay:not([mediahasplayed]) media-control-bar,
-	media-controller.autoplay:not([mediahasplayed]) media-play-button {
-		display: none;
-	}
-
-	/* Prevent focus from scrolling content inside the player... */
-	/* See https://github.com/muxinc/media-chrome/issues/1254 */
-	media-controller {
-		--media-time-range-hover-bottom: 0;
+	video-skin,
+	video-minimal-skin,
+	background-video-skin {
 		width: 100%;
-	}
-
-	/* Don't hide the cursor when inactive, unless fullscreen. */
-	media-controller[userinactive]:not([mediaisfullscreen]) * {
-		cursor: auto !important;
 	}
 </style>
 
 <script>
-	import 'hls-video-element'
-	import 'media-chrome'
+	// Video.js v10 custom element registrations — registers <video-player>,
+	// <video-skin>, <video-minimal-skin>, <background-video-player>, and
+	// <background-video-skin> with the browser
+	import '@videojs/html/video/player'
+	import '@videojs/html/video/skin'
+	import '@videojs/html/video/minimal-skin'
+	import '@videojs/html/background/player'
+	import '@videojs/html/background/skin'
 </script>
 
 {
 	videoInfo && (
 		<Caption {...captionProps}>
-			<media-controller
-				autohide="1"
-				class:list={[controlStyle, { autoplay: autoPlay }]}
-				inert={controlStyle === 'none' ? 'true' : undefined}
-				slot="media-component"
-				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-			>
-				<hls-video {...videoAttributes} slot="media" src={videoSrc}>
-					{videoInfo.captions.map((caption) => (
-						<track kind="captions" {...caption} />
-					))}
-				</hls-video>
-				{controlStyle === 'full' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{hasCaptions && <media-captions-button />}
-						<media-fullscreen-button />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-control-bar style="justify-content: flex-end">
-						<media-fullscreen-button />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				)}
-				{!isLocal && videoInfo.mp4Url && (
-					<noscript>
-						{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
-						<video {...videoAttributes} crossorigin={undefined}>
-							<source src={videoInfo.mp4Url} type="video/mp4" />
-							Your browser does not support HTML5 video.
+			{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
+			{controlStyle === 'none' ? (
+				<background-video-player slot="media-component">
+					<background-video-skin style={skinStyle}>
+						<video {...videoAttributes}>
+							{videoInfo.captions.map((caption) => (
+								<track kind="captions" {...caption} />
+							))}
 						</video>
-					</noscript>
-				)}
-			</media-controller>
+					</background-video-skin>
+				</background-video-player>
+			) : controlStyle === 'minimal' ? (
+				<video-player slot="media-component">
+					<video-minimal-skin style={skinStyle}>
+						<video {...videoAttributes}>
+							{videoInfo.captions.map((caption) => (
+								<track kind="captions" {...caption} />
+							))}
+						</video>
+					</video-minimal-skin>
+				</video-player>
+			) : (
+				<video-player slot="media-component">
+					<video-skin style={skinStyle}>
+						<video {...videoAttributes}>
+							{videoInfo.captions.map((caption) => (
+								<track kind="captions" {...caption} />
+							))}
+						</video>
+					</video-skin>
+				</video-player>
+			)}
+			{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+			{!isLocal && videoInfo.mp4Url && (
+				<noscript>
+					{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+					<video {...videoAttributes} src={videoInfo.mp4Url}>
+						<source src={videoInfo.mp4Url} type="video/mp4" />
+						Your browser does not support HTML5 video.
+					</video>
+				</noscript>
+			)}
 			<slot />
 		</Caption>
 	)
