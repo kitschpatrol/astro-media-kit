@@ -2,5 +2,5 @@ import { cspellConfig } from '@kitschpatrol/cspell-config'
 
 export default cspellConfig({
 	ignorePaths: ['./references/**/*'],
-	words: ['blep', 'Diátaxis', 'bgdark', 'pswp'],
+	words: ['blep', 'Diátaxis', 'bgdark', 'pswp', 'Ewma', 'userinactive', 'mediaisfullscreen'],
 })

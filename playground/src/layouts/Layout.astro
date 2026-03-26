@@ -1,7 +1,7 @@
 ---
 import { pages } from '../pages'
 
-interface Props {
+type Props = {
 	title: string
 }
 
@@ -143,10 +143,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 		<nav>
 			{
 				pages.map((page) => (
-					<a
-						aria-current={currentPath === page.href ? 'page' : undefined}
-						href={page.href}
-					>
+					<a aria-current={currentPath === page.href ? 'page' : undefined} href={page.href}>
 						{page.title}
 					</a>
 				))

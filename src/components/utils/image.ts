@@ -1,7 +1,7 @@
 import type { ImageMetadata } from 'astro'
 import { exiftool } from 'exiftool-vendored'
 import { parseHTML } from 'linkedom'
-import type { DarkLightImageMetadata } from '../../types'
+import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import { probeImageMetadata } from '../../utilities/image-probe'
 import { getAbsoluteFilePath } from '../../utilities/path'
 
@@ -18,8 +18,8 @@ import { getAbsoluteFilePath } from '../../utilities/path'
  * @returns Promise resolving to ImageMetadata or a { dark, light } pair
  */
 export async function resolveImageSource(
-	src: ImageMetadata | string,
-	srcDark?: ImageMetadata | string,
+	src: ImageMetadata | ImageMetadataLike | string,
+	srcDark?: ImageMetadata | ImageMetadataLike | string,
 ): Promise<DarkLightImageMetadata | ImageMetadata> {
 	const lightMetadata = isImageMetadataObject(src)
 		? unwrapImageMetadata(src)

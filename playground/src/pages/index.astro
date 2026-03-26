@@ -4,8 +4,14 @@ import { pages } from '../pages'
 ---
 
 <Layout title="astro-media-kit playground">
-		<h1>astro-media-kit playground</h1>
-		<ul>
-			{pages.map((page) => <li><a href={page.href}>{page.title}</a></li>)}
-		</ul>
+	<h1>astro-media-kit playground</h1>
+	<ul>
+		{
+			pages.map((page) => (
+				<li>
+					<a href={page.href}>{page.title}</a>
+				</li>
+			))
+		}
+	</ul>
 </Layout>

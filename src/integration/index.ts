@@ -1,4 +1,6 @@
+/* eslint-disable complexity */
 /* eslint-disable ts/naming-convention */
+
 import type { AstroIntegration } from 'astro'
 import type { Service } from '../components/utils/video.js'
 import type { AphexConfig } from './aphex.js'

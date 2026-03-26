@@ -9,14 +9,27 @@ const { title } = pages.find((p) => p.href === '/video-hls-component')!
 <Layout title={title}>
 	<h1>{title}</h1>
 	<h2>None</h2>
+
 	<VideoHls
 		autoPlay={true}
+		capQualityToSize={false}
 		controlStyle="none"
+		initialBandwidth={50_000_000}
 		loop={true}
 		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
 	/>
 	<h2>Minimal</h2>
-	<VideoHls controlStyle="minimal" mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9" />
+	<VideoHls
+		capQualityToSize={false}
+		controlStyle="minimal"
+		initialBandwidth={50_000_000}
+		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+	/>
 	<h2>Full</h2>
-	<VideoHls controlStyle="full" mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9" />
+	<VideoHls
+		capQualityToSize={false}
+		controlStyle="full"
+		initialBandwidth={50_000_000}
+		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+	/>
 </Layout>
