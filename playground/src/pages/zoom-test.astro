@@ -1,0 +1,49 @@
+---
+import Image from 'astro-media-kit/components/Image.astro'
+import Picture from 'astro-media-kit/components/Picture.astro'
+import VideoHls from 'astro-media-kit/components/VideoHls.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/zoom-test')!
+const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
+---
+
+<Layout title={title}>
+	<h1>{title}</h1>
+	<p class="note">
+		All items below share <code>zoom="album"</code>. Click any expand button or image to open the
+		gallery, then swipe between images and videos.
+	</p>
+
+	<div class="grid">
+		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="album" />
+		<VideoHls
+			controlStyle="full"
+			initialBandwidth={50_000_000}
+			mediaId={bunnyId}
+			zoom="album"
+		/>
+		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="album" />
+		<VideoHls
+			controlStyle="minimal"
+			initialBandwidth={50_000_000}
+			mediaId={bunnyId}
+			zoom="album"
+		/>
+		<Picture
+			alt="Dark mode JPEG"
+			src="../assets/test.jpeg"
+			srcDark="../assets/test-dark.jpeg"
+			zoom="album"
+		/>
+	</div>
+</Layout>
+
+<style>
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 1rem;
+	}
+</style>

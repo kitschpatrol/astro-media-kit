@@ -2,6 +2,7 @@ export const pages = [
 	{ href: '/image-component', title: 'Image' },
 	{ href: '/picture-component', title: 'Picture' },
 	{ href: '/zoom', title: 'Zoom' },
+	{ href: '/zoom-test', title: 'Zoom Mixed' },
 	{ href: '/video-hls-component', title: 'Video HLS' },
 	{ href: '/video-js-component', title: 'Video JS' },
 	{ href: '/markdown', title: 'MDX' },

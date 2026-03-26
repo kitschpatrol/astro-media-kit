@@ -1,4 +1,5 @@
 ---
+import Image from 'astro-media-kit/components/Image.astro'
 import VideoHls from 'astro-media-kit/components/VideoHls.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
@@ -8,8 +9,9 @@ const { title } = pages.find((p) => p.href === '/video-hls-component')!
 
 <Layout title={title}>
 	<h1>{title}</h1>
-	<h2>None</h2>
 
+	<h2>Control styles</h2>
+	<h3>None</h3>
 	<VideoHls
 		autoPlay={true}
 		capQualityToSize={false}
@@ -18,18 +20,42 @@ const { title } = pages.find((p) => p.href === '/video-hls-component')!
 		loop={true}
 		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
 	/>
-	<h2>Minimal</h2>
+	<h3>Minimal</h3>
 	<VideoHls
 		capQualityToSize={false}
 		controlStyle="minimal"
 		initialBandwidth={50_000_000}
 		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
 	/>
-	<h2>Full</h2>
+	<h3>Full</h3>
 	<VideoHls
 		capQualityToSize={false}
 		controlStyle="full"
 		initialBandwidth={50_000_000}
 		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
 	/>
+
+	<h2>Zoom (standalone)</h2>
+	<VideoHls
+		controlStyle="full"
+		initialBandwidth={50_000_000}
+		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+		zoom={true}
+	/>
+
+	<h2>Zoom (mixed gallery)</h2>
+	<p>Video and image in the same gallery — swipe between them.</p>
+	<div style="display: flex; gap: 1rem; align-items: start;">
+		<div style="flex: 1;">
+			<VideoHls
+				controlStyle="full"
+				initialBandwidth={50_000_000}
+				mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+				zoom="mixed"
+			/>
+		</div>
+		<div style="flex: 1;">
+			<Image alt="test image" src="../assets/test.jpeg" zoom="mixed" />
+		</div>
+	</div>
 </Layout>

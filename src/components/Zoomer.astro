@@ -50,28 +50,7 @@ if (zoom) {
 }
 
 <script>
-	import PhotoSwipeLightbox from 'photoswipe/lightbox'
-	import 'photoswipe/style.css'
-
-	// Standalone images (zoom={true}, no gallery grouping)
-	new PhotoSwipeLightbox({
-		gallery: 'a.pswp-zoom:not([data-pswp-gallery])',
-		pswpModule: () => import('photoswipe'),
-	}).init()
-
-	// Grouped galleries — one Lightbox per unique gallery name
-	const galleryNames = new Set(
-		[...document.querySelectorAll<HTMLAnchorElement>('a.pswp-zoom[data-pswp-gallery]')].map(
-			(element) => element.dataset.pswpGallery!,
-		),
-	)
-	for (const name of galleryNames) {
-		new PhotoSwipeLightbox({
-			children: `a.pswp-zoom[data-pswp-gallery="${name}"]`,
-			gallery: 'body',
-			pswpModule: () => import('photoswipe'),
-		}).init()
-	}
+	import './utils/lightbox'
 </script>
 
 <style>

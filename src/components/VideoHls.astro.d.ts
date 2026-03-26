@@ -12,6 +12,7 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	loop?: boolean
 	muted?: boolean
 	preload?: 'auto' | 'metadata' | 'none'
+	zoom?: boolean | string | undefined
 }
 
 export type Props = SharedProps &

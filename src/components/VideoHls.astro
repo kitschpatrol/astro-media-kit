@@ -17,6 +17,7 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	loop?: boolean
 	muted?: boolean
 	preload?: 'auto' | 'metadata' | 'none'
+	zoom?: boolean | string | undefined
 }
 
 export type Props = SharedProps &
@@ -45,7 +46,10 @@ const {
 	src,
 	type,
 	typeFallback,
+	zoom = false,
 } = Astro.props
+
+const galleryName = typeof zoom === 'string' ? zoom : undefined
 
 const isLocal = src !== undefined
 const resolvedService: Service | undefined = isLocal
@@ -144,17 +148,48 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 	media-controller[userinactive]:not([mediaisfullscreen]) * {
 		cursor: auto !important;
 	}
+
+	/* Expand button in control bar — styled to match media-chrome buttons. */
+	button.pswp-video-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: none;
+		background: none;
+		color: inherit;
+		cursor: pointer;
+		padding: 7px 5px;
+		height: 44px;
+	}
+
+	button.pswp-video-trigger svg {
+		width: 22px;
+		height: 22px;
+	}
+</style>
+
+<style is:global>
+	/* PhotoSwipe lightbox video wrapper. Global because it renders inside
+	   PhotoSwipe's DOM, outside Astro's scoped style boundary. */
+	/* PhotoSwipe sets explicit width/height on content.element via
+	   setDisplayedSize(). Don't override with 100% — it breaks slide
+	   transition animations. The media-controller fills the wrapper. */
+	.pswp__video-wrapper media-controller {
+		width: 100%;
+		height: 100%;
+	}
 </style>
 
 <script>
 	import 'hls-video-element'
 	import 'media-chrome'
+	import './utils/lightbox'
+
+	import type { HlsVideoElement } from 'hls-video-element'
 
 	// Apply hls.js config before source loading.
 	// Config must be set before src so hls.js uses it during initialization.
 	// Elements render with data-src instead of src, then we set config + src here.
-	import type { HlsVideoElement } from 'hls-video-element'
-
 	for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
 		const configAttribute = element.dataset.hlsConfig
 		if (configAttribute) {
@@ -168,45 +203,130 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 {
 	videoInfo && (
 		<Caption {...captionProps}>
-			<media-controller
-				autohide="1"
-				class:list={[controlStyle, { autoplay: autoPlay }]}
-				inert={controlStyle === 'none' ? 'true' : undefined}
-				slot="media-component"
-				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-			>
-				<hls-video
-					{...videoAttributes}
-					data-hls-config={
-						Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
-					}
-					data-src={videoSrc}
-					slot="media"
+			{zoom ? (
+				<div
+					class="pswp-zoom"
+					data-pswp-gallery={galleryName}
+					data-pswp-height={videoInfo.height || 1080}
+					data-pswp-poster={isLocal ? (poster ?? '') : (videoInfo.posterUrl ?? '')}
+					data-pswp-type="video"
+					data-pswp-video-config={Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined}
+					data-pswp-video-src={videoSrc}
+					data-pswp-width={videoInfo.width || 1920}
+					slot="media-component"
 				>
-					{videoInfo.captions.map((caption) => (
-						<track kind="captions" {...caption} />
-					))}
-				</hls-video>
-				{controlStyle === 'full' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{videoInfo.captions.length > 0 && <media-captions-button />}
-						<media-fullscreen-button />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-control-bar style="justify-content: flex-end">
-						<media-fullscreen-button />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				)}
-			</media-controller>
+					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
+					<media-controller
+						autohide="1"
+						class:list={[controlStyle, { autoplay: autoPlay }]}
+						inert={controlStyle === 'none' ? 'true' : undefined}
+						style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+					>
+						<hls-video
+							{...videoAttributes}
+							data-hls-config={
+								Object.keys(hlsConfig).length > 0
+									? JSON.stringify(hlsConfig)
+									: undefined
+							}
+							data-src={videoSrc}
+							slot="media"
+						>
+							{videoInfo.captions.map((caption) => (
+								<track kind="captions" {...caption} />
+							))}
+						</hls-video>
+						{controlStyle === 'full' && (
+							<media-control-bar>
+								<media-play-button />
+								<media-mute-button />
+								<media-volume-range />
+								<media-time-range />
+								<media-time-display />
+								{videoInfo.captions.length > 0 && <media-captions-button />}
+								<button
+									aria-label="Expand"
+									class="pswp-video-trigger"
+									type="button"
+								>
+									<svg fill="none" height="24" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24">
+										<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+									</svg>
+								</button>
+							</media-control-bar>
+						)}
+						{controlStyle === 'minimal' && (
+							<media-control-bar style="justify-content: flex-end">
+								<button
+									aria-label="Expand"
+									class="pswp-video-trigger"
+									type="button"
+								>
+									<svg fill="none" height="24" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24">
+										<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+									</svg>
+								</button>
+							</media-control-bar>
+						)}
+						{controlStyle === 'minimal' && (
+							<media-play-button
+								slot="centered-chrome"
+								style="border-radius: 50%"
+							/>
+						)}
+					</media-controller>
+					{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+				</div>
+			) : (
+				<>
+					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
+					<media-controller
+						autohide="1"
+						class:list={[controlStyle, { autoplay: autoPlay }]}
+						inert={controlStyle === 'none' ? 'true' : undefined}
+						slot="media-component"
+						style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+					>
+						<hls-video
+							{...videoAttributes}
+							data-hls-config={
+								Object.keys(hlsConfig).length > 0
+									? JSON.stringify(hlsConfig)
+									: undefined
+							}
+							data-src={videoSrc}
+							slot="media"
+						>
+							{videoInfo.captions.map((caption) => (
+								<track kind="captions" {...caption} />
+							))}
+						</hls-video>
+						{controlStyle === 'full' && (
+							<media-control-bar>
+								<media-play-button />
+								<media-mute-button />
+								<media-volume-range />
+								<media-time-range />
+								<media-time-display />
+								{videoInfo.captions.length > 0 && <media-captions-button />}
+								<media-fullscreen-button />
+							</media-control-bar>
+						)}
+						{controlStyle === 'minimal' && (
+							<media-control-bar style="justify-content: flex-end">
+								<media-fullscreen-button />
+							</media-control-bar>
+						)}
+						{controlStyle === 'minimal' && (
+							<media-play-button
+								slot="centered-chrome"
+								style="border-radius: 50%"
+							/>
+						)}
+					</media-controller>
+					{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+				</>
+			)}
 			{!isLocal && (
 				<noscript>
 					{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
