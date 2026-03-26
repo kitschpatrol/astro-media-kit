@@ -129,9 +129,12 @@ function createLightbox(options: {
 
 		hlsVideo.setAttribute('src', videoSrc)
 
-		// Build <media-controller> with full controls.
+		// Build <media-controller> with lightbox control style:
+		// gesturesdisabled (no click-to-play), no fullscreen button.
 		const controller = document.createElement('media-controller')
-		controller.setAttribute('autohide', '1')
+		controller.setAttribute('autohide', '2')
+		controller.setAttribute('gesturesdisabled', '')
+		controller.classList.add('lightbox')
 		hlsVideo.setAttribute('slot', 'media')
 		controller.append(hlsVideo)
 
@@ -142,12 +145,33 @@ function createLightbox(options: {
 			'media-volume-range',
 			'media-time-range',
 			'media-time-display',
-			'media-fullscreen-button',
 		]) {
 			controlBar.append(document.createElement(tag))
 		}
 
 		controller.append(controlBar)
+
+		// Stop pointer events on the control bar from reaching PhotoSwipe's
+		// gesture handler on scrollWrap. Without this, dragging the scrubber
+		// triggers PhotoSwipe's swipe gesture. The preventPointerEvent filter
+		// only controls preventDefault — it doesn't stop gesture tracking.
+		controlBar.addEventListener('pointerdown', (e: Event) => {
+			e.stopPropagation()
+		})
+
+		// Hide controls when inactive, even while paused/ended.
+		// Media-chrome's shadow DOM keeps controls visible when mediapaused
+		// is set. Inline styles override ::slotted() rules.
+		const barStyle = (controlBar as HTMLElement).style
+		controller.addEventListener('userinactivechange', () => {
+			if (controller.hasAttribute('userinactive')) {
+				barStyle.opacity = '0'
+				barStyle.pointerEvents = 'none'
+			} else {
+				barStyle.opacity = ''
+				barStyle.pointerEvents = ''
+			}
+		})
 
 		// Wrapper element — PhotoSwipe controls its dimensions.
 		const wrapper = document.createElement('div')
@@ -266,6 +290,17 @@ for (const name of galleryNames) {
 		gallery: 'body',
 	})
 	galleryLightboxes.set(name, lb)
+}
+
+// Prevent clicks inside inline video containers from bubbling to body,
+// where PhotoSwipe's gallery click handler would open the lightbox.
+// The expand button (.pswp-video-trigger) handles its own click separately.
+for (const container of document.querySelectorAll<HTMLElement>(
+	'.pswp-zoom[data-pswp-type="video"]',
+)) {
+	container.addEventListener('click', (event) => {
+		event.stopPropagation()
+	})
 }
 
 // Video trigger buttons: open the lightbox programmatically.

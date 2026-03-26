@@ -5,7 +5,7 @@ import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
 import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
 
-type ControlStyles = 'full' | 'minimal' | 'none'
+type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
 
 type SharedProps = Omit<CaptionProps, 'src'> & {
@@ -149,6 +149,15 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 		cursor: auto !important;
 	}
 
+	/* Lightbox mode: faster fade-out for controls. */
+	media-controller.lightbox {
+		--media-control-transition-out: opacity 0.5s;
+	}
+
+	media-controller.lightbox media-control-bar {
+		transition: opacity 0.5s;
+	}
+
 	/* Expand button in control bar — styled to match media-chrome buttons. */
 	button.pswp-video-trigger {
 		display: flex;
@@ -198,6 +207,31 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 
 		element.setAttribute('src', element.dataset.src!)
 	}
+
+	// Lightbox mode: hide controls when inactive, even while paused/ended.
+	// Media-chrome's shadow DOM CSS keeps controls visible when mediapaused
+	// is set. Shadow DOM ::slotted() rules can't be overridden from light DOM,
+	// so we toggle inline styles via the userinactivechange event.
+	for (const controller of document.querySelectorAll<HTMLElement>(
+		'media-controller.lightbox',
+	)) {
+		const controlBar = controller.querySelector('media-control-bar')
+		if (!controlBar) continue
+
+		const style = (controlBar as HTMLElement).style
+		const update = () => {
+			if (controller.hasAttribute('userinactive')) {
+				style.opacity = '0'
+				style.pointerEvents = 'none'
+			} else {
+				style.opacity = ''
+				style.pointerEvents = ''
+			}
+		}
+
+		controller.addEventListener('userinactivechange', update)
+		update()
+	}
 </script>
 
 {
@@ -217,8 +251,9 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 				>
 					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
 					<media-controller
-						autohide="1"
+						autohide={controlStyle === 'lightbox' ? '2' : '1'}
 						class:list={[controlStyle, { autoplay: autoPlay }]}
+						gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
 						inert={controlStyle === 'none' ? 'true' : undefined}
 						style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
 					>
@@ -253,6 +288,16 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 										<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
 									</svg>
 								</button>
+							</media-control-bar>
+						)}
+						{controlStyle === 'lightbox' && (
+							<media-control-bar>
+								<media-play-button />
+								<media-mute-button />
+								<media-volume-range />
+								<media-time-range />
+								<media-time-display />
+								{videoInfo.captions.length > 0 && <media-captions-button />}
 							</media-control-bar>
 						)}
 						{controlStyle === 'minimal' && (
@@ -281,8 +326,9 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 				<>
 					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
 					<media-controller
-						autohide="1"
+						autohide={controlStyle === 'lightbox' ? '2' : '1'}
 						class:list={[controlStyle, { autoplay: autoPlay }]}
+						gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
 						inert={controlStyle === 'none' ? 'true' : undefined}
 						slot="media-component"
 						style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
@@ -310,6 +356,16 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 								<media-time-display />
 								{videoInfo.captions.length > 0 && <media-captions-button />}
 								<media-fullscreen-button />
+							</media-control-bar>
+						)}
+						{controlStyle === 'lightbox' && (
+							<media-control-bar>
+								<media-play-button />
+								<media-mute-button />
+								<media-volume-range />
+								<media-time-range />
+								<media-time-display />
+								{videoInfo.captions.length > 0 && <media-captions-button />}
 							</media-control-bar>
 						)}
 						{controlStyle === 'minimal' && (

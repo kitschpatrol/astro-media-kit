@@ -46,4 +46,14 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 		gap: 1rem;
 	}
+
+	.grid > :global(*) {
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	.grid :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
 </style>
