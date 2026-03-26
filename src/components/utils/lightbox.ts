@@ -81,6 +81,26 @@ function createLightbox(options: {
 		},
 	)
 
+	// Animate next/prev button clicks. PhotoSwipe's default next()/prev()
+	// call goTo() which snaps instantly. Override to use the spring animation.
+	// https://github.com/dimsemenov/PhotoSwipe/issues/1765#issuecomment-934010548
+	lightbox.on('uiRegister', () => {
+		const pswp = lightbox.pswp!
+		const goToAnimated = (index: number, animate = false) => {
+			index = pswp.getLoopedIndex(index)
+			const indexChanged = pswp.mainScroll.moveIndexBy(
+				index - pswp.potentialIndex,
+				animate,
+			)
+			if (indexChanged) {
+				pswp.dispatch('afterGoto')
+			}
+		}
+
+		pswp.next = () => goToAnimated(pswp.potentialIndex + 1, true)
+		pswp.prev = () => goToAnimated(pswp.potentialIndex - 1, true)
+	})
+
 	// --- Content lifecycle ---
 
 	// Create a fresh video player in the lightbox.
@@ -135,6 +155,12 @@ function createLightbox(options: {
 		wrapper.append(controller)
 
 		content.element = wrapper
+
+		// Signal that custom content is ready. Without this, PhotoSwipe
+		// keeps the content in LOADING state, which breaks slide transition
+		// animations for the entire gallery.
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- onLoaded is a public method on Content, not exposed in types
+		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
 		// Sync playback position from inline player.
 		const container = content.data.videoContainer as HTMLElement
