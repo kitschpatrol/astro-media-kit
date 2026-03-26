@@ -1,0 +1,224 @@
+---
+import Picture from 'astro-media-kit/components/Picture.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+import aphexTest from '~aphex/Tiny/tiny'
+import test from '../assets/test.jpeg'
+import testDark from '../assets/test-dark.jpeg'
+import tiger from '../assets/tiger.svg'
+import tigerDark from '../assets/tiger-dark.svg'
+
+const { title } = pages.find((p) => p.href === '/picture-component')!
+---
+
+<Layout {title}>
+		<h1>{title}</h1>
+		<p class="note">
+			Toggle system dark mode to verify dark variants. Checkerboard = transparency preserved.
+		</p>
+
+		<h2>1. Dark mode (JPEG)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>No dark</td>
+					<td><Picture alt="no dark" src="../assets/test.jpeg" /></td>
+					<td class="check">Same in light &amp; dark</td>
+				</tr>
+				<tr>
+					<td>Explicit srcDark (auto-import)</td>
+					<td
+						><Picture
+							alt="dark ai"
+							src="../assets/test.jpeg"
+							srcDark="../assets/test-dark.jpeg"
+						/></td
+					>
+					<td class="check">Different image in dark</td>
+				</tr>
+				<tr>
+					<td>Explicit srcDark (imported)</td>
+					<td><Picture alt="dark imp" src={test} srcDark={testDark} /></td>
+					<td class="check">Same as above</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>2. Aphex (Apple Photos)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>Picture (auto-import)</td>
+					<td><Picture alt="aphex ai" src="~aphex/Tiny/tiny" /></td>
+					<td class="check">Apple Photos image</td>
+				</tr>
+				<tr>
+					<td>Picture (imported)</td>
+					<td><Picture alt="aphex imp" src={aphexTest} /></td>
+					<td class="check">Same image</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>3. .tldr auto dark</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>.tldr auto dark</td>
+					<td><Picture alt="tldr auto" src="../assets/test-sketch.tldr" /></td>
+					<td class="check">Auto light/dark variants</td>
+				</tr>
+				<tr>
+					<td>.tldr explicit srcDark</td>
+					<td
+						><Picture
+							alt="tldr explicit"
+							src="../assets/test-sketch.tldr"
+							srcDark="../assets/test-sketch.tldr?dark=true&tldr"
+						/></td
+					>
+					<td class="check">Same as auto</td>
+				</tr>
+				<tr>
+					<td>.tldr srcDark={'{false}'}</td>
+					<td><Picture alt="tldr disabled" src="../assets/test-sketch.tldr" srcDark={false} /></td>
+					<td class="check">Light only</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>4. Background compositing</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG → webp, no bg</td>
+					<td class="cb"><Picture alt="svg no bg" src="../assets/tiger.svg" /></td>
+					<td class="check">Transparent both modes</td>
+				</tr>
+				<tr>
+					<td>SVG → webp, bg only</td>
+					<td><Picture alt="svg bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+					<td class="check">CSS bg both modes</td>
+				</tr>
+				<tr>
+					<td>SVG → webp, bg + bgDark</td>
+					<td
+						><Picture
+							alt="svg bgdark webp"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">CSS light-dark() (no variant)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg only</td>
+					<td
+						><Picture
+							alt="svg bg jpg"
+							background="#e8e4d0"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Composited beige, same both</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg + bgDark</td>
+					<td
+						><Picture
+							alt="svg bgdark jpg"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Beige (light), brown (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bgDark only</td>
+					<td
+						><Picture
+							alt="svg bgdark only"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Default (light), brown (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, same bg &amp; bgDark</td>
+					<td
+						><Picture
+							alt="svg same"
+							background="#e8e4d0"
+							backgroundDark="#e8e4d0"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Same beige (no variant)</td>
+				</tr>
+				<tr>
+					<td>SVG → jpg, bg+bgDark, srcDark={'{false}'}</td>
+					<td
+						><Picture
+							alt="svg disabled"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['jpg']}
+							src="../assets/tiger.svg"
+							srcDark={false}
+						/></td
+					>
+					<td class="check">Beige only (disabled)</td>
+				</tr>
+				<tr>
+					<td>SVG → [webp, jpg], bg+bgDark</td>
+					<td
+						><Picture
+							alt="svg mixed"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							formats={['webp', 'jpg']}
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">Dark img for jpg, CSS for webp</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>5. SVG + explicit srcDark</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG srcDark (auto-import)</td>
+					<td class="cb"
+						><Picture
+							alt="svg dark ai"
+							formats={['webp']}
+							src="../assets/tiger.svg"
+							srcDark="../assets/tiger-dark.svg"
+						/></td
+					>
+					<td class="check">Tiger (light), photo (dark)</td>
+				</tr>
+				<tr>
+					<td>SVG srcDark (imported)</td>
+					<td class="cb"
+						><Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={tigerDark} /></td
+					>
+					<td class="check">Same as above</td>
+				</tr>
+			</tbody>
+		</table>
+</Layout>

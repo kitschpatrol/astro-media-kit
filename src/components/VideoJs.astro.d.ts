@@ -19,5 +19,5 @@ export type Props = SharedProps &
 		| { mediaId?: never; mediaTitle?: never; poster?: string; service?: never; src: string }
 	)
 
-declare const Video: (props: Props) => unknown
-export default Video
+declare const VideoJs: (props: Props) => unknown
+export default VideoJs

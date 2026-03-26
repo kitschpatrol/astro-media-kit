@@ -1,0 +1,100 @@
+---
+import Image from 'astro-media-kit/components/Image.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+import aphexTest from '~aphex/Tiny/tiny'
+import tldrTest from '../assets/test-sketch.tldr'
+import tldrTestDark from '../assets/test-sketch.tldr?dark=true&tldr'
+import test from '../assets/test.jpeg'
+import tiger from '../assets/tiger.svg'
+
+const { title } = pages.find((p) => p.href === '/image-component')!
+---
+
+<Layout {title}>
+		<h1>{title}</h1>
+		<p class="note">
+			Toggle system dark mode to verify dark variants. Checkerboard = transparency preserved.
+		</p>
+
+		<h2>1. Basic imports</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>Auto-import JPEG</td>
+					<td><Image alt="auto jpeg" src="../assets/test.jpeg" /></td>
+					<td class="check">Photo renders</td>
+				</tr>
+				<tr>
+					<td>Explicit import JPEG</td>
+					<td><Image alt="explicit jpeg" src={test} /></td>
+					<td class="check">Same photo</td>
+				</tr>
+				<tr>
+					<td>Auto-import SVG</td>
+					<td class="cb"><Image alt="auto svg" src="../assets/tiger.svg" /></td>
+					<td class="check">Tiger, transparent</td>
+				</tr>
+				<tr>
+					<td>Explicit import SVG</td>
+					<td class="cb"><Image alt="explicit svg" src={tiger} /></td>
+					<td class="check">Same tiger</td>
+				</tr>
+				<tr>
+					<td>Auto-import .tldr</td>
+					<td><Image alt="auto tldr" src="../assets/test-sketch.tldr" /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Auto-import dark .tldr</td>
+					<td><Image alt="auto tldr" src="../assets/test-sketch.tldr?dark=true&tldr" /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Explicit .tldr</td>
+					<td><Image alt="explicit tldr" src={tldrTest} /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Explicit dark .tldr</td>
+					<td><Image alt="explicit tldr" src={tldrTestDark} /></td>
+					<td class="check">Tldraw sketch (light)</td>
+				</tr>
+				<tr>
+					<td>Auto-import aphex</td>
+					<td><Image alt="auto aphex" src="~aphex/Tiny/tiny" /></td>
+					<td class="check">Apple Photos image</td>
+				</tr>
+				<tr>
+					<td>Explicit import aphex</td>
+					<td><Image alt="explicit aphex" src={aphexTest} /></td>
+					<td class="check">Same image</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>2. Background (CSS only)</h2>
+		<table>
+			<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+			<tbody>
+				<tr>
+					<td>SVG, background</td>
+					<td><Image alt="img bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+					<td class="check">CSS bg behind SVG</td>
+				</tr>
+				<tr>
+					<td>SVG, bg + bgDark</td>
+					<td
+						><Image
+							alt="img bgdark"
+							background="#e8e4d0"
+							backgroundDark="#2a2520"
+							src="../assets/tiger.svg"
+						/></td
+					>
+					<td class="check">CSS light-dark() bg</td>
+				</tr>
+			</tbody>
+		</table>
+</Layout>

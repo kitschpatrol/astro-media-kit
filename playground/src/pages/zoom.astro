@@ -1,23 +1,23 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/zoom')!
 ---
 
-<style>
-	img {
-		display: block;
-		max-width: 160px;
-		height: auto;
-	}
-</style>
+<Layout {title}>
+	<h1>{title}</h1>
 
-<figure>
-	<Image alt="auto jpeg" src="../assets/test.jpeg" zoom={true} />
-	<figcaption>Caption</figcaption>
-</figure>
+	<figure>
+		<Image alt="auto jpeg" src="../assets/test.jpeg" zoom={true} />
+		<figcaption>Caption</figcaption>
+	</figure>
 
-<Image alt="auto jpeg" src="../assets/tiger.svg" zoom={true} />
+	<Image alt="auto jpeg" src="../assets/tiger.svg" zoom={true} />
 
-<Picture alt="auto jpeg" src="../assets/tiger.svg" zoom={true} />
+	<Picture alt="auto jpeg" src="../assets/tiger.svg" zoom={true} />
 
-<Picture alt="auto jpeg" src="../assets/test.jpeg" zoom={true} />
+	<Picture alt="auto jpeg" src="../assets/test.jpeg" zoom={true} />
+</Layout>

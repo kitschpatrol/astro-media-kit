@@ -1,0 +1,159 @@
+---
+import { pages } from '../pages'
+
+interface Props {
+	title: string
+}
+
+const { title } = Astro.props
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width" name="viewport" />
+		<title>{title} - astro-media-kit playground</title>
+		<style is:global>
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family:
+					system-ui,
+					-apple-system,
+					sans-serif;
+				color: light-dark(#1a1a1a, #e5e5e5);
+				color-scheme: light dark;
+				background: light-dark(#fafafa, #111);
+			}
+
+			nav {
+				position: sticky;
+				z-index: 100;
+				top: 0;
+				display: flex;
+				gap: 0;
+				border-bottom: 1px solid light-dark(#ddd, #333);
+				background: light-dark(#fff, #1a1a1a);
+			}
+
+			nav a {
+				padding: 0.75rem 1.25rem;
+				font-size: 0.85rem;
+				font-weight: 500;
+				color: light-dark(#555, #999);
+				text-decoration: none;
+				transition: color 0.15s;
+			}
+
+			nav a:hover {
+				color: light-dark(#000, #fff);
+			}
+
+			nav a[aria-current='page'] {
+				color: light-dark(#000, #fff);
+				box-shadow: inset 0 -2px 0 light-dark(#000, #fff);
+			}
+
+			main {
+				padding: 2rem;
+			}
+
+			h1 {
+				margin-bottom: 0.5rem;
+				font-size: 1.5rem;
+			}
+
+			h2 {
+				margin: 2rem 0 0.75rem;
+				padding-bottom: 0.5rem;
+				border-bottom: 1px solid light-dark(#ddd, #333);
+				font-size: 1.1rem;
+			}
+
+			p.note {
+				margin-bottom: 1.5rem;
+				font-size: 0.8rem;
+				color: light-dark(#666, #999);
+			}
+
+			table {
+				border-collapse: collapse;
+				width: 100%;
+				margin-bottom: 2rem;
+				font-size: 0.8rem;
+			}
+
+			th {
+				padding: 0.5rem;
+				border: 1px solid light-dark(#ddd, #333);
+				font-weight: 600;
+				text-align: left;
+				white-space: nowrap;
+				background: light-dark(#f0f0f0, #1a1a1a);
+			}
+
+			td {
+				padding: 0.5rem;
+				border: 1px solid light-dark(#ddd, #333);
+				vertical-align: top;
+			}
+
+			td:first-child {
+				max-width: 280px;
+				font-family: ui-monospace, monospace;
+				font-size: 0.7rem;
+				color: light-dark(#555, #aaa);
+				white-space: nowrap;
+			}
+
+			figure {
+				margin: 0;
+			}
+
+			img {
+				display: block;
+				max-width: 160px;
+				height: auto;
+			}
+
+			.check {
+				margin-top: 0.25rem;
+				font-size: 0.7rem;
+				color: light-dark(#666, #999);
+			}
+
+			.cb {
+				background-image: conic-gradient(
+					light-dark(#ccc, #444) 90deg,
+					transparent 90deg 180deg,
+					light-dark(#ccc, #444) 180deg 270deg,
+					transparent 270deg
+				);
+				background-size: 12px 12px;
+			}
+		</style>
+	</head>
+	<body>
+		<nav>
+			{
+				pages.map((page) => (
+					<a
+						aria-current={currentPath === page.href ? 'page' : undefined}
+						href={page.href}
+					>
+						{page.title}
+					</a>
+				))
+			}
+		</nav>
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>
