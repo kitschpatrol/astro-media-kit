@@ -1,0 +1,22 @@
+---
+import VideoHls from 'astro-media-kit/components/VideoHls.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/video-hls-component')!
+---
+
+<Layout title={title}>
+	<h1>{title}</h1>
+	<h2>None</h2>
+	<VideoHls
+		autoPlay={true}
+		controlStyle="none"
+		loop={true}
+		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+	/>
+	<h2>Minimal</h2>
+	<VideoHls controlStyle="minimal" mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9" />
+	<h2>Full</h2>
+	<VideoHls controlStyle="full" mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9" />
+</Layout>
