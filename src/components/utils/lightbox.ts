@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-restricted-types */
 /**
  * Shared PhotoSwipe lightbox initialization for both image (Zoomer) and video
  * (VideoHls) components. Supports mixed galleries containing both content types.
@@ -13,39 +14,35 @@ import type { HlsVideoElement } from 'hls-video-element'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import 'photoswipe/style.css'
 
-function createLightbox(options: {
-	children?: string
-	gallery: string
-}): PhotoSwipeLightbox {
+type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
+
+function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	const lightbox = new PhotoSwipeLightbox({
 		...options,
-		pswpModule: () => import('photoswipe'),
+		pswpModule: async () => import('photoswipe'),
 	})
 
 	// --- Filters ---
 
 	// Extract video data from DOM elements.
-	lightbox.addFilter(
-		'domItemData',
-		(itemData: Record<string, unknown>, element: HTMLElement) => {
-			if (element.dataset.pswpType === 'video') {
-				const posterUrl = element.dataset.pswpPoster ?? ''
-				return {
-					...itemData,
-					height: Number(element.dataset.pswpHeight) || 1080,
-					msrc: posterUrl,
-					type: 'video',
-					videoConfig: element.dataset.pswpVideoConfig ?? '',
-					videoContainer: element,
-					videoPoster: posterUrl,
-					videoSrc: element.dataset.pswpVideoSrc ?? '',
-					width: Number(element.dataset.pswpWidth) || 1920,
-				}
+	lightbox.addFilter('domItemData', (itemData: Record<string, unknown>, element: HTMLElement) => {
+		if (element.dataset.pswpType === 'video') {
+			const posterUrl = element.dataset.pswpPoster ?? ''
+			return {
+				...itemData,
+				height: Number(element.dataset.pswpHeight) || 1080,
+				msrc: posterUrl,
+				type: 'video',
+				videoConfig: element.dataset.pswpVideoConfig ?? '',
+				videoContainer: element,
+				videoPoster: posterUrl,
+				videoSrc: element.dataset.pswpVideoSrc ?? '',
+				width: Number(element.dataset.pswpWidth) || 1920,
 			}
+		}
 
-			return itemData
-		},
-	)
+		return itemData
+	})
 
 	// Disable pinch-zoom gestures for video slides.
 	lightbox.addFilter(
@@ -57,27 +54,22 @@ function createLightbox(options: {
 	// Enable placeholder for video — required for the zoom open/close animation.
 	lightbox.addFilter(
 		'useContentPlaceholder',
-		(
-			usePlaceholder: boolean,
-			content: { data: Record<string, unknown> },
-		) => (content.data.type === 'video' ? true : usePlaceholder),
+		(usePlaceholder: boolean, content: { data: Record<string, unknown> }) =>
+			content.data.type === 'video' ? true : usePlaceholder,
 	)
 
 	// Use video container as the zoom animation origin.
 	lightbox.addFilter(
 		'thumbEl',
 		(
-			thumbEl: HTMLElement | null | undefined,
+			thumbElement: HTMLElement | null | undefined,
 			itemData: Record<string, unknown>,
 		): HTMLElement => {
-			if (
-				itemData.type === 'video' &&
-				itemData.videoContainer instanceof HTMLElement
-			) {
+			if (itemData.type === 'video' && itemData.videoContainer instanceof HTMLElement) {
 				return itemData.videoContainer
 			}
 
-			return (thumbEl ?? document.createElement('div')) as HTMLElement
+			return thumbElement ?? document.createElement('div')
 		},
 	)
 
@@ -86,37 +78,29 @@ function createLightbox(options: {
 	// https://github.com/dimsemenov/PhotoSwipe/issues/1765#issuecomment-934010548
 	lightbox.on('uiRegister', () => {
 		const pswp = lightbox.pswp!
-		const goToAnimated = (index: number, animate = false) => {
-			index = pswp.getLoopedIndex(index)
-			const indexChanged = pswp.mainScroll.moveIndexBy(
-				index - pswp.potentialIndex,
-				animate,
-			)
-			if (indexChanged) {
-				pswp.dispatch('afterGoto')
-			}
+		pswp.next = () => {
+			pswp.mainScroll.moveIndexBy(1, true)
 		}
 
-		pswp.next = () => goToAnimated(pswp.potentialIndex + 1, true)
-		pswp.prev = () => goToAnimated(pswp.potentialIndex - 1, true)
+		pswp.prev = () => {
+			pswp.mainScroll.moveIndexBy(-1, true)
+		}
 	})
 
 	// --- Content lifecycle ---
 
 	// Create a fresh video player in the lightbox.
-	lightbox.on('contentLoad', (e) => {
-		const { content } = e
+	lightbox.on('contentLoad', (event) => {
+		const { content } = event
 		if (content.data.type !== 'video') return
-		e.preventDefault()
+		event.preventDefault()
 
 		const videoSrc = content.data.videoSrc as string
 		const posterUrl = content.data.videoPoster as string
 		const configJson = content.data.videoConfig as string
 
 		// Build <hls-video> element.
-		const hlsVideo = document.createElement(
-			'hls-video',
-		) as HlsVideoElement
+		const hlsVideo = document.createElement('hls-video') as HlsVideoElement
 		hlsVideo.setAttribute('crossorigin', 'anonymous')
 		hlsVideo.setAttribute('playsinline', 'true')
 		hlsVideo.setAttribute('preload', 'metadata')
@@ -124,6 +108,7 @@ function createLightbox(options: {
 
 		// Apply hls.js config before setting src.
 		if (configJson) {
+			// eslint-disable-next-line ts/no-unsafe-assignment
 			hlsVideo.config = JSON.parse(configJson)
 		}
 
@@ -132,7 +117,7 @@ function createLightbox(options: {
 		// Build <media-controller> with lightbox control style:
 		// gesturesdisabled (no click-to-play), no fullscreen button.
 		const controller = document.createElement('media-controller')
-		controller.setAttribute('autohide', '2')
+		controller.setAttribute('autohide', '1')
 		controller.setAttribute('gesturesdisabled', '')
 		controller.classList.add('lightbox')
 		hlsVideo.setAttribute('slot', 'media')
@@ -162,7 +147,7 @@ function createLightbox(options: {
 		// Hide controls when inactive, even while paused/ended.
 		// Media-chrome's shadow DOM keeps controls visible when mediapaused
 		// is set. Inline styles override ::slotted() rules.
-		const barStyle = (controlBar as HTMLElement).style
+		const barStyle = controlBar.style
 		controller.addEventListener('userinactivechange', () => {
 			if (controller.hasAttribute('userinactive')) {
 				barStyle.opacity = '0'
@@ -188,9 +173,7 @@ function createLightbox(options: {
 
 		// Sync playback position from inline player.
 		const container = content.data.videoContainer as HTMLElement
-		const inlineVideo = container.querySelector(
-			'hls-video',
-		) as HTMLMediaElement | null
+		const inlineVideo = container.querySelector('hls-video')
 		if (inlineVideo && inlineVideo.currentTime > 0) {
 			hlsVideo.currentTime = inlineVideo.currentTime
 		}
@@ -199,18 +182,14 @@ function createLightbox(options: {
 	// Auto-play when slide becomes active.
 	lightbox.on('contentActivate', ({ content }) => {
 		if (content.data.type !== 'video') return
-		const video = content.element?.querySelector(
-			'hls-video',
-		) as HTMLMediaElement | null
+		const video = content.element?.querySelector('hls-video') as HTMLMediaElement | null
 		if (video) {
 			void video.play()
 		}
 
 		// Pause the inline player.
 		const container = content.data.videoContainer as HTMLElement
-		const inlineVideo = container.querySelector(
-			'hls-video',
-		) as HTMLMediaElement | null
+		const inlineVideo = container.querySelector('hls-video')
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
@@ -219,9 +198,7 @@ function createLightbox(options: {
 	// Pause when swiping away to another slide.
 	lightbox.on('contentDeactivate', ({ content }) => {
 		if (content.data.type !== 'video') return
-		const video = content.element?.querySelector(
-			'hls-video',
-		) as HTMLMediaElement | null
+		const video = content.element?.querySelector('hls-video') as HTMLMediaElement | null
 		if (video && !video.paused) {
 			video.pause()
 		}
@@ -234,7 +211,7 @@ function createLightbox(options: {
 	})
 
 	lightbox.on('destroy', () => {
-		const pswp = lightbox.pswp
+		const { pswp } = lightbox
 		if (!pswp) return
 		const content = pswp.currSlide?.content
 		if (content?.data.type === 'video') {
@@ -253,13 +230,9 @@ function syncBackToInline(content: {
 	data: Record<string, unknown>
 	element?: HTMLElement | undefined
 }): void {
-	const lightboxVideo = content.element?.querySelector(
-		'hls-video',
-	) as HTMLMediaElement | null
+	const lightboxVideo = content.element?.querySelector('hls-video') as HTMLMediaElement | null
 	const container = content.data.videoContainer as HTMLElement
-	const inlineVideo = container?.querySelector(
-		'hls-video',
-	) as HTMLMediaElement | null
+	const inlineVideo = container?.querySelector('hls-video')
 
 	if (lightboxVideo && inlineVideo && lightboxVideo.currentTime > 0) {
 		inlineVideo.currentTime = lightboxVideo.currentTime
@@ -275,19 +248,24 @@ const standaloneLightbox = createLightbox({
 
 // Grouped galleries — one lightbox per unique gallery name.
 const galleryNames = new Set(
-	[
-		...document.querySelectorAll<HTMLElement>(
-			'.pswp-zoom[data-pswp-gallery]',
-		),
-	].map((element) => element.dataset.pswpGallery!),
+	[...document.querySelectorAll<HTMLElement>('.pswp-zoom[data-pswp-gallery]')].map(
+		(element) => element.dataset.pswpGallery!,
+	),
 )
 
 const galleryLightboxes = new Map<string, PhotoSwipeLightbox>()
 
 for (const name of galleryNames) {
 	const lb = createLightbox({
+		bgOpacity: 0.9,
 		children: `.pswp-zoom[data-pswp-gallery="${name}"]`,
+		counter: false, // Hide UI elements
 		gallery: 'body',
+		initialZoomLevel: 'fit',
+		loop: false,
+		// MaximumZoomLevel: 1, // Don't zoom beyond 1:1
+		secondaryZoomLevel: 1, // Don't zoom beyond 1:1
+		zoom: false, // Hide UI elements
 	})
 	galleryLightboxes.set(name, lb)
 }
@@ -304,12 +282,10 @@ for (const container of document.querySelectorAll<HTMLElement>(
 }
 
 // Video trigger buttons: open the lightbox programmatically.
-for (const trigger of document.querySelectorAll<HTMLButtonElement>(
-	'.pswp-video-trigger',
-)) {
+for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-trigger')) {
 	trigger.addEventListener('click', (event) => {
 		event.stopPropagation()
-		const container = trigger.closest('.pswp-zoom') as HTMLElement | null
+		const container = trigger.closest('.pswp-zoom')
 		if (!container) return
 
 		const galleryName = container.dataset.pswpGallery
@@ -318,22 +294,18 @@ for (const trigger of document.querySelectorAll<HTMLButtonElement>(
 			const lb = galleryLightboxes.get(galleryName)
 			if (!lb) return
 			const children = [
-				...document.querySelectorAll<HTMLElement>(
-					`.pswp-zoom[data-pswp-gallery="${galleryName}"]`,
-				),
+				...document.querySelectorAll<HTMLElement>(`.pswp-zoom[data-pswp-gallery="${galleryName}"]`),
 			]
 			const index = children.indexOf(container)
-			if (index >= 0) {
+			if (index !== -1) {
 				lb.loadAndOpen(index)
 			}
 		} else {
 			const items = [
-				...document.querySelectorAll<HTMLElement>(
-					'.pswp-zoom:not([data-pswp-gallery])',
-				),
+				...document.querySelectorAll<HTMLElement>('.pswp-zoom:not([data-pswp-gallery])'),
 			]
 			const index = items.indexOf(container)
-			if (index >= 0) {
+			if (index !== -1) {
 				standaloneLightbox.loadAndOpen(index)
 			}
 		}

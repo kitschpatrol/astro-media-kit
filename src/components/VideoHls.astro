@@ -149,13 +149,11 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 		cursor: auto !important;
 	}
 
-	/* Lightbox mode: faster fade-out for controls. */
-	media-controller.lightbox {
-		--media-control-transition-out: opacity 0.5s;
-	}
-
+	/* Lightbox mode: transition for JS-driven visibility toggle.
+	   Shadow DOM ::slotted() rules can't be overridden from light DOM,
+	   so we use inline styles set by the userinactivechange listener. */
 	media-controller.lightbox media-control-bar {
-		transition: opacity 0.5s;
+		transition: opacity 0.25s;
 	}
 
 	/* Expand button in control bar — styled to match media-chrome buttons. */
@@ -251,7 +249,7 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 				>
 					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
 					<media-controller
-						autohide={controlStyle === 'lightbox' ? '2' : '1'}
+						autohide="1"
 						class:list={[controlStyle, { autoplay: autoPlay }]}
 						gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
 						inert={controlStyle === 'none' ? 'true' : undefined}
@@ -326,7 +324,7 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 				<>
 					{/* eslint-disable astro/jsx-a11y/media-has-caption -- captions provided dynamically via track elements */}
 					<media-controller
-						autohide={controlStyle === 'lightbox' ? '2' : '1'}
+						autohide="1"
 						class:list={[controlStyle, { autoplay: autoPlay }]}
 						gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
 						inert={controlStyle === 'none' ? 'true' : undefined}
