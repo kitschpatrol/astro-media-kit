@@ -144,6 +144,12 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 		display: none;
 	}
 
+	/* Hide mute and volume controls when the video has no audio track. */
+	media-controller[mediaaudiotrackunavailable] media-mute-button,
+	media-controller[mediaaudiotrackunavailable] media-volume-range {
+		display: none;
+	}
+
 	/* Prevent focus from scrolling content inside the player... */
 	/* See https://github.com/muxinc/media-chrome/issues/1254 */
 	media-controller {
