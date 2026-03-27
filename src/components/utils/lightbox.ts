@@ -11,10 +11,34 @@
  */
 
 import type { HlsVideoElement } from 'hls-video-element'
+// @ts-expect-error — no type declarations available for this package
+import PhotoSwipeDynamicCaption from 'photoswipe-dynamic-caption-plugin'
+import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import 'photoswipe/style.css'
 
 type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
+
+/** Type guard for video slide data stored in content.data. */
+function isVideoData(data: Record<string, unknown>): data is Record<string, unknown> & {
+	videoConfig: string
+	videoContainer: HTMLElement
+	videoPoster: string
+	videoSrc: string
+} {
+	return data.type === 'video' && data.videoContainer instanceof HTMLElement
+}
+
+/** Query an hls-video element and return it as HTMLMediaElement or null. */
+function queryHlsVideo(root: Element | null | undefined): HTMLMediaElement | null {
+	const element = root?.querySelector('hls-video')
+	if (element instanceof HTMLMediaElement) return element
+	// HlsVideoElement extends HTMLElement with play/pause/currentTime via
+	// CustomVideoElement proxy — safe to treat as HTMLMediaElement.
+	if (!element) return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- CustomVideoElement proxies HTMLMediaElement API
+	return element as unknown as HTMLMediaElement
+}
 
 function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	const lightbox = new PhotoSwipeLightbox({
@@ -92,24 +116,23 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// Create a fresh video player in the lightbox.
 	lightbox.on('contentLoad', (event) => {
 		const { content } = event
-		if (content.data.type !== 'video') return
+		if (!isVideoData(content.data)) return
 		event.preventDefault()
 
-		const videoSrc = content.data.videoSrc as string
-		const posterUrl = content.data.videoPoster as string
-		const configJson = content.data.videoConfig as string
+		const { videoConfig, videoContainer, videoPoster, videoSrc } = content.data
 
 		// Build <hls-video> element.
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- Custom element not in HTMLElementTagNameMap
 		const hlsVideo = document.createElement('hls-video') as HlsVideoElement
 		hlsVideo.setAttribute('crossorigin', 'anonymous')
 		hlsVideo.setAttribute('playsinline', 'true')
 		hlsVideo.setAttribute('preload', 'metadata')
-		if (posterUrl) hlsVideo.setAttribute('poster', posterUrl)
+		if (videoPoster) hlsVideo.setAttribute('poster', videoPoster)
 
 		// Apply hls.js config before setting src.
-		if (configJson) {
-			// eslint-disable-next-line ts/no-unsafe-assignment
-			hlsVideo.config = JSON.parse(configJson)
+		if (videoConfig) {
+			// eslint-disable-next-line ts/no-unsafe-assignment -- JSON.parse returns any
+			hlsVideo.config = JSON.parse(videoConfig)
 		}
 
 		hlsVideo.setAttribute('src', videoSrc)
@@ -138,16 +161,15 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 		// Stop pointer events on the control bar from reaching PhotoSwipe's
 		// gesture handler on scrollWrap. Without this, dragging the scrubber
-		// triggers PhotoSwipe's swipe gesture. The preventPointerEvent filter
-		// only controls preventDefault — it doesn't stop gesture tracking.
-		controlBar.addEventListener('pointerdown', (e: Event) => {
-			e.stopPropagation()
+		// triggers PhotoSwipe's swipe gesture.
+		controlBar.addEventListener('pointerdown', (pointerEvent) => {
+			pointerEvent.stopPropagation()
 		})
 
 		// Hide controls when inactive, even while paused/ended.
 		// Media-chrome's shadow DOM keeps controls visible when mediapaused
 		// is set. Inline styles override ::slotted() rules.
-		const barStyle = controlBar.style
+		const { style: barStyle } = controlBar
 		controller.addEventListener('userinactivechange', () => {
 			if (controller.hasAttribute('userinactive')) {
 				barStyle.opacity = '0'
@@ -168,12 +190,11 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// Signal that custom content is ready. Without this, PhotoSwipe
 		// keeps the content in LOADING state, which breaks slide transition
 		// animations for the entire gallery.
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- onLoaded is a public method on Content, not exposed in types
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
 		// Sync playback position from inline player.
-		const container = content.data.videoContainer as HTMLElement
-		const inlineVideo = container.querySelector('hls-video')
+		const inlineVideo = queryHlsVideo(videoContainer)
 		if (inlineVideo && inlineVideo.currentTime > 0) {
 			hlsVideo.currentTime = inlineVideo.currentTime
 		}
@@ -181,15 +202,14 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	// Auto-play when slide becomes active.
 	lightbox.on('contentActivate', ({ content }) => {
-		if (content.data.type !== 'video') return
-		const video = content.element?.querySelector('hls-video') as HTMLMediaElement | null
+		if (!isVideoData(content.data)) return
+		const video = queryHlsVideo(content.element)
 		if (video) {
 			void video.play()
 		}
 
 		// Pause the inline player.
-		const container = content.data.videoContainer as HTMLElement
-		const inlineVideo = container.querySelector('hls-video')
+		const inlineVideo = queryHlsVideo(content.data.videoContainer)
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
@@ -197,8 +217,8 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	// Pause when swiping away to another slide.
 	lightbox.on('contentDeactivate', ({ content }) => {
-		if (content.data.type !== 'video') return
-		const video = content.element?.querySelector('hls-video') as HTMLMediaElement | null
+		if (!isVideoData(content.data)) return
+		const video = queryHlsVideo(content.element)
 		if (video && !video.paused) {
 			video.pause()
 		}
@@ -206,7 +226,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	// Sync position back to inline player and clean up lightbox player.
 	lightbox.on('contentDestroy', ({ content }) => {
-		if (content.data.type !== 'video') return
+		if (!isVideoData(content.data)) return
 		syncBackToInline(content)
 	})
 
@@ -214,10 +234,36 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		const { pswp } = lightbox
 		if (!pswp) return
 		const content = pswp.currSlide?.content
-		if (content?.data.type === 'video') {
+		if (content && isVideoData(content.data)) {
 			syncBackToInline(content)
 		}
 	})
+
+	// Caption plugin: extract caption from the <figcaption> sibling of the
+	// .pswp-zoom element inside the <figure> wrapper rendered by Caption.astro.
+	// eslint-disable-next-line ts/no-unsafe-call -- plugin registers itself via constructor side effect
+	const captionPlugin = new PhotoSwipeDynamicCaption(lightbox, {
+		captionContent(slide: { data: { element?: HTMLElement } }) {
+			const { element } = slide.data
+			const figure = element?.closest('figure')
+			const figcaption = figure?.querySelector('figcaption')
+			return figcaption?.innerHTML ?? false
+		},
+		type: 'below',
+	})
+
+	// Guard against plugin crash when pswp.currSlide is undefined during
+	// the initial 'change' event in pswp.init(). The plugin calls
+	// showCaption(pswp.currSlide) without checking for undefined.
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- plugin instance type not exported
+	const plugin = captionPlugin as unknown as {
+		showCaption: (slide: unknown) => void
+	}
+	const originalShowCaption = plugin.showCaption.bind(plugin)
+	plugin.showCaption = (slide: unknown) => {
+		if (!slide) return
+		originalShowCaption(slide)
+	}
 
 	lightbox.init()
 	return lightbox
@@ -230,9 +276,9 @@ function syncBackToInline(content: {
 	data: Record<string, unknown>
 	element?: HTMLElement | undefined
 }): void {
-	const lightboxVideo = content.element?.querySelector('hls-video') as HTMLMediaElement | null
-	const container = content.data.videoContainer as HTMLElement
-	const inlineVideo = container?.querySelector('hls-video')
+	if (!isVideoData(content.data)) return
+	const lightboxVideo = queryHlsVideo(content.element)
+	const inlineVideo = queryHlsVideo(content.data.videoContainer)
 
 	if (lightboxVideo && inlineVideo && lightboxVideo.currentTime > 0) {
 		inlineVideo.currentTime = lightboxVideo.currentTime
@@ -259,13 +305,12 @@ for (const name of galleryNames) {
 	const lb = createLightbox({
 		bgOpacity: 0.9,
 		children: `.pswp-zoom[data-pswp-gallery="${name}"]`,
-		counter: false, // Hide UI elements
+		counter: false,
 		gallery: 'body',
 		initialZoomLevel: 'fit',
 		loop: false,
-		// MaximumZoomLevel: 1, // Don't zoom beyond 1:1
-		secondaryZoomLevel: 1, // Don't zoom beyond 1:1
-		zoom: false, // Hide UI elements
+		secondaryZoomLevel: 1,
+		zoom: false,
 	})
 	galleryLightboxes.set(name, lb)
 }
@@ -285,7 +330,7 @@ for (const container of document.querySelectorAll<HTMLElement>(
 for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-trigger')) {
 	trigger.addEventListener('click', (event) => {
 		event.stopPropagation()
-		const container = trigger.closest('.pswp-zoom')
+		const container = trigger.closest<HTMLElement>('.pswp-zoom')
 		if (!container) return
 
 		const galleryName = container.dataset.pswpGallery
@@ -301,13 +346,9 @@ for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-
 				lb.loadAndOpen(index)
 			}
 		} else {
-			const items = [
-				...document.querySelectorAll<HTMLElement>('.pswp-zoom:not([data-pswp-gallery])'),
-			]
-			const index = items.indexOf(container)
-			if (index !== -1) {
-				standaloneLightbox.loadAndOpen(index)
-			}
+			// Standalone: each .pswp-zoom is its own 1-item gallery.
+			// Open at index 0 with this specific element as the data source.
+			standaloneLightbox.loadAndOpen(0, { gallery: container })
 		}
 	})
 }
