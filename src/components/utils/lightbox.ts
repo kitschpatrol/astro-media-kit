@@ -20,9 +20,9 @@ import 'photoswipe/style.css'
 type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
 
 /** Supported video element tag names for lightbox playback. */
-type VideoElementTag = 'hls-video' | 'vimeo-video' | 'youtube-video'
+type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
-const VIDEO_ELEMENT_SELECTOR = 'hls-video, youtube-video, vimeo-video'
+const VIDEO_ELEMENT_SELECTOR = 'video, hls-video, youtube-video, vimeo-video'
 
 /** Type guard for video slide data stored in content.data. */
 function isVideoData(data: Record<string, unknown>): data is Record<string, unknown> & {

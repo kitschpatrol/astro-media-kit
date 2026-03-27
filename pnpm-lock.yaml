@@ -20,6 +20,9 @@ importers:
       '@mux/mux-node':
         specifier: ^12.8.1
         version: 12.8.1
+      '@oscnord/get-video-resolution':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@sindresorhus/is':
         specifier: ^7.2.0
         version: 7.2.0
@@ -1191,6 +1194,9 @@ packages:
     resolution: {integrity: sha512-xhfYPXoV5Dy4UkY0D+v2KkwvnDfiA/8Mt3sWCGI/hM03NsYIH8ZaG6QzS9x7pje5vHZBZJ2v6VRFVTWACnqcmQ==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  '@oscnord/get-video-resolution@1.1.0':
+    resolution: {integrity: sha512-4qUQeAlbScpPYdR11oHZEO6j7nfPoMH3/uq5lCtwJTy9E5SX2l3P8F0ksov3jmLcdVxO+AeXe9P1h2w8AwbKUg==}
+
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
 
@@ -1587,6 +1593,9 @@ packages:
 
   '@quansync/fs@1.0.0':
     resolution: {integrity: sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ==}
+
+  '@remotion/media-parser@4.0.441':
+    resolution: {integrity: sha512-yrx6S34y/NX724Lz9jX5RKT09FdJaI6S39bTq/aEUkBc0VzeGnQXkkFrKABTG+JNPoASdk6ILTGqOHWBM0W1qQ==}
 
   '@reteps/dockerfmt@0.3.6':
     resolution: {integrity: sha512-Tb5wIMvBf/nLejTQ61krK644/CEMB/cpiaIFXqGApfGqO3GwcR3qnI0DbmkFVCl2OyEp8LnLX3EkucoL0+tbFg==}
@@ -8138,6 +8147,10 @@ snapshots:
     dependencies:
       which: 4.0.0
 
+  '@oscnord/get-video-resolution@1.1.0':
+    dependencies:
+      '@remotion/media-parser': 4.0.441
+
   '@oslojs/encoding@1.1.0': {}
 
   '@ota-meshi/ast-token-store@0.3.0': {}
@@ -8420,6 +8433,8 @@ snapshots:
   '@quansync/fs@1.0.0':
     dependencies:
       quansync: 1.0.0
+
+  '@remotion/media-parser@4.0.441': {}
 
   '@reteps/dockerfmt@0.3.6': {}
 

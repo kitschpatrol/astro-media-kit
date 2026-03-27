@@ -38,6 +38,12 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<h3>Lightbox</h3>
 	<Video controlStyle="lightbox" initialBandwidth={50_000_000} mediaId={bunnyId} />
 
+	<h2>Local file</h2>
+	<Video src="/test.mp4" />
+
+	<h2>Local file (with poster)</h2>
+	<Video poster="/test-poster.jpeg" src="/test.mp4" />
+
 	<h2>YouTube</h2>
 	<Video mediaId="dQw4w9WgXcQ" />
 

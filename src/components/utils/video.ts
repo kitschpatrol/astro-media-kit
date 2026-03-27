@@ -1,4 +1,5 @@
 // Shared types for video service integrations
+import { getVideoResolution } from '@oscnord/get-video-resolution'
 import type { BunnyConfig } from './bunny'
 import type { CloudflareConfig } from './cloudflare'
 import type { MuxConfig } from './mux'
@@ -25,6 +26,7 @@ export type VideoInfo = {
 export type ServiceConfig = {
 	bunny: BunnyConfig
 	cloudflare: CloudflareConfig
+	local: Record<string, never>
 	mux: MuxConfig
 	vimeo: Record<string, never>
 	youtube: Record<string, never>
@@ -67,6 +69,34 @@ export function validateServiceConfig(service: Service, config: ServiceConfig): 
 		throw new Error(
 			`Missing env vars for "${service}" video service: ${missing.join(', ')}. Set these as secrets via astro:env or as environment variables.`,
 		)
+	}
+}
+
+// --- Local file / remote MP4 ---
+
+async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo> {
+	let width = 0
+	let height = 0
+	let duration = -1
+
+	try {
+		const info: { duration?: number; height: number; width: number } = await getVideoResolution(src)
+		width = info.width
+		height = info.height
+		if (info.duration !== undefined) duration = info.duration
+	} catch {
+		// Probe failed — fall back to zero dimensions (no aspect ratio).
+	}
+
+	return {
+		captions: [],
+		duration,
+		height,
+		hlsUrl: '',
+		mp4Url: '',
+		posterUrl: poster,
+		title: undefined,
+		width,
 	}
 }
 
@@ -150,6 +180,8 @@ export async function getVideoInfo(
 	mediaIdOrTitle: string,
 	service: Service,
 	config: ServiceConfig,
+	/** Poster URL — only used by the 'local' service. */
+	poster = '',
 ): Promise<VideoInfo> {
 	switch (service) {
 		case 'bunny': {
@@ -160,6 +192,10 @@ export async function getVideoInfo(
 		case 'cloudflare': {
 			validateServiceConfig(service, config)
 			return cloudflareGetVideoInfo(mediaIdOrTitle, config[service])
+		}
+
+		case 'local': {
+			return localGetVideoInfo(mediaIdOrTitle, poster)
 		}
 
 		case 'mux': {

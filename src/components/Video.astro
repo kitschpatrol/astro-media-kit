@@ -4,9 +4,10 @@ import type { Props as CaptionProps } from './Caption.astro'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
 import InternalVideoHls from './internal/VideoHls.astro'
+import InternalVideoLocal from './internal/VideoLocal.astro'
 import InternalVideoVimeo from './internal/VideoVimeo.astro'
 import InternalVideoYouTube from './internal/VideoYouTube.astro'
-import { getVideoInfo, inferServiceFromMediaId, isEmbedService } from './utils/video'
+import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
 
 type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
 
@@ -54,72 +55,43 @@ const {
 const galleryName = typeof zoom === 'string' ? zoom : undefined
 
 const isLocal = src !== undefined
-const resolvedService: Service | undefined = isLocal
-	? undefined
+const resolvedService: Service = isLocal
+	? 'local'
 	: (service ?? (mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny'))
 
-const isEmbed = resolvedService !== undefined && isEmbedService(resolvedService)
+const config: ServiceConfig = {
+	bunny: {
+		apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
+		hostname: getSecret('BUNNY_HOSTNAME') ?? '',
+		libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
+	},
+	cloudflare: {
+		accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
+		apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
+	},
+	local: {},
+	mux: {
+		accessToken: getSecret('MUX_TOKEN_ID') ?? '',
+		secret: getSecret('MUX_TOKEN_SECRET') ?? '',
+	},
+	vimeo: {},
+	youtube: {},
+}
 
 let videoInfo: undefined | VideoInfo
-
-if (isLocal) {
-	videoInfo = {
-		captions: [],
-		duration: -1,
-		height: 0,
-		hlsUrl: '',
-		mp4Url: '',
-		posterUrl: poster ?? '',
-		title: label,
-		width: 0,
-	}
-} else if (isEmbed) {
-	// Embed services (YouTube, Vimeo) use oEmbed — no credentials needed.
-	// getVideoInfo ignores the config for embed services, but the signature requires it.
-	const emptyConfig: ServiceConfig = {
-		bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
-		cloudflare: { accountId: '', apiToken: '' },
-		mux: { accessToken: '', secret: '' },
-		vimeo: {},
-		youtube: {},
-	}
-	try {
-		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService, emptyConfig)
-	} catch (error) {
-		const identifier = mediaId ?? mediaTitle
-		console.error(
-			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
-			error instanceof Error ? error.message : error,
-		)
-	}
-} else {
-	const config: ServiceConfig = {
-		bunny: {
-			apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
-			hostname: getSecret('BUNNY_HOSTNAME') ?? '',
-			libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
-		},
-		cloudflare: {
-			accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
-			apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
-		},
-		mux: {
-			accessToken: getSecret('MUX_TOKEN_ID') ?? '',
-			secret: getSecret('MUX_TOKEN_SECRET') ?? '',
-		},
-		vimeo: {},
-		youtube: {},
-	}
-
-	try {
-		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService!, config)
-	} catch (error) {
-		const identifier = mediaId ?? mediaTitle
-		console.error(
-			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
-			error instanceof Error ? error.message : error,
-		)
-	}
+try {
+	videoInfo = await getVideoInfo(
+		src ?? mediaId ?? mediaTitle,
+		resolvedService,
+		config,
+		poster ?? '',
+	)
+} catch (error) {
+	const identifier = src ?? mediaId ?? mediaTitle
+	console.error(
+		`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+		error instanceof Error ? error.message : error,
+	)
 }
 
 const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
@@ -217,8 +189,10 @@ const sharedProps = {
 {
 	videoInfo && videoSrc && (
 		<Caption {...captionProps}>
-			<div slot="media-component">
-				{resolvedService === 'youtube' ? (
+			<div slot="media-component" style="display: contents">
+				{resolvedService === 'local' ? (
+					<InternalVideoLocal {...sharedProps} />
+				) : resolvedService === 'youtube' ? (
 					<InternalVideoYouTube {...sharedProps} />
 				) : resolvedService === 'vimeo' ? (
 					<InternalVideoVimeo {...sharedProps} />
@@ -228,7 +202,6 @@ const sharedProps = {
 						captions={videoInfo.captions}
 						hlsConfig={hlsConfig}
 						hlsUrl={videoInfo.hlsUrl}
-						isLocal={isLocal}
 						mp4Url={videoInfo.mp4Url}
 					/>
 				)}
