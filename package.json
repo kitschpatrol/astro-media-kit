@@ -56,8 +56,8 @@
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
 		"fix": "ksc fix",
 		"lint": "ksc lint ; astro check",
-		"play": "poptab ; pnpm -C playground run dev",
-		"play-starlight": "poptab ; pnpm -C playground-starlight run dev",
+		"play": "pnpm -C playground run dev",
+		"play-starlight": "pnpm -C playground-starlight run dev",
 		"release": "bumpp --commit 'Release: %s' && pnpm run build && NPM_AUTH_TOKEN=$(op read 'op://Personal/npm/token') && pnpm publish",
 		"test": "vitest run"
 	},
@@ -74,19 +74,19 @@
 		"linkedom": "^0.18.12",
 		"media-chrome": "^4.18.3",
 		"mrmime": "^2.0.1",
-		"photoswipe": "^5.4.4"
+		"photoswipe": "^5.4.4",
+		"photoswipe-dynamic-caption-plugin": "^1.2.7"
 	},
 	"devDependencies": {
 		"@arethetypeswrong/core": "^0.18.2",
 		"@astrojs/check": "^0.9.8",
 		"@kitschpatrol/shared-config": "^6.1.0",
-		"astro": "^6.0.8",
+		"astro": "^6.1.1",
 		"bumpp": "^11.0.1",
-		"poptab": "^1.0.4",
 		"publint": "^0.3.18",
 		"tsdown": "^0.21.5",
 		"typescript": "~5.9.3",
-		"vitest": "^4.1.1"
+		"vitest": "^4.1.2"
 	},
 	"peerDependencies": {
 		"astro": "^6.0.0"
