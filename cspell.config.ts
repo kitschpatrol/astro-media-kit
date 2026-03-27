@@ -10,6 +10,8 @@ export default cspellConfig({
 		'pswp',
 		'Ewma',
 		'lightboxes',
+		'mediaaudiotrackunavailable',
+		'mediaenterfullscreenrequest',
 		'msrc',
 		'userinactive',
 		'userinactivechange',

@@ -241,7 +241,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	// Caption plugin: extract caption from the <figcaption> sibling of the
 	// .pswp-zoom element inside the <figure> wrapper rendered by Caption.astro.
-	// eslint-disable-next-line ts/no-unsafe-call -- plugin registers itself via constructor side effect
+	// eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-call -- plugin has no type declarations
 	const captionPlugin = new PhotoSwipeDynamicCaption(lightbox, {
 		captionContent(slide: { data: { element?: HTMLElement } }) {
 			const { element } = slide.data
