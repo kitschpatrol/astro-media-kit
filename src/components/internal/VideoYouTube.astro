@@ -1,0 +1,159 @@
+---
+import type { InternalVideoProps } from './types'
+
+type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
+
+export type Props = Omit<InternalVideoProps, 'captions' | 'hlsConfig'>
+
+const {
+	aspectRatio,
+	autoPlay,
+	controlStyle,
+	galleryName,
+	loop,
+	muted,
+	posterUrl,
+	preload,
+	resolvedLabel,
+	videoSrc,
+	zoom,
+} = Astro.props
+
+const videoAttributes: VideoAttributes = {
+	'aria-label': resolvedLabel,
+	autoplay: autoPlay || undefined,
+	crossorigin: 'anonymous',
+	loop: loop || undefined,
+	muted: muted || undefined,
+	playsinline: 'true',
+	poster: posterUrl,
+	preload,
+}
+---
+
+<script>
+	import 'youtube-video-element'
+	import 'media-chrome'
+	import '../utils/lightbox'
+
+	// Prevent fullscreen buttons used as zoom triggers from entering native
+	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
+	// PhotoSwipe instead.
+	for (const button of document.querySelectorAll<HTMLElement>(
+		'media-fullscreen-button.pswp-video-trigger',
+	)) {
+		button.addEventListener('mediaenterfullscreenrequest', (event) => {
+			event.stopPropagation()
+			event.preventDefault()
+		})
+	}
+
+	// Lightbox mode: hide controls when inactive, even while paused/ended.
+	for (const controller of document.querySelectorAll<HTMLElement>('media-controller.lightbox')) {
+		const controlBar = controller.querySelector('media-control-bar')
+		if (!controlBar) continue
+
+		const { style } = controlBar as HTMLElement
+		const update = () => {
+			if (controller.hasAttribute('userinactive')) {
+				style.opacity = '0'
+				style.pointerEvents = 'none'
+			} else {
+				style.opacity = ''
+				style.pointerEvents = ''
+			}
+		}
+
+		controller.addEventListener('userinactivechange', update)
+		update()
+	}
+</script>
+
+{
+	zoom ? (
+		<div
+			class="pswp-zoom"
+			data-pswp-gallery={galleryName}
+			data-pswp-height="1080"
+			data-pswp-poster={posterUrl ?? ''}
+			data-pswp-type="video"
+			data-pswp-video-element="youtube-video"
+			data-pswp-video-src={videoSrc}
+			data-pswp-width="1920"
+		>
+			<media-controller
+				autohide="1"
+				class:list={[controlStyle, { autoplay: autoPlay }]}
+				gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+				inert={controlStyle === 'none' ? 'true' : undefined}
+				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+			>
+				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
+				{controlStyle === 'full' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+						<media-fullscreen-button class="pswp-video-trigger" />
+					</media-control-bar>
+				)}
+				{controlStyle === 'lightbox' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+					</media-control-bar>
+				)}
+				{controlStyle === 'minimal' && (
+					<media-control-bar style="justify-content: flex-end">
+						<media-fullscreen-button class="pswp-video-trigger" />
+					</media-control-bar>
+				)}
+				{controlStyle === 'minimal' && (
+					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+				)}
+			</media-controller>
+		</div>
+	) : (
+		<media-controller
+			autohide="1"
+			class:list={[controlStyle, { autoplay: autoPlay }]}
+			gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+			inert={controlStyle === 'none' ? 'true' : undefined}
+			style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+		>
+			<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
+			{controlStyle === 'full' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					<media-fullscreen-button />
+				</media-control-bar>
+			)}
+			{controlStyle === 'lightbox' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+				</media-control-bar>
+			)}
+			{controlStyle === 'minimal' && (
+				<media-control-bar style="justify-content: flex-end">
+					<media-fullscreen-button />
+				</media-control-bar>
+			)}
+			{controlStyle === 'minimal' && (
+				<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+			)}
+		</media-controller>
+	)
+}

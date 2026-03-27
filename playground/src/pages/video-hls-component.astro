@@ -1,64 +1,60 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
-import VideoHls from 'astro-media-kit/components/VideoHls.astro'
+import Video from 'astro-media-kit/components/Video.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
 const { title } = pages.find((p) => p.href === '/video-hls-component')!
+const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 ---
 
 <Layout title={title}>
 	<h1>{title}</h1>
 
-	<h2>Control styles</h2>
+	<h2>Control styles (HLS)</h2>
 	<h3>None</h3>
-	<VideoHls
+	<Video
 		autoPlay={true}
 		capQualityToSize={false}
 		controlStyle="none"
 		initialBandwidth={50_000_000}
 		loop={true}
-		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+		mediaId={bunnyId}
 	/>
 	<h3>Minimal</h3>
-	<VideoHls
+	<Video
 		capQualityToSize={false}
 		controlStyle="minimal"
 		initialBandwidth={50_000_000}
-		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+		mediaId={bunnyId}
 	/>
 	<h3>Full</h3>
-	<VideoHls
+	<Video
 		capQualityToSize={false}
 		controlStyle="full"
 		initialBandwidth={50_000_000}
-		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
+		mediaId={bunnyId}
 	/>
 	<h3>Lightbox</h3>
-	<VideoHls
-		controlStyle="lightbox"
-		initialBandwidth={50_000_000}
-		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
-	/>
+	<Video controlStyle="lightbox" initialBandwidth={50_000_000} mediaId={bunnyId} />
+
+	<h2>YouTube</h2>
+	<Video mediaId="dQw4w9WgXcQ" />
+
+	<h2>YouTube (explicit service)</h2>
+	<Video mediaId="dQw4w9WgXcQ" service="youtube" />
+
+	<h2>Vimeo</h2>
+	<Video mediaId="871050379" />
 
 	<h2>Zoom (standalone)</h2>
-	<VideoHls
-		controlStyle="full"
-		initialBandwidth={50_000_000}
-		mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
-		zoom={true}
-	/>
+	<Video controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom={true} />
 
 	<h2>Zoom (mixed gallery)</h2>
 	<p>Video and image in the same gallery — swipe between them.</p>
 	<div style="display: flex; gap: 1rem; align-items: start;">
 		<div style="flex: 1;">
-			<VideoHls
-				controlStyle="full"
-				initialBandwidth={50_000_000}
-				mediaId="f24d7806-2cf5-4df9-a340-840d68eef8c9"
-				zoom="mixed"
-			/>
+			<Video controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="mixed" />
 		</div>
 		<div style="flex: 1;">
 			<Image alt="test image" src="../assets/test.jpeg" zoom="mixed" />

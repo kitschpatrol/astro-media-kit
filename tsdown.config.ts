@@ -32,6 +32,7 @@ export default defineConfig({
 		'src/components/utils/cloudflare.ts',
 		'src/components/utils/lightbox.ts',
 		'src/components/utils/mux.ts',
+		'src/components/internal/types.ts',
 		'src/utilities/dark-variant.ts',
 		'src/utilities/image-probe.ts',
 		'src/utilities/path.ts',

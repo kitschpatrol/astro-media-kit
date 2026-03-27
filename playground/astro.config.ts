@@ -22,7 +22,7 @@ export default defineConfig({
 			attributes: true,
 			directives: {
 				Video: {
-					component: 'VideoHls',
+					component: 'Video',
 					componentModule: 'astro-media-kit/components',
 				},
 			},

@@ -2,7 +2,7 @@
 /* eslint-disable ts/naming-convention */
 
 import type { AstroIntegration } from 'astro'
-import type { Service } from '../components/utils/video.js'
+import type { CredentialService, Service } from '../components/utils/video.js'
 import type { AphexConfig } from './aphex.js'
 import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
 import type { TldrawConfig } from './tldraw.js'
@@ -138,7 +138,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const video = config?.video ?? false
 	const videoServices: Service[] =
 		video === true
-			? ['bunny', 'cloudflare', 'mux']
+			? (['bunny', 'cloudflare', 'mux'] as Service[])
 			: video === false
 				? []
 				: Array.isArray(video)
@@ -151,7 +151,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				if (videoServices.length > 0) {
 					const { envField } = await import('astro/config')
 					const envSchemaForService: Record<
-						Service,
+						CredentialService,
 						Record<string, ReturnType<typeof envField.string>>
 					> = {
 						bunny: {
@@ -174,7 +174,10 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 					let schema: Record<string, ReturnType<typeof envField.string>> = {}
 					for (const s of videoServices) {
-						schema = { ...schema, ...envSchemaForService[s] }
+						if (s in envSchemaForService) {
+							// eslint-disable-next-line ts/no-unsafe-type-assertion -- guarded by in check
+							schema = { ...schema, ...envSchemaForService[s as CredentialService] }
+						}
 					}
 
 					updateConfig({ env: { schema } })

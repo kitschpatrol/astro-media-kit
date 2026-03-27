@@ -1,7 +1,7 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
-import VideoHls from 'astro-media-kit/components/VideoHls.astro'
+import Video from 'astro-media-kit/components/Video.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
@@ -18,9 +18,9 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 
 	<div class="grid">
 		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="album" />
-		<VideoHls controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="album" />
+		<Video controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="album" />
 		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="album" />
-		<VideoHls controlStyle="minimal" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="album" />
+		<Video controlStyle="minimal" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="album" />
 		<Picture
 			alt="Dark mode JPEG"
 			src="../assets/test.jpeg"

@@ -1,0 +1,227 @@
+---
+import type { InternalVideoProps } from './types'
+
+type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
+
+export type Props = InternalVideoProps & {
+	/** HLS URL for noscript fallback. */
+	hlsUrl: string
+	/** Whether this is a local file (no noscript fallback). */
+	isLocal: boolean
+	/** MP4 fallback URL for noscript. */
+	mp4Url: string
+}
+
+const {
+	aspectRatio,
+	autoPlay,
+	captions,
+	controlStyle,
+	galleryName,
+	hlsConfig,
+	hlsUrl,
+	isLocal,
+	loop,
+	mp4Url,
+	muted,
+	posterUrl,
+	preload,
+	resolvedLabel,
+	videoSrc,
+	zoom,
+} = Astro.props
+
+const videoAttributes: VideoAttributes = {
+	'aria-label': resolvedLabel,
+	autoplay: autoPlay || undefined,
+	crossorigin: 'anonymous',
+	disablepictureinpicture: 'true',
+	loop: loop || undefined,
+	muted: muted || undefined,
+	playsinline: 'true',
+	poster: posterUrl,
+	preload,
+}
+
+const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
+---
+
+<script>
+	import 'hls-video-element'
+	import 'media-chrome'
+	import '../utils/lightbox'
+
+	import type { HlsVideoElement } from 'hls-video-element'
+
+	// Apply hls.js config before source loading.
+	// Config must be set before src so hls.js uses it during initialization.
+	// Elements render with data-src instead of src, then we set config + src here.
+	for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
+		const configAttribute = element.dataset.hlsConfig
+		if (configAttribute) {
+			element.config = JSON.parse(configAttribute)
+		}
+
+		element.setAttribute('src', element.dataset.src!)
+	}
+
+	// Prevent fullscreen buttons used as zoom triggers from entering native
+	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
+	// PhotoSwipe instead. Intercept the media-chrome request event so both
+	// click and keyboard activation are caught.
+	for (const button of document.querySelectorAll<HTMLElement>(
+		'media-fullscreen-button.pswp-video-trigger',
+	)) {
+		button.addEventListener('mediaenterfullscreenrequest', (event) => {
+			event.stopPropagation()
+			event.preventDefault()
+		})
+	}
+
+	// Lightbox mode: hide controls when inactive, even while paused/ended.
+	// Media-chrome's shadow DOM CSS keeps controls visible when mediapaused
+	// is set. Shadow DOM ::slotted() rules can't be overridden from light DOM,
+	// so we toggle inline styles via the userinactivechange event.
+	for (const controller of document.querySelectorAll<HTMLElement>('media-controller.lightbox')) {
+		const controlBar = controller.querySelector('media-control-bar')
+		if (!controlBar) continue
+
+		const { style } = controlBar as HTMLElement
+		const update = () => {
+			if (controller.hasAttribute('userinactive')) {
+				style.opacity = '0'
+				style.pointerEvents = 'none'
+			} else {
+				style.opacity = ''
+				style.pointerEvents = ''
+			}
+		}
+
+		controller.addEventListener('userinactivechange', update)
+		update()
+	}
+</script>
+
+{
+	zoom ? (
+		<div
+			class="pswp-zoom"
+			data-pswp-gallery={galleryName}
+			data-pswp-height="1080"
+			data-pswp-poster={posterUrl ?? ''}
+			data-pswp-type="video"
+			data-pswp-video-config={hlsConfigJson}
+			data-pswp-video-element="hls-video"
+			data-pswp-video-src={videoSrc}
+			data-pswp-width="1920"
+		>
+			<media-controller
+				autohide="1"
+				class:list={[controlStyle, { autoplay: autoPlay }]}
+				gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+				inert={controlStyle === 'none' ? 'true' : undefined}
+				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+			>
+				<hls-video
+					{...videoAttributes}
+					data-hls-config={hlsConfigJson}
+					data-src={videoSrc}
+					slot="media"
+				>
+					{captions.map((caption) => (
+						<track kind="captions" {...caption} />
+					))}
+				</hls-video>
+				{controlStyle === 'full' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+						{captions.length > 0 && <media-captions-button />}
+						<media-fullscreen-button class="pswp-video-trigger" />
+					</media-control-bar>
+				)}
+				{controlStyle === 'lightbox' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+						{captions.length > 0 && <media-captions-button />}
+					</media-control-bar>
+				)}
+				{controlStyle === 'minimal' && (
+					<media-control-bar style="justify-content: flex-end">
+						<media-fullscreen-button class="pswp-video-trigger" />
+					</media-control-bar>
+				)}
+				{controlStyle === 'minimal' && (
+					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+				)}
+			</media-controller>
+		</div>
+	) : (
+		<media-controller
+			autohide="1"
+			class:list={[controlStyle, { autoplay: autoPlay }]}
+			gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+			inert={controlStyle === 'none' ? 'true' : undefined}
+			style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+		>
+			<hls-video
+				{...videoAttributes}
+				data-hls-config={hlsConfigJson}
+				data-src={videoSrc}
+				slot="media"
+			>
+				{captions.map((caption) => (
+					<track kind="captions" {...caption} />
+				))}
+			</hls-video>
+			{controlStyle === 'full' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{captions.length > 0 && <media-captions-button />}
+					<media-fullscreen-button />
+				</media-control-bar>
+			)}
+			{controlStyle === 'lightbox' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{captions.length > 0 && <media-captions-button />}
+				</media-control-bar>
+			)}
+			{controlStyle === 'minimal' && (
+				<media-control-bar style="justify-content: flex-end">
+					<media-fullscreen-button />
+				</media-control-bar>
+			)}
+			{controlStyle === 'minimal' && (
+				<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+			)}
+		</media-controller>
+	)
+}
+{
+	!isLocal && hlsUrl && (
+		<noscript>
+			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+			<video {...videoAttributes}>
+				<source src={hlsUrl} type="application/x-mpegURL" />
+				{mp4Url && <source src={mp4Url} type="video/mp4" />}
+				Your browser does not support HTML5 video.
+			</video>
+		</noscript>
+	)
+}

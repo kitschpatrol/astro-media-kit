@@ -1,0 +1,239 @@
+---
+import { getSecret } from 'astro:env/server'
+import type { Props as CaptionProps } from './Caption.astro'
+import type { Service, ServiceConfig, VideoInfo } from './utils/video'
+import Caption from './Caption.astro'
+import InternalVideoHls from './internal/VideoHls.astro'
+import InternalVideoVimeo from './internal/VideoVimeo.astro'
+import InternalVideoYouTube from './internal/VideoYouTube.astro'
+import { getVideoInfo, inferServiceFromMediaId, isEmbedService } from './utils/video'
+
+type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
+
+type SharedProps = Omit<CaptionProps, 'src'> & {
+	autoPlay?: boolean
+	capQualityToSize?: boolean
+	controlStyle?: ControlStyles
+	initialBandwidth?: number
+	label?: string
+	loop?: boolean
+	muted?: boolean
+	preload?: 'auto' | 'metadata' | 'none'
+	zoom?: boolean | string | undefined
+}
+
+export type Props = SharedProps &
+	(
+		| { mediaId: string; mediaTitle?: never; poster?: never; service?: Service; src?: never }
+		| { mediaId?: never; mediaTitle: string; poster?: never; service?: Service; src?: never }
+		| { mediaId?: never; mediaTitle?: never; poster?: string; service?: never; src: string }
+	)
+
+const {
+	autoPlay = false,
+	capQualityToSize,
+	controlStyle = 'full',
+	creator,
+	initialBandwidth,
+	label,
+	loop = false,
+	mediaId,
+	mediaTitle,
+	muted = true,
+	organization,
+	poster,
+	preload = 'metadata',
+	service,
+	showCredit = true,
+	src,
+	type,
+	typeFallback,
+	zoom = false,
+} = Astro.props
+
+const galleryName = typeof zoom === 'string' ? zoom : undefined
+
+const isLocal = src !== undefined
+const resolvedService: Service | undefined = isLocal
+	? undefined
+	: (service ?? (mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny'))
+
+const isEmbed = resolvedService !== undefined && isEmbedService(resolvedService)
+
+let videoInfo: undefined | VideoInfo
+
+if (isLocal) {
+	videoInfo = {
+		captions: [],
+		duration: -1,
+		height: 0,
+		hlsUrl: '',
+		mp4Url: '',
+		posterUrl: poster ?? '',
+		title: label,
+		width: 0,
+	}
+} else if (isEmbed) {
+	// Embed services (YouTube, Vimeo) use oEmbed — no credentials needed.
+	// getVideoInfo ignores the config for embed services, but the signature requires it.
+	const emptyConfig: ServiceConfig = {
+		bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
+		cloudflare: { accountId: '', apiToken: '' },
+		mux: { accessToken: '', secret: '' },
+		vimeo: {},
+		youtube: {},
+	}
+	try {
+		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService, emptyConfig)
+	} catch (error) {
+		const identifier = mediaId ?? mediaTitle
+		console.error(
+			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
+} else {
+	const config: ServiceConfig = {
+		bunny: {
+			apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
+			hostname: getSecret('BUNNY_HOSTNAME') ?? '',
+			libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
+		},
+		cloudflare: {
+			accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
+			apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
+		},
+		mux: {
+			accessToken: getSecret('MUX_TOKEN_ID') ?? '',
+			secret: getSecret('MUX_TOKEN_SECRET') ?? '',
+		},
+		vimeo: {},
+		youtube: {},
+	}
+
+	try {
+		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService!, config)
+	} catch (error) {
+		const identifier = mediaId ?? mediaTitle
+		console.error(
+			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
+}
+
+const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
+
+// Compute the video source URL based on service type.
+let videoSrc: string | undefined
+if (isLocal) {
+	videoSrc = src
+} else if (resolvedService === 'youtube' && mediaId) {
+	videoSrc = `https://www.youtube.com/watch?v=${mediaId}`
+} else if (resolvedService === 'vimeo' && mediaId) {
+	videoSrc = `https://vimeo.com/${mediaId}`
+} else {
+	videoSrc = videoInfo?.hlsUrl
+}
+
+const captionProps: CaptionProps = {
+	creator,
+	organization,
+	showCredit,
+	src: undefined,
+	type,
+	typeFallback: typeFallback ?? 'video',
+}
+
+const aspectRatio =
+	videoInfo?.width && videoInfo.height ? `${videoInfo.width} / ${videoInfo.height}` : undefined
+
+const hlsConfig: Record<string, boolean | number> = {}
+if (initialBandwidth !== undefined) hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
+if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityToSize
+
+const posterUrl = isLocal ? (poster ?? undefined) : videoInfo?.posterUrl
+
+const sharedProps = {
+	aspectRatio,
+	autoPlay,
+	controlStyle,
+	galleryName,
+	loop,
+	muted,
+	posterUrl,
+	preload,
+	resolvedLabel,
+	videoSrc: videoSrc ?? '',
+	zoom: Boolean(zoom),
+} as const
+---
+
+<style>
+	/* Lightbox mode: transition for JS-driven visibility toggle.
+	   Shadow DOM ::slotted() rules can't be overridden from light DOM,
+	   so we use inline styles set by the userinactivechange listener. */
+	media-controller.lightbox media-control-bar {
+		transition: opacity 0.25s;
+	}
+
+	/* Never show the control bar when auto-playing, unless the video has played. */
+	media-controller.autoplay:not([mediahasplayed]) media-control-bar,
+	media-controller.autoplay:not([mediahasplayed]) media-play-button {
+		display: none;
+	}
+
+	/* Hide mute and volume controls when the video has no audio track. */
+	media-controller[mediaaudiotrackunavailable] media-mute-button,
+	media-controller[mediaaudiotrackunavailable] media-volume-range {
+		display: none;
+	}
+
+	/* Prevent focus from scrolling content inside the player... */
+	/* See https://github.com/muxinc/media-chrome/issues/1254 */
+	media-controller {
+		--media-time-range-hover-bottom: 0;
+		width: 100%;
+	}
+
+	/* Don't hide the cursor when inactive, unless fullscreen. */
+	media-controller[userinactive]:not([mediaisfullscreen]) * {
+		cursor: auto !important;
+	}
+</style>
+
+<style is:global>
+	/* PhotoSwipe lightbox video wrapper. Global because it renders inside
+	   PhotoSwipe's DOM, outside Astro's scoped style boundary. */
+	/* PhotoSwipe sets explicit width/height on content.element via
+	   setDisplayedSize(). Don't override with 100% — it breaks slide
+	   transition animations. The media-controller fills the wrapper. */
+	.pswp__video-wrapper media-controller {
+		width: 100%;
+		height: 100%;
+	}
+</style>
+
+{
+	videoInfo && videoSrc && (
+		<Caption {...captionProps}>
+			<div slot="media-component">
+				{resolvedService === 'youtube' ? (
+					<InternalVideoYouTube {...sharedProps} />
+				) : resolvedService === 'vimeo' ? (
+					<InternalVideoVimeo {...sharedProps} />
+				) : (
+					<InternalVideoHls
+						{...sharedProps}
+						captions={videoInfo.captions}
+						hlsConfig={hlsConfig}
+						hlsUrl={videoInfo.hlsUrl}
+						isLocal={isLocal}
+						mp4Url={videoInfo.mp4Url}
+					/>
+				)}
+			</div>
+			<slot />
+		</Caption>
+	)
+}

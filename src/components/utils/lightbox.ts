@@ -1,7 +1,7 @@
 /* eslint-disable ts/no-restricted-types */
 /**
  * Shared PhotoSwipe lightbox initialization for both image (Zoomer) and video
- * (VideoHls) components. Supports mixed galleries containing both content types.
+ * (Video) components. Supports mixed galleries containing both content types.
  *
  * Images use the default PhotoSwipe image type.
  * Videos use a custom 'video' type — a duplicate player is created in the
@@ -19,21 +19,27 @@ import 'photoswipe/style.css'
 
 type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
 
+/** Supported video element tag names for lightbox playback. */
+type VideoElementTag = 'hls-video' | 'vimeo-video' | 'youtube-video'
+
+const VIDEO_ELEMENT_SELECTOR = 'hls-video, youtube-video, vimeo-video'
+
 /** Type guard for video slide data stored in content.data. */
 function isVideoData(data: Record<string, unknown>): data is Record<string, unknown> & {
 	videoConfig: string
 	videoContainer: HTMLElement
+	videoElement: VideoElementTag
 	videoPoster: string
 	videoSrc: string
 } {
 	return data.type === 'video' && data.videoContainer instanceof HTMLElement
 }
 
-/** Query an hls-video element and return it as HTMLMediaElement or null. */
-function queryHlsVideo(root: Element | null | undefined): HTMLMediaElement | null {
-	const element = root?.querySelector('hls-video')
+/** Query a video element (hls-video, youtube-video, vimeo-video) and return it as HTMLMediaElement or null. */
+function queryVideoElement(root: Element | null | undefined): HTMLMediaElement | null {
+	const element = root?.querySelector(VIDEO_ELEMENT_SELECTOR)
 	if (element instanceof HTMLMediaElement) return element
-	// HlsVideoElement extends HTMLElement with play/pause/currentTime via
+	// Custom video elements extend HTMLElement with play/pause/currentTime via
 	// CustomVideoElement proxy — safe to treat as HTMLMediaElement.
 	if (!element) return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- CustomVideoElement proxies HTMLMediaElement API
@@ -59,6 +65,8 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 				type: 'video',
 				videoConfig: element.dataset.pswpVideoConfig ?? '',
 				videoContainer: element,
+				// eslint-disable-next-line ts/no-unsafe-type-assertion -- value controlled by our own data attribute
+				videoElement: (element.dataset.pswpVideoElement ?? 'hls-video') as VideoElementTag,
 				videoPoster: posterUrl,
 				videoSrc: element.dataset.pswpVideoSrc ?? '',
 				width: Number(element.dataset.pswpWidth) || 1920,
@@ -119,23 +127,28 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (!isVideoData(content.data)) return
 		event.preventDefault()
 
-		const { videoConfig, videoContainer, videoPoster, videoSrc } = content.data
+		const {
+			videoConfig,
+			videoContainer,
+			videoElement: videoElementTag,
+			videoPoster,
+			videoSrc,
+		} = content.data
 
-		// Build <hls-video> element.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- Custom element not in HTMLElementTagNameMap
-		const hlsVideo = document.createElement('hls-video') as HlsVideoElement
-		hlsVideo.setAttribute('crossorigin', 'anonymous')
-		hlsVideo.setAttribute('playsinline', 'true')
-		hlsVideo.setAttribute('preload', 'metadata')
-		if (videoPoster) hlsVideo.setAttribute('poster', videoPoster)
+		// Build the appropriate video element based on data-pswp-video-element.
+		const videoElement = document.createElement(videoElementTag)
+		videoElement.setAttribute('crossorigin', 'anonymous')
+		videoElement.setAttribute('playsinline', 'true')
+		videoElement.setAttribute('preload', 'metadata')
+		if (videoPoster) videoElement.setAttribute('poster', videoPoster)
 
-		// Apply hls.js config before setting src.
-		if (videoConfig) {
-			// eslint-disable-next-line ts/no-unsafe-assignment -- JSON.parse returns any
-			hlsVideo.config = JSON.parse(videoConfig)
+		// Apply hls.js config before setting src (HLS-specific).
+		if (videoElementTag === 'hls-video' && videoConfig) {
+			// eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-type-assertion -- JSON.parse returns any; guarded by tag check above
+			;(videoElement as unknown as HlsVideoElement).config = JSON.parse(videoConfig)
 		}
 
-		hlsVideo.setAttribute('src', videoSrc)
+		videoElement.setAttribute('src', videoSrc)
 
 		// Build <media-controller> with lightbox control style:
 		// gesturesdisabled (no click-to-play), no fullscreen button.
@@ -143,8 +156,8 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		controller.setAttribute('autohide', '1')
 		controller.setAttribute('gesturesdisabled', '')
 		controller.classList.add('lightbox')
-		hlsVideo.setAttribute('slot', 'media')
-		controller.append(hlsVideo)
+		videoElement.setAttribute('slot', 'media')
+		controller.append(videoElement)
 
 		const controlBar = document.createElement('media-control-bar')
 		for (const tag of [
@@ -193,23 +206,26 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
-		// Sync playback position from inline player.
-		const inlineVideo = queryHlsVideo(videoContainer)
-		if (inlineVideo && inlineVideo.currentTime > 0) {
-			hlsVideo.currentTime = inlineVideo.currentTime
+		// Sync playback position from inline player (HLS only — embed
+		// players don't expose currentTime reliably before playback).
+		if (videoElementTag === 'hls-video') {
+			const inlineVideo = queryVideoElement(videoContainer)
+			if (inlineVideo && inlineVideo.currentTime > 0) {
+				videoElement.currentTime = inlineVideo.currentTime
+			}
 		}
 	})
 
 	// Auto-play when slide becomes active.
 	lightbox.on('contentActivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
-		const video = queryHlsVideo(content.element)
+		const video = queryVideoElement(content.element)
 		if (video) {
 			void video.play()
 		}
 
 		// Pause the inline player.
-		const inlineVideo = queryHlsVideo(content.data.videoContainer)
+		const inlineVideo = queryVideoElement(content.data.videoContainer)
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
@@ -218,7 +234,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// Pause when swiping away to another slide.
 	lightbox.on('contentDeactivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
-		const video = queryHlsVideo(content.element)
+		const video = queryVideoElement(content.element)
 		if (video && !video.paused) {
 			video.pause()
 		}
@@ -277,8 +293,10 @@ function syncBackToInline(content: {
 	element?: HTMLElement | undefined
 }): void {
 	if (!isVideoData(content.data)) return
-	const lightboxVideo = queryHlsVideo(content.element)
-	const inlineVideo = queryHlsVideo(content.data.videoContainer)
+	// Only sync for HLS — embed players handle their own state.
+	if (content.data.videoElement !== 'hls-video') return
+	const lightboxVideo = queryVideoElement(content.element)
+	const inlineVideo = queryVideoElement(content.data.videoContainer)
 
 	if (lightboxVideo && inlineVideo && lightboxVideo.currentTime > 0) {
 		inlineVideo.currentTime = lightboxVideo.currentTime
