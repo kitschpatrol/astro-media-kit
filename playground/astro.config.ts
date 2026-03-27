@@ -21,14 +21,12 @@ export default defineConfig({
 		mdxKit({
 			attributes: true,
 			directives: {
-				Block: 'src/components/Block.astro',
-				CustomImage: {
-					autoImport: 'src',
-					component: 'src/components/CustomImage.astro',
+				Video: {
+					component: 'VideoHls',
+					componentModule: 'astro-media-kit/components',
 				},
 			},
 			elements: {
-				h1: 'src/components/Heading.astro',
 				img: {
 					autoImport: ['src', tldrawDarkImport],
 					caption: 'figure',

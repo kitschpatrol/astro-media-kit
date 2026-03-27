@@ -6,4 +6,5 @@ export const pages = [
 	{ href: '/video-hls-component', title: 'Video HLS' },
 	{ href: '/video-js-component', title: 'Video JS' },
 	{ href: '/markdown', title: 'MDX' },
+	{ href: '/markdown-video', title: 'MDX Video' },
 ] as const
