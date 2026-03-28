@@ -1,0 +1,80 @@
+---
+import type { Props as CaptionProps } from './Caption.astro'
+import type { AudioService } from './utils/audio'
+import Caption from './Caption.astro'
+import InternalAudioLocal from './internal/AudioLocal.astro'
+import InternalAudioSoundCloud from './internal/AudioSoundCloud.astro'
+import { buildSoundCloudEmbedUrl, inferAudioServiceFromMediaId } from './utils/audio'
+
+type SharedProps = Omit<CaptionProps, 'src'> & {
+	autoPlay?: boolean
+	label?: string
+	loop?: boolean
+	muted?: boolean
+	preload?: 'auto' | 'metadata' | 'none'
+}
+
+export type Props = SharedProps &
+	(
+		| { mediaId: string; service?: AudioService; src?: never }
+		| { mediaId?: never; service?: never; src: string }
+	)
+
+const {
+	autoPlay = false,
+	creator,
+	label,
+	loop = false,
+	mediaId,
+	muted = false,
+	organization,
+	preload = 'metadata',
+	service,
+	showCredit = true,
+	src,
+	type,
+	typeFallback,
+} = Astro.props
+
+const isLocal = src !== undefined
+const resolvedService: AudioService = isLocal
+	? 'local'
+	: (service ?? inferAudioServiceFromMediaId(mediaId ?? ''))
+
+const resolvedLabel = label ?? 'Audio'
+const resolvedSrc = src ?? ''
+const embedUrl =
+	resolvedService === 'soundcloud' ? buildSoundCloudEmbedUrl(mediaId ?? '', { autoPlay }) : ''
+
+const captionProps: CaptionProps = {
+	creator,
+	organization,
+	showCredit,
+	src: undefined,
+	type,
+	typeFallback: typeFallback ?? 'audio',
+}
+---
+
+<Caption {...captionProps}>
+	{
+		resolvedService === 'local' ? (
+			<InternalAudioLocal
+				autoPlay={autoPlay}
+				loop={loop}
+				muted={muted}
+				preload={preload}
+				resolvedLabel={resolvedLabel}
+				slot="media-component"
+				src={resolvedSrc}
+			/>
+		) : (
+			<InternalAudioSoundCloud
+				embedUrl={embedUrl}
+				resolvedLabel={resolvedLabel}
+				slot="media-component"
+			/>
+		)
+	}
+	<slot />
+</Caption>

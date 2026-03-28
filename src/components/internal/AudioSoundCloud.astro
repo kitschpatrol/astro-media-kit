@@ -1,0 +1,12 @@
+---
+export type Props = {
+	embedUrl: string
+	resolvedLabel: string
+}
+
+const { embedUrl, resolvedLabel } = Astro.props
+---
+
+<div class="amk">
+	<iframe allow="autoplay" height="166" src={embedUrl} title={resolvedLabel} width="100%"></iframe>
+</div>

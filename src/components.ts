@@ -1,3 +1,5 @@
+export { default as Audio } from './components/Audio.astro'
+export type { Props as AudioProps } from './components/Audio.astro'
 export { default as Caption } from './components/Caption.astro'
 export type { Props as CaptionProps } from './components/Caption.astro'
 export { default as Image } from './components/Image.astro'

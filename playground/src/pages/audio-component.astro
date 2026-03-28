@@ -1,0 +1,20 @@
+---
+import Audio from 'astro-media-kit/components/Audio.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/audio-component')!
+---
+
+<Layout title={title}>
+	<h1>{title}</h1>
+
+	<h2>SoundCloud</h2>
+	<Audio mediaId="6836449" />
+
+	<h2>SoundCloud (explicit service)</h2>
+	<Audio mediaId="6836449" service="soundcloud" />
+
+	<h2>Local file</h2>
+	<Audio src="/test.mp3" />
+</Layout>

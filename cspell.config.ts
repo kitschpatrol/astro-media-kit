@@ -12,6 +12,7 @@ export default cspellConfig({
 		'lightboxes',
 		'mediaaudiotrackunavailable',
 		'mediaenterfullscreenrequest',
+		'soundcloud',
 		'msrc',
 		'userinactive',
 		'userinactivechange',

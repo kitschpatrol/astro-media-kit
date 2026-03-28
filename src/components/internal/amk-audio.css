@@ -1,0 +1,7 @@
+/* Shared media-controller styles for audio sub-components.
+   Imported in each internal component's frontmatter.
+   Prefixed with .amk for scope protection. */
+
+.amk media-controller[audio] {
+	max-width: 100%;
+}
