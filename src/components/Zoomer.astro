@@ -1,11 +1,31 @@
 ---
 import { extractZoomTarget } from './utils/image'
 
+type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
+
 type Props = {
+	// Video-specific props — when videoElement is set, Zoomer renders a video
+	// zoom wrapper instead of an image zoom wrapper.
+	videoConfig?: string | undefined
+	videoElement?: undefined | VideoElementTag
+	videoHeight?: number | undefined
+	videoPoster?: string | undefined
+	videoSrc?: string | undefined
+	videoWidth?: number | undefined
 	zoom?: boolean | string | undefined
 }
 
-const { zoom = false } = Astro.props
+const {
+	videoConfig,
+	videoElement,
+	videoHeight,
+	videoPoster,
+	videoSrc,
+	videoWidth,
+	zoom = false,
+} = Astro.props
+
+const isVideo = videoElement !== undefined
 
 let mediaComponentHtml = ''
 let zoomUrl = ''
@@ -20,20 +40,40 @@ if (zoom) {
 	}
 
 	mediaComponentHtml = await Astro.slots.render('media-component')
-	const target = extractZoomTarget(mediaComponentHtml)
-	zoomUrl = target.url
-	zoomWidth = target.width
-	zoomHeight = target.height
-	zoomSrcset = target.srcset
 
 	if (typeof zoom === 'string') {
 		galleryName = zoom
+	}
+
+	if (isVideo) {
+		zoomWidth = videoWidth ?? 1920
+		zoomHeight = videoHeight ?? 1080
+	} else {
+		const target = extractZoomTarget(mediaComponentHtml)
+		zoomUrl = target.url
+		zoomWidth = target.width
+		zoomHeight = target.height
+		zoomSrcset = target.srcset
 	}
 }
 ---
 
 {
-	zoom ? (
+	zoom && isVideo ? (
+		<div
+			class="pswp-zoom"
+			data-pswp-gallery={galleryName}
+			data-pswp-height={zoomHeight}
+			data-pswp-poster={videoPoster ?? ''}
+			data-pswp-type="video"
+			data-pswp-video-config={videoConfig}
+			data-pswp-video-element={videoElement}
+			data-pswp-video-src={videoSrc}
+			data-pswp-width={zoomWidth}
+		>
+			<Fragment set:html={mediaComponentHtml} />
+		</div>
+	) : zoom ? (
 		<a
 			class="pswp-zoom"
 			data-pswp-gallery={galleryName}
@@ -55,6 +95,10 @@ if (zoom) {
 
 <style>
 	a.pswp-zoom {
+		cursor: zoom-in;
+	}
+
+	div.pswp-zoom {
 		cursor: zoom-in;
 	}
 </style>

@@ -1,5 +1,6 @@
 ---
 import type { InternalVideoProps } from './types'
+import './video-player.css'
 
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
 
@@ -9,7 +10,6 @@ const {
 	aspectRatio,
 	autoPlay,
 	controlStyle,
-	galleryName,
 	loop,
 	muted,
 	posterUrl,
@@ -31,17 +31,9 @@ const videoAttributes: VideoAttributes = {
 }
 ---
 
-<style>
-	/* Vimeo embeds may not support volume control or airplay. */
-	media-controller[mediavolumeunavailable] media-volume-range {
-		display: none;
-	}
-</style>
-
 <script>
 	import 'vimeo-video-element'
 	import 'media-chrome'
-	import '../utils/lightbox'
 
 	// Prevent fullscreen buttons used as zoom triggers from entering native
 	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
@@ -76,75 +68,29 @@ const videoAttributes: VideoAttributes = {
 	}
 </script>
 
-{
-	zoom ? (
-		<div
-			class="pswp-zoom"
-			data-pswp-gallery={galleryName}
-			data-pswp-height="1080"
-			data-pswp-poster={posterUrl ?? ''}
-			data-pswp-type="video"
-			data-pswp-video-element="vimeo-video"
-			data-pswp-video-src={videoSrc}
-			data-pswp-width="1920"
-		>
-			<media-controller
-				autohide="1"
-				class:list={[controlStyle, { autoplay: autoPlay }]}
-				gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
-				inert={controlStyle === 'none' ? 'true' : undefined}
-				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-			>
-				<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
-				{controlStyle === 'full' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						<media-fullscreen-button class="pswp-video-trigger" />
-					</media-control-bar>
-				)}
-				{controlStyle === 'lightbox' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-control-bar style="justify-content: flex-end">
-						<media-fullscreen-button class="pswp-video-trigger" />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				)}
-			</media-controller>
-		</div>
-	) : (
-		<media-controller
-			autohide="1"
-			class:list={[controlStyle, { autoplay: autoPlay }]}
-			gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
-			inert={controlStyle === 'none' ? 'true' : undefined}
-			style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-		>
-			<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
-			{controlStyle === 'full' && (
+<div class="amk-video">
+	<media-controller
+		autohide="1"
+		class:list={[controlStyle, { autoplay: autoPlay }]}
+		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+		inert={controlStyle === 'none' ? 'true' : undefined}
+		style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+	>
+		<vimeo-video {...videoAttributes} slot="media" src={videoSrc}></vimeo-video>
+		{
+			controlStyle === 'full' && (
 				<media-control-bar>
 					<media-play-button />
 					<media-mute-button />
 					<media-volume-range />
 					<media-time-range />
 					<media-time-display />
-					<media-fullscreen-button />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
 				</media-control-bar>
-			)}
-			{controlStyle === 'lightbox' && (
+			)
+		}
+		{
+			controlStyle === 'lightbox' && (
 				<media-control-bar>
 					<media-play-button />
 					<media-mute-button />
@@ -152,15 +98,19 @@ const videoAttributes: VideoAttributes = {
 					<media-time-range />
 					<media-time-display />
 				</media-control-bar>
-			)}
-			{controlStyle === 'minimal' && (
+			)
+		}
+		{
+			controlStyle === 'minimal' && (
 				<media-control-bar style="justify-content: flex-end">
-					<media-fullscreen-button />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
 				</media-control-bar>
-			)}
-			{controlStyle === 'minimal' && (
+			)
+		}
+		{
+			controlStyle === 'minimal' && (
 				<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-			)}
-		</media-controller>
-	)
-}
+			)
+		}
+	</media-controller>
+</div>

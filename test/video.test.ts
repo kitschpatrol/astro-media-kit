@@ -65,7 +65,10 @@ describe('validateServiceConfig', () => {
 	const emptyConfig = {
 		bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
 		cloudflare: { accountId: '', apiToken: '' },
+		local: {},
 		mux: { accessToken: '', secret: '' },
+		vimeo: {},
+		youtube: {},
 	}
 
 	it('throws for missing Bunny credentials', () => {
@@ -90,7 +93,10 @@ describe('validateServiceConfig', () => {
 		const validConfig = {
 			bunny: { apiAccessKey: 'key', hostname: 'host', libraryId: 'lib' },
 			cloudflare: { accountId: 'acc', apiToken: 'tok' },
+			local: {},
 			mux: { accessToken: 'tok', secret: 'sec' },
+			vimeo: {},
+			youtube: {},
 		}
 
 		expect(() => {

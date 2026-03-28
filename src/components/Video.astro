@@ -8,6 +8,7 @@ import InternalVideoLocal from './internal/VideoLocal.astro'
 import InternalVideoVimeo from './internal/VideoVimeo.astro'
 import InternalVideoYouTube from './internal/VideoYouTube.astro'
 import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
+import Zoomer from './Zoomer.astro'
 
 type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
 
@@ -51,8 +52,6 @@ const {
 	typeFallback,
 	zoom = false,
 } = Astro.props
-
-const galleryName = typeof zoom === 'string' ? zoom : undefined
 
 const isLocal = src !== undefined
 const resolvedService: Service = isLocal
@@ -124,13 +123,26 @@ const hlsConfig: Record<string, boolean | number> = {}
 if (initialBandwidth !== undefined) hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
 if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityToSize
 
+const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
+
 const posterUrl = isLocal ? (poster ?? undefined) : videoInfo?.posterUrl
+
+// Map service to the custom element tag name used in the lightbox.
+const videoElementMap = {
+	bunny: 'hls-video',
+	cloudflare: 'hls-video',
+	local: 'video',
+	mux: 'hls-video',
+	vimeo: 'vimeo-video',
+	youtube: 'youtube-video',
+} as const
+
+const videoElement = videoElementMap[resolvedService]
 
 const sharedProps = {
 	aspectRatio,
 	autoPlay,
 	controlStyle,
-	galleryName,
 	loop,
 	muted,
 	posterUrl,
@@ -141,45 +153,9 @@ const sharedProps = {
 } as const
 ---
 
-<style>
-	/* Lightbox mode: transition for JS-driven visibility toggle.
-	   Shadow DOM ::slotted() rules can't be overridden from light DOM,
-	   so we use inline styles set by the userinactivechange listener. */
-	media-controller.lightbox media-control-bar {
-		transition: opacity 0.25s;
-	}
-
-	/* Never show the control bar when auto-playing, unless the video has played. */
-	media-controller.autoplay:not([mediahasplayed]) media-control-bar,
-	media-controller.autoplay:not([mediahasplayed]) media-play-button {
-		display: none;
-	}
-
-	/* Hide mute and volume controls when the video has no audio track. */
-	media-controller[mediaaudiotrackunavailable] media-mute-button,
-	media-controller[mediaaudiotrackunavailable] media-volume-range {
-		display: none;
-	}
-
-	/* Prevent focus from scrolling content inside the player... */
-	/* See https://github.com/muxinc/media-chrome/issues/1254 */
-	media-controller {
-		--media-time-range-hover-bottom: 0;
-		width: 100%;
-	}
-
-	/* Don't hide the cursor when inactive, unless fullscreen. */
-	media-controller[userinactive]:not([mediaisfullscreen]) * {
-		cursor: auto !important;
-	}
-</style>
-
 <style is:global>
 	/* PhotoSwipe lightbox video wrapper. Global because it renders inside
 	   PhotoSwipe's DOM, outside Astro's scoped style boundary. */
-	/* PhotoSwipe sets explicit width/height on content.element via
-	   setDisplayedSize(). Don't override with 100% — it breaks slide
-	   transition animations. The media-controller fills the wrapper. */
 	.pswp__video-wrapper media-controller {
 		width: 100%;
 		height: 100%;
@@ -189,13 +165,22 @@ const sharedProps = {
 {
 	videoInfo && videoSrc && (
 		<Caption {...captionProps}>
-			<div slot="media-component" style="display: contents">
+			<Zoomer
+				slot="media-component"
+				videoConfig={videoElement === 'hls-video' ? hlsConfigJson : undefined}
+				videoElement={videoElement}
+				videoHeight={videoInfo.height}
+				videoPoster={posterUrl}
+				videoSrc={videoSrc}
+				videoWidth={videoInfo.width}
+				zoom={zoom}
+			>
 				{resolvedService === 'local' ? (
-					<InternalVideoLocal {...sharedProps} />
+					<InternalVideoLocal {...sharedProps} slot="media-component" />
 				) : resolvedService === 'youtube' ? (
-					<InternalVideoYouTube {...sharedProps} />
+					<InternalVideoYouTube {...sharedProps} slot="media-component" />
 				) : resolvedService === 'vimeo' ? (
-					<InternalVideoVimeo {...sharedProps} />
+					<InternalVideoVimeo {...sharedProps} slot="media-component" />
 				) : (
 					<InternalVideoHls
 						{...sharedProps}
@@ -203,9 +188,10 @@ const sharedProps = {
 						hlsConfig={hlsConfig}
 						hlsUrl={videoInfo.hlsUrl}
 						mp4Url={videoInfo.mp4Url}
+						slot="media-component"
 					/>
 				)}
-			</div>
+			</Zoomer>
 			<slot />
 		</Caption>
 	)

@@ -3,7 +3,7 @@ export const pages = [
 	{ href: '/picture-component', title: 'Picture' },
 	{ href: '/zoom', title: 'Zoom' },
 	{ href: '/zoom-test', title: 'Zoom Mixed' },
-	{ href: '/video-hls-component', title: 'Video HLS' },
+	{ href: '/video-component', title: 'Video' },
 	{ href: '/video-js-component', title: 'Video JS' },
 	{ href: '/markdown', title: 'MDX' },
 	{ href: '/markdown-video', title: 'MDX Video' },

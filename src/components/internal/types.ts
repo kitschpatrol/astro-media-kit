@@ -12,7 +12,6 @@ export type InternalVideoProps = {
 		srclang: string
 	}>
 	controlStyle: 'full' | 'lightbox' | 'minimal' | 'none'
-	galleryName: string | undefined
 	hlsConfig: Record<string, boolean | number>
 	loop: boolean
 	muted: boolean

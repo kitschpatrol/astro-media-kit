@@ -15,6 +15,10 @@ export default defineConfig({
 			flatten: false,
 			from: 'src/**/*.astro.d.ts',
 		},
+		{
+			flatten: false,
+			from: 'src/**/*.css',
+		},
 	],
 	deps: {
 		neverBundle: [/\.astro$/],

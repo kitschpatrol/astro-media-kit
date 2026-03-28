@@ -1,12 +1,12 @@
 ---
 import type { InternalVideoProps } from './types'
+import './video-player.css'
 
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
 
 export type Props = InternalVideoProps & {
 	/** HLS URL for noscript fallback. */
 	hlsUrl: string
-	/** Whether this is a local file (no noscript fallback). */
 	/** MP4 fallback URL for noscript. */
 	mp4Url: string
 }
@@ -16,7 +16,6 @@ const {
 	autoPlay,
 	captions,
 	controlStyle,
-	galleryName,
 	hlsConfig,
 	hlsUrl,
 	loop,
@@ -47,7 +46,6 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 <script>
 	import 'hls-video-element'
 	import 'media-chrome'
-	import '../utils/lightbox'
 
 	import type { HlsVideoElement } from 'hls-video-element'
 
@@ -65,8 +63,7 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 
 	// Prevent fullscreen buttons used as zoom triggers from entering native
 	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
-	// PhotoSwipe instead. Intercept the media-chrome request event so both
-	// click and keyboard activation are caught.
+	// PhotoSwipe instead.
 	for (const button of document.querySelectorAll<HTMLElement>(
 		'media-fullscreen-button.pswp-video-trigger',
 	)) {
@@ -100,86 +97,24 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 	}
 </script>
 
-{
-	zoom ? (
-		<div
-			class="pswp-zoom"
-			data-pswp-gallery={galleryName}
-			data-pswp-height="1080"
-			data-pswp-poster={posterUrl ?? ''}
-			data-pswp-type="video"
-			data-pswp-video-config={hlsConfigJson}
-			data-pswp-video-element="hls-video"
-			data-pswp-video-src={videoSrc}
-			data-pswp-width="1920"
+<div class="amk-video">
+	<media-controller
+		autohide="1"
+		class:list={[controlStyle, { autoplay: autoPlay }]}
+		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+		inert={controlStyle === 'none' ? 'true' : undefined}
+		style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+	>
+		<hls-video
+			{...videoAttributes}
+			data-hls-config={hlsConfigJson}
+			data-src={videoSrc}
+			slot="media"
 		>
-			<media-controller
-				autohide="1"
-				class:list={[controlStyle, { autoplay: autoPlay }]}
-				gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
-				inert={controlStyle === 'none' ? 'true' : undefined}
-				style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-			>
-				<hls-video
-					{...videoAttributes}
-					data-hls-config={hlsConfigJson}
-					data-src={videoSrc}
-					slot="media"
-				>
-					{captions.map((caption) => (
-						<track kind="captions" {...caption} />
-					))}
-				</hls-video>
-				{controlStyle === 'full' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{captions.length > 0 && <media-captions-button />}
-						<media-fullscreen-button class="pswp-video-trigger" />
-					</media-control-bar>
-				)}
-				{controlStyle === 'lightbox' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{captions.length > 0 && <media-captions-button />}
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-control-bar style="justify-content: flex-end">
-						<media-fullscreen-button class="pswp-video-trigger" />
-					</media-control-bar>
-				)}
-				{controlStyle === 'minimal' && (
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				)}
-			</media-controller>
-		</div>
-	) : (
-		<media-controller
-			autohide="1"
-			class:list={[controlStyle, { autoplay: autoPlay }]}
-			gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
-			inert={controlStyle === 'none' ? 'true' : undefined}
-			style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
-		>
-			<hls-video
-				{...videoAttributes}
-				data-hls-config={hlsConfigJson}
-				data-src={videoSrc}
-				slot="media"
-			>
-				{captions.map((caption) => (
-					<track kind="captions" {...caption} />
-				))}
-			</hls-video>
-			{controlStyle === 'full' && (
+			{captions.map((caption) => <track kind="captions" {...caption} />)}
+		</hls-video>
+		{
+			controlStyle === 'full' && (
 				<media-control-bar>
 					<media-play-button />
 					<media-mute-button />
@@ -187,10 +122,12 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 					<media-time-range />
 					<media-time-display />
 					{captions.length > 0 && <media-captions-button />}
-					<media-fullscreen-button />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
 				</media-control-bar>
-			)}
-			{controlStyle === 'lightbox' && (
+			)
+		}
+		{
+			controlStyle === 'lightbox' && (
 				<media-control-bar>
 					<media-play-button />
 					<media-mute-button />
@@ -199,18 +136,22 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 					<media-time-display />
 					{captions.length > 0 && <media-captions-button />}
 				</media-control-bar>
-			)}
-			{controlStyle === 'minimal' && (
+			)
+		}
+		{
+			controlStyle === 'minimal' && (
 				<media-control-bar style="justify-content: flex-end">
-					<media-fullscreen-button />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
 				</media-control-bar>
-			)}
-			{controlStyle === 'minimal' && (
+			)
+		}
+		{
+			controlStyle === 'minimal' && (
 				<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-			)}
-		</media-controller>
-	)
-}
+			)
+		}
+	</media-controller>
+</div>
 {
 	hlsUrl && (
 		<noscript>
