@@ -1,6 +1,6 @@
 ---
 import type { InternalVideoProps } from './types'
-import './video-player.css'
+import './amk-video.css'
 
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
 
@@ -18,6 +18,7 @@ const {
 	controlStyle,
 	hlsConfig,
 	hlsUrl,
+	intrinsicWidth,
 	loop,
 	mp4Url,
 	muted,
@@ -27,6 +28,14 @@ const {
 	videoSrc,
 	zoom,
 } = Astro.props
+
+const controllerStyle =
+	[
+		intrinsicWidth && `width: ${String(intrinsicWidth)}px`,
+		aspectRatio && `aspect-ratio: ${aspectRatio}`,
+	]
+		.filter(Boolean)
+		.join('; ') || undefined
 
 const videoAttributes: VideoAttributes = {
 	'aria-label': resolvedLabel,
@@ -97,13 +106,13 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 	}
 </script>
 
-<div class="amk-video">
+<div class="amk">
 	<media-controller
 		autohide="1"
 		class:list={[controlStyle, { autoplay: autoPlay }]}
 		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
 		inert={controlStyle === 'none' ? 'true' : undefined}
-		style={aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined}
+		style={controllerStyle}
 	>
 		<hls-video
 			{...videoAttributes}

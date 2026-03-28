@@ -1,36 +1,36 @@
 /* Shared media-controller styles for all video sub-components.
    Imported in each internal component's frontmatter.
-   Prefixed with .amk-video for scope protection — each sub-component
+   Prefixed with .amk for scope protection — each sub-component
    adds this class to its root wrapper element. */
 
-.amk-video media-controller {
+.amk media-controller {
 	--media-time-range-hover-bottom: 0;
-	width: 100%;
+	max-width: 100%;
 }
 
 /* Lightbox mode: transition for JS-driven visibility toggle. */
-.amk-video media-controller.lightbox media-control-bar {
+.amk media-controller.lightbox media-control-bar {
 	transition: opacity 0.25s;
 }
 
 /* Never show the control bar when auto-playing, unless the video has played. */
-.amk-video media-controller.autoplay:not([mediahasplayed]) media-control-bar,
-.amk-video media-controller.autoplay:not([mediahasplayed]) media-play-button {
+.amk media-controller.autoplay:not([mediahasplayed]) media-control-bar,
+.amk media-controller.autoplay:not([mediahasplayed]) media-play-button {
 	display: none;
 }
 
 /* Hide mute and volume controls when the video has no audio track. */
-.amk-video media-controller[mediaaudiotrackunavailable] media-mute-button,
-.amk-video media-controller[mediaaudiotrackunavailable] media-volume-range {
+.amk media-controller[mediaaudiotrackunavailable] media-mute-button,
+.amk media-controller[mediaaudiotrackunavailable] media-volume-range {
 	display: none;
 }
 
 /* Vimeo embeds may not support volume control. */
-.amk-video media-controller[mediavolumeunavailable] media-volume-range {
+.amk media-controller[mediavolumeunavailable] media-volume-range {
 	display: none;
 }
 
 /* Don't hide the cursor when inactive, unless fullscreen. */
-.amk-video media-controller[userinactive]:not([mediaisfullscreen]) * {
+.amk media-controller[userinactive]:not([mediaisfullscreen]) * {
 	cursor: auto !important;
 }

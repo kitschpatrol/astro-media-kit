@@ -19,6 +19,7 @@ import {
 	unwrapImageMetadata,
 } from './utils/image'
 import Zoomer from './Zoomer.astro'
+import './amk-image.css'
 
 type GetImageResult = Awaited<ReturnType<typeof getImage>>
 
@@ -349,7 +350,7 @@ if (background && backgroundDark) {
 				alt={alt}
 				src={fallbackImage.src}
 				{...imgAttributes}
-				class={imgClassName}
+				class:list={[imgClassName, 'amk']}
 				style={backgroundStyle}
 			/>
 		</picture>

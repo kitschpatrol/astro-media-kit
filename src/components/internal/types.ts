@@ -13,6 +13,8 @@ export type InternalVideoProps = {
 	}>
 	controlStyle: 'full' | 'lightbox' | 'minimal' | 'none'
 	hlsConfig: Record<string, boolean | number>
+	/** Intrinsic video width in pixels, used for native-like sizing. */
+	intrinsicWidth: number | undefined
 	loop: boolean
 	muted: boolean
 	posterUrl: string | undefined

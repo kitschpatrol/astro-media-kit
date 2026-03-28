@@ -17,6 +17,7 @@ import {
 	unwrapImageMetadata,
 } from './utils/image'
 import Zoomer from './Zoomer.astro'
+import './amk-image.css'
 
 // Only use LocalImageProps since we always resolve to ImageMetadata (local images)
 export type Props = Omit<CaptionProps, 'src'> &
@@ -97,8 +98,10 @@ const compositingBackground = background && opaqueFormats.has(outputFormat) ? { 
 // Image component accepts LocalImageProps | RemoteImageProps, and TypeScript's
 // exactOptionalPropertyTypes can't reconcile spread props with union types.
 // See: https://github.com/withastro/astro/issues/10780
+
 // eslint-disable-next-line ts/consistent-type-assertions, ts/no-unsafe-type-assertion -- Astro #10780
 const astroImageProps = {
+	class: 'amk',
 	src: imageMetadata,
 	style: backgroundStyle,
 	...compositingBackground,
