@@ -97,7 +97,9 @@ const videoAttributes: VideoAttributes = {
 					<media-volume-range />
 					<media-time-range />
 					<media-time-display />
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
+					</media-fullscreen-button>
 				</media-control-bar>
 			)
 		}
@@ -115,7 +117,9 @@ const videoAttributes: VideoAttributes = {
 		{
 			controlStyle === 'minimal' && (
 				<media-control-bar style="justify-content: flex-end">
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
+					</media-fullscreen-button>
 				</media-control-bar>
 			)
 		}

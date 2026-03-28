@@ -131,7 +131,9 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 					<media-time-range />
 					<media-time-display />
 					{captions.length > 0 && <media-captions-button />}
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
+					</media-fullscreen-button>
 				</media-control-bar>
 			)
 		}
@@ -150,7 +152,9 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 		{
 			controlStyle === 'minimal' && (
 				<media-control-bar style="justify-content: flex-end">
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]} />
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
+					</media-fullscreen-button>
 				</media-control-bar>
 			)
 		}
