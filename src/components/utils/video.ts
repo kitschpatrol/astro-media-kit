@@ -110,7 +110,12 @@ export function youtubeIsValidMediaId(mediaId: string): boolean {
 }
 
 async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
-	const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(mediaId)}&format=json`
+	// oEmbed returns embed widget dimensions, not actual video resolution.
+	// Without maxwidth the default is ~200px. Passing maxwidth=1920 gives
+	// dimensions that preserve the correct aspect ratio at a usable size
+	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
+	// the YouTube Data API v3 with owner authentication.
+	const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(mediaId)}&format=json&maxwidth=1920`
 	const response = await fetch(url)
 	if (!response.ok) {
 		throw new Error(`YouTube oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
@@ -145,7 +150,11 @@ export function vimeoIsValidMediaId(mediaId: string): boolean {
 }
 
 async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
-	const url = `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${encodeURIComponent(mediaId)}`
+	// oEmbed returns embed dimensions, not actual video resolution.
+	// Passing width=1920 gives dimensions at the correct aspect ratio
+	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
+	// the full Vimeo API with authentication.
+	const url = `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${encodeURIComponent(mediaId)}&width=1920`
 	const response = await fetch(url)
 	if (!response.ok) {
 		throw new Error(`Vimeo oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
