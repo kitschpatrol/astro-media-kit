@@ -78,17 +78,17 @@ const config: ServiceConfig = {
 }
 
 let videoInfo: undefined | VideoInfo
+const resolvedIdentifier = src ?? mediaId ?? mediaTitle
+
+if (resolvedIdentifier === undefined) {
+	throw new Error('Identifier of some sort is required')
+}
+
 try {
-	videoInfo = await getVideoInfo(
-		src ?? mediaId ?? mediaTitle,
-		resolvedService,
-		config,
-		poster ?? '',
-	)
+	videoInfo = await getVideoInfo(resolvedIdentifier, resolvedService, config, poster ?? '')
 } catch (error) {
-	const identifier = src ?? mediaId ?? mediaTitle
 	console.error(
-		`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+		`[astro-media-kit] Video "${resolvedIdentifier}" (${resolvedService}) failed to load:`,
 		error instanceof Error ? error.message : error,
 	)
 }

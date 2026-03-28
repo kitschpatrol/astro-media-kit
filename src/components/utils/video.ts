@@ -110,7 +110,7 @@ export function youtubeIsValidMediaId(mediaId: string): boolean {
 }
 
 async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
-	// oEmbed returns embed widget dimensions, not actual video resolution.
+	// OEmbed returns embed widget dimensions, not actual video resolution.
 	// Without maxwidth the default is ~200px. Passing maxwidth=1920 gives
 	// dimensions that preserve the correct aspect ratio at a usable size
 	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
@@ -150,7 +150,7 @@ export function vimeoIsValidMediaId(mediaId: string): boolean {
 }
 
 async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
-	// oEmbed returns embed dimensions, not actual video resolution.
+	// OEmbed returns embed dimensions, not actual video resolution.
 	// Passing width=1920 gives dimensions at the correct aspect ratio
 	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
 	// the full Vimeo API with authentication.
