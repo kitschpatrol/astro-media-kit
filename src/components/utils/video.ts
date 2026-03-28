@@ -109,13 +109,14 @@ export function youtubeIsValidMediaId(mediaId: string): boolean {
 	return YOUTUBE_ID_RE.test(mediaId)
 }
 
+const EMBED_DEFAULT_WIDTH = 1920
+
 async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
-	// OEmbed returns embed widget dimensions, not actual video resolution.
-	// Without maxwidth the default is ~200px. Passing maxwidth=1920 gives
-	// dimensions that preserve the correct aspect ratio at a usable size
-	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
-	// the YouTube Data API v3 with owner authentication.
-	const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(mediaId)}&format=json&maxwidth=1920`
+	// oEmbed returns small embed widget dimensions (~356x200), not actual
+	// video resolution. We scale up to EMBED_DEFAULT_WIDTH preserving the
+	// aspect ratio. Actual source resolution would require the YouTube
+	// Data API v3 with owner authentication.
+	const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(mediaId)}&format=json`
 	const response = await fetch(url)
 	if (!response.ok) {
 		throw new Error(`YouTube oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
@@ -128,15 +129,17 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 		title: string
 		width: number
 	}
+
+	const scale = data.width > 0 ? EMBED_DEFAULT_WIDTH / data.width : 1
 	return {
 		captions: [],
 		duration: -1,
-		height: data.height,
+		height: Math.round(data.height * scale),
 		hlsUrl: '',
 		mp4Url: '',
 		posterUrl: data.thumbnail_url,
 		title: data.title,
-		width: data.width,
+		width: EMBED_DEFAULT_WIDTH,
 	}
 }
 

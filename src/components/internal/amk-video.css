@@ -19,14 +19,16 @@
 	display: none;
 }
 
-/* Hide mute and volume controls when the video has no audio track. */
-.amk media-controller[mediaaudiotrackunavailable] media-mute-button,
-.amk media-controller[mediaaudiotrackunavailable] media-volume-range {
+/* Hide volume slider on platforms that don't support programmatic volume (e.g. iOS). */
+.amk media-controller[mediavolumeunavailable] media-volume-range {
 	display: none;
 }
 
-/* Vimeo embeds may not support volume control. */
-.amk media-controller[mediavolumeunavailable] media-volume-range {
+/* Hide mute and volume controls when the video has no audio track.
+   Excluded for embed services (.amk-embed) — YouTube/Vimeo always have
+   audio but the audioTracks API isn't available cross-origin. */
+.amk:not(.amk-embed) media-controller[mediaaudiotrackunavailable] media-mute-button,
+.amk:not(.amk-embed) media-controller[mediaaudiotrackunavailable] media-volume-range {
 	display: none;
 }
 
