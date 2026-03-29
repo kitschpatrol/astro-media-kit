@@ -9,11 +9,10 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	preload?: 'auto' | 'metadata' | 'none'
 }
 
-export type Props = SharedProps &
-	(
-		| { mediaId: string; service?: AudioService; src?: never }
-		| { mediaId?: never; service?: never; src: string }
-	)
+export type Props = SharedProps & {
+	service?: AudioService
+	src: string
+}
 
 declare const Audio: (props: Props) => unknown
 export default Audio

@@ -16,6 +16,7 @@ export type DarkLightImageMetadata = {
 /** Valid media type labels for captions and credits. */
 export type MediaType =
 	| 'animation'
+	| 'audio'
 	| 'diagram'
 	| 'illustration'
 	| 'image'

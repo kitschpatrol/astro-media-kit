@@ -1,0 +1,14 @@
+---
+export type Props = {
+	aspectRatio?: string | undefined
+	html: string
+	resolvedLabel: string
+}
+
+const { aspectRatio, html, resolvedLabel } = Astro.props
+const style = aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined
+---
+
+<div aria-label={resolvedLabel} class="amk" role="group" style={style}>
+	<Fragment set:html={html} />
+</div>

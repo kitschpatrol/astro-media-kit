@@ -11,6 +11,8 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 <Layout title={title}>
 	<h1>{title}</h1>
 
+	<Video src="https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen" />
+
 	<h2>Control styles (HLS)</h2>
 	<h3>None</h3>
 	<Video
@@ -19,24 +21,19 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		controlStyle="none"
 		initialBandwidth={50_000_000}
 		loop={true}
-		mediaId={bunnyId}
+		src={bunnyId}
 	/>
 	<h3>Minimal</h3>
 	<Video
 		capQualityToSize={false}
 		controlStyle="minimal"
 		initialBandwidth={50_000_000}
-		mediaId={bunnyId}
+		src={bunnyId}
 	/>
 	<h3>Full</h3>
-	<Video
-		capQualityToSize={false}
-		controlStyle="full"
-		initialBandwidth={50_000_000}
-		mediaId={bunnyId}
-	/>
+	<Video capQualityToSize={false} controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} />
 	<h3>Lightbox</h3>
-	<Video controlStyle="lightbox" initialBandwidth={50_000_000} mediaId={bunnyId} />
+	<Video controlStyle="lightbox" initialBandwidth={50_000_000} src={bunnyId} />
 
 	<h2>Local file</h2>
 	<Video src="/test.mp4" />
@@ -45,22 +42,28 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<Video poster="/test-poster.jpeg" src="/test.mp4" />
 
 	<h2>YouTube</h2>
-	<Video mediaId="dQw4w9WgXcQ" />
+	<Video src="dQw4w9WgXcQ" />
+
+	<h2>YouTube (URL)</h2>
+	<Video src="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
 
 	<h2>YouTube (explicit service)</h2>
-	<Video mediaId="dQw4w9WgXcQ" service="youtube" />
+	<Video service="youtube" src="dQw4w9WgXcQ" />
 
 	<h2>Vimeo</h2>
-	<Video mediaId="10184668" />
+	<Video src="10184668" />
+
+	<h2>Vimeo (URL)</h2>
+	<Video src="https://vimeo.com/10184668" />
 
 	<h2>Zoom (standalone)</h2>
-	<Video controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom={true} />
+	<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom={true} />
 
 	<h2>Zoom (mixed gallery)</h2>
 	<p>Video and image in the same gallery — swipe between them.</p>
 	<div style="display: flex; gap: 1rem; align-items: start;">
 		<div style="flex: 1;">
-			<Video controlStyle="full" initialBandwidth={50_000_000} mediaId={bunnyId} zoom="mixed" />
+			<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
 		</div>
 		<div style="flex: 1;">
 			<Image alt="test image" src="../assets/test.jpeg" zoom="mixed" />

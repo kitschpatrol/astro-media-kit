@@ -1,10 +1,13 @@
 ---
 import type { Props as CaptionProps } from './Caption.astro'
 import type { AudioService } from './utils/audio'
+import type { OembedInfo } from './utils/oembed'
 import Caption from './Caption.astro'
 import InternalAudioLocal from './internal/AudioLocal.astro'
 import InternalAudioSoundCloud from './internal/AudioSoundCloud.astro'
-import { buildSoundCloudEmbedUrl, inferAudioServiceFromMediaId } from './utils/audio'
+import InternalOembed from './internal/OEmbed.astro'
+import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
+import { fetchOEmbed } from './utils/oembed'
 
 type SharedProps = Omit<CaptionProps, 'src'> & {
 	autoPlay?: boolean
@@ -14,18 +17,16 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	preload?: 'auto' | 'metadata' | 'none'
 }
 
-export type Props = SharedProps &
-	(
-		| { mediaId: string; service?: AudioService; src?: never }
-		| { mediaId?: never; service?: never; src: string }
-	)
+export type Props = SharedProps & {
+	service?: AudioService
+	src: string
+}
 
 const {
 	autoPlay = false,
 	creator,
 	label,
 	loop = false,
-	mediaId,
 	muted = false,
 	organization,
 	preload = 'metadata',
@@ -36,15 +37,25 @@ const {
 	typeFallback,
 } = Astro.props
 
-const isLocal = src !== undefined
-const resolvedService: AudioService = isLocal
-	? 'local'
-	: (service ?? inferAudioServiceFromMediaId(mediaId ?? ''))
+const { identifier, service: resolvedService } = resolveAudioSource(src, service)
 
 const resolvedLabel = label ?? 'Audio'
-const resolvedSrc = src ?? ''
-const embedUrl =
-	resolvedService === 'soundcloud' ? buildSoundCloudEmbedUrl(mediaId ?? '', { autoPlay }) : ''
+
+let oembedInfo: OembedInfo | undefined
+let embedUrl = ''
+
+if (resolvedService === 'soundcloud') {
+	embedUrl = buildSoundCloudEmbedUrl(identifier, { autoPlay })
+} else if (resolvedService === 'oembed') {
+	try {
+		oembedInfo = await fetchOEmbed(identifier)
+	} catch (error) {
+		console.error(
+			`[astro-media-kit] Audio oEmbed "${identifier}" failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
+}
 
 const captionProps: CaptionProps = {
 	creator,
@@ -54,11 +65,23 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback: typeFallback ?? 'audio',
 }
+
+const oembedAspectRatio =
+	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 ---
 
 <Caption {...captionProps}>
 	{
-		resolvedService === 'local' ? (
+		resolvedService === 'oembed' ? (
+			oembedInfo && (
+				<InternalOembed
+					aspectRatio={oembedAspectRatio}
+					html={oembedInfo.html}
+					resolvedLabel={resolvedLabel}
+					slot="media-component"
+				/>
+			)
+		) : resolvedService === 'local' ? (
 			<InternalAudioLocal
 				autoPlay={autoPlay}
 				loop={loop}
@@ -66,7 +89,7 @@ const captionProps: CaptionProps = {
 				preload={preload}
 				resolvedLabel={resolvedLabel}
 				slot="media-component"
-				src={resolvedSrc}
+				src={identifier}
 			/>
 		) : (
 			<InternalAudioSoundCloud

@@ -1,13 +1,16 @@
 ---
 import { getSecret } from 'astro:env/server'
 import type { Props as CaptionProps } from './Caption.astro'
+import type { OembedInfo } from './utils/oembed'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
+import InternalOembed from './internal/OEmbed.astro'
 import InternalVideoHls from './internal/VideoHls.astro'
 import InternalVideoLocal from './internal/VideoLocal.astro'
 import InternalVideoVimeo from './internal/VideoVimeo.astro'
 import InternalVideoYouTube from './internal/VideoYouTube.astro'
-import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
+import { fetchOEmbed } from './utils/oembed'
+import { getVideoInfo, isEmbedService, resolveVideoSource } from './utils/video'
 import Zoomer from './Zoomer.astro'
 
 type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
@@ -20,16 +23,15 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	label?: string
 	loop?: boolean
 	muted?: boolean
+	poster?: string
 	preload?: 'auto' | 'metadata' | 'none'
 	zoom?: boolean | string | undefined
 }
 
-export type Props = SharedProps &
-	(
-		| { mediaId: string; mediaTitle?: never; poster?: never; service?: Service; src?: never }
-		| { mediaId?: never; mediaTitle: string; poster?: never; service?: Service; src?: never }
-		| { mediaId?: never; mediaTitle?: never; poster?: string; service?: never; src: string }
-	)
+export type Props = SharedProps & {
+	service?: Service
+	src: string
+}
 
 const {
 	autoPlay = false,
@@ -39,8 +41,6 @@ const {
 	initialBandwidth,
 	label,
 	loop = false,
-	mediaId,
-	mediaTitle,
 	muted = true,
 	organization,
 	poster,
@@ -53,10 +53,7 @@ const {
 	zoom = false,
 } = Astro.props
 
-const isLocal = src !== undefined
-const resolvedService: Service = isLocal
-	? 'local'
-	: (service ?? (mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny'))
+const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 
 const config: ServiceConfig = {
 	bunny: {
@@ -73,38 +70,63 @@ const config: ServiceConfig = {
 		accessToken: getSecret('MUX_TOKEN_ID') ?? '',
 		secret: getSecret('MUX_TOKEN_SECRET') ?? '',
 	},
+	oembed: {},
 	vimeo: {},
 	youtube: {},
 }
 
 let videoInfo: undefined | VideoInfo
-const resolvedIdentifier = src ?? mediaId ?? mediaTitle
+let oembedInfo: OembedInfo | undefined
 
-if (resolvedIdentifier === undefined) {
-	throw new Error('Identifier of some sort is required')
+if (resolvedService === 'oembed') {
+	try {
+		oembedInfo = await fetchOEmbed(identifier)
+	} catch (error) {
+		console.error(
+			`[astro-media-kit] Video oEmbed "${identifier}" failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
+} else {
+	try {
+		videoInfo = await getVideoInfo(identifier, resolvedService, config, poster ?? '')
+	} catch (error) {
+		console.error(
+			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
+			error instanceof Error ? error.message : error,
+		)
+	}
 }
 
-try {
-	videoInfo = await getVideoInfo(resolvedIdentifier, resolvedService, config, poster ?? '')
-} catch (error) {
-	console.error(
-		`[astro-media-kit] Video "${resolvedIdentifier}" (${resolvedService}) failed to load:`,
-		error instanceof Error ? error.message : error,
-	)
-}
-
-const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
+const resolvedLabel = label ?? oembedInfo?.title ?? videoInfo?.title ?? 'Video'
 
 // Compute the video source URL based on service type.
 let videoSrc: string | undefined
-if (isLocal) {
-	videoSrc = src
-} else if (resolvedService === 'youtube' && mediaId) {
-	videoSrc = `https://www.youtube.com/watch?v=${mediaId}`
-} else if (resolvedService === 'vimeo' && mediaId) {
-	videoSrc = `https://vimeo.com/${mediaId}`
-} else {
-	videoSrc = videoInfo?.hlsUrl
+switch (resolvedService) {
+	case 'bunny': // Falls through
+	case 'cloudflare': // Falls through
+	case 'mux': {
+		videoSrc = videoInfo?.hlsUrl
+		break
+	}
+
+	case 'local': {
+		videoSrc = src
+		break
+	}
+	case 'oembed': {
+		// Handled separately via fetchOEmbed
+		break
+	}
+	case 'vimeo': {
+		videoSrc = `https://vimeo.com/${identifier}`
+		break
+	}
+
+	case 'youtube': {
+		videoSrc = `https://www.youtube.com/watch?v=${identifier}`
+		break
+	}
 }
 
 const captionProps: CaptionProps = {
@@ -118,6 +140,8 @@ const captionProps: CaptionProps = {
 
 const aspectRatio =
 	videoInfo?.width && videoInfo.height ? `${videoInfo.width} / ${videoInfo.height}` : undefined
+const oembedAspectRatio =
+	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 
 const hlsConfig: Record<string, boolean | number> = {}
 if (initialBandwidth !== undefined) hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
@@ -125,7 +149,12 @@ if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityT
 
 const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
 
-const posterUrl = isLocal ? (poster ?? undefined) : videoInfo?.posterUrl
+const posterUrl =
+	resolvedService === 'local'
+		? (poster ?? undefined)
+		: resolvedService === 'oembed'
+			? oembedInfo?.thumbnailUrl
+			: videoInfo?.posterUrl
 
 // Map service to the custom element tag name used in the lightbox.
 const videoElementMap = {
@@ -136,8 +165,6 @@ const videoElementMap = {
 	vimeo: 'vimeo-video',
 	youtube: 'youtube-video',
 } as const
-
-const videoElement = videoElementMap[resolvedService]
 
 const sharedProps = {
 	aspectRatio,
@@ -164,36 +191,53 @@ const sharedProps = {
 </style>
 
 {
-	videoInfo && videoSrc && (
-		<Caption {...captionProps}>
-			<Zoomer
-				slot="media-component"
-				videoConfig={videoElement === 'hls-video' ? hlsConfigJson : undefined}
-				videoElement={videoElement}
-				videoHeight={videoInfo.height}
-				videoPoster={posterUrl}
-				videoSrc={videoSrc}
-				videoWidth={videoInfo.width}
-				zoom={zoom}
-			>
-				{resolvedService === 'local' ? (
-					<InternalVideoLocal {...sharedProps} slot="media-component" />
-				) : resolvedService === 'youtube' ? (
-					<InternalVideoYouTube {...sharedProps} slot="media-component" />
-				) : resolvedService === 'vimeo' ? (
-					<InternalVideoVimeo {...sharedProps} slot="media-component" />
-				) : (
-					<InternalVideoHls
-						{...sharedProps}
-						captions={videoInfo.captions}
-						hlsConfig={hlsConfig}
-						hlsUrl={videoInfo.hlsUrl}
-						mp4Url={videoInfo.mp4Url}
+	resolvedService === 'oembed'
+		? oembedInfo && (
+				<Caption {...captionProps}>
+					<InternalOembed
+						aspectRatio={oembedAspectRatio}
+						html={oembedInfo.html}
+						resolvedLabel={resolvedLabel}
 						slot="media-component"
 					/>
-				)}
-			</Zoomer>
-			<slot />
-		</Caption>
-	)
+					<slot />
+				</Caption>
+			)
+		: videoInfo &&
+			videoSrc && (
+				<Caption {...captionProps}>
+					<Zoomer
+						slot="media-component"
+						videoConfig={
+							!isEmbedService(resolvedService) && resolvedService !== 'local'
+								? hlsConfigJson
+								: undefined
+						}
+						videoElement={videoElementMap[resolvedService]}
+						videoHeight={videoInfo.height}
+						videoPoster={posterUrl}
+						videoSrc={videoSrc}
+						videoWidth={videoInfo.width}
+						zoom={zoom}
+					>
+						{resolvedService === 'local' ? (
+							<InternalVideoLocal {...sharedProps} slot="media-component" />
+						) : resolvedService === 'youtube' ? (
+							<InternalVideoYouTube {...sharedProps} slot="media-component" />
+						) : resolvedService === 'vimeo' ? (
+							<InternalVideoVimeo {...sharedProps} slot="media-component" />
+						) : (
+							<InternalVideoHls
+								{...sharedProps}
+								captions={videoInfo.captions}
+								hlsConfig={hlsConfig}
+								hlsUrl={videoInfo.hlsUrl}
+								mp4Url={videoInfo.mp4Url}
+								slot="media-component"
+							/>
+						)}
+					</Zoomer>
+					<slot />
+				</Caption>
+			)
 }

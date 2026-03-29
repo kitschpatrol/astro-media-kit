@@ -3,7 +3,7 @@ import { getSecret } from 'astro:env/server'
 import type { Props as CaptionProps } from './Caption.astro'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
-import { getVideoInfo, inferServiceFromMediaId } from './utils/video'
+import { getVideoInfo, resolveVideoSource } from './utils/video'
 
 type ControlStyles = 'full' | 'minimal' | 'none'
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
@@ -14,15 +14,14 @@ type SharedProps = Omit<CaptionProps, 'src'> & {
 	label?: string
 	loop?: boolean
 	muted?: boolean
+	poster?: string
 	preload?: 'auto' | 'metadata' | 'none'
 }
 
-export type Props = SharedProps &
-	(
-		| { mediaId: string; mediaTitle?: never; poster?: never; service?: Service; src?: never }
-		| { mediaId?: never; mediaTitle: string; poster?: never; service?: Service; src?: never }
-		| { mediaId?: never; mediaTitle?: never; poster?: string; service?: never; src: string }
-	)
+export type Props = SharedProps & {
+	service?: Service
+	src: string
+}
 
 const {
 	autoPlay = false,
@@ -30,8 +29,6 @@ const {
 	creator,
 	label,
 	loop = false,
-	mediaId,
-	mediaTitle,
 	muted = true,
 	organization,
 	poster,
@@ -43,10 +40,15 @@ const {
 	typeFallback,
 } = Astro.props
 
-const isLocal = src !== undefined
-const resolvedService: Service | undefined = isLocal
-	? undefined
-	: (service ?? (mediaTitle === undefined ? inferServiceFromMediaId(mediaId) : 'bunny'))
+const { identifier, service: resolvedService } = resolveVideoSource(src, service)
+const isLocal = resolvedService === 'local'
+
+// VideoJs doesn't support oEmbed — it's a native video player
+if (resolvedService === 'oembed') {
+	throw new Error(
+		'VideoJs does not support oEmbed URLs. Use the Video component for oEmbed sources, or provide a direct media file URL.',
+	)
+}
 
 // Resolve video info from service or local source
 let videoInfo: undefined | VideoInfo
@@ -73,16 +75,19 @@ if (isLocal) {
 			accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
 			apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
 		},
+		local: {},
 		mux: {
 			accessToken: getSecret('MUX_TOKEN_ID') ?? '',
 			secret: getSecret('MUX_TOKEN_SECRET') ?? '',
 		},
+		oembed: {},
+		vimeo: {},
+		youtube: {},
 	}
 
 	try {
-		videoInfo = await getVideoInfo(mediaId ?? mediaTitle, resolvedService!, config)
+		videoInfo = await getVideoInfo(identifier, resolvedService, config)
 	} catch (error) {
-		const identifier = mediaId ?? mediaTitle
 		console.error(
 			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
 			error instanceof Error ? error.message : error,
@@ -90,7 +95,7 @@ if (isLocal) {
 	}
 }
 
-const resolvedLabel = label ?? mediaTitle ?? videoInfo?.title ?? 'Video'
+const resolvedLabel = label ?? videoInfo?.title ?? 'Video'
 
 // Video.js v10 handles HLS/DASH natively via SPF engine
 const videoSrc = isLocal ? src : videoInfo?.hlsUrl
