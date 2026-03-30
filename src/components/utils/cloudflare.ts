@@ -3,8 +3,11 @@
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
 
+/** Credentials for the Cloudflare Stream API. Set via `astro:env` or environment variables. */
 export type CloudflareConfig = {
+	/** Cloudflare account ID (`CLOUDFLARE_STREAM_ACCOUNT_ID`). */
 	accountId: string
+	/** Cloudflare Stream API token (`CLOUDFLARE_STREAM_API_TOKEN`). */
 	apiToken: string
 }
 

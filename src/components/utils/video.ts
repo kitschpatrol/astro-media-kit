@@ -8,22 +8,34 @@ import { cloudflareGetVideoInfo, cloudflareIsValidMediaId } from './cloudflare'
 import { isDirectMediaUrl, isLocalPath, tryParseUrl } from './media'
 import { muxGetVideoInfo, muxIsValidMediaId } from './mux'
 
+/** Normalized video metadata returned by all service adapters. */
 export type VideoInfo = {
+	/** Available caption/subtitle tracks. */
 	captions: Array<{
+		/** Human-readable caption label (e.g. `'English'`). */
 		label: string
+		/** URL to the VTT caption file. */
 		src: string
+		/** BCP 47 language code (e.g. `'en'`). */
 		srclang: string
 	}>
-	/** Duration in seconds, -1 if unknown */
+	/** Duration in seconds. `-1` if the service does not report it. */
 	duration: number
+	/** Source video height in pixels. `0` if unknown. */
 	height: number
+	/** HLS manifest URL. Empty string for local files. */
 	hlsUrl: string
+	/** Fallback MP4 URL. Empty string when unavailable. */
 	mp4Url: string
+	/** Poster/thumbnail image URL. */
 	posterUrl: string
+	/** Video title from the service, if available. */
 	title: string | undefined
+	/** Source video width in pixels. `0` if unknown. */
 	width: number
 }
 
+/** Maps each video service name to its configuration type. Services without credentials use empty records. */
 export type ServiceConfig = {
 	bunny: BunnyConfig
 	cloudflare: CloudflareConfig
@@ -33,6 +45,8 @@ export type ServiceConfig = {
 	vimeo: Record<string, never>
 	youtube: Record<string, never>
 }
+
+/** Supported video service identifiers. */
 export type Service = keyof ServiceConfig
 
 /** Services that require API credentials for server-side metadata fetching. */
@@ -289,8 +303,11 @@ function extractVimeoId(url: URL): string | undefined {
 	return lastSegment && vimeoIsValidMediaId(lastSegment) ? lastSegment : undefined
 }
 
+/** Result of resolving a `src` string into a service and its identifier. */
 export type ResolvedSource = {
+	/** The extracted ID, URL, or file path to pass to the service adapter. */
 	identifier: string
+	/** The inferred or explicitly provided video service. */
 	service: Service
 }
 

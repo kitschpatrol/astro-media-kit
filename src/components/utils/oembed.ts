@@ -1,10 +1,16 @@
 import { parseHTML } from 'linkedom'
 
+/** Parsed oEmbed response for a page URL. */
 export type OembedInfo = {
+	/** Embed height in pixels. `0` if not provided by the oEmbed endpoint. */
 	height: number
+	/** Raw HTML embed code from the oEmbed provider. */
 	html: string
+	/** Thumbnail image URL, if the provider supplies one. */
 	thumbnailUrl: string | undefined
+	/** Media title from the oEmbed response, if available. */
 	title: string | undefined
+	/** Embed width in pixels. `0` if not provided by the oEmbed endpoint. */
 	width: number
 }
 

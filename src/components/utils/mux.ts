@@ -4,8 +4,11 @@ import Mux from '@mux/mux-node'
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
 
+/** Credentials for the Mux Video API. Set via `astro:env` or environment variables. */
 export type MuxConfig = {
+	/** Mux token ID (`MUX_TOKEN_ID`). */
 	accessToken: string
+	/** Mux token secret (`MUX_TOKEN_SECRET`). */
 	secret: string
 }
 

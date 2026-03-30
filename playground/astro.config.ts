@@ -21,6 +21,10 @@ export default defineConfig({
 		mdxKit({
 			attributes: true,
 			directives: {
+				Audio: {
+					component: 'Audio',
+					componentModule: 'astro-media-kit/components',
+				},
 				Video: {
 					component: 'Video',
 					componentModule: 'astro-media-kit/components',

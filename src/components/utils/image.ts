@@ -162,10 +162,15 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 	return entries
 }
 
+/** Extracted zoom target data for PhotoSwipe from a rendered `<picture>` or `<img>`. */
 export type ZoomTarget = {
+	/** Height in pixels of the largest available image. */
 	height: number
+	/** Combined `srcset` string for PhotoSwipe responsive zoom. */
 	srcset: string
+	/** URL of the largest available image variant. */
 	url: string
+	/** Width in pixels of the largest available image. */
 	width: number
 }
 

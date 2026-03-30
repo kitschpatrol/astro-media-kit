@@ -1,5 +1,6 @@
 import { isDirectMediaUrl, tryParseUrl } from './media'
 
+/** Supported audio service identifiers. */
 export type AudioService = 'local' | 'oembed' | 'soundcloud'
 
 /** SoundCloud track IDs are numeric. */
@@ -12,8 +13,11 @@ export function soundcloudIsValidMediaId(mediaId: string): boolean {
 
 const SOUNDCLOUD_HOSTS = new Set(['m.soundcloud.com', 'soundcloud.com', 'www.soundcloud.com'])
 
+/** Result of resolving a `src` string into an audio service and its identifier. */
 export type ResolvedAudioSource = {
+	/** The extracted ID, URL, or file path to pass to the service adapter. */
 	identifier: string
+	/** The inferred or explicitly provided audio service. */
 	service: AudioService
 }
 
