@@ -6,6 +6,8 @@ export default knipConfig({
 		'@types/unist',
 		'@kitschpatrol/unplugin-aphex',
 		'@kitschpatrol/unplugin-tldraw',
+		'node-addon-api',
+		'node-gyp',
 	],
 	ignoreFiles: ['playground/**/*', 'playground-starlight/**/*'],
 	ignoreWorkspaces: ['playground', 'playground-starlight'],

@@ -1,4 +1,5 @@
 // Shared types for video service integrations
+import type { VideoInfo as VideoResolution } from '@oscnord/get-video-resolution'
 import { getVideoResolution } from '@oscnord/get-video-resolution'
 import type { BunnyConfig } from './bunny'
 import type { CloudflareConfig } from './cloudflare'
@@ -96,7 +97,8 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 	let duration = -1
 
 	try {
-		const info: { duration?: number; height: number; width: number } = await getVideoResolution(src)
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- overload resolution picks the array variant; we call without `pick: "all"` so the return is always a single VideoInfo
+		const info = (await getVideoResolution(src)) as unknown as VideoResolution
 		width = info.width
 		height = info.height
 		if (info.duration !== undefined) duration = info.duration

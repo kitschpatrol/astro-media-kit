@@ -17,13 +17,6 @@ export default eslintConfig(
 		type: 'lib',
 	},
 	{
-		files: ['src/components/*.astro.d.ts'],
-		rules: {
-			'ts/naming-convention': 'off',
-			'unicorn/filename-case': 'off',
-		},
-	},
-	{
 		files: ['package.json'],
 		rules: {
 			// TODO remove once all packages point to NPM

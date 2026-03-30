@@ -31,29 +31,20 @@
 		"email": "eric@ericmika.com",
 		"url": "https://ericmika.com"
 	},
-	"sideEffects": false,
+	"sideEffects": true,
 	"type": "module",
 	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"default": "./dist/index.js"
-		},
-		"./components": {
-			"types": "./dist/components.d.ts",
-			"default": "./dist/components.js"
-		},
-		"./components/*": "./dist/components/*",
-		"./integration": {
-			"types": "./dist/integration/index.d.ts",
-			"default": "./dist/integration/index.js"
-		},
-		"./utilities/*": "./dist/utilities/*"
+		".": "./src/index.ts",
+		"./components": "./src/components.ts",
+		"./components/*": "./src/components/*",
+		"./integration": "./src/integration/index.ts",
+		"./utilities/*": "./src/utilities/*"
 	},
 	"files": [
-		"dist"
+		"src"
 	],
 	"scripts": {
-		"build": "astro sync && tsdown",
+		"build": "astro sync",
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
 		"fix": "ksc fix",
 		"lint": "ksc lint ; astro check",
@@ -81,13 +72,12 @@
 		"youtube-video-element": "^1.9.0"
 	},
 	"devDependencies": {
-		"@arethetypeswrong/core": "^0.18.2",
 		"@astrojs/check": "^0.9.8",
 		"@kitschpatrol/shared-config": "^6.1.0",
 		"astro": "^6.1.2",
 		"bumpp": "^11.0.1",
-		"publint": "^0.3.18",
-		"tsdown": "^0.21.7",
+		"node-addon-api": "^8.7.0",
+		"node-gyp": "^12.2.0",
 		"typescript": "~5.9.3",
 		"vitest": "^4.1.2"
 	},

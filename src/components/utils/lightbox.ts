@@ -210,8 +210,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// players don't expose currentTime reliably before playback).
 		if (videoElementTag === 'hls-video') {
 			const inlineVideo = queryVideoElement(videoContainer)
-			if (inlineVideo && inlineVideo.currentTime > 0) {
-				videoElement.currentTime = inlineVideo.currentTime
+			if (inlineVideo && inlineVideo.currentTime > 0 && 'currentTime' in videoElement) {
+				// eslint-disable-next-line ts/no-unsafe-type-assertion -- custom element (hls-video) exposes currentTime via CustomVideoElement proxy
+				;(videoElement as unknown as HTMLMediaElement).currentTime = inlineVideo.currentTime
 			}
 		}
 	})

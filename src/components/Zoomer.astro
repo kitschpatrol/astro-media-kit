@@ -3,15 +3,18 @@ import { extractZoomTarget } from './utils/image'
 
 type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
+/** Props for the `<Zoomer>` component — PhotoSwipe-based image zoom wrapper. */
 type Props = {
-	// Video-specific props — when videoElement is set, Zoomer renders a video
-	// zoom wrapper instead of an image zoom wrapper.
 	videoConfig?: string | undefined
 	videoElement?: undefined | VideoElementTag
 	videoHeight?: number | undefined
 	videoPoster?: string | undefined
 	videoSrc?: string | undefined
 	videoWidth?: number | undefined
+	/**
+	 * Enable zoom. `true` uses default gallery, a string groups images into a named gallery.
+	 * @default false
+	 */
 	zoom?: boolean | string | undefined
 }
 

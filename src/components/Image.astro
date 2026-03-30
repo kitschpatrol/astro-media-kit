@@ -19,14 +19,25 @@ import {
 import Zoomer from './Zoomer.astro'
 import './amk-image.css'
 
-// Only use LocalImageProps since we always resolve to ImageMetadata (local images)
+/** Props for the `<Image>` component — wraps Astro's `<Image>` with caption and zoom support. */
 export type Props = Omit<CaptionProps, 'src'> &
 	Omit<LocalImageProps, 'src'> & {
-		/** CSS background color for the image (visible behind transparent areas). */
+		/**
+		 * CSS background color for the image (visible behind transparent areas).
+		 */
 		background?: string | undefined
-		/** Dark mode background color override. Uses `light-dark()` with `background`. */
+		/**
+		 * Dark mode background color override. Uses `light-dark()` with `background`.
+		 */
 		backgroundDark?: string | undefined
+		/**
+		 * Image source: an imported `ImageMetadata` object or an absolute file path string.
+		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		/**
+		 * Enable PhotoSwipe zoom. `true` uses default gallery, a string groups into a named gallery.
+		 * @default false
+		 */
 		zoom?: boolean | string | undefined
 	}
 

@@ -2,16 +2,16 @@
 /* eslint-disable ts/naming-convention */
 
 import type { AstroIntegration } from 'astro'
-import type { CredentialService, Service } from '../components/utils/video.js'
-import type { AphexConfig } from './aphex.js'
-import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
-import type { TldrawConfig } from './tldraw.js'
+import type { CredentialService, Service } from '../components/utils/video'
+import type { AphexConfig } from './aphex'
+import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
+import type { TldrawConfig } from './tldraw'
 
-export type { AphexConfig } from './aphex.js'
-export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import.js'
-export { tldrawDarkImport, transformAstroSource } from './auto-import.js'
-export type { TldrawConfig } from './tldraw.js'
-export type { TldrawImageOptions } from './tldraw.js'
+export type { AphexConfig } from './aphex'
+export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
+export { tldrawDarkImport, transformAstroSource } from './auto-import'
+export type { TldrawConfig } from './tldraw'
+export type { TldrawImageOptions } from './tldraw'
 
 /**
  * Configuration for the astro-media-kit integration.
@@ -184,7 +184,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				}
 
 				if (autoImportEnabled) {
-					const { vitePluginMediaKitAutoImport } = await import('./auto-import.js')
+					const { vitePluginMediaKitAutoImport } = await import('./auto-import')
 					updateConfig({
 						vite: {
 							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs)],
@@ -193,7 +193,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				}
 
 				if (aphexEnabled) {
-					const { vitePluginMediaKitAphex } = await import('./aphex.js')
+					const { vitePluginMediaKitAphex } = await import('./aphex')
 					updateConfig({
 						vite: {
 							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
@@ -203,7 +203,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				}
 
 				if (tldrawEnabled) {
-					const { vitePluginMediaKitTldraw } = await import('./tldraw.js')
+					const { vitePluginMediaKitTldraw } = await import('./tldraw')
 					updateConfig({
 						vite: {
 							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts

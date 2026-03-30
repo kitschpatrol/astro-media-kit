@@ -5,16 +5,33 @@ import { getCreditFromXmpTags } from './utils/image'
 
 const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
+/** Props for the `<Caption>` component — wraps content in `<figure>`/`<figcaption>` with optional XMP credit extraction. */
 export type Props = {
-	/** The individual who created the image */
+	/**
+	 * Attribution name for the media creator. Overrides XMP-extracted creator.
+	 */
 	creator?: string | undefined
-	/** The organization to which the image is owed */
+	/**
+	 * Organization or publication to credit alongside the creator.
+	 */
 	organization?: string | undefined
+	/**
+	 * Show the credit line in the caption.
+	 * @default true
+	 */
 	showCredit?: boolean | undefined
-	/** Image source for XMP metadata lookup */
+	/**
+	 * Image source for XMP metadata extraction. Not rendered directly.
+	 */
 	src?: ImageMetadata | string | undefined
+	/**
+	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the credit line.
+	 */
 	type?: MediaType | undefined
-	/** Fallback type if both the prop and the XMP data are undefined */
+	/**
+	 * Fallback media type when XMP Label tag is missing.
+	 * @default 'image'
+	 */
 	typeFallback?: MediaType | undefined
 }
 
