@@ -3,11 +3,11 @@
  * Shared PhotoSwipe lightbox initialization for both image (Zoomer) and video
  * (Video) components. Supports mixed galleries containing both content types.
  *
- * Images use the default PhotoSwipe image type.
- * Videos use a custom 'video' type — a duplicate player is created in the
- * lightbox (the inline player stays on the page, consistent with how images
- * work). Playback position is synced: the lightbox player seeks to the inline
- * player's current time on open, and the inline player syncs back on close.
+ * Images use the default PhotoSwipe image type. Videos use a custom 'video'
+ * type — a duplicate player is created in the lightbox (the inline player stays
+ * on the page, consistent with how images work). Playback position is synced:
+ * the lightbox player seeks to the inline player's current time on open, and
+ * the inline player syncs back on close.
  */
 
 import type { HlsVideoElement } from 'hls-video-element'
@@ -35,7 +35,10 @@ function isVideoData(data: Record<string, unknown>): data is Record<string, unkn
 	return data.type === 'video' && data.videoContainer instanceof HTMLElement
 }
 
-/** Query a video element (hls-video, youtube-video, vimeo-video) and return it as HTMLMediaElement or null. */
+/**
+ * Query a video element (hls-video, youtube-video, vimeo-video) and return it
+ * as HTMLMediaElement or null.
+ */
 function queryVideoElement(root: Element | null | undefined): HTMLMediaElement | null {
 	const element = root?.querySelector(VIDEO_ELEMENT_SELECTOR)
 	if (element instanceof HTMLMediaElement) return element
@@ -313,7 +316,8 @@ const standaloneLightbox = createLightbox({
 
 // Grouped galleries — one lightbox per unique gallery name.
 const galleryNames = new Set(
-	[...document.querySelectorAll<HTMLElement>('.pswp-zoom[data-pswp-gallery]')].map(
+	Array.from(
+		document.querySelectorAll<HTMLElement>('.pswp-zoom[data-pswp-gallery]'),
 		(element) => element.dataset.pswpGallery!,
 	),
 )

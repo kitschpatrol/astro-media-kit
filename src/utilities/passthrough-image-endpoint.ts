@@ -4,6 +4,8 @@ import type { APIContext } from 'astro'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+const FS_PATH_PREFIX_REGEX = /^\/@fs\//
+
 /**
  * Don't process images at all, which keeps things snappy.
  * Set conditionally on whether it's a dev build or not in astro.config.ts
@@ -13,7 +15,7 @@ export async function GET({ request }: APIContext): Promise<Response> {
 	const imagePath =
 		'./' +
 		path
-			.relative(path.resolve('.'), url.searchParams.get('href')!.replace(/^\/@fs\//, '/'))
+			.relative(path.resolve('.'), url.searchParams.get('href')!.replace(FS_PATH_PREFIX_REGEX, '/'))
 			.split('?')[0]
 
 	// Check if the image exists

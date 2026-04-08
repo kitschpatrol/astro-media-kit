@@ -4,7 +4,10 @@ import Mux from '@mux/mux-node'
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
 
-/** Credentials for the Mux Video API. Set via `astro:env` or environment variables. */
+/**
+ * Credentials for the Mux Video API. Set via `astro:env` or environment
+ * variables.
+ */
 export type MuxConfig = {
 	/** Mux token ID (`MUX_TOKEN_ID`). */
 	accessToken: string
@@ -15,8 +18,8 @@ export type MuxConfig = {
 /**
  * Get video information from Mux
  *
- * Video must have `"mp4_support": "standard"` for fallback mp4 support
- * See https://docs.mux.com/api-reference#video/operation/update-asset-mp4-support
+ * Video must have `"mp4_support": "standard"` for fallback mp4 support See
+ * https://docs.mux.com/api-reference#video/operation/update-asset-mp4-support
  */
 export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promise<VideoInfo> {
 	if (!muxIsValidMediaId(mediaId)) {
@@ -122,9 +125,11 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 	}
 }
 
+const ALPHANUMERIC44_REGEX = /^[\da-z]{44}$/i
+
 /**
  * Check if a string is a valid Mux media ID
  */
 export function muxIsValidMediaId(mediaId: string): boolean {
-	return /^[\da-z]{44}$/i.test(mediaId)
+	return ALPHANUMERIC44_REGEX.test(mediaId)
 }

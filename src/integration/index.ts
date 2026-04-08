@@ -18,48 +18,54 @@ export type { TldrawImageOptions } from './tldraw'
  */
 export type MediaKitConfig = {
 	/**
-	 * Enable Apple Photos `~aphex/` import support via `@kitschpatrol/unplugin-aphex`.
-	 * When enabled, `src="~aphex/Album/Photo"` paths in `<Image>` and `<Picture>`
-	 * components are resolved to photos exported from macOS Photos.app.
-	 * Set to `true` for defaults, `false` to disable, or pass an object to customize.
+	 * Enable Apple Photos `~aphex/` import support via
+	 * `@kitschpatrol/unplugin-aphex`. When enabled, `src="~aphex/Album/Photo"`
+	 * paths in `<Image>` and `<Picture>` components are resolved to photos
+	 * exported from macOS Photos.app. Set to `true` for defaults, `false` to
+	 * disable, or pass an object to customize.
+	 *
 	 * @default false
 	 */
 	aphex?: AphexConfig | boolean
 	/**
 	 * Configure auto-importing of image assets in `.astro` files.
 	 *
-	 * - `true` — enable with default component config (`Image: ['src'], Picture: ['src']`)
+	 * - `true` — enable with default component config (`Image: ['src'], Picture:
+	 *   ['src']`)
 	 * - `false` — disable
 	 * - `AutoImportPluginConfig` — full config with component-to-entries mapping
+	 *
 	 * @example
-	 * ```ts
-	 * autoImport: {
-	 *   components: {
-	 *     Image: ['src'],
-	 *     Picture: ['src', tldrawDarkImport],
-	 *   },
-	 * }
-	 * ```
+	 * 	autoImport: {
+	 * 	components: {
+	 * 	Image: ['src'],
+	 * 	Picture: ['src', tldrawDarkImport],
+	 * 	},
+	 * 	}
+	 *
 	 * @default true
 	 */
 	autoImport?: AutoImportPluginConfig | boolean
 	/**
 	 * Enable tldraw `.tldr` file support via `@kitschpatrol/unplugin-tldraw`.
-	 * When enabled, `.tldr` file imports are converted to SVG/PNG images
-	 * and fed into Astro's image pipeline, working with both `<Image>`
-	 * and `<Picture>` components.
-	 * Set to `true` for defaults, `false` to disable, or pass an object to customize.
+	 * When enabled, `.tldr` file imports are converted to SVG/PNG images and fed
+	 * into Astro's image pipeline, working with both `<Image>` and `<Picture>`
+	 * components. Set to `true` for defaults, `false` to disable, or pass an
+	 * object to customize.
+	 *
 	 * @default false
 	 */
 	tldraw?: boolean | TldrawConfig
 	/**
-	 * Configure video service env schema injection.
-	 * Adds `env.schema` entries for the specified service(s) so Astro
-	 * validates that required credentials are set at build time.
+	 * Configure video service env schema injection. Adds `env.schema` entries for
+	 * the specified service(s) so Astro validates that required credentials are
+	 * set at build time.
+	 *
 	 * - `'bunny'` / `'cloudflare'` / `'mux'` — single service
 	 * - `Service[]` — multiple services
 	 * - `true` — all services
 	 * - `false` — no schema injection (default)
+	 *
 	 * @default false
 	 */
 	video?: boolean | Service | Service[]
@@ -95,14 +101,13 @@ function resolveAutoImportEntries(config: AutoImportConfig) {
 
 /**
  * Astro integration for astro-media-kit.
+ *
  * @example
- * ```ts
- * // astro.config.ts
- * import mediaKit from 'astro-media-kit/integration'
- * export default defineConfig({
- *   integrations: [mediaKit()],
- * })
- * ```
+ * 	// Your astro.config.ts
+ * 	import mediaKit from 'astro-media-kit/integration'
+ * 	export default defineConfig({
+ * 		integrations: [mediaKit()],
+ * 	})
  */
 export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const aphex = config?.aphex ?? false

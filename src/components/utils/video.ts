@@ -259,6 +259,9 @@ const YOUTUBE_HOSTS = new Set([
 	'youtube.com',
 ])
 
+const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w-]{11})/
+const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)/
+
 /** Extracts a YouTube video ID from various YouTube URL formats. */
 function extractYouTubeId(url: URL): string | undefined {
 	const host = url.hostname.toLowerCase()
@@ -277,7 +280,7 @@ function extractYouTubeId(url: URL): string | undefined {
 	}
 
 	// /embed/ID, /shorts/ID, /live/ID, /v/ID
-	const pathMatch = /^\/(?:embed|shorts|live|v)\/([\w-]{11})/.exec(url.pathname)
+	const pathMatch = YOUTUBE_PATH_ID_REGEX.exec(url.pathname)
 	if (pathMatch) {
 		const id = pathMatch[1]
 		return id && youtubeIsValidMediaId(id) ? id : undefined
@@ -295,7 +298,7 @@ function extractVimeoId(url: URL): string | undefined {
 
 	// Player.vimeo.com/video/ID
 	if (host === 'player.vimeo.com') {
-		const match = /^\/video\/(\d+)/.exec(url.pathname)
+		const match = VIMEO_VIDEO_PATH_REGEX.exec(url.pathname)
 		return match?.[1]
 	}
 

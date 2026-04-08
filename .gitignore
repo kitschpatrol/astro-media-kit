@@ -22,5 +22,5 @@ vendor/
 # Customizations
 references/
 /instructions.md
-/.claude
+.claude/
 /.playwright-cli

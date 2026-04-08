@@ -3,7 +3,10 @@
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
 
-/** Credentials for the Cloudflare Stream API. Set via `astro:env` or environment variables. */
+/**
+ * Credentials for the Cloudflare Stream API. Set via `astro:env` or environment
+ * variables.
+ */
 export type CloudflareConfig = {
 	/** Cloudflare account ID (`CLOUDFLARE_STREAM_ACCOUNT_ID`). */
 	accountId: string
@@ -160,9 +163,11 @@ export async function cloudflareGetVideoInfo(
 	}
 }
 
+const HEX32_REGEX = /^[\da-f]{32}$/i
+
 /**
  * Check if a string is a valid Cloudflare media ID
  */
 export function cloudflareIsValidMediaId(mediaId: string): boolean {
-	return /^[\da-f]{32}$/i.test(mediaId)
+	return HEX32_REGEX.test(mediaId)
 }

@@ -138,19 +138,22 @@ type SrcsetEntry = {
 	width: number
 }
 
+const SRCSET_SEPARATOR_REGEX = /,\s*(?=\S)/
+// eslint-disable-next-line regexp/no-super-linear-backtracking
+const SRCSET_ENTRY_REGEX = /^(.+?)\s+(\d+)w$/
+
 /**
  * Parses a srcset string and returns an array of URL/width pairs.
  */
 function parseSrcset(srcset: string): SrcsetEntry[] {
 	const entries: SrcsetEntry[] = []
-	const parts = srcset.split(/,\s*(?=\S)/)
+	const parts = srcset.split(SRCSET_SEPARATOR_REGEX)
 
 	for (const part of parts) {
 		const trimmed = part.trim()
 		if (!trimmed) continue
 
-		// eslint-disable-next-line regexp/no-super-linear-backtracking
-		const match = /^(.+?)\s+(\d+)w$/.exec(trimmed)
+		const match = SRCSET_ENTRY_REGEX.exec(trimmed)
 		if (match?.[1] && match[2]) {
 			entries.push({
 				url: match[1].trim(),

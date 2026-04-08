@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { transformAstroSource } from '../src/integration/auto-import.ts'
 import { needsBackgroundDarkVariant } from '../src/utilities/dark-variant.ts'
 
+const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/
+
 // Default config: Image and Picture both auto-import 'src'
 const defaultConfig = {
 	Image: [{ fromProp: 'src', toProp: 'src' }],
@@ -12,7 +14,9 @@ const defaultConfig = {
 
 // Config with .tldr dark mode transform on Picture
 const tldrawDarkTransform = (path: string) =>
-	/\.tldr(?:\?|$)/.test(path) ? `${path}${path.includes('?') ? '&' : '?'}dark=true&tldr` : undefined
+	TLDRAW_EXTENSION_REGEX.test(path)
+		? `${path}${path.includes('?') ? '&' : '?'}dark=true&tldr`
+		: undefined
 
 const configWithTldrawDark = {
 	Image: [{ fromProp: 'src', toProp: 'src' }],

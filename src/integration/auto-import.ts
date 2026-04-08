@@ -4,20 +4,24 @@ import { is, serialize } from '@astrojs/compiler/utils'
 import { readFile } from 'node:fs/promises'
 
 /**
- * A single auto-import entry describing how a prop value should be
- * imported as an ESM module.
+ * A single auto-import entry describing how a prop value should be imported as
+ * an ESM module.
  *
- * - `string` — The prop name to import (e.g. `'src'`). Replaces the string value in-place.
+ * - `string` — The prop name to import (e.g. `'src'`). Replaces the string value
+ *   in-place.
  * - `{ from, to }` — Read from `from` prop, import it, set on `to` prop.
- * - `{ from, to, transform }` — Like above, but transform the path first.
- *   Return `undefined` from `transform` to skip the derived import.
+ * - `{ from, to, transform }` — Like above, but transform the path first. Return
+ *   `undefined` from `transform` to skip the derived import.
  */
 export type AutoImportEntry =
 	| string
 	| {
 			from: string
 			to: string
-			/** Transform the import path before generating the import. Return `undefined` to skip. */
+			/**
+			 * Transform the import path before generating the import. Return
+			 * `undefined` to skip.
+			 */
 			transform?: (path: string) => string | undefined
 	  }
 
@@ -41,38 +45,39 @@ type ResolvedEntry = {
 export type AutoImportPluginConfig = {
 	/**
 	 * Map of component names to their auto-import entries.
+	 *
 	 * @example
-	 * ```ts
-	 * { Picture: ['src', tldrawDarkImport], Image: ['src'] }
-	 * ```
+	 * 	{Picture: ['src', tldrawDarkImport], Image: ['src']}
 	 */
 	components: Record<string, AutoImportConfig>
 	/**
 	 * Enable auto-importing of image assets in `.astro` files.
+	 *
 	 * @default true
 	 */
 	enabled?: boolean
 }
 
+const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/
+
 /**
- * Auto-import entry that generates a dark variant for `.tldr` files
- * via `@kitschpatrol/unplugin-tldraw`.
+ * Auto-import entry that generates a dark variant for `.tldr` files via
+ * `@kitschpatrol/unplugin-tldraw`.
+ *
  * @example
- * ```ts
- * mediaKit({
- *   autoImport: {
- *     components: {
- *       Picture: ['src', tldrawDarkImport],
- *     },
- *   },
- * })
- * ```
+ * 	mediaKit({
+ * 		autoImport: {
+ * 			components: {
+ * 				Picture: ['src', tldrawDarkImport],
+ * 			},
+ * 		},
+ * 	})
  */
 export const tldrawDarkImport: AutoImportEntry = {
 	from: 'src',
 	to: 'srcDark',
 	transform(path: string) {
-		if (!/\.tldr(?:\?|$)/.test(path)) return
+		if (!TLDRAW_EXTENSION_REGEX.test(path)) return
 		return `${path}${path.includes('?') ? '&' : '?'}dark=true&tldr`
 	},
 }
@@ -110,8 +115,8 @@ function walkNodes(node: Node, visitor: (node: Node) => void): void {
 }
 
 /**
- * Collect imports from a single component node, mutating its attributes in place.
- * Returns true if any attributes were modified.
+ * Collect imports from a single component node, mutating its attributes in
+ * place. Returns true if any attributes were modified.
  */
 function processComponent(
 	node: ComponentNode,
@@ -193,6 +198,7 @@ function getOrCreateImport(imports: Map<string, ImportEntry>, importPath: string
  * Parses the AST with `@astrojs/compiler`, modifies component attributes
  * in-place (replacing quoted string props with expression references to
  * generated imports), then serializes the modified AST back to source.
+ *
  * @returns The transformed source, or `undefined` if no changes were needed.
  */
 export async function transformAstroSource(
@@ -222,9 +228,10 @@ export async function transformAstroSource(
 	if (!frontmatterNode || !modified) return undefined
 
 	// Append import statements to frontmatter
-	const importStatements = [...imports.values()]
-		.map((entry) => `import ${entry.name} from ${JSON.stringify(entry.path)}`)
-		.join('\n')
+	const importStatements = Array.from(
+		imports.values(),
+		(entry) => `import ${entry.name} from ${JSON.stringify(entry.path)}`,
+	).join('\n')
 
 	frontmatterNode.value += `${importStatements}\n`
 
@@ -234,8 +241,8 @@ export async function transformAstroSource(
 /**
  * Vite plugin that applies the auto-import transform to `.astro` files.
  *
- * Uses the `load` hook to intercept raw `.astro` source before Astro's
- * own compiler transforms it to JavaScript.
+ * Uses the `load` hook to intercept raw `.astro` source before Astro's own
+ * compiler transforms it to JavaScript.
  */
 export function vitePluginMediaKitAutoImport(componentConfigs: Record<string, ResolvedEntry[]>) {
 	return {

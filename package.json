@@ -44,8 +44,8 @@
 		"src"
 	],
 	"scripts": {
-		"build": "astro sync",
-		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX",
+		"build": "astro sync && pnpm -C playground build && pnpm -C playground-starlight build",
+		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX -e !.claude/",
 		"fix": "ksc fix",
 		"lint": "ksc lint ; astro check",
 		"play": "pnpm -C playground run dev",
@@ -60,7 +60,7 @@
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.0",
 		"@sindresorhus/is": "^7.2.0",
-		"@types/node": "~24.12.0",
+		"@types/node": "~24.12.2",
 		"exiftool-vendored": "^35.15.1",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.12",
@@ -68,18 +68,18 @@
 		"mrmime": "^2.0.1",
 		"photoswipe": "^5.4.4",
 		"photoswipe-dynamic-caption-plugin": "^1.2.7",
-		"vimeo-video-element": "^1.7.0",
+		"vimeo-video-element": "^1.7.1",
 		"youtube-video-element": "^1.9.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.8",
-		"@kitschpatrol/shared-config": "^6.1.0",
-		"astro": "^6.1.2",
+		"@kitschpatrol/shared-config": "^7.2.0",
+		"astro": "^6.1.5",
 		"bumpp": "^11.0.1",
 		"node-addon-api": "^8.7.0",
 		"node-gyp": "^12.2.0",
 		"typescript": "~5.9.3",
-		"vitest": "^4.1.2"
+		"vitest": "^4.1.3"
 	},
 	"peerDependencies": {
 		"astro": "^6.0.0"

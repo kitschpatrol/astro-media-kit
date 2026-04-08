@@ -2,11 +2,17 @@
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
 
-/** Credentials for the Bunny CDN video API. Set via `astro:env` or environment variables. */
+/**
+ * Credentials for the Bunny CDN video API. Set via `astro:env` or environment
+ * variables.
+ */
 export type BunnyConfig = {
 	/** Bunny API access key (`BUNNY_API_ACCESS_KEY`). */
 	apiAccessKey: string
-	/** Bunny CDN pull zone hostname (`BUNNY_HOSTNAME`), e.g. `'vz-abcdef-123.b-cdn.net'`. */
+	/**
+	 * Bunny CDN pull zone hostname (`BUNNY_HOSTNAME`), e.g.
+	 * `'vz-abcdef-123.b-cdn.net'`.
+	 */
 	hostname: string
 	/** Bunny video library ID (`BUNNY_LIBRARY_ID`). */
 	libraryId: string
@@ -244,9 +250,11 @@ export async function bunnyGetVideoInfo(
 	}
 }
 
+const UUID_REGEX = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i
+
 /**
  * Check if a string is a valid Bunny CDN media id
  */
 export function bunnyIsValidMediaId(mediaId: string): boolean {
-	return /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(mediaId)
+	return UUID_REGEX.test(mediaId)
 }
