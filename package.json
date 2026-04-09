@@ -44,7 +44,7 @@
 		"src"
 	],
 	"scripts": {
-		"build": "astro sync && pnpm -C playground build && pnpm -C playground-starlight build",
+		"build": "astro sync",
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX -e !.claude/",
 		"fix": "ksc fix",
 		"lint": "ksc lint ; astro check",

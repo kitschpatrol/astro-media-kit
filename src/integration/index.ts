@@ -2,10 +2,14 @@
 /* eslint-disable ts/naming-convention */
 
 import type { AstroIntegration } from 'astro'
+import { envField } from 'astro/config'
 import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
 import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
 import type { TldrawConfig } from './tldraw'
+import { vitePluginMediaKitAphex } from './aphex'
+import { vitePluginMediaKitAutoImport } from './auto-import'
+import { vitePluginMediaKitTldraw } from './tldraw'
 
 export type { AphexConfig } from './aphex'
 export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
@@ -152,9 +156,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 	return {
 		hooks: {
-			async 'astro:config:setup'({ updateConfig }) {
+			'astro:config:setup'({ updateConfig }) {
 				if (videoServices.length > 0) {
-					const { envField } = await import('astro/config')
 					const envSchemaForService: Record<
 						CredentialService,
 						Record<string, ReturnType<typeof envField.string>>
@@ -189,7 +192,6 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				}
 
 				if (autoImportEnabled) {
-					const { vitePluginMediaKitAutoImport } = await import('./auto-import')
 					updateConfig({
 						vite: {
 							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs)],
@@ -198,21 +200,19 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				}
 
 				if (aphexEnabled) {
-					const { vitePluginMediaKitAphex } = await import('./aphex')
 					updateConfig({
 						vite: {
 							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
-							plugins: [(await vitePluginMediaKitAphex(aphexConfig)) as never],
+							plugins: [vitePluginMediaKitAphex(aphexConfig) as never],
 						},
 					})
 				}
 
 				if (tldrawEnabled) {
-					const { vitePluginMediaKitTldraw } = await import('./tldraw')
 					updateConfig({
 						vite: {
 							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
-							plugins: [(await vitePluginMediaKitTldraw(tldrawConfig)) as never],
+							plugins: [vitePluginMediaKitTldraw(tldrawConfig) as never],
 						},
 					})
 				}
