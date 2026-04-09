@@ -1,5 +1,6 @@
 ---
 import type { InternalVideoProps } from './types'
+import { getControllerStyle } from './types'
 import './amk-video.css'
 
 type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
@@ -29,13 +30,7 @@ const {
 	zoom,
 } = Astro.props
 
-const controllerStyle =
-	[
-		intrinsicWidth && `width: ${String(intrinsicWidth)}px`,
-		aspectRatio && `aspect-ratio: ${aspectRatio}`,
-	]
-		.filter(Boolean)
-		.join('; ') || undefined
+const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 
 const videoAttributes: VideoAttributes = {
 	'aria-label': resolvedLabel,
@@ -55,6 +50,7 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 <script>
 	import 'hls-video-element'
 	import 'media-chrome'
+	import './media-chrome-init'
 
 	import type { HlsVideoElement } from 'hls-video-element'
 
@@ -72,41 +68,6 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 		}
 
 		element.setAttribute('src', element.dataset.src!)
-	}
-
-	// Prevent fullscreen buttons used as zoom triggers from entering native
-	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
-	// PhotoSwipe instead.
-	for (const button of document.querySelectorAll<HTMLElement>(
-		'media-fullscreen-button.pswp-video-trigger',
-	)) {
-		button.addEventListener('mediaenterfullscreenrequest', (event) => {
-			event.stopPropagation()
-			event.preventDefault()
-		})
-	}
-
-	// Lightbox mode: hide controls when inactive, even while paused/ended.
-	// Media-chrome's shadow DOM CSS keeps controls visible when mediapaused
-	// is set. Shadow DOM ::slotted() rules can't be overridden from light DOM,
-	// so we toggle inline styles via the userinactivechange event.
-	for (const controller of document.querySelectorAll<HTMLElement>('media-controller.lightbox')) {
-		const controlBar = controller.querySelector('media-control-bar')
-		if (!controlBar) continue
-
-		const { style } = controlBar as HTMLElement
-		const update = () => {
-			if (controller.hasAttribute('userinactive')) {
-				style.opacity = '0'
-				style.pointerEvents = 'none'
-			} else {
-				style.opacity = ''
-				style.pointerEvents = ''
-			}
-		}
-
-		controller.addEventListener('userinactivechange', update)
-		update()
 	}
 </script>
 
