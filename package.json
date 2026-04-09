@@ -47,7 +47,7 @@
 		"build": "astro sync",
 		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX -e !.claude/",
 		"fix": "ksc fix",
-		"lint": "ksc lint ; astro check",
+		"lint": "ksc lint && astro check",
 		"play": "pnpm -C playground run dev",
 		"play-starlight": "pnpm -C playground-starlight run dev",
 		"release": "bumpp --commit 'Release: %s' && pnpm run build && NPM_AUTH_TOKEN=$(op read 'op://Personal/npm/token') && pnpm publish",

@@ -2,17 +2,14 @@ import { eslintConfig } from '@kitschpatrol/eslint-config'
 
 export default eslintConfig(
 	{
-		astro: {
-			overrides: {
-				// TODO remove after shared-config > 6.1.0
-				'import/no-duplicates': ['error', { considerQueryString: true }],
-			},
-		},
+		astro: true,
 		ignores: [
 			// Directives and attributes make a mess of MDX linting
 			'playground/**/*.mdx',
 			'playground-starlight/**/*.mdx',
 			'references/**/*',
+			// Astro code blocks in markdown aren't part of any tsconfig program
+			'**/*.md/*.astro',
 		],
 		type: 'lib',
 	},
