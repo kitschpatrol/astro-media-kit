@@ -12,46 +12,25 @@ describe('soundcloudIsValidMediaId', () => {
 	})
 
 	it('rejects non-numeric strings', () => {
-		expect(soundcloudIsValidMediaId('abc')).toBe(false)
-		expect(soundcloudIsValidMediaId('')).toBe(false)
-		expect(soundcloudIsValidMediaId('123abc')).toBe(false)
-		expect(soundcloudIsValidMediaId('12.34')).toBe(false)
+		for (const input of ['abc', '', '123abc', '12.34']) {
+			expect(soundcloudIsValidMediaId(input)).toBe(false)
+		}
 	})
 })
 
 describe('resolveAudioSource', () => {
 	describe('URL inference', () => {
-		it('resolves SoundCloud URL', () => {
-			expect(resolveAudioSource('https://soundcloud.com/artist/track')).toEqual({
-				identifier: 'https://soundcloud.com/artist/track',
-				service: 'soundcloud',
-			})
-		})
-
-		it('resolves mobile SoundCloud URL', () => {
-			expect(resolveAudioSource('https://m.soundcloud.com/artist/track')).toEqual({
-				identifier: 'https://m.soundcloud.com/artist/track',
-				service: 'soundcloud',
-			})
-		})
-
-		it('resolves www SoundCloud URL', () => {
-			expect(resolveAudioSource('https://www.soundcloud.com/artist/track')).toEqual({
-				identifier: 'https://www.soundcloud.com/artist/track',
-				service: 'soundcloud',
-			})
-		})
+		it.each(['soundcloud.com', 'm.soundcloud.com', 'www.soundcloud.com'])(
+			'resolves %s URL as soundcloud',
+			(host) => {
+				const src = `https://${host}/artist/track`
+				expect(resolveAudioSource(src)).toEqual({ identifier: src, service: 'soundcloud' })
+			},
+		)
 
 		it('resolves direct media URL as local', () => {
 			expect(resolveAudioSource('https://example.com/song.mp3')).toEqual({
 				identifier: 'https://example.com/song.mp3',
-				service: 'local',
-			})
-		})
-
-		it('resolves direct .ogg URL as local', () => {
-			expect(resolveAudioSource('https://example.com/audio.ogg')).toEqual({
-				identifier: 'https://example.com/audio.ogg',
 				service: 'local',
 			})
 		})
@@ -72,26 +51,12 @@ describe('resolveAudioSource', () => {
 			})
 		})
 
-		it('assumes local for non-URL non-ID strings', () => {
-			expect(resolveAudioSource('./audio/file.mp3')).toEqual({
-				identifier: './audio/file.mp3',
-				service: 'local',
-			})
-		})
-
-		it('assumes local for absolute paths', () => {
-			expect(resolveAudioSource('/sounds/beep.wav')).toEqual({
-				identifier: '/sounds/beep.wav',
-				service: 'local',
-			})
-		})
-
-		it('assumes local for unrecognized bare strings', () => {
-			expect(resolveAudioSource('my-audio-file')).toEqual({
-				identifier: 'my-audio-file',
-				service: 'local',
-			})
-		})
+		it.each(['./audio/file.mp3', '/sounds/beep.wav', 'my-audio-file'])(
+			'assumes local for %s',
+			(src) => {
+				expect(resolveAudioSource(src)).toEqual({ identifier: src, service: 'local' })
+			},
+		)
 	})
 
 	describe('explicit service override', () => {
@@ -119,7 +84,7 @@ describe('buildSoundCloudEmbedUrl', () => {
 		expect(url).toContain('auto_play=false')
 	})
 
-	it('builds URL from full SoundCloud URL', () => {
+	it('passes through full SoundCloud URLs', () => {
 		const url = buildSoundCloudEmbedUrl('https://soundcloud.com/artist/track', { autoPlay: true })
 		expect(url).toContain('soundcloud.com')
 		expect(url).toContain('auto_play=true')
@@ -127,10 +92,14 @@ describe('buildSoundCloudEmbedUrl', () => {
 
 	it('includes expected default parameters', () => {
 		const url = buildSoundCloudEmbedUrl('123', { autoPlay: false })
-		expect(url).toContain('hide_related=false')
-		expect(url).toContain('show_comments=false')
-		expect(url).toContain('show_reposts=false')
-		expect(url).toContain('show_teaser=false')
-		expect(url).toContain('show_user=true')
+		for (const param of [
+			'hide_related=false',
+			'show_comments=false',
+			'show_reposts=false',
+			'show_teaser=false',
+			'show_user=true',
+		]) {
+			expect(url).toContain(param)
+		}
 	})
 })

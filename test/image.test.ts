@@ -1,79 +1,54 @@
 import { describe, expect, it } from 'vitest'
 import { isDarkLightImageMetadata, isImageMetadataObject } from '../src/components/utils/image'
 
-const validMetadata = { format: 'png', height: 100, src: '/image.png', width: 200 }
+const valid = { format: 'png', height: 100, src: '/image.png', width: 200 }
 
 describe('isImageMetadataObject', () => {
 	it('accepts valid ImageMetadata objects', () => {
-		expect(isImageMetadataObject(validMetadata)).toBe(true)
-	})
-
-	it('accepts objects with just a string src', () => {
+		expect(isImageMetadataObject(valid)).toBe(true)
 		expect(isImageMetadataObject({ src: '/test.jpg' })).toBe(true)
 	})
 
 	it('accepts SVG component wrappers with .meta', () => {
 		// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component wrapper
-		const svgComponent = Object.assign(() => {}, { meta: validMetadata })
+		const svgComponent = Object.assign(() => {}, { meta: valid })
 		expect(isImageMetadataObject(svgComponent)).toBe(true)
 	})
 
-	it('rejects null and undefined', () => {
-		// eslint-disable-next-line unicorn/no-null -- testing guard against null input
-		expect(isImageMetadataObject(null)).toBe(false)
-		// eslint-disable-next-line unicorn/no-useless-undefined -- testing explicit undefined input
-		expect(isImageMetadataObject(undefined)).toBe(false)
+	it('rejects non-objects', () => {
+		/* eslint-disable unicorn/no-null */
+		for (const input of [null, undefined, 'string', 42, true]) {
+			expect(isImageMetadataObject(input)).toBe(false)
+		}
+		/* eslint-enable unicorn/no-null */
 	})
 
-	it('rejects primitives', () => {
-		expect(isImageMetadataObject('string')).toBe(false)
-		expect(isImageMetadataObject(42)).toBe(false)
-		expect(isImageMetadataObject(true)).toBe(false)
-	})
-
-	it('rejects objects without src', () => {
+	it('rejects objects without valid src', () => {
 		expect(isImageMetadataObject({ format: 'png', height: 100, width: 200 })).toBe(false)
-	})
-
-	it('rejects objects with non-string src', () => {
 		expect(isImageMetadataObject({ src: 42 })).toBe(false)
 	})
 
 	it('rejects SVG wrappers with invalid meta', () => {
-		expect(isImageMetadataObject({ meta: 'not-an-object' })).toBe(false)
 		// eslint-disable-next-line unicorn/no-null -- testing guard against null meta
-		expect(isImageMetadataObject({ meta: null })).toBe(false)
-		expect(isImageMetadataObject({ meta: { notSrc: true } })).toBe(false)
+		for (const meta of ['not-an-object', null, { notSrc: true }]) {
+			expect(isImageMetadataObject({ meta })).toBe(false)
+		}
 	})
 })
 
 describe('isDarkLightImageMetadata', () => {
 	it('accepts valid dark/light pairs', () => {
-		expect(
-			isDarkLightImageMetadata({
-				dark: validMetadata,
-				light: validMetadata,
-			}),
-		).toBe(true)
+		expect(isDarkLightImageMetadata({ dark: valid, light: valid })).toBe(true)
 	})
 
-	it('rejects if dark is missing', () => {
-		expect(isDarkLightImageMetadata({ light: validMetadata })).toBe(false)
-	})
-
-	it('rejects if light is missing', () => {
-		expect(isDarkLightImageMetadata({ dark: validMetadata })).toBe(false)
-	})
-
-	it('rejects null and undefined', () => {
-		// eslint-disable-next-line unicorn/no-null -- testing guard against null input
+	it('rejects missing or invalid members', () => {
+		/* eslint-disable unicorn/no-null, unicorn/no-useless-undefined */
+		expect(isDarkLightImageMetadata({ light: valid })).toBe(false)
+		expect(isDarkLightImageMetadata({ dark: valid })).toBe(false)
 		expect(isDarkLightImageMetadata(null)).toBe(false)
-		// eslint-disable-next-line unicorn/no-useless-undefined -- testing explicit undefined input
 		expect(isDarkLightImageMetadata(undefined)).toBe(false)
-	})
-
-	it('rejects if dark/light are not valid ImageMetadata', () => {
-		expect(isDarkLightImageMetadata({ dark: 'not-metadata', light: validMetadata })).toBe(false)
-		expect(isDarkLightImageMetadata({ dark: validMetadata, light: 42 })).toBe(false)
+		expect(isDarkLightImageMetadata({ dark: 'not-metadata', light: valid })).toBe(false)
+		expect(isDarkLightImageMetadata({ dark: valid, light: 42 })).toBe(false)
+		/* eslint-enable unicorn/no-null, unicorn/no-useless-undefined */
 	})
 })
