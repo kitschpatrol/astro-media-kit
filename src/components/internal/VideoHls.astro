@@ -64,7 +64,11 @@ const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConf
 	for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
 		const configAttribute = element.dataset.hlsConfig
 		if (configAttribute) {
-			element.config = JSON.parse(configAttribute)
+			try {
+				element.config = JSON.parse(configAttribute)
+			} catch {
+				console.warn('[astro-media-kit] Failed to parse HLS config:', configAttribute)
+			}
 		}
 
 		element.setAttribute('src', element.dataset.src!)

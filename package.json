@@ -60,7 +60,6 @@
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.0",
 		"@sindresorhus/is": "^7.2.0",
-		"@types/node": "~24.12.2",
 		"exiftool-vendored": "^35.15.1",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.12",
@@ -74,6 +73,7 @@
 	"devDependencies": {
 		"@astrojs/check": "^0.9.8",
 		"@kitschpatrol/shared-config": "^7.2.0",
+		"@types/node": "~24.12.2",
 		"astro": "^6.1.5",
 		"bumpp": "^11.0.1",
 		"node-addon-api": "^8.7.0",

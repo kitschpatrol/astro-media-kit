@@ -118,24 +118,21 @@ const config: ServiceConfig = {
 
 let videoInfo: undefined | VideoInfo
 let oembedInfo: OembedInfo | undefined
+let fetchError: string | undefined
 
 if (resolvedService === 'oembed') {
 	try {
 		oembedInfo = await fetchOEmbed(identifier)
 	} catch (error) {
-		console.error(
-			`[astro-media-kit] Video oEmbed "${identifier}" failed to load:`,
-			error instanceof Error ? error.message : error,
-		)
+		fetchError = `[astro-media-kit] Video oEmbed "${identifier}" failed to load: ${error instanceof Error ? error.message : String(error)}`
+		console.error(fetchError)
 	}
 } else {
 	try {
 		videoInfo = await getVideoInfo(identifier, resolvedService, config, poster ?? '')
 	} catch (error) {
-		console.error(
-			`[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load:`,
-			error instanceof Error ? error.message : error,
-		)
+		fetchError = `[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load: ${error instanceof Error ? error.message : String(error)}`
+		console.error(fetchError)
 	}
 }
 
@@ -168,6 +165,7 @@ switch (resolvedService) {
 		videoSrc = `https://www.youtube.com/watch?v=${identifier}`
 		break
 	}
+	// No default — ts/switch-exhaustiveness-check enforces all Service cases are handled
 }
 
 const captionProps: CaptionProps = {
@@ -232,53 +230,54 @@ const sharedProps = {
 </style>
 
 {
-	resolvedService === 'oembed'
-		? oembedInfo && (
-				<Caption {...captionProps}>
-					<InternalOembed
-						aspectRatio={oembedAspectRatio}
-						html={oembedInfo.html}
-						resolvedLabel={resolvedLabel}
+	fetchError ? (
+		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
+	) : resolvedService === 'oembed' ? (
+		oembedInfo && (
+			<Caption {...captionProps}>
+				<InternalOembed
+					aspectRatio={oembedAspectRatio}
+					html={oembedInfo.html}
+					resolvedLabel={resolvedLabel}
+					slot="media-component"
+				/>
+				<slot />
+			</Caption>
+		)
+	) : videoInfo && videoSrc ? (
+		<Caption {...captionProps}>
+			<Zoomer
+				slot="media-component"
+				videoConfig={
+					!isEmbedService(resolvedService) && resolvedService !== 'local'
+						? hlsConfigJson
+						: undefined
+				}
+				videoElement={videoElementMap[resolvedService]}
+				videoHeight={videoInfo.height}
+				videoPoster={posterUrl}
+				videoSrc={videoSrc}
+				videoWidth={videoInfo.width}
+				zoom={zoom}
+			>
+				{resolvedService === 'local' ? (
+					<InternalVideoLocal {...sharedProps} slot="media-component" />
+				) : resolvedService === 'youtube' ? (
+					<InternalVideoYouTube {...sharedProps} slot="media-component" />
+				) : resolvedService === 'vimeo' ? (
+					<InternalVideoVimeo {...sharedProps} slot="media-component" />
+				) : (
+					<InternalVideoHls
+						{...sharedProps}
+						captions={videoInfo.captions}
+						hlsConfig={hlsConfig}
+						hlsUrl={videoInfo.hlsUrl}
+						mp4Url={videoInfo.mp4Url}
 						slot="media-component"
 					/>
-					<slot />
-				</Caption>
-			)
-		: videoInfo &&
-			videoSrc && (
-				<Caption {...captionProps}>
-					<Zoomer
-						slot="media-component"
-						videoConfig={
-							!isEmbedService(resolvedService) && resolvedService !== 'local'
-								? hlsConfigJson
-								: undefined
-						}
-						videoElement={videoElementMap[resolvedService]}
-						videoHeight={videoInfo.height}
-						videoPoster={posterUrl}
-						videoSrc={videoSrc}
-						videoWidth={videoInfo.width}
-						zoom={zoom}
-					>
-						{resolvedService === 'local' ? (
-							<InternalVideoLocal {...sharedProps} slot="media-component" />
-						) : resolvedService === 'youtube' ? (
-							<InternalVideoYouTube {...sharedProps} slot="media-component" />
-						) : resolvedService === 'vimeo' ? (
-							<InternalVideoVimeo {...sharedProps} slot="media-component" />
-						) : (
-							<InternalVideoHls
-								{...sharedProps}
-								captions={videoInfo.captions}
-								hlsConfig={hlsConfig}
-								hlsUrl={videoInfo.hlsUrl}
-								mp4Url={videoInfo.mp4Url}
-								slot="media-component"
-							/>
-						)}
-					</Zoomer>
-					<slot />
-				</Caption>
-			)
+				)}
+			</Zoomer>
+			<slot />
+		</Caption>
+	) : undefined
 }

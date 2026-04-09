@@ -147,8 +147,12 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 		// Apply hls.js config before setting src (HLS-specific).
 		if (videoElementTag === 'hls-video' && videoConfig) {
-			// eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-type-assertion -- JSON.parse returns any; guarded by tag check above
-			;(videoElement as unknown as HlsVideoElement).config = JSON.parse(videoConfig)
+			try {
+				// eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-type-assertion -- JSON.parse returns any; guarded by tag check above
+				;(videoElement as unknown as HlsVideoElement).config = JSON.parse(videoConfig)
+			} catch {
+				console.warn('[astro-media-kit] Failed to parse HLS config:', videoConfig)
+			}
 		}
 
 		videoElement.setAttribute('src', videoSrc)

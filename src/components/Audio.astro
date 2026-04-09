@@ -67,6 +67,7 @@ const resolvedLabel = label ?? 'Audio'
 
 let oembedInfo: OembedInfo | undefined
 let embedUrl = ''
+let fetchError: string | undefined
 
 if (resolvedService === 'soundcloud') {
 	embedUrl = buildSoundCloudEmbedUrl(identifier, { autoPlay })
@@ -74,10 +75,8 @@ if (resolvedService === 'soundcloud') {
 	try {
 		oembedInfo = await fetchOEmbed(identifier)
 	} catch (error) {
-		console.error(
-			`[astro-media-kit] Audio oEmbed "${identifier}" failed to load:`,
-			error instanceof Error ? error.message : error,
-		)
+		fetchError = `[astro-media-kit] Audio oEmbed "${identifier}" failed to load: ${error instanceof Error ? error.message : String(error)}`
+		console.error(fetchError)
 	}
 }
 
@@ -94,34 +93,38 @@ const oembedAspectRatio =
 	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 ---
 
-<Caption {...captionProps}>
-	{
-		resolvedService === 'oembed' ? (
-			oembedInfo && (
-				<InternalOembed
-					aspectRatio={oembedAspectRatio}
-					html={oembedInfo.html}
+{
+	fetchError ? (
+		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
+	) : (
+		<Caption {...captionProps}>
+			{resolvedService === 'oembed' ? (
+				oembedInfo && (
+					<InternalOembed
+						aspectRatio={oembedAspectRatio}
+						html={oembedInfo.html}
+						resolvedLabel={resolvedLabel}
+						slot="media-component"
+					/>
+				)
+			) : resolvedService === 'local' ? (
+				<InternalAudioLocal
+					autoPlay={autoPlay}
+					loop={loop}
+					muted={muted}
+					preload={preload}
+					resolvedLabel={resolvedLabel}
+					slot="media-component"
+					src={identifier}
+				/>
+			) : (
+				<InternalAudioSoundCloud
+					embedUrl={embedUrl}
 					resolvedLabel={resolvedLabel}
 					slot="media-component"
 				/>
-			)
-		) : resolvedService === 'local' ? (
-			<InternalAudioLocal
-				autoPlay={autoPlay}
-				loop={loop}
-				muted={muted}
-				preload={preload}
-				resolvedLabel={resolvedLabel}
-				slot="media-component"
-				src={identifier}
-			/>
-		) : (
-			<InternalAudioSoundCloud
-				embedUrl={embedUrl}
-				resolvedLabel={resolvedLabel}
-				slot="media-component"
-			/>
-		)
-	}
-	<slot />
-</Caption>
+			)}
+			<slot />
+		</Caption>
+	)
+}
