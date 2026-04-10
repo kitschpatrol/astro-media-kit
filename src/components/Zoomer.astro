@@ -61,6 +61,8 @@ if (zoom) {
 }
 ---
 
+{zoom && <script>import './utils/lightbox'</script>}
+
 {
 	zoom && isVideo ? (
 		<div
@@ -91,10 +93,6 @@ if (zoom) {
 		<slot name="media-component" />
 	)
 }
-
-<script>
-	import './utils/lightbox'
-</script>
 
 <style>
 	a.pswp-zoom {
