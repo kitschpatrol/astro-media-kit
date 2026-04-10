@@ -13,10 +13,10 @@
 	"scripts": {
 		"astro": "astro",
 		"build": "astro build",
-		"clean": "git rm -f pnpm-lock.yaml ; git clean -fdX -e !.claude/",
-		"dev": "poptab ; astro dev --open",
+		"clean": "shx rm -f pnpm-lock.yaml && git clean -fdX -e !.claude/",
+		"dev": "poptab && astro dev --open",
 		"init": "op inject -i .template.env -o .env",
-		"preview": "poptab ; astro preview --open"
+		"preview": "poptab && astro preview --open"
 	},
 	"devDependencies": {
 		"@astrojs/mdx": "^5.0.3",
@@ -24,7 +24,7 @@
 		"astro": "^6.1.5",
 		"astro-mdx-kit": "link:../../astro-mdx-kit",
 		"astro-media-kit": "link:..",
-		"poptab": "^1.0.5",
+		"poptab": "^1.1.0",
 		"sharp": "^0.34.5"
 	},
 	"engines": {
