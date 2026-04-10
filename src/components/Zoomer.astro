@@ -61,46 +61,53 @@ if (zoom) {
 }
 ---
 
-<script>
-	// Is stripped if unused
-	import './utils/lightbox'
-</script>
-
 {
-	isVideo ? (
-		<div
-			class="pswp-zoom"
-			data-pswp-gallery={galleryName}
-			data-pswp-height={zoomHeight}
-			data-pswp-poster={videoPoster ?? ''}
-			data-pswp-type="video"
-			data-pswp-video-config={videoConfig}
-			data-pswp-video-element={videoElement}
-			data-pswp-video-src={videoSrc}
-			data-pswp-width={zoomWidth}
-		>
-			<Fragment set:html={mediaComponentHtml} />
-		</div>
+	zoom ? (
+		<>
+			<>
+				<script>
+					import './utils/lightbox';
+				</script>
+				<style>
+					a.pswp-zoom {
+						cursor: zoom-in;
+					}
+
+					div.pswp-zoom {
+						cursor: zoom-in;
+					}
+				</style>				
+			</>
+			isVideo ? (
+			<div
+				class="pswp-zoom"
+				data-pswp-gallery={galleryName}
+				data-pswp-height={zoomHeight}
+				data-pswp-poster={videoPoster ?? ''}
+				data-pswp-type="video"
+				data-pswp-video-config={videoConfig}
+				data-pswp-video-element={videoElement}
+				data-pswp-video-src={videoSrc}
+				data-pswp-width={zoomWidth}
+			>
+				<Fragment set:html={mediaComponentHtml} />
+			</div>
+			) : (
+			<a
+				class="pswp-zoom"
+				data-pswp-gallery={galleryName}
+				data-pswp-height={zoomHeight}
+				data-pswp-srcset={zoomSrcset}
+				data-pswp-width={zoomWidth}
+				href={zoomUrl}
+			>
+				<Fragment set:html={mediaComponentHtml} />
+			</a>
+			)
+		</>
 	) : (
-		<a
-			class="pswp-zoom"
-			data-pswp-gallery={galleryName}
-			data-pswp-height={zoomHeight}
-			data-pswp-srcset={zoomSrcset}
-			data-pswp-width={zoomWidth}
-			href={zoomUrl}
-		>
-			<Fragment set:html={mediaComponentHtml} />
-		</a>
+		<slot name="media-component" />
 	)
 }
 
-<style>
-	a.pswp-zoom {
-		cursor: zoom-in;
-	}
 
-	div.pswp-zoom {
-		cursor: zoom-in;
-	}
-</style>
