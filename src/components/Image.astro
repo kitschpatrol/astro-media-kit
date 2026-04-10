@@ -16,8 +16,8 @@ import {
 	resolveImageSource,
 	unwrapImageMetadata,
 } from './utils/image'
-import Zoomer from './Zoomer.astro'
 import './amk-image.css'
+import Zoomer from './Zoomer.astro'
 
 /** Props for the `<Image>` component — wraps Astro's `<Image>` with caption and zoom support. */
 export type Props = Omit<CaptionProps, 'src'> &
@@ -125,8 +125,14 @@ const astroImageProps = {
 ---
 
 <Caption {...captionProps}>
-	<Zoomer slot="media-component" zoom={zoom}>
-		<AstroImage {...astroImageProps} slot="media-component" />
-	</Zoomer>
+	{
+		zoom ? (
+			<Zoomer slot="media-component" zoom={zoom}>
+				<AstroImage {...astroImageProps} slot="media-component" />
+			</Zoomer>
+		) : (
+			<AstroImage {...astroImageProps} slot="media-component" />
+		)
+	}
 	<slot />
 </Caption>

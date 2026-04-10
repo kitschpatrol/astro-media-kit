@@ -61,10 +61,13 @@ if (zoom) {
 }
 ---
 
-{zoom && <script>import './utils/lightbox'</script>}
+<script>
+	// Is stripped if unused
+	import './utils/lightbox'
+</script>
 
 {
-	zoom && isVideo ? (
+	isVideo ? (
 		<div
 			class="pswp-zoom"
 			data-pswp-gallery={galleryName}
@@ -78,7 +81,7 @@ if (zoom) {
 		>
 			<Fragment set:html={mediaComponentHtml} />
 		</div>
-	) : zoom ? (
+	) : (
 		<a
 			class="pswp-zoom"
 			data-pswp-gallery={galleryName}
@@ -89,8 +92,6 @@ if (zoom) {
 		>
 			<Fragment set:html={mediaComponentHtml} />
 		</a>
-	) : (
-		<slot name="media-component" />
 	)
 }
 

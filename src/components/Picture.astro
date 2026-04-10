@@ -400,11 +400,42 @@ if (background && backgroundDark) {
 }
 ---
 
+Zoom: {zoom}
+
 <Caption {...captionProps}>
-	<Zoomer slot="media-component" zoom={zoom}>
-		<picture {...pictureAttributes} slot="media-component">
-			{
-				hasDarkMode &&
+	{
+		zoom ? (
+			<Zoomer slot="media-component" zoom={zoom}>
+				<picture {...pictureAttributes} slot="media-component">
+					{hasDarkMode &&
+						optimizedImagesDark!.map((image) => (
+							<source
+								media="(prefers-color-scheme: dark)"
+								srcset={buildSrcsetAttribute(image)}
+								type={getMimeType(image)}
+								{...sourceAdditionalAttributes}
+							/>
+						))}
+					{optimizedImages.map((image) => (
+						<source
+							media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
+							srcset={buildSrcsetAttribute(image)}
+							type={getMimeType(image)}
+							{...sourceAdditionalAttributes}
+						/>
+					))}
+					<img
+						alt={alt}
+						src={fallbackImage.src}
+						{...imgAttributes}
+						class:list={[imgClassName, 'amk']}
+						style={backgroundStyle}
+					/>
+				</picture>
+			</Zoomer>
+		) : (
+			<picture {...pictureAttributes} slot="media-component">
+				{hasDarkMode &&
 					optimizedImagesDark!.map((image) => (
 						<source
 							media="(prefers-color-scheme: dark)"
@@ -412,26 +443,24 @@ if (background && backgroundDark) {
 							type={getMimeType(image)}
 							{...sourceAdditionalAttributes}
 						/>
-					))
-			}
-			{
-				optimizedImages.map((image) => (
+					))}
+				{optimizedImages.map((image) => (
 					<source
 						media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
 						srcset={buildSrcsetAttribute(image)}
 						type={getMimeType(image)}
 						{...sourceAdditionalAttributes}
 					/>
-				))
-			}
-			<img
-				alt={alt}
-				src={fallbackImage.src}
-				{...imgAttributes}
-				class:list={[imgClassName, 'amk']}
-				style={backgroundStyle}
-			/>
-		</picture>
-	</Zoomer>
+				))}
+				<img
+					alt={alt}
+					src={fallbackImage.src}
+					{...imgAttributes}
+					class:list={[imgClassName, 'amk']}
+					style={backgroundStyle}
+				/>
+			</picture>
+		)
+	}
 	<slot />
 </Caption>
