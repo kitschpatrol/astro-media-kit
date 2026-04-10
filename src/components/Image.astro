@@ -54,6 +54,10 @@ const {
 	...imageRestProps
 } = Astro.props
 
+// Default decoding and loading — decoding: 'sync' prevents flashes, loading: 'lazy' defers offscreen images
+imageRestProps.decoding ??= 'sync'
+imageRestProps.loading ??= 'lazy'
+
 // Resolve src — if it's still a string at this point, either the mediaKit() integration
 // isn't registered (which auto-imports string paths), or it's an absolute filesystem path.
 // Relative paths like "../assets/foo.jpg" only work with the auto-import integration.

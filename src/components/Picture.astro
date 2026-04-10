@@ -67,7 +67,7 @@ export type Props = {
 	creator?: CaptionProps['creator']
 	/**
 	 * Image decoding hint.
-	 * @default 'async'
+	 * @default 'sync'
 	 */
 	decoding?: 'async' | 'auto' | 'sync' | undefined
 	/**
@@ -165,6 +165,10 @@ const {
 	zoom,
 	...imageProps
 } = Astro.props
+
+// Default decoding and loading — decoding: 'sync' prevents flashes, loading: 'lazy' defers offscreen images
+imageProps.decoding ??= 'sync'
+imageProps.loading ??= 'lazy'
 
 // Resolve src — relative string paths only work with the mediaKit() auto-import integration.
 function assertNotRelativePath(path: unknown): void {
