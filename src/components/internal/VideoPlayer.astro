@@ -1,0 +1,215 @@
+---
+import type { InternalVideoProps } from './types'
+import { getControllerStyle } from './types'
+import './amk-video.css'
+
+type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
+type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
+
+export type Props = InternalVideoProps & {
+	/** Which custom element to render. */
+	element: VideoElementTag
+	/** HLS URL for noscript fallback. */
+	hlsUrl?: string | undefined
+	/** MP4 fallback URL for noscript. */
+	mp4Url?: string | undefined
+}
+
+const {
+	aspectRatio,
+	autoPlay,
+	captions,
+	controlStyle,
+	element,
+	hlsConfig,
+	hlsUrl,
+	intrinsicWidth,
+	loop,
+	mp4Url,
+	muted,
+	posterUrl,
+	preload,
+	resolvedLabel,
+	videoSrc,
+	zoom,
+} = Astro.props
+
+const isHls = element === 'hls-video'
+const isEmbed = element === 'vimeo-video' || element === 'youtube-video'
+
+const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
+
+const videoAttributes: VideoAttributes = {
+	'aria-label': resolvedLabel,
+	autoplay: autoPlay || undefined,
+	crossorigin: 'anonymous',
+	...(isHls && { disablepictureinpicture: 'true' }),
+	loop: loop || undefined,
+	muted: muted || undefined,
+	playsinline: 'true',
+	poster: posterUrl,
+	preload,
+}
+
+const hlsConfigJson =
+	isHls && Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
+
+// Note that prettier-plugin-astro chokes on conditional script tags
+// https://github.com/withastro/prettier-plugin-astro/issues/452
+// https://github.com/withastro/prettier-plugin-astro/issues/454
+// https://github.com/angelikatyborska/prettier-plugin-astro/commit/73bdf9ca634338e5e673130e5832136d29e5bd83
+---
+
+<script>
+	import 'media-chrome'
+	import './media-chrome-init'
+</script>
+
+{
+	isHls && (
+		<script>
+			import 'hls-video-element'
+			import type { HlsVideoElement } from 'hls-video-element'
+
+			// Apply hls.js config before source loading.
+			// Config must be set before src so hls.js uses it during initialization.
+			// Elements render with data-src instead of src, then we set config + src here.
+			for (const element of document.querySelectorAll<HlsVideoElement>(
+				'hls-video[data-src]',
+			)) {
+				const configAttribute = element.dataset.hlsConfig
+				if (configAttribute) {
+					try {
+						element.config = JSON.parse(configAttribute)
+					} catch {
+						console.warn(
+							'[astro-media-kit] Failed to parse HLS config:',
+							configAttribute,
+						)
+					}
+				}
+
+				element.setAttribute('src', element.dataset.src!)
+			}
+		</script>
+	)
+}
+
+{
+	element === 'vimeo-video' && (
+		<script>
+			import 'vimeo-video-element'
+		</script>
+	)
+}
+
+{
+	element === 'youtube-video' && (
+		
+			<script>
+				import 'youtube-video-element'
+			</script>
+		
+	)
+}
+
+<div class:list={['amk', { 'amk-embed': isEmbed }]}>
+	<media-controller
+		autohide="1"
+		class:list={[controlStyle, { autoplay: autoPlay }]}
+		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+		inert={controlStyle === 'none' ? 'true' : undefined}
+		style={controllerStyle}
+	>
+		{
+			isHls ? (
+				<hls-video
+					{...videoAttributes}
+					data-hls-config={hlsConfigJson}
+					data-src={videoSrc}
+					slot="media"
+				>
+					{captions.map((caption) => (
+						<track kind="captions" {...caption} />
+					))}
+				</hls-video>
+			) : element === 'video' ? (
+				/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
+				<video {...videoAttributes} slot="media" src={videoSrc} />
+			) : element === 'vimeo-video' ? (
+				<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
+			) : (
+				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
+			)
+		}
+		
+		{
+			controlStyle === 'full' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{
+						captions.length > 0 && (
+							<media-captions-button />
+						)
+					}
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+					{
+						zoom && (
+							<span slot="tooltip-enter">Zoom</span>
+						)
+					}
+					</media-fullscreen-button>
+				</media-control-bar>
+			)
+		}
+		
+		{
+			controlStyle === 'lightbox' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{captions.length > 0 && <media-captions-button />}
+				</media-control-bar>
+			)
+		}
+		{
+			controlStyle === 'minimal' && (
+				<>
+					<media-control-bar style="justify-content: flex-end">
+						<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{
+							zoom && (
+								<span slot="tooltip-enter">Zoom</span>
+							)
+						}
+						</media-fullscreen-button>
+					</media-control-bar>
+					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+				</>
+			)
+		}
+	</media-controller>
+	{
+		isHls && hlsUrl && (
+			<noscript>
+				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+				<video {...videoAttributes}>
+					<source src={hlsUrl} type="application/x-mpegURL" />
+					{
+						mp4Url && (
+							<source src={mp4Url} type="video/mp4" />
+						)
+					}
+					Your browser does not support HTML5 video.
+				</video>
+			</noscript>
+		)
+	}
+</div>

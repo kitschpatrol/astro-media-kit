@@ -5,10 +5,7 @@ import type { OembedInfo } from './utils/oembed'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import Caption from './Caption.astro'
 import InternalOembed from './internal/OEmbed.astro'
-import InternalVideoHls from './internal/VideoHls.astro'
-import InternalVideoLocal from './internal/VideoLocal.astro'
-import InternalVideoVimeo from './internal/VideoVimeo.astro'
-import InternalVideoYouTube from './internal/VideoYouTube.astro'
+import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
 import { getVideoInfo, isEmbedService, resolveVideoSource } from './utils/video'
 import Zoomer from './Zoomer.astro'
@@ -260,22 +257,15 @@ const sharedProps = {
 				videoWidth={videoInfo.width}
 				zoom={zoom}
 			>
-				{resolvedService === 'local' ? (
-					<InternalVideoLocal {...sharedProps} slot="media-component" />
-				) : resolvedService === 'youtube' ? (
-					<InternalVideoYouTube {...sharedProps} slot="media-component" />
-				) : resolvedService === 'vimeo' ? (
-					<InternalVideoVimeo {...sharedProps} slot="media-component" />
-				) : (
-					<InternalVideoHls
-						{...sharedProps}
-						captions={videoInfo.captions}
-						hlsConfig={hlsConfig}
-						hlsUrl={videoInfo.hlsUrl}
-						mp4Url={videoInfo.mp4Url}
-						slot="media-component"
-					/>
-				)}
+				<VideoPlayer
+					{...sharedProps}
+					captions={videoInfo.captions}
+					element={videoElementMap[resolvedService]}
+					hlsConfig={hlsConfig}
+					hlsUrl={videoInfo.hlsUrl}
+					mp4Url={videoInfo.mp4Url}
+					slot="media-component"
+				/>
 			</Zoomer>
 			<slot />
 		</Caption>
