@@ -365,6 +365,14 @@ Exported from `astro-media-kit`:
 - **`Service`** — `'bunny' | 'cloudflare' | 'local' | 'mux' | 'oembed' | 'vimeo' | 'youtube'`
 - **`VideoInfo`** — Normalized video metadata (dimensions, duration, URLs, captions).
 
+## Development notes
+
+The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/452).
+
+This means that the `Zoomer.astro` and `VideoPlayer.astro` crash Prettier and cannot be automatically formatted.
+
+I'm attempting to work through this in [a fork](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags).
+
 ## Maintainers
 
 [@kitschpatrol](https://github.com/kitschpatrol)
