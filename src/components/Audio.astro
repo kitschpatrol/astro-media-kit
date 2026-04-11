@@ -3,11 +3,10 @@ import type { Props as CaptionProps } from './Caption.astro'
 import type { AudioService } from './utils/audio'
 import type { OembedInfo } from './utils/oembed'
 import Caption from './Caption.astro'
-import InternalAudioLocal from './internal/AudioLocal.astro'
-import InternalAudioSoundCloud from './internal/AudioSoundCloud.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
 import { fetchOEmbed } from './utils/oembed'
+import './internal/amk-audio.css'
 
 /** Props for the `<Audio>` component — audio player supporting SoundCloud, oEmbed, and local files. */
 export type Props = Omit<CaptionProps, 'src'> & {
@@ -93,6 +92,8 @@ const oembedAspectRatio =
 	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 ---
 
+{resolvedService === 'local' && <script>import 'media-chrome'</script>}
+
 {
 	fetchError ? (
 		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
@@ -108,21 +109,33 @@ const oembedAspectRatio =
 					/>
 				)
 			) : resolvedService === 'local' ? (
-				<InternalAudioLocal
-					autoPlay={autoPlay}
-					loop={loop}
-					muted={muted}
-					preload={preload}
-					resolvedLabel={resolvedLabel}
-					slot="media-component"
-					src={identifier}
-				/>
+				<div class="amk" slot="media-component">
+					<media-controller audio>
+						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
+						<audio
+							aria-label={resolvedLabel}
+							autoplay={autoPlay || undefined}
+							crossorigin="anonymous"
+							loop={loop || undefined}
+							muted={muted || undefined}
+							preload={preload}
+							slot="media"
+							src={identifier}
+						/>
+						{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+						<media-control-bar>
+							<media-play-button />
+							<media-mute-button />
+							<media-volume-range />
+							<media-time-range />
+							<media-time-display />
+						</media-control-bar>
+					</media-controller>
+				</div>
 			) : (
-				<InternalAudioSoundCloud
-					embedUrl={embedUrl}
-					resolvedLabel={resolvedLabel}
-					slot="media-component"
-				/>
+				<div class="amk" slot="media-component">
+					<iframe allow="autoplay" height="166" src={embedUrl} title={resolvedLabel} width="100%" />
+				</div>
 			)}
 			<slot />
 		</Caption>
