@@ -92,7 +92,12 @@ const oembedAspectRatio =
 	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 ---
 
-{resolvedService === 'local' && <script>import 'media-chrome'</script>}
+{
+	resolvedService === 'local' &&
+		<script>
+			import 'media-chrome'
+		</script>
+}
 
 {
 	fetchError ? (

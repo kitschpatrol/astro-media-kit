@@ -53,9 +53,6 @@ const videoAttributes: VideoAttributes = {
 
 const hlsConfigJson =
 	isHls && Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
-
-// Note that prettier-plugin-astro chokes on conditional script tags, see
-// development notes in readme for details
 ---
 
 <script>
@@ -97,7 +94,7 @@ const hlsConfigJson =
 </script>
 
 {
-	isHls && (
+	isHls &&
 		<script>
 			import 'hls-video-element'
 			import type { HlsVideoElement } from 'hls-video-element'
@@ -105,43 +102,33 @@ const hlsConfigJson =
 			// Apply hls.js config before source loading.
 			// Config must be set before src so hls.js uses it during initialization.
 			// Elements render with data-src instead of src, then we set config + src here.
-			for (const element of document.querySelectorAll<HlsVideoElement>(
-				'hls-video[data-src]',
-			)) {
+			for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
 				const configAttribute = element.dataset.hlsConfig
 				if (configAttribute) {
 					try {
 						element.config = JSON.parse(configAttribute)
 					} catch {
-						console.warn(
-							'[astro-media-kit] Failed to parse HLS config:',
-							configAttribute,
-						)
+						console.warn('[astro-media-kit] Failed to parse HLS config:', configAttribute)
 					}
 				}
 
 				element.setAttribute('src', element.dataset.src!)
 			}
 		</script>
-	)
 }
 
 {
-	element === 'vimeo-video' && (
+	element === 'vimeo-video' &&
 		<script>
 			import 'vimeo-video-element'
 		</script>
-	)
 }
 
 {
-	element === 'youtube-video' && (
-		
-			<script>
-				import 'youtube-video-element'
-			</script>
-		
-	)
+	element === 'youtube-video' &&
+		<script>
+			import 'youtube-video-element'
+		</script>
 }
 
 <div class:list={['amk', { 'amk-embed': isEmbed }]}>
@@ -173,7 +160,7 @@ const hlsConfigJson =
 				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
 			)
 		}
-		
+
 		{
 			controlStyle === 'full' && (
 				<media-control-bar>
@@ -182,22 +169,14 @@ const hlsConfigJson =
 					<media-volume-range />
 					<media-time-range />
 					<media-time-display />
-					{
-						captions.length > 0 && (
-							<media-captions-button />
-						)
-					}
+					{captions.length > 0 && <media-captions-button />}
 					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-					{
-						zoom && (
-							<span slot="tooltip-enter">Zoom</span>
-						)
-					}
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
 					</media-fullscreen-button>
 				</media-control-bar>
 			)
 		}
-		
+
 		{
 			controlStyle === 'lightbox' && (
 				<media-control-bar>
@@ -215,11 +194,7 @@ const hlsConfigJson =
 				<>
 					<media-control-bar style="justify-content: flex-end">
 						<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-						{
-							zoom && (
-								<span slot="tooltip-enter">Zoom</span>
-							)
-						}
+							{zoom && <span slot="tooltip-enter">Zoom</span>}
 						</media-fullscreen-button>
 					</media-control-bar>
 					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
@@ -233,11 +208,7 @@ const hlsConfigJson =
 				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
 				<video {...videoAttributes}>
 					<source src={hlsUrl} type="application/x-mpegURL" />
-					{
-						mp4Url && (
-							<source src={mp4Url} type="video/mp4" />
-						)
-					}
+					{mp4Url && <source src={mp4Url} type="video/mp4" />}
 					Your browser does not support HTML5 video.
 				</video>
 			</noscript>

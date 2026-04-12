@@ -371,7 +371,7 @@ The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) 
 
 This means that the `Zoomer.astro` and `VideoPlayer.astro` crash Prettier and cannot be automatically formatted.
 
-I'm attempting to work through this in [a fork](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags).
+I have released [a fork of the Astro Prettier plugin](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags) incorporating fixes for these issues.
 
 ## Maintainers
 

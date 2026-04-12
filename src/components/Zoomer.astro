@@ -59,9 +59,6 @@ if (zoom) {
 		zoomSrcset = target.srcset
 	}
 }
-
-// Note that prettier-plugin-astro chokes on conditional script tags, see
-// development notes in readme for details
 ---
 
 {
@@ -69,7 +66,7 @@ if (zoom) {
 		<>
 			<>
 				<script>
-					import './utils/lightbox';
+					import './utils/lightbox'
 				</script>
 				<style>
 					a.pswp-zoom {
@@ -79,38 +76,36 @@ if (zoom) {
 					div.pswp-zoom {
 						cursor: zoom-in;
 					}
-				</style>				
+				</style>
 			</>
-			isVideo ? (
-			<div
-				class="pswp-zoom"
-				data-pswp-gallery={galleryName}
-				data-pswp-height={zoomHeight}
-				data-pswp-poster={videoPoster ?? ''}
-				data-pswp-type="video"
-				data-pswp-video-config={videoConfig}
-				data-pswp-video-element={videoElement}
-				data-pswp-video-src={videoSrc}
-				data-pswp-width={zoomWidth}
-			>
-				<Fragment set:html={mediaComponentHtml} />
-			</div>
+			{isVideo ? (
+				<div
+					class="pswp-zoom"
+					data-pswp-gallery={galleryName}
+					data-pswp-height={zoomHeight}
+					data-pswp-poster={videoPoster ?? ''}
+					data-pswp-type="video"
+					data-pswp-video-config={videoConfig}
+					data-pswp-video-element={videoElement}
+					data-pswp-video-src={videoSrc}
+					data-pswp-width={zoomWidth}
+				>
+					<Fragment set:html={mediaComponentHtml} />
+				</div>
 			) : (
-			<a
-				class="pswp-zoom"
-				data-pswp-gallery={galleryName}
-				data-pswp-height={zoomHeight}
-				data-pswp-srcset={zoomSrcset}
-				data-pswp-width={zoomWidth}
-				href={zoomUrl}
-			>
-				<Fragment set:html={mediaComponentHtml} />
-			</a>
-			)
+				<a
+					class="pswp-zoom"
+					data-pswp-gallery={galleryName}
+					data-pswp-height={zoomHeight}
+					data-pswp-srcset={zoomSrcset}
+					data-pswp-width={zoomWidth}
+					href={zoomUrl}
+				>
+					<Fragment set:html={mediaComponentHtml} />
+				</a>
+			)}
 		</>
 	) : (
 		<slot name="media-component" />
 	)
 }
-
-

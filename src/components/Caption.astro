@@ -68,14 +68,27 @@ const creditLine =
 
 // Can't get rid of children in markdown, so we inspect what's in the slot
 const hasCaption = Boolean(
-	// eslint-disable-next-line unicorn/no-await-expression-member
+		// eslint-disable-next-line unicorn/no-await-expression-member
 	Astro.slots.default && (await Astro.slots.render('default')).trim().length > 0,
 )
+
+
+
+
+
+
+
+
 
 const hasCredit = showCredit && creditLine !== undefined
 ---
 
-{
+	{
+
+
+
+
+
 	hasCaption || hasCredit ? (
 		<figure>
 			<slot name="media-component" />
