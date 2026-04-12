@@ -316,6 +316,8 @@ function syncBackToInline(content: {
 // Standalone items (zoom={true}, no gallery grouping).
 const standaloneLightbox = createLightbox({
 	gallery: '.pswp-zoom:not([data-pswp-gallery])',
+	secondaryZoomLevel: 'fit',
+	zoom: false,
 })
 
 // Grouped galleries — one lightbox per unique gallery name.
@@ -336,7 +338,7 @@ for (const name of galleryNames) {
 		gallery: 'body',
 		initialZoomLevel: 'fit',
 		loop: false,
-		secondaryZoomLevel: 1,
+		secondaryZoomLevel: 'fit',
 		zoom: false,
 	})
 	galleryLightboxes.set(name, lb)
