@@ -23,12 +23,8 @@
 		"./playground-starlight/.astro/types.d.ts",
 		"./playground/.astro/types.d.ts"
 	],
-	"exclude": [
-		"**/dist/",
-		"**/bin/",
-		"**/node_modules/",
-		"references/**",
-		"playground/**/*.mdx",
-		"playground-starlight/**/*.mdx"
-	]
+	"exclude": ["**/dist/", "**/bin/", "**/node_modules/", "references/**"],
+	"mdx": {
+		"plugins": ["remark-directive", "remark-attribute-list"]
+	}
 }

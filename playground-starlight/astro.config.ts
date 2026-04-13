@@ -1,19 +1,21 @@
 /* eslint-disable ts/naming-convention */
 
 import starlight from '@astrojs/starlight'
-import mdxKit from 'astro-mdx-kit'
+import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit from 'astro-media-kit/integration'
 import { defineConfig } from 'astro/config'
 
 export default defineConfig({
 	integrations: [
 		mediaKit({
+			aphex: true,
 			autoImport: {
 				components: {
 					Image: 'src',
 					Picture: ['src'],
 				},
 			},
+			tldraw: true,
 		}),
 		mdxKit({
 			attributes: true,
@@ -30,7 +32,7 @@ export default defineConfig({
 			},
 			elements: {
 				img: {
-					autoImport: ['src'],
+					autoImport: ['src', 'srcDark', tldrawDarkImport],
 					caption: 'figure',
 					component: 'Picture',
 					componentModule: 'astro-media-kit/components',
@@ -42,7 +44,6 @@ export default defineConfig({
 			sidebar: [
 				{
 					items: [
-						{ label: 'Image', slug: 'components/image' },
 						{ label: 'Picture', slug: 'components/picture' },
 						{ label: 'Video', slug: 'components/video' },
 						{ label: 'Audio', slug: 'components/audio' },
@@ -52,9 +53,7 @@ export default defineConfig({
 					label: 'Components',
 				},
 				{
-					items: [
-						{ label: 'Syntax & Directives', slug: 'mdx/syntax' },
-					],
+					items: [{ label: 'Syntax & Directives', slug: 'mdx/syntax' }],
 					label: 'MDX',
 				},
 			],

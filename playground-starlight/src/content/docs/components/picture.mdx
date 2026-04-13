@@ -1,11 +1,16 @@
 ---
 title: Picture
-description: Responsive picture element with dark mode, format control, and layouts.
+description: Responsive picture element with dark mode, format control, layouts, and zoom.
 ---
 
-## Basic picture
+## Basic
 
 ![Test photo](../../../assets/test.jpeg)
+
+## Caption
+
+![Test photo](../../../assets/test.jpeg)
+A caption with **bold** and _italic_ text.
 
 ## Dark mode variant
 
@@ -13,11 +18,22 @@ Toggle system dark mode to see the switch:
 
 ![Dark mode photo](../../../assets/test.jpeg){:srcDark="../../../assets/test-dark.jpeg"}
 
+## Background color
+
+![Tiger SVG](../../../assets/tiger.svg){:background="#e8e4d0"}
+
+## Background with dark mode
+
+![Tiger SVG](../../../assets/tiger.svg){:background="#e8e4d0" backgroundDark="#2a2520"}
+
 ## Formats
 
 ### JPEG only
 
-![JPEG format](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0"}
+> [!WARNING]
+> TODO ASTRO MDX KIT FIX
+
+{/* ![JPEG format](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0"} */}
 
 ### WebP fallback
 
@@ -53,7 +69,10 @@ Toggle system dark mode to see the switch:
 
 ### SVG with background (opaque format, composited)
 
-![SVG bg jpg](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0" backgroundDark="#2a2520"}
+> [!WARNING]
+> TODO ASTRO MDX KIT FIX
+
+{/* ![SVG bg jpg](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0" backgroundDark="#2a2520"} */}
 
 ## Caption and credit
 
@@ -62,4 +81,24 @@ Photo caption text.
 
 ## Zoom
 
+Click to open lightbox:
+
 ![Zoomable photo](../../../assets/test.jpeg){:zoom="true"}
+
+## Zoom gallery
+
+Multiple images sharing a gallery — click one, swipe between them:
+
+![Test photo 1](../../../assets/test.jpeg){:zoom="gallery"}
+
+![Tiger SVG](../../../assets/tiger.svg){:zoom="gallery"}
+
+## Tldraw integration
+
+With automatic dark mode support
+
+![tldr test](../../../assets/test-sketch.tldr)
+
+## Aphex (Apple photos) integration
+
+![aphex test](~aphex/Tiny/tiny)
