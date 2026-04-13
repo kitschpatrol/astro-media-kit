@@ -1,0 +1,65 @@
+---
+title: Picture
+description: Responsive picture element with dark mode, format control, and layouts.
+---
+
+## Basic picture
+
+![Test photo](../../../assets/test.jpeg)
+
+## Dark mode variant
+
+Toggle system dark mode to see the switch:
+
+![Dark mode photo](../../../assets/test.jpeg){:srcDark="../../../assets/test-dark.jpeg"}
+
+## Formats
+
+### JPEG only
+
+![JPEG format](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0"}
+
+### WebP fallback
+
+![WebP fallback](../../../assets/test.jpeg){:fallbackFormat="webp"}
+
+## Layout modes
+
+### Responsive (default)
+
+![Responsive](../../../assets/test.jpeg){:layout="responsive"}
+
+### Constrained
+
+![Constrained](../../../assets/test.jpeg){:layout="constrained"}
+
+### Fixed
+
+![Fixed](../../../assets/test.jpeg){:layout="fixed"}
+
+### Full-width
+
+![Full-width](../../../assets/test.jpeg){:layout="full-width"}
+
+### None
+
+![None](../../../assets/test.jpeg){:layout="none"}
+
+## Background compositing
+
+### SVG with background (transparent format)
+
+![SVG bg webp](../../../assets/tiger.svg){:background="#e8e4d0"}
+
+### SVG with background (opaque format, composited)
+
+![SVG bg jpg](../../../assets/tiger.svg){:formats="jpg" background="#e8e4d0" backgroundDark="#2a2520"}
+
+## Caption and credit
+
+![Credited photo](../../../assets/test.jpeg){:creator="Test Creator" organization="Test Org" showCredit="true" type="photo"}
+Photo caption text.
+
+## Zoom
+
+![Zoomable photo](../../../assets/test.jpeg){:zoom="true"}

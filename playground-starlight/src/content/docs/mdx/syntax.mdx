@@ -1,0 +1,69 @@
+---
+title: Syntax & Directives
+description: MDX image syntax, attribute passing, and component directives.
+---
+
+## Image syntax
+
+Standard markdown image syntax is mapped to the Picture component:
+
+![Alt text](../../../assets/test.jpeg)
+
+## Images with captions
+
+Text immediately after an image becomes a caption:
+
+![Alt text](../../../assets/test.jpeg)
+Caption text with **markdown** support.
+
+## Attribute syntax
+
+Pass component props via `{:prop="value"}` after the image:
+
+### Zoom
+
+![Alt](../../../assets/test.jpeg){:zoom="true"}
+
+### Layout
+
+![Alt](../../../assets/test.jpeg){:layout="constrained"}
+
+### Background
+
+![Alt](../../../assets/tiger.svg){:background="#e8e4d0" backgroundDark="#2a2520"}
+
+### Multiple attributes
+
+![Alt](../../../assets/test.jpeg){:creator="Photographer" organization="Agency" showCredit="true" type="photo"}
+Caption with credit line.
+
+## Video directive
+
+Use `:::Video{...}:::` to embed videos:
+
+:::Video{src="/test.mp4"}
+:::
+
+With caption:
+
+:::Video{src="/test.mp4"}
+Video **caption** text.
+:::
+
+With attributes:
+
+:::Video{src="/test.mp4" controlStyle="minimal" loop=true}
+:::
+
+## Audio directive
+
+Use `:::Audio{...}:::` to embed audio:
+
+:::Audio{src="/test.mp3"}
+:::
+
+With caption:
+
+:::Audio{src="/test.mp3"}
+Audio **caption** text.
+:::

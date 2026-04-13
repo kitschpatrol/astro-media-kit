@@ -46,6 +46,7 @@
 	"scripts": {
 		"build": "astro sync",
 		"clean": "shx rm -f pnpm-lock.yaml && git clean -fdX -e !.claude/",
+		"dev": "pnpm run play",
 		"fix": "ksc fix",
 		"lint": "ksc lint && astro check",
 		"play": "pnpm -C playground run dev",
@@ -60,7 +61,7 @@
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.0",
 		"@sindresorhus/is": "^8.0.0",
-		"exiftool-vendored": "^35.15.1",
+		"exiftool-vendored": "^35.16.0",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.12",
 		"media-chrome": "^4.18.3",
@@ -72,6 +73,7 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.8",
+		"@kitschpatrol/prettier-plugin-astro": "0.14.1-fork.1",
 		"@kitschpatrol/shared-config": "^7.3.0",
 		"@types/node": "~24.12.2",
 		"astro": "^6.1.5",

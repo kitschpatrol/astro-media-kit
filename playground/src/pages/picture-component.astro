@@ -221,4 +221,223 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 			</tr>
 		</tbody>
 	</table>
+
+	<h2>6. Layout modes</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>layout="responsive" (default)</td>
+				<td><Picture alt="responsive" layout="responsive" src="../assets/test.jpeg" /></td>
+				<td class="check">Scales with container</td>
+			</tr>
+			<tr>
+				<td>layout="constrained"</td>
+				<td><Picture alt="constrained" layout="constrained" src="../assets/test.jpeg" /></td>
+				<td class="check">Max width capped</td>
+			</tr>
+			<tr>
+				<td>layout="fixed"</td>
+				<td><Picture alt="fixed" layout="fixed" src="../assets/test.jpeg" /></td>
+				<td class="check">Fixed size, no scaling</td>
+			</tr>
+			<tr>
+				<td>layout="full-width"</td>
+				<td><Picture alt="full-width" layout="full-width" src="../assets/test.jpeg" /></td>
+				<td class="check">Fills container width</td>
+			</tr>
+			<tr>
+				<td>layout="none"</td>
+				<td><Picture alt="none" layout="none" src="../assets/test.jpeg" /></td>
+				<td class="check">No layout styles</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>7. Fit &amp; position</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>fit="cover"</td>
+				<td
+					><Picture
+						alt="cover"
+						fit="cover"
+						layout="constrained"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Cropped to fill</td>
+			</tr>
+			<tr>
+				<td>fit="contain"</td>
+				<td
+					><Picture
+						alt="contain"
+						fit="contain"
+						layout="constrained"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Letterboxed to fit</td>
+			</tr>
+			<tr>
+				<td>fit="cover" position="top"</td>
+				<td
+					><Picture
+						alt="cover top"
+						fit="cover"
+						layout="constrained"
+						position="top"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Top edge visible</td>
+			</tr>
+			<tr>
+				<td>fit="cover" position="bottom"</td>
+				<td
+					><Picture
+						alt="cover bottom"
+						fit="cover"
+						layout="constrained"
+						position="bottom"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Bottom edge visible</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>8. Loading &amp; decoding</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>loading="eager"</td>
+				<td><Picture alt="eager" loading="eager" src="../assets/test.jpeg" /></td>
+				<td class="check">No lazy attr in HTML</td>
+			</tr>
+			<tr>
+				<td>loading="lazy" (default)</td>
+				<td><Picture alt="lazy" loading="lazy" src="../assets/test.jpeg" /></td>
+				<td class="check">lazy attr in HTML</td>
+			</tr>
+			<tr>
+				<td>decoding="async" (default)</td>
+				<td><Picture alt="async" decoding="async" src="../assets/test.jpeg" /></td>
+				<td class="check">async attr in HTML</td>
+			</tr>
+			<tr>
+				<td>decoding="sync"</td>
+				<td><Picture alt="sync" decoding="sync" src="../assets/test.jpeg" /></td>
+				<td class="check">sync attr in HTML</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>9. Densities &amp; widths</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>densities={'{[1, 2]}'}</td>
+				<td><Picture alt="densities" densities={[1, 2]} src="../assets/test.jpeg" /></td>
+				<td class="check">1x and 2x srcset</td>
+			</tr>
+			<tr>
+				<td>widths={'{[100, 200, 400]}'}</td>
+				<td><Picture alt="widths" src="../assets/test.jpeg" widths={[100, 200, 400]} /></td>
+				<td class="check">3 widths in srcset</td>
+			</tr>
+			<tr>
+				<td>widths + sizes</td>
+				<td
+					><Picture
+						alt="widths sizes"
+						sizes="(max-width: 400px) 100px, 200px"
+						src="../assets/test.jpeg"
+						widths={[100, 200]}
+					/></td
+				>
+				<td class="check">Responsive sizes attr</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>10. Caption &amp; credit</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>creator + showCredit</td>
+				<td><Picture alt="credit creator" creator="Test Creator" showCredit={true} src="../assets/test.jpeg" /></td>
+				<td class="check">Credit line with creator</td>
+			</tr>
+			<tr>
+				<td>organization + showCredit</td>
+				<td><Picture alt="credit org" organization="Test Org" showCredit={true} src="../assets/test.jpeg" /></td>
+				<td class="check">Credit line with org</td>
+			</tr>
+			<tr>
+				<td>creator + org + type</td>
+				<td
+					><Picture
+						alt="credit full"
+						creator="Creator"
+						organization="Org"
+						showCredit={true}
+						src="../assets/test.jpeg"
+						type="photo"
+					/></td
+				>
+				<td class="check">Full credit with type</td>
+			</tr>
+			<tr>
+				<td>typeFallback</td>
+				<td
+					><Picture
+						alt="type fallback"
+						showCredit={true}
+						src="../assets/test.jpeg"
+						typeFallback="illustration"
+					/></td
+				>
+				<td class="check">Fallback type in credit</td>
+			</tr>
+			<tr>
+				<td>Slot caption</td>
+				<td><Picture alt="caption" src="../assets/test.jpeg">Caption text</Picture></td>
+				<td class="check">Caption below picture</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>11. Zoom</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>Standalone zoom</td>
+				<td><Picture alt="zoom standalone" src="../assets/test.jpeg" zoom={true} /></td>
+				<td class="check">Click opens lightbox</td>
+			</tr>
+			<tr>
+				<td>Gallery zoom (1 of 2)</td>
+				<td><Picture alt="gallery 1" src="../assets/test.jpeg" zoom="gallery" /></td>
+				<td class="check">Click opens gallery</td>
+			</tr>
+			<tr>
+				<td>Gallery zoom (2 of 2)</td>
+				<td><Picture alt="gallery 2" src="../assets/tiger.svg" zoom="gallery" /></td>
+				<td class="check">Swipe to other picture</td>
+			</tr>
+		</tbody>
+	</table>
 </Layout>

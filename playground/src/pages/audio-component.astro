@@ -17,4 +17,16 @@ const { title } = pages.find((p) => p.href === '/audio-component')!
 
 	<h2>Local file</h2>
 	<Audio src="/test.mp3" />
+
+	<h2>Loop + muted</h2>
+	<Audio src="/test.mp3" loop={true} muted={true} />
+
+	<h2>Preload none</h2>
+	<Audio src="/test.mp3" preload="none" />
+
+	<h2>Custom label</h2>
+	<Audio src="/test.mp3" label="Test audio clip" />
+
+	<h2>Caption &amp; credit</h2>
+	<Audio src="/test.mp3" creator="Test Creator" organization="Test Org" showCredit={true}>Audio caption text</Audio>
 </Layout>

@@ -1,23 +1,66 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
+import Video from 'astro-media-kit/components/Video.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
 const { title } = pages.find((p) => p.href === '/zoom')!
+const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 ---
 
 <Layout {title}>
 	<h1>{title}</h1>
 
-	<figure>
-		<Image alt="auto jpeg" src="../assets/test.jpeg" zoom={true} />
-		<figcaption>Caption</figcaption>
-	</figure>
+	<h2>1. Single image zoom</h2>
+	<p class="note">Click to open lightbox. Each item opens independently.</p>
+	<div class="grid">
+		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom={true} />
+		<Picture alt="SVG tiger" src="../assets/tiger.svg" zoom={true} />
+	</div>
 
-	<Image alt="auto jpeg" src="../assets/tiger.svg" zoom={true} />
+	<h2>2. Named gallery</h2>
+	<p class="note">
+		All items share <code>zoom="album"</code>. Click any to open, then swipe between them.
+	</p>
+	<div class="grid">
+		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="album" />
+		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="album" />
+		<Picture
+			alt="Dark mode JPEG"
+			src="../assets/test.jpeg"
+			srcDark="../assets/test-dark.jpeg"
+			zoom="album"
+		/>
+	</div>
 
-	<Picture alt="auto jpeg" src="../assets/tiger.svg" zoom={'a'} />
-
-	<Picture alt="auto jpeg" src="../assets/test.jpeg" zoom={'a'} />
+	<h2>3. Mixed media gallery</h2>
+	<p class="note">
+		Images and videos share <code>zoom="mixed"</code>. Swipe between all media types.
+	</p>
+	<div class="grid">
+		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="mixed" />
+		<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
+		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" />
+		<Video controlStyle="minimal" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
+	</div>
 </Layout>
+
+<style>
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	.grid > :global(*) {
+		overflow: hidden;
+		min-width: 0;
+	}
+
+	.grid :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+</style>

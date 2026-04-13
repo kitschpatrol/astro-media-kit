@@ -1,0 +1,68 @@
+---
+title: Video
+description: Universal video player supporting YouTube, Vimeo, local files, and more.
+---
+
+## Local video
+
+:::Video{src="/test.mp4"}
+:::
+
+## Local video with poster
+
+:::Video{src="/test.mp4" poster="/test-poster.jpeg"}
+:::
+
+## YouTube
+
+:::Video{src="https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
+:::
+
+## YouTube (ID only)
+
+:::Video{src="dQw4w9WgXcQ" service="youtube"}
+:::
+
+## Vimeo
+
+:::Video{src="https://vimeo.com/10184668"}
+:::
+
+## Control styles
+
+### Minimal
+
+:::Video{src="/test.mp4" controlStyle="minimal"}
+:::
+
+### None
+
+:::Video{src="/test.mp4" controlStyle="none" autoPlay=true loop=true muted=true}
+:::
+
+## Playback options
+
+### Loop + muted
+
+:::Video{src="/test.mp4" loop=true muted=true}
+:::
+
+### Preload none
+
+:::Video{src="/test.mp4" preload="none"}
+:::
+
+## Caption and credit
+
+:::Video{src="/test.mp4" creator="Test Creator" organization="Test Org" showCredit=true}
+Video caption text.
+:::
+
+## Zoom
+
+:::Video{src="/test.mp4" zoom=true}
+:::
+
+:::aside[Note]
+Bunny, Cloudflare, and Mux video services require API keys configured via environment variables.
+:::

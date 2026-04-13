@@ -49,7 +49,7 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 			<tr>
 				<td>Auto-import dark .tldr</td>
 				<td><Image alt="auto tldr" src="../assets/test-sketch.tldr?dark=true&tldr" /></td>
-				<td class="check">Tldraw sketch (light)</td>
+				<td class="check">Tldraw sketch (dark)</td>
 			</tr>
 			<tr>
 				<td>Explicit .tldr</td>
@@ -59,7 +59,7 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 			<tr>
 				<td>Explicit dark .tldr</td>
 				<td><Image alt="explicit tldr" src={tldrTestDark} /></td>
-				<td class="check">Tldraw sketch (light)</td>
+				<td class="check">Tldraw sketch (dark)</td>
 			</tr>
 			<tr>
 				<td>Auto-import aphex</td>
@@ -94,6 +94,64 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 					/></td
 				>
 				<td class="check">CSS light-dark() bg</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>3. Caption &amp; credit</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>creator + showCredit</td>
+				<td><Image alt="credit creator" creator="Test Creator" showCredit={true} src="../assets/test.jpeg" /></td>
+				<td class="check">Credit line with creator</td>
+			</tr>
+			<tr>
+				<td>organization + showCredit</td>
+				<td><Image alt="credit org" organization="Test Org" showCredit={true} src="../assets/test.jpeg" /></td>
+				<td class="check">Credit line with org</td>
+			</tr>
+			<tr>
+				<td>creator + org + type</td>
+				<td
+					><Image
+						alt="credit full"
+						creator="Creator"
+						organization="Org"
+						showCredit={true}
+						src="../assets/test.jpeg"
+						type="photo"
+					/></td
+				>
+				<td class="check">Full credit with type</td>
+			</tr>
+			<tr>
+				<td>Slot caption</td>
+				<td><Image alt="caption" src="../assets/test.jpeg">Caption text</Image></td>
+				<td class="check">Caption below image</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>4. Zoom</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>Standalone zoom</td>
+				<td><Image alt="zoom standalone" src="../assets/test.jpeg" zoom={true} /></td>
+				<td class="check">Click opens lightbox</td>
+			</tr>
+			<tr>
+				<td>Gallery zoom (1 of 2)</td>
+				<td><Image alt="gallery 1" src="../assets/test.jpeg" zoom="gallery" /></td>
+				<td class="check">Click opens gallery</td>
+			</tr>
+			<tr>
+				<td>Gallery zoom (2 of 2)</td>
+				<td><Image alt="gallery 2" src="../assets/tiger.svg" zoom="gallery" /></td>
+				<td class="check">Swipe to other image</td>
 			</tr>
 		</tbody>
 	</table>
