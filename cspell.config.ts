@@ -5,7 +5,6 @@ export default cspellConfig({
 	words: [
 		'bgdark',
 		'blep',
-		'Diátaxis',
 		'Ewma',
 		'gesturesdisabled',
 		'dailymotion',

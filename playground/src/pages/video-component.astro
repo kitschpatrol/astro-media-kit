@@ -72,15 +72,17 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 
 	<h2>Playback options</h2>
 	<h3>Loop + muted</h3>
-	<Video src="/test.mp4" loop={true} muted={true} />
+	<Video loop={true} muted={true} src="/test.mp4" />
 	<h3>Preload none</h3>
-	<Video src="/test.mp4" preload="none" />
+	<Video preload="none" src="/test.mp4" />
 
 	<h2>Label</h2>
 	<h3>Custom label</h3>
-	<Video src="/test.mp4" label="Test video clip" />
+	<Video label="Test video clip" src="/test.mp4" />
 
 	<h2>Caption &amp; credit</h2>
 	<h3>Caption &amp; credit</h3>
-	<Video src="/test.mp4" creator="Test Creator" organization="Test Org" showCredit={true}>Video caption text</Video>
+	<Video creator="Test Creator" organization="Test Org" showCredit={true} src="/test.mp4"
+		>Video caption text</Video
+	>
 </Layout>

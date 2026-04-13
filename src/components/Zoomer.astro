@@ -90,22 +90,22 @@ if (zoom) {
 						transition: opacity 0.2s ease;
 					}
 
-					.pswp__button--arrow:hover,
-					.pswp__button--close:hover {
-						opacity: 1;
-						transition: none;
-					}
-
 					.pswp__button--arrow:disabled {
+						pointer-events: none;
 						display: unset;
 						opacity: 0;
-						pointer-events: none;
 						transition: opacity 0.2s ease;
 					}
 
 					.pswp__button--close {
-						margin-right: auto;
 						order: -1;
+						margin-right: auto;
+					}
+
+					.pswp__button--arrow:hover,
+					.pswp__button--close:hover {
+						opacity: 1;
+						transition: none;
 					}
 				</style>
 			</>

@@ -66,6 +66,17 @@ export type Props = {
 	 */
 	creator?: CaptionProps['creator']
 	/**
+	 * Dark mode switching strategy.
+	 * - `'media'` (default): `prefers-color-scheme` media queries on `<source>` elements.
+	 *   Follows the OS/browser color scheme preference.
+	 * - `'none'`: disables all dark mode behavior (image sources and backgrounds).
+	 * - Any other string: a CSS selector (e.g. `"[data-theme='dark']"`, `".dark"`) that
+	 *   triggers dark mode. Renders two `<picture>` elements toggled via injected CSS.
+	 *   Use this for frameworks like Starlight (`[data-theme='dark']`) or Tailwind (`.dark`)
+	 *   that control dark mode via a class or attribute rather than the OS preference.
+	 */
+	darkMode?: 'media' | 'none' | (string & {})
+	/**
 	 * Image decoding hint.
 	 * @default 'sync'
 	 */
@@ -150,9 +161,10 @@ export type Props = {
 const {
 	alt,
 	background,
-	backgroundDark,
+	backgroundDark: backgroundDarkProp,
 	class: className,
 	creator,
+	darkMode = 'media',
 	fallbackFormat: fallbackFormatProp,
 	formats: formatsProp,
 	organization,
@@ -165,6 +177,20 @@ const {
 	zoom,
 	...imageProps
 } = Astro.props
+
+// Dark mode strategy
+const isSelector = darkMode !== 'media' && darkMode !== 'none'
+const isNone = darkMode === 'none'
+
+if (isSelector && /[{}<>;]/.test(darkMode)) {
+	throw new Error(
+		`Picture darkMode selector "${darkMode}" contains invalid characters. ` +
+			'Provide a valid CSS selector (e.g. "[data-theme=\'dark\']", ".dark").',
+	)
+}
+
+// When darkMode='none', suppress all dark behavior
+const backgroundDark = isNone ? undefined : backgroundDarkProp
 
 // Default decoding and loading — decoding: 'sync' prevents flashes, loading: 'lazy' defers offscreen images
 imageProps.decoding ??= 'sync'
@@ -184,7 +210,7 @@ function assertNotRelativePath(path: unknown): void {
 assertNotRelativePath(src)
 
 // Normalize srcDark: true/undefined = auto, false = disabled, other = explicit source
-const darkDisabled = srcDarkProp === false
+const darkDisabled = isNone || srcDarkProp === false
 const srcDarkSource =
 	typeof srcDarkProp === 'boolean' || srcDarkProp === undefined ? undefined : srcDarkProp
 assertNotRelativePath(srcDarkSource)
@@ -338,6 +364,23 @@ const fallbackImage = await getImage({
 	widths: imageProps.widths,
 })
 
+const hasDarkMode = optimizedImagesDark !== undefined
+
+// Generate dark fallback image for selector mode (needs its own <img> src)
+let fallbackImageDark: GetImageResult | undefined
+if (isSelector && hasDarkMode) {
+	const darkBackground = backgroundDark ?? background
+	const originalSrcDark = imageMetadataDark ? await resolveSrc(imageMetadataDark) : originalSrc
+	fallbackImageDark = await getImage({
+		...getImageProps,
+		...compositingBackground(resultFallbackFormat, darkBackground),
+		densities: imageProps.densities,
+		format: resultFallbackFormat,
+		src: originalSrcDark,
+		widths: imageProps.widths,
+	})
+}
+
 const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
 const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 
@@ -358,7 +401,26 @@ const { class: imgClassName, ...imgAttributes } = {
 	...fallbackImage.attributes,
 }
 
-const hasDarkMode = optimizedImagesDark !== undefined
+// Build dark fallback img attributes for selector mode
+let imgClassNameDark: string | undefined
+let imgAttributesDark: Record<string, unknown> = {}
+if (fallbackImageDark) {
+	const imgAdditionalAttributesDark: HTMLAttributes<'img'> = {}
+	if (fallbackImageDark.srcSet.values.length > 0) {
+		imgAdditionalAttributesDark.srcset = fallbackImageDark.srcSet.attribute
+	}
+
+	if (import.meta.env.DEV) {
+		imgAdditionalAttributesDark['data-image-component'] = 'true'
+	}
+
+	const { class: cls, ...attributes } = {
+		...imgAdditionalAttributesDark,
+		...fallbackImageDark.attributes,
+	}
+	imgClassNameDark = cls ?? undefined
+	imgAttributesDark = attributes
+}
 
 const captionProps: CaptionProps = {
 	creator,
@@ -391,47 +453,102 @@ if (backgroundDark && !background) {
 }
 
 let backgroundStyle: string | undefined
-if (background && backgroundDark) {
-	backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
-} else if (backgroundDark) {
-	backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
-} else if (background) {
-	backgroundStyle = `background-color:${background}`
+let backgroundStyleDark: string | undefined
+if (isSelector) {
+	// Selector mode: each <img> gets its own plain background-color
+	if (background) backgroundStyle = `background-color:${background}`
+	const darkBg = backgroundDark ?? background
+	if (darkBg) backgroundStyleDark = `background-color:${darkBg}`
+} else {
+	// Media mode (and none mode, where backgroundDark is already undefined)
+	// eslint-disable-next-line no-lonely-if
+	if (background && backgroundDark) {
+		backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
+	} else if (backgroundDark) {
+		backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
+	} else if (background) {
+		backgroundStyle = `background-color:${background}`
+	}
+}
+
+// Build injected <style> for selector mode
+let selectorStyle: string | undefined
+if (isSelector && hasDarkMode) {
+	selectorStyle = `<style>picture.amk-dark{display:none}${darkMode} picture.amk-dark{display:block}${darkMode} picture.amk-light{display:none}</style>`
 }
 ---
 
+{selectorStyle && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
 	<Zoomer slot="media-component" zoom={zoom}>
-		<picture {...pictureAttributes} slot="media-component">
-			{
-				hasDarkMode &&
-					optimizedImagesDark!.map((image) => (
+		{
+			isSelector ? (
+				<div {...pictureAttributes} slot="media-component">
+					{hasDarkMode && (
+						<picture class="amk-dark">
+							{optimizedImagesDark!.map((image) => (
+								<source
+									srcset={buildSrcsetAttribute(image)}
+									type={getMimeType(image)}
+									{...sourceAdditionalAttributes}
+								/>
+							))}
+							<img
+								alt=""
+								aria-hidden="true"
+								src={fallbackImageDark!.src}
+								{...imgAttributesDark}
+								class:list={[imgClassNameDark, 'amk']}
+								style={backgroundStyleDark}
+							/>
+						</picture>
+					)}
+					<picture class="amk-light">
+						{optimizedImages.map((image) => (
+							<source
+								srcset={buildSrcsetAttribute(image)}
+								type={getMimeType(image)}
+								{...sourceAdditionalAttributes}
+							/>
+						))}
+						<img
+							alt={alt}
+							src={fallbackImage.src}
+							{...imgAttributes}
+							class:list={[imgClassName, 'amk']}
+							style={backgroundStyle}
+						/>
+					</picture>
+				</div>
+			) : (
+				<picture {...pictureAttributes} slot="media-component">
+					{hasDarkMode &&
+						optimizedImagesDark!.map((image) => (
+							<source
+								media="(prefers-color-scheme: dark)"
+								srcset={buildSrcsetAttribute(image)}
+								type={getMimeType(image)}
+								{...sourceAdditionalAttributes}
+							/>
+						))}
+					{optimizedImages.map((image) => (
 						<source
-							media="(prefers-color-scheme: dark)"
+							media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
 							srcset={buildSrcsetAttribute(image)}
 							type={getMimeType(image)}
 							{...sourceAdditionalAttributes}
 						/>
-					))
-			}
-			{
-				optimizedImages.map((image) => (
-					<source
-						media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
-						srcset={buildSrcsetAttribute(image)}
-						type={getMimeType(image)}
-						{...sourceAdditionalAttributes}
+					))}
+					<img
+						alt={alt}
+						src={fallbackImage.src}
+						{...imgAttributes}
+						class:list={[imgClassName, 'amk']}
+						style={backgroundStyle}
 					/>
-				))
-			}
-			<img
-				alt={alt}
-				src={fallbackImage.src}
-				{...imgAttributes}
-				class:list={[imgClassName, 'amk']}
-				style={backgroundStyle}
-			/>
-		</picture>
+				</picture>
+			)
+		}
 	</Zoomer>
 	<slot />
 </Caption>

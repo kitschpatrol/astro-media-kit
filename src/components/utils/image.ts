@@ -191,8 +191,13 @@ export function extractZoomTarget(html: string): ZoomTarget {
 	// Collect srcset entries from <source> elements, skipping dark-mode variants
 	const sources = document.querySelectorAll('source[srcset]')
 	for (const source of sources) {
+		// Skip dark-mode variants (media query approach)
 		const media = source.getAttribute('media')
 		if (media?.includes('prefers-color-scheme: dark')) continue
+
+		// Skip dark-mode variants (selector approach)
+		const parentPicture = source.closest('picture')
+		if (parentPicture?.classList.contains('amk-dark')) continue
 
 		const srcset = source.getAttribute('srcset')
 		if (srcset) {
@@ -200,8 +205,8 @@ export function extractZoomTarget(html: string): ZoomTarget {
 		}
 	}
 
-	// Get aspect ratio from the <img> element
-	const img = document.querySelector('img')
+	// Get aspect ratio from the <img> element — prefer light-mode picture's img
+	const img = document.querySelector('picture.amk-light img') ?? document.querySelector('img')
 	let aspectRatio = 1
 	if (img) {
 		const imgWidth = Number.parseInt(img.getAttribute('width') ?? '0', 10)

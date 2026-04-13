@@ -7,13 +7,33 @@ hero:
   tagline: Astro components for images, video, and audio.
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components'
 
 <CardGrid>
-  <LinkCard title="Picture" href="/components/picture/" description="Responsive picture with dark mode, format control, and zoom." />
-  <LinkCard title="Video" href="/components/video/" description="Universal video player for YouTube, Vimeo, and more." />
-  <LinkCard title="Audio" href="/components/audio/" description="Audio player for SoundCloud, local files, and oEmbed." />
-  <LinkCard title="Caption" href="/components/caption/" description="Figure/figcaption wrapper with credit extraction." />
+  <LinkCard
+    title="Picture"
+    href="/components/picture/"
+    description="Responsive picture with dark mode, format control, and zoom."
+  />
+  <LinkCard
+    title="Video"
+    href="/components/video/"
+    description="Universal video player for YouTube, Vimeo, and more."
+  />
+  <LinkCard
+    title="Audio"
+    href="/components/audio/"
+    description="Audio player for SoundCloud, local files, and oEmbed."
+  />
+  <LinkCard
+    title="Caption"
+    href="/components/caption/"
+    description="Figure/figcaption wrapper with credit extraction."
+  />
   <LinkCard title="Zoom" href="/components/zoom/" description="PhotoSwipe lightbox galleries." />
-  <LinkCard title="MDX Syntax" href="/mdx/syntax/" description="Markdown images, attributes, and directives." />
+  <LinkCard
+    title="MDX Syntax"
+    href="/mdx/syntax/"
+    description="Markdown images, attributes, and directives."
+  />
 </CardGrid>

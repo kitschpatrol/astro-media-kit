@@ -27,7 +27,7 @@ It includes:
 - **Image**\
   Enhanced Astro `<Image>` wrapper with captions, XMP credit extraction, and PhotoSwipe zoom.
 - **Picture**\
-  Custom `<picture>` renderer with dark mode via `prefers-color-scheme` media queries, responsive source sets, and zoom.
+  Custom `<picture>` renderer with configurable dark mode (OS preference, CSS selector, or disabled), responsive source sets, and zoom.
 - **Video**\
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus credit extraction and PhotoSwipe zoom.
 - **Audio**\
@@ -123,7 +123,7 @@ Caption text is passed as a slot child:
 
 ### Picture
 
-Custom `<picture>` renderer with dark mode support via `prefers-color-scheme` media queries on `<source>` elements. Uses Astro's `getImage()` API directly for full control over responsive source generation.
+Custom `<picture>` renderer with dark mode support. Uses Astro's `getImage()` API directly for full control over responsive source generation.
 
 ```astro
 ---
@@ -140,6 +140,7 @@ Key props:
 
 - **`src`** — `ImageMetadata | DarkLightImageMetadata | ImageMetadataLike | string`
 - **`srcDark`** — `ImageMetadata | ImageMetadataLike | string | boolean` — Dark mode variant. When `src` is a `{ dark, light }` pair (e.g. from a tldraw import), the dark variant is used automatically unless `srcDark={false}`.
+- **`darkMode`** — `'media' | 'none' | string` — Dark mode switching strategy. See [Dark mode strategies](#dark-mode-strategies) below.
 - **`alt`** — Required alt text.
 - **`formats`** — `ImageOutputFormat[]` (default `['webp']`) — Output formats for `<source>` elements.
 - **`fallbackFormat`** — `ImageOutputFormat` (default `'png'`) — Format for the `<img>` fallback.
@@ -148,6 +149,36 @@ Key props:
 - **`background`** / **`backgroundDark`** — CSS background colors for transparent areas.
 - **`zoom`** — `boolean | string` — PhotoSwipe zoom support.
 - **`creator`** / **`organization`** / **`showCredit`** / **`type`** — Caption and credit props (same as Image).
+
+#### Dark mode strategies
+
+The `darkMode` prop controls how Picture switches between light and dark image variants. It accepts three kinds of values:
+
+**`'media'`** (default) — Uses `prefers-color-scheme` media queries on `<source>` elements. The browser picks the correct variant based on the OS color scheme preference. Background colors use the CSS `light-dark()` function. This is the most performant option: a single `<picture>` element, and the browser handles source selection natively.
+
+```astro
+<!-- Default behavior — follows OS dark mode preference -->
+<Picture src={heroLight} srcDark={heroDark} alt="Hero" />
+<Picture src={heroLight} srcDark={heroDark} alt="Hero" darkMode="media" />
+```
+
+**CSS selector string** — Any string other than `'media'` or `'none'` is treated as a CSS selector that identifies dark mode on the page. This is for frameworks that control dark mode via a class or attribute rather than the OS preference, like Starlight (`[data-theme="dark"]`) or Tailwind CSS (`.dark`).
+
+Renders two `<picture>` elements (one light, one dark) and injects a `<style>` block that toggles visibility based on the selector. The dark variant's images load lazily when the selector activates.
+
+```astro
+<!-- Starlight -->
+<Picture src={heroLight} srcDark={heroDark} alt="Hero" darkMode="[data-theme='dark']" />
+
+<!-- Tailwind CSS -->
+<Picture src={heroLight} srcDark={heroDark} alt="Hero" darkMode=".dark" />
+```
+
+**`'none'`** — Disables all dark mode behavior. No dark image sources are generated, and `backgroundDark` is ignored. Only the light variant is rendered.
+
+```astro
+<Picture src={heroLight} alt="Always light" darkMode="none" />
+```
 
 ### Video
 
