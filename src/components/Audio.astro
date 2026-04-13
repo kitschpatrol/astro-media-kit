@@ -114,7 +114,7 @@ const oembedAspectRatio =
 					/>
 				)
 			) : resolvedService === 'local' ? (
-				<div class="amk" slot="media-component">
+				<div class="amk not-content" slot="media-component">
 					<media-controller audio>
 						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
 						<audio
@@ -138,7 +138,7 @@ const oembedAspectRatio =
 					</media-controller>
 				</div>
 			) : (
-				<div class="amk" slot="media-component">
+				<div class="amk not-content" slot="media-component">
 					<iframe allow="autoplay" height="166" src={embedUrl} title={resolvedLabel} width="100%" />
 				</div>
 			)}
