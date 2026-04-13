@@ -15,6 +15,7 @@ onlyBuiltDependencies:
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'
+  - '@kitschpatrol/prettier-plugin-astro'
   - 'case-police'
   - '*cspell*'
   - '*eslint*'

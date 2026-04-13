@@ -21,7 +21,7 @@
 	"devDependencies": {
 		"@astrojs/mdx": "^5.0.3",
 		"@types/node": "~25.5.2",
-		"astro": "^6.1.5",
+		"astro": "^6.1.6",
 		"astro-mdx-kit": "link:../../astro-mdx-kit",
 		"astro-media-kit": "link:..",
 		"poptab": "^1.1.0",
