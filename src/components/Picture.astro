@@ -211,8 +211,11 @@ assertNotRelativePath(src)
 
 // Normalize srcDark: true/undefined = auto, false = disabled, other = explicit source
 const darkDisabled = isNone || srcDarkProp === false
-const srcDarkSource =
-	typeof srcDarkProp === 'boolean' || srcDarkProp === undefined ? undefined : srcDarkProp
+const srcDarkSource = isNone
+	? undefined
+	: typeof srcDarkProp === 'boolean' || srcDarkProp === undefined
+		? undefined
+		: srcDarkProp
 assertNotRelativePath(srcDarkSource)
 
 let imageMetadata: ImageMetadata
