@@ -8,8 +8,6 @@ export default knipConfig({
 		'@kitschpatrol/unplugin-tldraw',
 		'node-addon-api',
 		'node-gyp',
-		'remark-directive',
-		'remark-attribute-list',
 	],
 	ignoreFiles: ['playground/**/*', 'playground-starlight/**/*'],
 	ignoreWorkspaces: ['playground', 'playground-starlight'],

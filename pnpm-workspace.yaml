@@ -5,9 +5,6 @@ packages:
 
 ignoreWorkspaceRootCheck: true
 
-overrides:
-  '@kitschpatrol/prettier-plugin-astro': '0.14.1-fork.2'
-
 onlyBuiltDependencies:
   - esbuild
   - puppeteer
