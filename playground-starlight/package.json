@@ -18,6 +18,7 @@
 		"preview": "poptab && astro preview --open"
 	},
 	"devDependencies": {
+		"@astrojs/check": "^0.9.8",
 		"@astrojs/mdx": "^5.0.3",
 		"@astrojs/starlight": "^0.38.3",
 		"@types/node": "~25.5.2",
@@ -25,7 +26,8 @@
 		"astro-mdx-kit": "link:../../astro-mdx-kit",
 		"astro-media-kit": "link:..",
 		"poptab": "^1.1.0",
-		"sharp": "^0.34.5"
+		"sharp": "^0.34.5",
+		"shx": "^0.4.0"
 	},
 	"engines": {
 		"node": ">=20.19.0"

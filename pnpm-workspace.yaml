@@ -5,6 +5,9 @@ packages:
 
 ignoreWorkspaceRootCheck: true
 
+overrides:
+  '@kitschpatrol/prettier-plugin-astro': '0.14.1-fork.2'
+
 onlyBuiltDependencies:
   - esbuild
   - puppeteer
@@ -15,7 +18,6 @@ onlyBuiltDependencies:
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'
-  - '@kitschpatrol/prettier-plugin-astro'
   - 'case-police'
   - '*cspell*'
   - '*eslint*'
