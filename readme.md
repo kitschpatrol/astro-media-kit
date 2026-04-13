@@ -216,7 +216,11 @@ Key props:
 - **`loop`** — `boolean` (default `false`)
 - **`poster`** — `string` — Override the service-provided thumbnail.
 - **`zoom`** — `boolean | string` — PhotoSwipe lightbox for the video.
-- **`capQualityToSize`** — `boolean` (default `true`) — Limit HLS quality to the element's rendered size.
+- **`preload`** — `'auto' | 'metadata' | 'none'` (default `'metadata'`) — Preload behavior hint.
+- **`capQualityToSize`** — `boolean` — Limit HLS quality to the element's rendered size. Passed to hls.js's `capLevelToPlayerSize`.
+- **`initialBandwidth`** — `number` — Initial HLS bandwidth estimate in bits/s. Higher values start at higher quality.
+- **`label`** — `string` — Accessible label for the video player. Falls back to the video title.
+- **`typeFallback`** — `MediaType` (default `'video'`) — Fallback media type when XMP Label tag is missing.
 - **`creator`** / **`organization`** / **`showCredit`** / **`type`** — Caption and credit props.
 
 URL formats recognized automatically:
@@ -247,8 +251,12 @@ Key props:
 
 - **`src`** — `string` — A URL, SoundCloud track ID, or local file path.
 - **`service`** — `'local' | 'oembed' | 'soundcloud'` — Override service inference.
-- **`autoPlay`** / **`muted`** / **`loop`** / **`preload`** — Standard audio playback controls.
+- **`autoPlay`** — `boolean` (default `false`)
+- **`muted`** — `boolean` (default `false`)
+- **`loop`** — `boolean` (default `false`)
+- **`preload`** — `'auto' | 'metadata' | 'none'` (default `'metadata'`)
 - **`label`** — `string` — Accessible label for the audio player.
+- **`typeFallback`** — `MediaType` (default `'audio'`) — Fallback media type when XMP Label tag is missing.
 
 ### Supporting components
 
@@ -394,11 +402,12 @@ Exported from `astro-media-kit`:
 - **`ImageMetadataLike`** — `ImageMetadata` with `format` relaxed to `string` for plugin compatibility.
 - **`MediaType`** — `'animation' | 'audio' | 'diagram' | 'illustration' | 'image' | 'photo' | 'render' | 'screenshot' | 'video'`
 - **`Service`** — `'bunny' | 'cloudflare' | 'local' | 'mux' | 'oembed' | 'vimeo' | 'youtube'`
+- **`ServiceConfig`** — Maps each video service name to its configuration type.
 - **`VideoInfo`** — Normalized video metadata (dimensions, duration, URLs, captions).
 
 ## Development notes
 
-The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/452).
+The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/454).
 
 This means that the `Zoomer.astro` and `VideoPlayer.astro` crash Prettier and cannot be automatically formatted.
 
@@ -410,7 +419,7 @@ I have released [a fork of the Astro Prettier plugin](https://github.com/kitschp
 
 ## Acknowledgments
 
-Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome), [hls-video-element](https://github.com/muxinc/hls-video-element), [youtube-video-element](https://github.com/nicknisi/youtube-video-element), and [vimeo-video-element](https://github.com/nicknisi/vimeo-video-element). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js).
+Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome), [hls-video-element](https://github.com/muxinc/hls-video-element), [youtube-video-element](https://github.com/nicknisi/youtube-video-element), and [vimeo-video-element](https://github.com/nicknisi/vimeo-video-element). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
 
 <!-- contributing -->
 

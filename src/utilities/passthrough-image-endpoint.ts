@@ -7,16 +7,18 @@ import path from 'node:path'
 const FS_PATH_PREFIX_REGEX = /^\/@fs\//
 
 /**
- * Don't process images at all, which keeps things snappy.
- * Set conditionally on whether it's a dev build or not in astro.config.ts
+ * Don't process images at all, which keeps things snappy. Set conditionally on
+ * whether it's a dev build or not in astro.config.ts
  */
 export async function GET({ request }: APIContext): Promise<Response> {
 	const url = new URL(request.url)
+	const href = url.searchParams.get('href')
+	if (!href) {
+		return new Response('Missing href parameter', { status: 400 })
+	}
+
 	const imagePath =
-		'./' +
-		path
-			.relative(path.resolve('.'), url.searchParams.get('href')!.replace(FS_PATH_PREFIX_REGEX, '/'))
-			.split('?')[0]
+		'./' + path.relative(path.resolve('.'), href.replace(FS_PATH_PREFIX_REGEX, '/')).split('?')[0]
 
 	// Check if the image exists
 	try {
@@ -41,7 +43,7 @@ export async function GET({ request }: APIContext): Promise<Response> {
 			webp: 'image/webp',
 		}[extension] ?? 'application/octet-stream'
 
-	return new Response(imageBuffer.toString('base64'), {
+	return new Response(imageBuffer, {
 		headers: {
 			'Cache-Control': 'public, max-age=31536000, immutable',
 			'Content-Type': contentType,

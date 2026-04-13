@@ -139,8 +139,7 @@ type SrcsetEntry = {
 }
 
 const SRCSET_SEPARATOR_REGEX = /,\s*(?=\S)/
-// eslint-disable-next-line regexp/no-super-linear-backtracking
-const SRCSET_ENTRY_REGEX = /^(.+?)\s+(\d+)w$/
+const SRCSET_ENTRY_REGEX = /^(\S+)\s+(\d+)w$/
 
 /**
  * Parses a srcset string and returns an array of URL/width pairs.
