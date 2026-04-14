@@ -16,6 +16,7 @@ import PhotoSwipeDynamicCaption from 'photoswipe-dynamic-caption-plugin'
 import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import 'photoswipe/style.css'
+import { resolveScopedGalleries } from './zoom-scope'
 
 type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
 
@@ -314,31 +315,7 @@ function syncBackToInline(content: {
 // --- Initialize lightboxes ---
 
 // Resolve scoped galleries before collecting gallery names.
-// Elements with data-pswp-scope use closest() to find their scope ancestor.
-// The gallery name is suffixed with a unique ID per ancestor to prevent
-// cross-boundary grouping. Elements without a gallery name (zoom={true})
-// get a synthetic name so they group within the scope instead of being standalone.
-const scopeAncestorIds = new Map<Element, number>()
-let nextScopeId = 0
-
-for (const element of document.querySelectorAll<HTMLElement>('.pswp-zoom[data-pswp-scope]')) {
-	const scope = element.dataset.pswpScope!
-	const ancestor = element.closest(scope)
-	if (!ancestor) {
-		console.warn(
-			`[astro-media-kit] zoomScope "${scope}" matched no ancestor for element — falling back to standalone.`,
-		)
-		continue
-	}
-
-	if (!scopeAncestorIds.has(ancestor)) {
-		scopeAncestorIds.set(ancestor, nextScopeId++)
-	}
-
-	const ancestorId = scopeAncestorIds.get(ancestor)!
-	const baseName = element.dataset.pswpGallery ?? '__scoped'
-	element.dataset.pswpGallery = `${baseName}__scope_${String(ancestorId)}`
-}
+resolveScopedGalleries()
 
 // Standalone items (zoom={true}, no gallery grouping).
 const standaloneLightbox = createLightbox({

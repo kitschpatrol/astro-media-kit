@@ -110,6 +110,7 @@ Key props beyond Astro's standard `<Image>` props:
 
 - **`src`** — `ImageMetadata | DarkLightImageMetadata | ImageMetadataLike | string`
 - **`zoom`** — `boolean | string` — Enable PhotoSwipe zoom. A string groups images into a named gallery.
+- **`zoomScope`** — `string` — CSS selector defining a gallery scope boundary. Groups cannot form across separate ancestors matching the selector. See [Scoped galleries](#scoped-galleries).
 - **`background`** / **`backgroundDark`** — CSS colors for transparent image areas, using `light-dark()`.
 - **`creator`** / **`organization`** — Attribution overrides (otherwise extracted from XMP metadata via exiftool).
 - **`showCredit`** — `boolean` (default `true`) — Show the credit line in the caption.
@@ -148,6 +149,7 @@ Key props:
 - **`layout`** — `'responsive' | 'constrained' | 'fixed' | 'full-width' | 'none'` (default `'responsive'`)
 - **`background`** / **`backgroundDark`** — CSS background colors for transparent areas.
 - **`zoom`** — `boolean | string` — PhotoSwipe zoom support.
+- **`zoomScope`** — `string` — CSS selector defining a gallery scope boundary. See [Scoped galleries](#scoped-galleries).
 - **`creator`** / **`organization`** / **`showCredit`** / **`type`** — Caption and credit props (same as Image).
 
 #### Dark mode strategies
@@ -216,6 +218,7 @@ Key props:
 - **`loop`** — `boolean` (default `false`)
 - **`poster`** — `string` — Override the service-provided thumbnail.
 - **`zoom`** — `boolean | string` — PhotoSwipe lightbox for the video.
+- **`zoomScope`** — `string` — CSS selector defining a gallery scope boundary. See [Scoped galleries](#scoped-galleries).
 - **`preload`** — `'auto' | 'metadata' | 'none'` (default `'metadata'`) — Preload behavior hint.
 - **`capQualityToSize`** — `boolean` — Limit HLS quality to the element's rendered size. Passed to hls.js's `capLevelToPlayerSize`.
 - **`initialBandwidth`** — `number` — Initial HLS bandwidth estimate in bits/s. Higher values start at higher quality.
@@ -263,6 +266,41 @@ Key props:
 **Caption** wraps content in `<figure>`/`<figcaption>` and handles XMP credit extraction from image metadata via `exiftool-vendored`. Used internally by Image, Picture, Video, and Audio — you generally don't need to use it directly.
 
 **Zoomer** provides PhotoSwipe-based lightbox/zoom functionality. Also used internally — enable it via the `zoom` prop on any of the main components.
+
+### Scoped galleries
+
+By default, all components sharing the same `zoom` gallery name form a single gallery, regardless of where they appear in the DOM. The `zoomScope` prop limits this by setting a CSS selector boundary — items under separate ancestors matching the selector become separate galleries, even if they share the same gallery name.
+
+This is useful for reusable components (e.g. cards, sections) where you want each instance to have its own gallery without manually assigning unique names:
+
+```astro
+---
+import { Picture } from 'astro-media-kit/components'
+---
+
+<!-- Each <article> gets its own gallery automatically -->
+<article>
+  <Picture src={a} alt="A" zoom="gallery" zoomScope="article" />
+  <Picture src={b} alt="B" zoom="gallery" zoomScope="article" />
+</article>
+
+<article>
+  <Picture src={c} alt="C" zoom="gallery" zoomScope="article" />
+  <Picture src={d} alt="D" zoom="gallery" zoomScope="article" />
+</article>
+```
+
+When `zoom={true}` (no gallery name) is combined with `zoomScope`, items under the same matching ancestor are grouped together instead of opening as standalone lightboxes:
+
+```astro
+<!-- These two form a gallery because they share the same .hero ancestor -->
+<section class="hero">
+  <Picture src={a} alt="A" zoom zoomScope=".hero" />
+  <Picture src={b} alt="B" zoom zoomScope=".hero" />
+</section>
+```
+
+If the selector matches no ancestor, the element falls back to standalone behavior and a warning is logged. If `zoom` is `false`, `zoomScope` is ignored.
 
 ### Credit metadata
 

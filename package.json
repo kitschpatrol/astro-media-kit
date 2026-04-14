@@ -76,6 +76,7 @@
 		"@types/node": "~24.12.2",
 		"astro": "^6.1.6",
 		"bumpp": "^11.0.1",
+		"happy-dom": "^20.9.0",
 		"node-addon-api": "^8.7.0",
 		"node-gyp": "^12.2.0",
 		"shx": "^0.4.0",

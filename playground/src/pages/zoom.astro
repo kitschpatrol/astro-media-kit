@@ -44,6 +44,55 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" />
 		<Video controlStyle="minimal" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
 	</div>
+
+	<h2>4. Scoped galleries</h2>
+	<p class="note">
+		Both sections use <code>zoom="scoped"</code>, but <code>zoomScope=".gallery-section"</code>
+		keeps them separate. Click in one section — you can only swipe within that section.
+	</p>
+	<div class="gallery-section">
+		<h3>Section A</h3>
+		<div class="grid">
+			<Picture
+				alt="JPEG photo"
+				src="../assets/test.jpeg"
+				zoom="scoped"
+				zoomScope=".gallery-section"
+			/>
+			<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="scoped" zoomScope=".gallery-section" />
+		</div>
+	</div>
+	<div class="gallery-section">
+		<h3>Section B</h3>
+		<div class="grid">
+			<Picture
+				alt="Dark mode JPEG"
+				src="../assets/test.jpeg"
+				srcDark="../assets/test-dark.jpeg"
+				zoom="scoped"
+				zoomScope=".gallery-section"
+			/>
+			<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="scoped" zoomScope=".gallery-section" />
+		</div>
+	</div>
+
+	<h2>5. Standalone with scope</h2>
+	<p class="note">
+		<code>zoom=&#123;true&#125;</code> with <code>zoomScope=".scope-demo"</code> groups items under the
+		same ancestor instead of opening them as standalone lightboxes.
+	</p>
+	<div class="scope-demo">
+		<div class="grid">
+			<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom={true} zoomScope=".scope-demo" />
+			<Image alt="SVG tiger" src="../assets/tiger.svg" zoom={true} zoomScope=".scope-demo" />
+			<Picture
+				alt="Dark photo"
+				src="../assets/test-dark.jpeg"
+				zoom={true}
+				zoomScope=".scope-demo"
+			/>
+		</div>
+	</div>
 </Layout>
 
 <style>

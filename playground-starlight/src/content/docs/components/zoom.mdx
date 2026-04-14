@@ -31,3 +31,39 @@ Images and video in the same gallery:
 :::
 
 ![Tiger](../../../assets/tiger.svg){:zoom="mixed"}
+
+## Scoped galleries
+
+Use `zoomScope` to limit gallery boundaries by CSS selector. Each matching ancestor creates a separate gallery, even with the same gallery name.
+
+### Separate galleries per section
+
+Each `<section>` gets its own independent gallery:
+
+<section>
+
+![Photo 1](../../../assets/test.jpeg){:zoom="scoped" zoomScope="section"}
+
+![Tiger 1](../../../assets/tiger.svg){:zoom="scoped" zoomScope="section"}
+
+</section>
+
+<section>
+
+![Photo 2](../../../assets/test-dark.jpeg){:zoom="scoped" zoomScope="section"}
+
+![Tiger 2](../../../assets/tiger.svg){:zoom="scoped" zoomScope="section"}
+
+</section>
+
+### Standalone with scope
+
+When `zoom` is `true` (no gallery name), `zoomScope` groups items under the same ancestor instead of opening them as standalone lightboxes:
+
+<div class="scope-demo">
+
+![Photo](../../../assets/test.jpeg){:zoom="true" zoomScope=".scope-demo"}
+
+![Tiger](../../../assets/tiger.svg){:zoom="true" zoomScope=".scope-demo"}
+
+</div>
