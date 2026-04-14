@@ -39,6 +39,12 @@ export type Props = Omit<CaptionProps, 'src'> &
 		 * @default false
 		 */
 		zoom?: boolean | string | undefined
+		/**
+		 * CSS selector defining a gallery scope boundary. When set, galleries cannot
+		 * form across matching ancestors — items under separate ancestors matching
+		 * the selector become separate galleries. Ignored when `zoom` is `false`.
+		 */
+		zoomScope?: string | undefined
 	}
 
 const {
@@ -51,6 +57,7 @@ const {
 	type,
 	typeFallback = 'image',
 	zoom,
+	zoomScope,
 	...imageRestProps
 } = Astro.props
 
@@ -125,7 +132,7 @@ const astroImageProps = {
 ---
 
 <Caption {...captionProps}>
-	<Zoomer slot="media-component" zoom={zoom}>
+	<Zoomer slot="media-component" zoom={zoom} zoomScope={zoomScope}>
 		<AstroImage {...astroImageProps} slot="media-component" />
 	</Zoomer>
 	<slot />

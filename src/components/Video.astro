@@ -69,6 +69,12 @@ export type Props = Omit<CaptionProps, 'src'> & {
 	 * @default false
 	 */
 	zoom?: boolean | string | undefined
+	/**
+	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
+	 * form across matching ancestors — items under separate ancestors matching
+	 * the selector become separate galleries. Ignored when `zoom` is `false`.
+	 */
+	zoomScope?: string | undefined
 }
 
 const {
@@ -89,6 +95,7 @@ const {
 	type,
 	typeFallback,
 	zoom = false,
+	zoomScope,
 } = Astro.props
 
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
@@ -256,6 +263,7 @@ const sharedProps = {
 				videoSrc={videoSrc}
 				videoWidth={videoInfo.width}
 				zoom={zoom}
+				zoomScope={zoomScope}
 			>
 				<VideoPlayer
 					{...sharedProps}

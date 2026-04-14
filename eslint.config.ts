@@ -2,7 +2,29 @@ import { eslintConfig } from '@kitschpatrol/eslint-config'
 
 export default eslintConfig(
 	{
-		astro: true,
+		astro: {
+			overrides: {
+				// Remove in next shared-config release
+				'perfectionist/sort-intersection-types': [
+					'error',
+					{
+						groups: [
+							'named',
+							'union',
+							'intersection',
+							'conditional',
+							'function',
+							'import',
+							'keyword',
+							'operator',
+							'literal',
+							'tuple',
+							'object', // Last, otherwise esbuild will choke on `&` characters
+						],
+					},
+				],
+			},
+		},
 		ignores: [
 			// Directives and attributes make a mess of MDX linting
 			'playground/**/*.mdx',

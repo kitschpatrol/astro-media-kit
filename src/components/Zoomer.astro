@@ -16,6 +16,13 @@ type Props = {
 	 * @default false
 	 */
 	zoom?: boolean | string | undefined
+	/**
+	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
+	 * form across matching ancestors — items under separate ancestors matching
+	 * the selector become separate galleries, even if they share the same `zoom`
+	 * group name. Ignored when `zoom` is `false`.
+	 */
+	zoomScope?: string | undefined
 }
 
 const {
@@ -26,7 +33,14 @@ const {
 	videoSrc,
 	videoWidth,
 	zoom = false,
+	zoomScope,
 } = Astro.props
+
+if (!zoom && zoomScope) {
+	console.warn(
+		`[astro-media-kit] zoomScope "${zoomScope}" is set but zoom is disabled — zoomScope will be ignored.`,
+	)
+}
 
 const isVideo = videoElement !== undefined
 
@@ -115,6 +129,7 @@ if (zoom) {
 					data-pswp-gallery={galleryName}
 					data-pswp-height={zoomHeight}
 					data-pswp-poster={videoPoster ?? ''}
+					data-pswp-scope={zoom && zoomScope ? zoomScope : undefined}
 					data-pswp-type="video"
 					data-pswp-video-config={videoConfig}
 					data-pswp-video-element={videoElement}
@@ -128,6 +143,7 @@ if (zoom) {
 					class="pswp-zoom"
 					data-pswp-gallery={galleryName}
 					data-pswp-height={zoomHeight}
+					data-pswp-scope={zoom && zoomScope ? zoomScope : undefined}
 					data-pswp-srcset={zoomSrcset}
 					data-pswp-width={zoomWidth}
 					href={zoomUrl}
