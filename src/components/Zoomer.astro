@@ -1,5 +1,6 @@
 ---
 import { extractZoomTarget } from './utils/image'
+import './amk-zoomer.css'
 
 type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
@@ -36,11 +37,12 @@ const {
 	zoomScope,
 } = Astro.props
 
-if (!zoom && zoomScope) {
-	console.warn(
-		`[astro-media-kit] zoomScope "${zoomScope}" is set but zoom is disabled — zoomScope will be ignored.`,
-	)
-}
+// Too much...
+// if (!zoom && zoomScope) {
+// 	console.debug(
+// 		`[astro-media-kit] zoomScope "${zoomScope}" is set but zoom is disabled — zoomScope will be ignored.`,
+// 	)
+// }
 
 const isVideo = videoElement !== undefined
 
@@ -78,51 +80,9 @@ if (zoom) {
 {
 	zoom ? (
 		<>
-			<>
-				<script>
-					import './utils/lightbox'
-				</script>
-				<style>
-					a.pswp-zoom {
-						cursor: zoom-in;
-					}
-
-					div.pswp-zoom {
-						cursor: zoom-in;
-					}
-				</style>
-				<style is:global>
-					.pswp {
-						--pswp-button-opacity: 0.5;
-						--pswp-placeholder-bg: transparent;
-						cursor: zoom-out;
-					}
-
-					.pswp--ui-visible .pswp__button--arrow,
-					.pswp__button--close {
-						opacity: var(--pswp-button-opacity);
-						transition: opacity 0.2s ease;
-					}
-
-					.pswp__button--arrow:disabled {
-						pointer-events: none;
-						display: unset;
-						opacity: 0;
-						transition: opacity 0.2s ease;
-					}
-
-					.pswp__button--close {
-						order: -1;
-						margin-right: auto;
-					}
-
-					.pswp__button--arrow:hover,
-					.pswp__button--close:hover {
-						opacity: 1;
-						transition: none;
-					}
-				</style>
-			</>
+			<script>
+				import './utils/lightbox'
+			</script>
 			{isVideo ? (
 				<div
 					class="pswp-zoom"
