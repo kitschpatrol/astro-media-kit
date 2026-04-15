@@ -57,7 +57,7 @@ The simplest way to use `astro-media-kit` is as an Astro integration. This enabl
 
 ```ts
 // Astro.config.ts
-import mediaKit from 'astro-media-kit/integration'
+import mediaKit from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
 export default defineConfig({
@@ -390,7 +390,7 @@ import { Image } from 'astro-media-kit/components'
 Enable `.tldr` file support via `@kitschpatrol/unplugin-tldraw`. Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
 
 ```ts
-import mediaKit, { tldrawDarkImport } from 'astro-media-kit/integration'
+import mediaKit, { tldrawDarkImport } from 'astro-media-kit'
 
 mediaKit({
   autoImport: {

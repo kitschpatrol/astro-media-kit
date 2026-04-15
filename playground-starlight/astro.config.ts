@@ -2,7 +2,7 @@
 
 import starlight from '@astrojs/starlight'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
-import mediaKit from 'astro-media-kit/integration'
+import mediaKit from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
 export default defineConfig({

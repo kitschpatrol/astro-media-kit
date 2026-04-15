@@ -1,7 +1,7 @@
 /* eslint-disable ts/naming-convention */
 import mdx from '@astrojs/mdx'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
-import mediaKit from 'astro-media-kit/integration'
+import mediaKit from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
 process.env.BROWSER = 'chromium'

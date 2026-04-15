@@ -35,9 +35,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./components": "./src/components.ts",
-		"./components/*": "./src/components/*",
-		"./integration": "./src/integration/index.ts",
-		"./utilities/*": "./src/utilities/*"
+		"./components/*": "./src/components/*"
 	},
 	"files": [
 		"src"
@@ -60,7 +58,7 @@
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.0",
 		"@sindresorhus/is": "^8.0.0",
-		"exiftool-vendored": "^35.16.0",
+		"exiftool-vendored": "^35.17.0",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.12",
 		"media-chrome": "^4.19.0",
@@ -74,7 +72,7 @@
 		"@astrojs/check": "^0.9.8",
 		"@kitschpatrol/shared-config": "^7.4.1",
 		"@types/node": "~24.12.2",
-		"astro": "^6.1.6",
+		"astro": "^6.1.7",
 		"bumpp": "^11.0.1",
 		"happy-dom": "^20.9.0",
 		"node-addon-api": "^8.7.0",

@@ -108,7 +108,7 @@ function resolveAutoImportEntries(config: AutoImportConfig) {
  *
  * @example
  * 	// Your astro.config.ts
- * 	import mediaKit from 'astro-media-kit/integration'
+ * 	import mediaKit from 'astro-media-kit'
  * 	export default defineConfig({
  * 		integrations: [mediaKit()],
  * 	})
