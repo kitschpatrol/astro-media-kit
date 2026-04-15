@@ -168,7 +168,8 @@ const {
 	alt,
 	background,
 	backgroundDark: backgroundDarkProp,
-	class: className,
+	class: classFromAstro,
+	className: classFromJsx,
 	creator,
 	darkMode = 'media',
 	fallbackFormat: fallbackFormatProp,
@@ -184,6 +185,10 @@ const {
 	zoomScope,
 	...imageProps
 } = Astro.props
+
+// Merge class from both Astro-style `class` and JSX-style `className` props
+// (MDX may pass both; getImage() passes through `className` unfiltered)
+const className = classFromAstro ?? classFromJsx
 
 // Dark mode strategy
 const isSelector = darkMode !== 'media' && darkMode !== 'none'
@@ -268,7 +273,6 @@ const formats =
 
 // Props to pass to getImage
 const getImageProps = {
-	alt,
 	...imageProps,
 }
 
@@ -508,7 +512,7 @@ if (isSelector && hasDarkMode) {
 								aria-hidden="true"
 								src={fallbackImageDark!.src}
 								{...imgAttributesDark}
-								class:list={[imgClassNameDark, 'amk']}
+								class:list={[className, imgClassNameDark, 'amk']}
 								style={backgroundStyleDark}
 							/>
 						</picture>
@@ -525,7 +529,7 @@ if (isSelector && hasDarkMode) {
 							alt={alt}
 							src={fallbackImage.src}
 							{...imgAttributes}
-							class:list={[imgClassName, 'amk']}
+							class:list={[className, imgClassName, 'amk']}
 							style={backgroundStyle}
 						/>
 					</picture>
@@ -553,7 +557,7 @@ if (isSelector && hasDarkMode) {
 						alt={alt}
 						src={fallbackImage.src}
 						{...imgAttributes}
-						class:list={[imgClassName, 'amk']}
+						class:list={[className, imgClassName, 'amk']}
 						style={backgroundStyle}
 					/>
 				</picture>
