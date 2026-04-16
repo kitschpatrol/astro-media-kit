@@ -132,8 +132,8 @@ const astroImageProps = {
 ---
 
 <Caption {...captionProps}>
-	<Zoomer slot="media-component" zoom={zoom} zoomScope={zoomScope}>
-		<AstroImage {...astroImageProps} slot="media-component" />
+	<Zoomer enabled={zoom} scope={zoomScope} slot="media-component">
+		<AstroImage {...astroImageProps} />
 	</Zoomer>
 	<slot />
 </Caption>

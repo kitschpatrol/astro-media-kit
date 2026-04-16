@@ -1,118 +1,171 @@
 ---
-import { extractZoomTarget } from './utils/image'
-import './amk-zoomer.css'
+import type { ImageMetadata } from 'astro'
+import type { VideoZoomTarget } from './utils/image'
+// Load PhotoSwipe's own CSS first so our overrides in amk-zoomer.css win the cascade
+import 'photoswipe/style.css'
+import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
+import { extractZoomTarget, isImageMetadataObject, unwrapImageMetadata } from './utils/image'
 
-type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
-
-/** Props for the `<Zoomer>` component — PhotoSwipe-based image zoom wrapper. */
+/** Props for the `<Zoomer>` component — PhotoSwipe-based zoom wrapper. */
 type Props = {
-	videoConfig?: string | undefined
-	videoElement?: undefined | VideoElementTag
-	videoHeight?: number | undefined
-	videoPoster?: string | undefined
-	videoSrc?: string | undefined
-	videoWidth?: number | undefined
 	/**
-	 * Enable zoom. `true` uses default gallery, a string groups images into a named gallery.
+	 * Enable zoom. `true` uses default gallery, a string groups items into a named gallery. If false, Zoomer is just a no-op passthrough.
 	 * @default false
 	 */
-	zoom?: boolean | string | undefined
+	enabled?: boolean | string | undefined
+	/**
+	 * Explicit height of the zoom target in pixels. Usually inferred from child component. Required for video when not extractable.
+	 */
+	height?: number | undefined
 	/**
 	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
 	 * form across matching ancestors — items under separate ancestors matching
-	 * the selector become separate galleries, even if they share the same `zoom`
-	 * group name. Ignored when `zoom` is `false`.
+	 * the selector become separate galleries, even if they share the same gallery
+	 * name. Ignored when `enabled` is `false`.
 	 */
-	zoomScope?: string | undefined
+	scope?: string | undefined
+	/**
+	 * Image source for the zoom target. Accepts an `ImageMetadata` object (which
+	 * fills URL + dimensions) or a URL string (URL only). Explicit `width`/`height`/`srcset`
+	 * props still override. Usually inferred from child component.
+	 */
+	src?: ImageMetadata | string | undefined
+	/**
+	 * Explicit srcset for the zoom target (image only). Usually inferred from child component. Overrides extracted value.
+	 */
+	srcset?: string | undefined
+	/**
+	 * Explicit width of the zoom target in pixels. Usually inferred from child component. Required for video when not extractable.
+	 */
+	width?: number | undefined
 }
 
 const {
-	videoConfig,
-	videoElement,
-	videoHeight,
-	videoPoster,
-	videoSrc,
-	videoWidth,
-	zoom = false,
-	zoomScope,
+	enabled = false,
+	height: heightProp,
+	scope,
+	src,
+	srcset: srcsetProp,
+	width: widthProp,
 } = Astro.props
 
-// Too much...
-// if (!zoom && zoomScope) {
-// 	console.debug(
-// 		`[astro-media-kit] zoomScope "${zoomScope}" is set but zoom is disabled — zoomScope will be ignored.`,
-// 	)
-// }
+// Resolve src into URL + dimensions
+let srcUrl: string | undefined
+let srcWidth: number | undefined
+let srcHeight: number | undefined
 
-const isVideo = videoElement !== undefined
+if (typeof src === 'string') {
+	srcUrl = src
+} else if (isImageMetadataObject(src)) {
+	const metadata = unwrapImageMetadata(src)
+	srcUrl = metadata.src
+	srcWidth = metadata.width
+	srcHeight = metadata.height
+}
 
-let mediaComponentHtml = ''
-let zoomUrl = ''
-let zoomWidth = 0
-let zoomHeight = 0
-let zoomSrcset = ''
+let slotHtml = ''
+let resolvedUrl = srcUrl ?? ''
+let resolvedWidth = widthProp ?? srcWidth ?? 0
+let resolvedHeight = heightProp ?? srcHeight ?? 0
+let resolvedSrcset = srcsetProp ?? ''
+let videoTarget: undefined | VideoZoomTarget
 let galleryName: string | undefined
 
-if (zoom) {
-	if (!Astro.slots.has('media-component')) {
-		throw new Error('Zoomer component requires a media-component slot when zoom is enabled.')
+if (enabled) {
+	if (typeof enabled === 'string') {
+		galleryName = enabled
 	}
 
-	mediaComponentHtml = await Astro.slots.render('media-component')
+	slotHtml = await Astro.slots.render('default')
+	const target = extractZoomTarget(slotHtml)
 
-	if (typeof zoom === 'string') {
-		galleryName = zoom
-	}
-
-	if (isVideo) {
-		zoomWidth = videoWidth ?? 1920
-		zoomHeight = videoHeight ?? 1080
-	} else {
-		const target = extractZoomTarget(mediaComponentHtml)
-		zoomUrl = target.url
-		zoomWidth = target.width
-		zoomHeight = target.height
-		zoomSrcset = target.srcset
+	if (target?.type === 'video') {
+		videoTarget = target
+		// Videos need explicit dimensions (not in rendered HTML)
+		resolvedWidth = widthProp ?? srcWidth ?? 1920
+		resolvedHeight = heightProp ?? srcHeight ?? 1080
+	} else if (target?.type === 'image') {
+		resolvedUrl = srcUrl ?? target.url
+		resolvedWidth = widthProp ?? srcWidth ?? target.width
+		resolvedHeight = heightProp ?? srcHeight ?? target.height
+		resolvedSrcset = srcsetProp ?? target.srcset
 	}
 }
 ---
 
+<style is:global>
+	div.pswp-zoom,
+	a.pswp-zoom {
+		cursor: zoom-in;
+	}
+
+	.pswp {
+		--pswp-button-opacity: 0.5;
+		--pswp-placeholder-bg: transparent;
+		cursor: zoom-out;
+	}
+
+	.pswp--ui-visible .pswp__button--arrow,
+	.pswp__button--close {
+		opacity: var(--pswp-button-opacity);
+		transition: opacity 0.2s ease;
+	}
+
+	.pswp__button--arrow:disabled {
+		pointer-events: none;
+		display: unset;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.pswp__button--close {
+		order: -1;
+		margin-right: auto;
+	}
+
+	.pswp__button--arrow:hover,
+	.pswp__button--close:hover {
+		opacity: 1;
+		transition: none;
+	}
+</style>
+
 {
-	zoom ? (
+	enabled ? (
 		<>
 			<script>
 				import './utils/lightbox'
 			</script>
-			{isVideo ? (
+			{videoTarget ? (
 				<div
 					class="pswp-zoom"
 					data-pswp-gallery={galleryName}
-					data-pswp-height={zoomHeight}
-					data-pswp-poster={videoPoster ?? ''}
-					data-pswp-scope={zoom && zoomScope ? zoomScope : undefined}
+					data-pswp-height={resolvedHeight}
+					data-pswp-poster={videoTarget.poster ?? ''}
+					data-pswp-scope={scope}
 					data-pswp-type="video"
-					data-pswp-video-config={videoConfig}
-					data-pswp-video-element={videoElement}
-					data-pswp-video-src={videoSrc}
-					data-pswp-width={zoomWidth}
+					data-pswp-video-config={videoTarget.config}
+					data-pswp-video-element={videoTarget.element}
+					data-pswp-video-src={videoTarget.src}
+					data-pswp-width={resolvedWidth}
 				>
-					<Fragment set:html={mediaComponentHtml} />
+					<Fragment set:html={slotHtml} />
 				</div>
 			) : (
 				<a
 					class="pswp-zoom"
 					data-pswp-gallery={galleryName}
-					data-pswp-height={zoomHeight}
-					data-pswp-scope={zoom && zoomScope ? zoomScope : undefined}
-					data-pswp-srcset={zoomSrcset}
-					data-pswp-width={zoomWidth}
-					href={zoomUrl}
+					data-pswp-height={resolvedHeight}
+					data-pswp-scope={scope}
+					data-pswp-srcset={resolvedSrcset}
+					data-pswp-width={resolvedWidth}
+					href={resolvedUrl}
 				>
-					<Fragment set:html={mediaComponentHtml} />
+					<Fragment set:html={slotHtml} />
 				</a>
 			)}
 		</>
 	) : (
-		<slot name="media-component" />
+		<slot />
 	)
 }

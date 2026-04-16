@@ -498,10 +498,10 @@ if (isSelector && hasDarkMode) {
 
 {selectorStyle && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
-	<Zoomer slot="media-component" zoom={zoom} zoomScope={zoomScope}>
+	<Zoomer enabled={zoom} scope={zoomScope} slot="media-component">
 		{
 			isSelector ? (
-				<div {...pictureAttributes} slot="media-component">
+				<div {...pictureAttributes}>
 					{hasDarkMode && (
 						<picture class="amk-dark">
 							{optimizedImagesDark!.map((image) => (
@@ -539,7 +539,7 @@ if (isSelector && hasDarkMode) {
 					</picture>
 				</div>
 			) : (
-				<picture {...pictureAttributes} slot="media-component">
+				<picture {...pictureAttributes}>
 					{hasDarkMode &&
 						optimizedImagesDark!.map((image) => (
 							<source

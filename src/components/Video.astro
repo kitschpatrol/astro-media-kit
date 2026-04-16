@@ -7,7 +7,7 @@ import Caption from './Caption.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
-import { getVideoInfo, isEmbedService, resolveVideoSource } from './utils/video'
+import { getVideoInfo, resolveVideoSource } from './utils/video'
 import Zoomer from './Zoomer.astro'
 
 type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
@@ -190,8 +190,6 @@ const hlsConfig: Record<string, boolean | number> = {}
 if (initialBandwidth !== undefined) hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
 if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityToSize
 
-const hlsConfigJson = Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
-
 const posterUrl =
 	resolvedService === 'local'
 		? (poster ?? undefined)
@@ -251,19 +249,11 @@ const sharedProps = {
 	) : videoInfo && videoSrc ? (
 		<Caption {...captionProps}>
 			<Zoomer
+				enabled={zoom}
+				height={videoInfo.height}
+				scope={zoomScope}
 				slot="media-component"
-				videoConfig={
-					!isEmbedService(resolvedService) && resolvedService !== 'local'
-						? hlsConfigJson
-						: undefined
-				}
-				videoElement={videoElementMap[resolvedService]}
-				videoHeight={videoInfo.height}
-				videoPoster={posterUrl}
-				videoSrc={videoSrc}
-				videoWidth={videoInfo.width}
-				zoom={zoom}
-				zoomScope={zoomScope}
+				width={videoInfo.width}
 			>
 				<VideoPlayer
 					{...sharedProps}
@@ -272,7 +262,6 @@ const sharedProps = {
 					hlsConfig={hlsConfig}
 					hlsUrl={videoInfo.hlsUrl}
 					mp4Url={videoInfo.mp4Url}
-					slot="media-component"
 				/>
 			</Zoomer>
 			<slot />

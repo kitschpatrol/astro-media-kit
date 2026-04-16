@@ -14,6 +14,7 @@ export default defineConfig({
 				components: {
 					Image: 'src',
 					Picture: ['src', tldrawDarkImport],
+					Zoomer: ['src', tldrawDarkImport],
 				},
 			},
 			tldraw: true,

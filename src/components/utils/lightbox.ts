@@ -13,9 +13,7 @@
 import type { HlsVideoElement } from 'hls-video-element'
 // @ts-expect-error — no type declarations available for this package
 import PhotoSwipeDynamicCaption from 'photoswipe-dynamic-caption-plugin'
-import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
-import 'photoswipe/style.css'
 import { resolveScopedGalleries } from './zoom-scope'
 
 type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]

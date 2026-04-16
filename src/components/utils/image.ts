@@ -164,47 +164,78 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 	return entries
 }
 
-/** Extracted zoom target data for PhotoSwipe from a rendered `<picture>` or `<img>`. */
-export type ZoomTarget = {
+/** Custom element tags recognized as video players. */
+const VIDEO_ELEMENT_TAGS = ['hls-video', 'video', 'vimeo-video', 'youtube-video'] as const
+
+/** Image zoom target — extracted from `<picture>` or `<img>`. */
+export type ImageZoomTarget = {
 	/** Height in pixels of the largest available image. */
 	height: number
 	/** Combined `srcset` string for PhotoSwipe responsive zoom. */
 	srcset: string
+	type: 'image'
 	/** URL of the largest available image variant. */
 	url: string
 	/** Width in pixels of the largest available image. */
 	width: number
 }
 
-/**
- * Extracts zoom target info from a rendered `<picture>` or `<img>` HTML string.
- * Returns the largest image URL with its dimensions and a combined srcset string
- * for PhotoSwipe's responsive zoom. Excludes dark-mode `<source>` elements.
- * @param html - HTML string containing a `<picture>` or `<img>` element
- */
-export function extractZoomTarget(html: string): ZoomTarget {
-	const { document } = parseHTML(html)
+/** Video zoom target — extracted from a rendered video player element. */
+export type VideoZoomTarget = {
+	/** HLS config JSON string from `data-hls-config`, if present. */
+	config: string | undefined
+	/** Custom element tag name (e.g. `hls-video`, `video`). */
+	element: string
+	/** Poster image URL from the `poster` attribute, if present. */
+	poster: string | undefined
+	/** Video source URL from `src` or `data-src`. */
+	src: string
+	type: 'video'
+}
 
-	const allEntries: SrcsetEntry[] = []
+/** Discriminated union for zoom targets extracted from rendered HTML. */
+export type ZoomTarget = ImageZoomTarget | VideoZoomTarget
+
+function findVideoTarget(document: Document): undefined | VideoZoomTarget {
+	for (const tag of VIDEO_ELEMENT_TAGS) {
+		const element = document.querySelector(tag)
+		if (!element) continue
+
+		// Linkedom's Element type doesn't expose `dataset`; getAttribute is the typed equivalent
+		const src =
+			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
+			element.getAttribute('src') ?? element.getAttribute('data-src') ?? ''
+		if (!src) continue
+
+		return {
+			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
+			config: element.getAttribute('data-hls-config') ?? undefined,
+			element: tag,
+			poster: element.getAttribute('poster') ?? undefined,
+			src,
+			type: 'video',
+		}
+	}
+
+	return undefined
+}
+
+function collectImageEntries(document: Document): { aspectRatio: number; entries: SrcsetEntry[] } {
+	const entries: SrcsetEntry[] = []
 
 	// Collect srcset entries from <source> elements, skipping dark-mode variants
-	const sources = document.querySelectorAll('source[srcset]')
-	for (const source of sources) {
-		// Skip dark-mode variants (media query approach)
+	for (const source of document.querySelectorAll('source[srcset]')) {
 		const media = source.getAttribute('media')
 		if (media?.includes('prefers-color-scheme: dark')) continue
 
-		// Skip dark-mode variants (selector approach)
 		const parentPicture = source.closest('picture')
 		if (parentPicture?.classList.contains('amk-dark')) continue
 
 		const srcset = source.getAttribute('srcset')
-		if (srcset) {
-			allEntries.push(...parseSrcset(srcset))
-		}
+		if (srcset) entries.push(...parseSrcset(srcset))
 	}
 
-	// Get aspect ratio from the <img> element — prefer light-mode picture's img
+	// Get aspect ratio from <img> — prefer light-mode picture's img
 	const img = document.querySelector('picture.amk-light img') ?? document.querySelector('img')
 	let aspectRatio = 1
 	if (img) {
@@ -215,30 +246,43 @@ export function extractZoomTarget(html: string): ZoomTarget {
 		}
 
 		const srcset = img.getAttribute('srcset')
-		if (srcset) {
-			allEntries.push(...parseSrcset(srcset))
-		}
+		if (srcset) entries.push(...parseSrcset(srcset))
 
 		const src = img.getAttribute('src')
-		if (src && imgWidth > 0) {
-			allEntries.push({ url: src, width: imgWidth })
-		}
+		if (src && imgWidth > 0) entries.push({ url: src, width: imgWidth })
 	}
 
-	if (allEntries.length === 0) {
-		throw new Error('No images found in the provided HTML.')
-	}
+	return { aspectRatio, entries }
+}
+
+function findImageTarget(document: Document): ImageZoomTarget | undefined {
+	const { aspectRatio, entries } = collectImageEntries(document)
+	if (entries.length === 0) return undefined
 
 	// eslint-disable-next-line unicorn/no-array-reduce
-	const largest = allEntries.reduce((max, entry) => (entry.width > max.width ? entry : max))
-
-	// Build combined srcset string for PhotoSwipe responsive zoom
-	const srcset = allEntries.map((entry) => `${entry.url} ${String(entry.width)}w`).join(', ')
+	const largest = entries.reduce((max, entry) => (entry.width > max.width ? entry : max))
+	const srcset = entries.map((entry) => `${entry.url} ${String(entry.width)}w`).join(', ')
 
 	return {
 		height: Math.round(largest.width * aspectRatio),
 		srcset,
+		type: 'image',
 		url: largest.url,
 		width: largest.width,
 	}
+}
+
+/**
+ * Extracts zoom target info from rendered slot HTML.
+ *
+ * Single pass — checks for video player elements first
+ * (`<hls-video>`, `<video>`, `<vimeo-video>`, `<youtube-video>`), then falls
+ * back to image extraction (`<picture>` / `<img>` with srcset). Returns
+ * `undefined` when neither is present.
+ * @param html - HTML string from a rendered Zoomer slot
+ */
+export function extractZoomTarget(html: string): undefined | ZoomTarget {
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- linkedom returns HTMLDocument-like, compatible with Document
+	const { document } = parseHTML(html) as unknown as { document: Document }
+	return findVideoTarget(document) ?? findImageTarget(document)
 }

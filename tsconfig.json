@@ -5,6 +5,7 @@
 		// vs. the extended @kitschpatrol/typescript-config
 		"target": "ESNext",
 		"jsx": "preserve",
+		"jsxImportSource": "astro",
 		"types": ["@kitschpatrol/unplugin-tldraw/client", "@kitschpatrol/unplugin-aphex/client"],
 		"allowUnusedLabels": false,
 		"exactOptionalPropertyTypes": true,
