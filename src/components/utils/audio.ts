@@ -55,8 +55,8 @@ export function resolveAudioSource(src: string, service?: AudioService): Resolve
 }
 
 /**
- * Build the SoundCloud iframe embed URL.
- * Accepts either a numeric track ID or a full SoundCloud URL.
+ * Build the SoundCloud iframe embed URL. Accepts either a numeric track ID or a
+ * full SoundCloud URL.
  */
 export function buildSoundCloudEmbedUrl(
 	trackIdOrUrl: string,
