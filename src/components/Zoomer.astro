@@ -70,6 +70,9 @@ let resolvedHeight = heightProp ?? srcHeight ?? 0
 let resolvedSrcset = srcsetProp ?? ''
 let videoTarget: undefined | VideoZoomTarget
 let galleryName: string | undefined
+// No media element in slot — PhotoSwipe has nothing to animate back to,
+// so mark for self-thumb (use the anchor itself as the close-animation origin).
+let selfThumb = false
 
 if (enabled) {
 	if (typeof enabled === 'string') {
@@ -89,6 +92,8 @@ if (enabled) {
 		resolvedWidth = widthProp ?? srcWidth ?? target.width
 		resolvedHeight = heightProp ?? srcHeight ?? target.height
 		resolvedSrcset = srcsetProp ?? target.srcset
+	} else {
+		selfThumb = true
 	}
 }
 ---
@@ -128,6 +133,21 @@ if (enabled) {
 		opacity: 1;
 		transition: none;
 	}
+
+	/* Fade image in alongside the backdrop for self-thumb slides */
+	@keyframes amk-pswp-img-fade-in {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	.pswp__img.amk-fade-in {
+		animation: amk-pswp-img-fade-in 0.15s ease;
+	}
 </style>
 
 {
@@ -157,6 +177,7 @@ if (enabled) {
 					data-pswp-gallery={galleryName}
 					data-pswp-height={resolvedHeight}
 					data-pswp-scope={scope}
+					data-pswp-self-thumb={selfThumb ? '' : undefined}
 					data-pswp-srcset={resolvedSrcset}
 					data-pswp-width={resolvedWidth}
 					href={resolvedUrl}

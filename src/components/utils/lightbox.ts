@@ -56,8 +56,14 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	// --- Filters ---
 
-	// Extract video data from DOM elements.
+	// Extract data from DOM elements. Also sets `showHideAnimationType` on the
+	// lightbox options here (runs before PhotoSwipe is constructed) so the
+	// opening animation matches the clicked item — text-link self-thumb slides
+	// fade instead of zooming to/from the anchor's top-left corner.
 	lightbox.addFilter('domItemData', (itemData: Record<string, unknown>, element: HTMLElement) => {
+		const isSelfThumb = 'pswpSelfThumb' in element.dataset
+		lightbox.options.showHideAnimationType = isSelfThumb ? 'fade' : 'zoom'
+
 		if (element.dataset.pswpType === 'video') {
 			const posterUrl = element.dataset.pswpPoster ?? ''
 			return {
@@ -73,6 +79,10 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 				videoSrc: element.dataset.pswpVideoSrc ?? '',
 				width: Number(element.dataset.pswpWidth) || 1920,
 			}
+		}
+
+		if (isSelfThumb) {
+			return { ...itemData, selfThumbElement: element }
 		}
 
 		return itemData
@@ -92,7 +102,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 			content.data.type === 'video' ? true : usePlaceholder,
 	)
 
-	// Use video container as the zoom animation origin.
+	// Use video container / anchor as the zoom animation origin.
 	lightbox.addFilter(
 		'thumbEl',
 		(
@@ -101,6 +111,10 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		): HTMLElement => {
 			if (itemData.type === 'video' && itemData.videoContainer instanceof HTMLElement) {
 				return itemData.videoContainer
+			}
+
+			if (itemData.selfThumbElement instanceof HTMLElement) {
+				return itemData.selfThumbElement
 			}
 
 			return thumbElement ?? document.createElement('div')
@@ -118,6 +132,29 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 		pswp.prev = () => {
 			pswp.mainScroll.moveIndexBy(-1, true)
+		}
+	})
+
+	// Update `showHideAnimationType` when navigating between slides in a mixed
+	// gallery so the close animation matches the current slide's type. Opening
+	// is handled in the `domItemData` filter above (runs before pswp init).
+	lightbox.on('change', () => {
+		const { pswp } = lightbox
+		if (!pswp?.currSlide) return
+		const isSelfThumb = pswp.currSlide.data.selfThumbElement instanceof HTMLElement
+		pswp.options.showHideAnimationType = isSelfThumb ? 'fade' : 'zoom'
+	})
+
+	// In fade mode, the backdrop fades in but the image otherwise snaps in.
+	// Apply a CSS keyframe animation the moment the image is appended so it
+	// fades in alongside the backdrop (not sequentially after load). Keyframe
+	// animation plays reliably whether the image is cached or loads later.
+	lightbox.on('contentAppend', (event) => {
+		const { content } = event
+		if (!(content.data.selfThumbElement instanceof HTMLElement)) return
+		const image = content.element
+		if (image instanceof HTMLImageElement) {
+			image.classList.add('amk-fade-in')
 		}
 	})
 
