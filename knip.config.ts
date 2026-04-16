@@ -9,6 +9,10 @@ export default knipConfig({
 		'node-addon-api',
 		'node-gyp',
 	],
-	ignoreFiles: ['playground/**/*', 'playground-starlight/**/*', 'src/utilities/passthrough-image-endpoint.ts'],
+	ignoreFiles: [
+		'playground/**/*',
+		'playground-starlight/**/*',
+		'src/utilities/passthrough-image-endpoint.ts',
+	],
 	ignoreWorkspaces: ['playground', 'playground-starlight'],
 })

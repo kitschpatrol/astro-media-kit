@@ -114,11 +114,10 @@ const oembedAspectRatio =
 					/>
 				)
 			) : resolvedService === 'local' ? (
-				<div class="amk not-content" slot="media-component">
+				<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
 					<media-controller audio>
 						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
 						<audio
-							aria-label={resolvedLabel}
 							autoplay={autoPlay || undefined}
 							crossorigin="anonymous"
 							loop={loop || undefined}

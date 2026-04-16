@@ -40,7 +40,6 @@ const isEmbed = element === 'vimeo-video' || element === 'youtube-video'
 const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 
 const videoAttributes: VideoAttributes = {
-	'aria-label': resolvedLabel,
 	autoplay: autoPlay || undefined,
 	crossorigin: 'anonymous',
 	...(isHls && { disablepictureinpicture: 'true' }),
@@ -131,7 +130,11 @@ const hlsConfigJson =
 		</script>
 }
 
-<div class:list={['amk', 'not-content', { 'amk-embed': isEmbed }]}>
+<div
+	aria-label={resolvedLabel}
+	class:list={['amk', 'not-content', { 'amk-embed': isEmbed }]}
+	role="group"
+>
 	<media-controller
 		autohide="1"
 		class:list={[controlStyle, { autoplay: autoPlay }]}
