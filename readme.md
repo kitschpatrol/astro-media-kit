@@ -67,6 +67,7 @@ export default defineConfig({
       // autoImport: true,      // Enabled by default
       // tldraw: false,         // .tldr file support
       // aphex: false,          // Apple Photos imports
+      // removeOriginals: false,// Delete unused original images after build
       // video: false,          // Env schema injection for video services
     }),
   ],
@@ -419,6 +420,18 @@ mediaKit({
 ```astro
 <Image src="~aphex/Vacation/Beach Sunset" alt="Beach sunset" />
 ```
+
+### Remove originals
+
+Astro's image pipeline leaves the full-size source files in the assets directory even when every reference on the site uses a transformed variant. Enable `removeOriginals` to delete them after the build completes:
+
+```ts
+mediaKit({
+  removeOriginals: true,
+})
+```
+
+Originals are identified by the single 8-character hash suffix Astro appends before the extension (`photo.Ab1Cd2Ef.jpg`). Transformed variants have additional segments and are left alone. Inspired by [this Astro issue](https://github.com/withastro/astro/issues/4961).
 
 ### Video env schema
 

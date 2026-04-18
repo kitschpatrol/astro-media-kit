@@ -1,7 +1,7 @@
 /* eslint-disable complexity */
 /* eslint-disable ts/naming-convention */
 
-import type { AstroIntegration } from 'astro'
+import type { AstroConfig, AstroIntegration } from 'astro'
 import { envField } from 'astro/config'
 import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
@@ -9,6 +9,7 @@ import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from '
 import type { TldrawConfig } from './tldraw'
 import { vitePluginMediaKitAphex } from './aphex'
 import { vitePluginMediaKitAutoImport } from './auto-import'
+import { removeOriginalImages } from './remove-originals'
 import { vitePluginMediaKitTldraw } from './tldraw'
 
 export type { AphexConfig } from './aphex'
@@ -50,6 +51,15 @@ export type MediaKitConfig = {
 	 * @default true
 	 */
 	autoImport?: AutoImportPluginConfig | boolean
+	/**
+	 * Remove unused original images from the build output after Astro has
+	 * finished writing the site. Astro's image pipeline leaves the full-size
+	 * source files in the assets directory even when every reference uses a
+	 * transformed variant.
+	 *
+	 * @default false
+	 */
+	removeOriginals?: boolean
 	/**
 	 * Enable tldraw `.tldr` file support via `@kitschpatrol/unplugin-tldraw`.
 	 * When enabled, `.tldr` file imports are converted to SVG/PNG images and fed
@@ -144,6 +154,10 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const tldrawEnabled = tldraw !== false && (tldraw === true || tldraw.enabled !== false)
 	const tldrawConfig: TldrawConfig = typeof tldraw === 'object' ? tldraw : {}
 
+	const removeOriginalsEnabled = config?.removeOriginals ?? false
+
+	let astroConfig: AstroConfig | undefined
+
 	const video = config?.video ?? false
 	const videoServices: Service[] =
 		video === true
@@ -156,6 +170,14 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 	return {
 		hooks: {
+			async 'astro:build:done'({ dir, logger }) {
+				if (removeOriginalsEnabled && astroConfig) {
+					await removeOriginalImages(dir, astroConfig, logger)
+				}
+			},
+			'astro:config:done'({ config }) {
+				astroConfig = config
+			},
 			'astro:config:setup'({ updateConfig }) {
 				if (videoServices.length > 0) {
 					const envSchemaForService: Record<
