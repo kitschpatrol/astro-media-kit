@@ -21,7 +21,5 @@ node_modules/
 vendor/
 
 # Customizations
-references/
-/instructions.md
 .claude/
 /.playwright-cli

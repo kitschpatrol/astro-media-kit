@@ -26,10 +26,9 @@ export default eslintConfig(
 			},
 		},
 		ignores: [
-			// Directives and attributes make a mess of MDX linting
+			// Remark-validate-links can't find Aphex files...
 			'playground/**/*.mdx',
 			'playground-starlight/**/*.mdx',
-			'references/**/*',
 			// Astro code blocks in markdown aren't part of any tsconfig program
 			'**/*.md/*.astro',
 		],
