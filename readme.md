@@ -68,6 +68,7 @@ export default defineConfig({
       // tldraw: false,         // .tldr file support
       // aphex: false,          // Apple Photos imports
       // removeOriginals: false,// Delete unused original images after build
+      // stripExif: false,      // Strip EXIF/XMP metadata from build-output images
       // video: false,          // Env schema injection for video services
     }),
   ],
@@ -432,6 +433,18 @@ mediaKit({
 ```
 
 Originals are identified by the single 8-character hash suffix Astro appends before the extension (`photo.Ab1Cd2Ef.jpg`). Transformed variants have additional segments and are left alone. Inspired by [this Astro issue](https://github.com/withastro/astro/issues/4961).
+
+### Strip EXIF
+
+Source images often carry EXIF/XMP metadata — GPS coordinates, camera serial numbers, creator fields — that shouldn't end up on the public site. Enable `stripExif` to remove all metadata tags from every image in the build output after the build completes:
+
+```ts
+mediaKit({
+  stripExif: true,
+})
+```
+
+This walks the build output directory recursively and strips metadata from `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files — covering both Astro-processed assets and pass-through copies from `public/`. Source images under `src/` and `public/` on disk are left untouched. Stripping is performed by [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js).
 
 ### Video env schema
 

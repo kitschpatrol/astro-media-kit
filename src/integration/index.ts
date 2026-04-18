@@ -10,6 +10,7 @@ import type { TldrawConfig } from './tldraw'
 import { vitePluginMediaKitAphex } from './aphex'
 import { vitePluginMediaKitAutoImport } from './auto-import'
 import { removeOriginalImages } from './remove-originals'
+import { stripExifFromImages } from './strip-exif'
 import { vitePluginMediaKitTldraw } from './tldraw'
 
 export type { AphexConfig } from './aphex'
@@ -60,6 +61,15 @@ export type MediaKitConfig = {
 	 * @default false
 	 */
 	removeOriginals?: boolean
+	/**
+	 * Strip EXIF/XMP and other metadata from every image in the build output
+	 * directory (including files copied from `public/`) at the end of the Astro
+	 * build. Leaves source images on disk untouched. `jpg`, `jpeg`, `png`,
+	 * `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files are processed.
+	 *
+	 * @default false
+	 */
+	stripExif?: boolean
 	/**
 	 * Enable tldraw `.tldr` file support via `@kitschpatrol/unplugin-tldraw`.
 	 * When enabled, `.tldr` file imports are converted to SVG/PNG images and fed
@@ -156,6 +166,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 	const removeOriginalsEnabled = config?.removeOriginals ?? false
 
+	const stripExifEnabled = config?.stripExif ?? false
+
 	let astroConfig: AstroConfig | undefined
 
 	const video = config?.video ?? false
@@ -173,6 +185,10 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 			async 'astro:build:done'({ dir, logger }) {
 				if (removeOriginalsEnabled && astroConfig) {
 					await removeOriginalImages(dir, astroConfig, logger)
+				}
+
+				if (stripExifEnabled) {
+					await stripExifFromImages(dir, logger)
 				}
 			},
 			'astro:config:done'({ config }) {
