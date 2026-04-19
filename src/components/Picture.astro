@@ -402,8 +402,16 @@ if (isSelector && hasDarkMode) {
 const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
 const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 
-if (imageProps.sizes) {
-	sourceAdditionalAttributes.sizes = imageProps.sizes
+// Mirror the `sizes` attribute onto <source> elements. Astro's getImage()
+// emits `sizes` on `fallbackImage.attributes` for responsive layouts, but the
+// <img> fallback never wins once a <source> matches. Without `sizes` on the
+// source, the browser defaults to `100vw` and always picks the largest
+// candidate from a width-descriptor srcset.
+const fallbackSizes =
+	typeof fallbackImage.attributes.sizes === 'string' ? fallbackImage.attributes.sizes : undefined
+const effectiveSizes = imageProps.sizes ?? fallbackSizes
+if (effectiveSizes) {
+	sourceAdditionalAttributes.sizes = effectiveSizes
 }
 
 if (fallbackImage.srcSet.values.length > 0) {

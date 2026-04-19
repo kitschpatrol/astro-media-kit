@@ -1,0 +1,46 @@
+---
+import Picture from 'astro-media-kit/components/Picture.astro'
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Srcset">
+	<h1>Srcset regression fixtures</h1>
+	<p class="note">
+		Each <code>&lt;Picture&gt;</code> below generates a width-descriptor srcset. Without the fix in
+		<code>Picture.astro</code>, the <code>&lt;source&gt;</code> elements lack a <code>sizes</code>
+		attribute and the browser defaults to <code>100vw</code>, always picking the largest candidate.
+		The <code>img.currentSrc</code> readout of each target is what the test asserts against.
+	</p>
+
+	<h2>Explicit widths, no layout</h2>
+	<div data-amk-test-case="widths" style="max-width:320px">
+		<Picture
+			alt="explicit widths"
+			data-amk-test="widths"
+			src="../assets/test.jpeg"
+			widths={[320, 640, 1280]}
+		/>
+	</div>
+
+	<h2>Constrained layout</h2>
+	<div data-amk-test-case="constrained" style="max-width:320px">
+		<Picture
+			alt="constrained"
+			data-amk-test="constrained"
+			layout="constrained"
+			src="../assets/test.jpeg"
+			width={320}
+		/>
+	</div>
+
+	<h2>Explicit sizes takes precedence</h2>
+	<div data-amk-test-case="explicit-sizes" style="max-width:320px">
+		<Picture
+			alt="explicit sizes"
+			data-amk-test="explicit-sizes"
+			sizes="(min-width: 800px) 400px, 200px"
+			src="../assets/test.jpeg"
+			widths={[320, 640, 1280]}
+		/>
+	</div>
+</Layout>
