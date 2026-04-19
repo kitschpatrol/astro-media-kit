@@ -7,6 +7,9 @@ import { defineConfig } from 'astro/config'
 process.env.BROWSER = 'chromium'
 
 export default defineConfig({
+	image: {
+		responsiveStyles: true,
+	},
 	integrations: [
 		mediaKit({
 			aphex: true,

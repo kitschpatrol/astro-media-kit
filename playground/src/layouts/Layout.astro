@@ -139,6 +139,60 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 				background-size: 12px 12px;
 			}
 		</style>
+		<script>
+			;(function () {
+				const createOverlay = (img) => {
+					if (img.dataset.hasOverlay) return
+					img.dataset.hasOverlay = 'true'
+
+					const overlay = document.createElement('div')
+					overlay.style = `
+      position: absolute; background: rgba(0, 0, 0, 0.8); color: #00ff00;
+      padding: 4px; font-family: monospace; font-size: 11px;
+      z-index: 10000; pointer-events: none; border: 1px solid #00ff00;
+      line-height: 1.2; white-space: pre;
+    `
+
+					const update = () => {
+						const rect = img.getBoundingClientRect()
+						const url = new URL(img.currentSrc)
+						const params = new URLSearchParams(url.search)
+
+						// Extract the specific details from your URL format
+						const targetW = params.get('w') || 'auto'
+						const format = params.get('f') || 'original'
+
+						// Clean up that messy href path to get just the filename
+						const fullPath = params.get('href') || ''
+						const fileName = fullPath.split('%2F').pop().split('&')[0] || 'unknown'
+
+						overlay.style.top = `${rect.top + window.scrollY}px`
+						overlay.style.left = `${rect.left + window.scrollX}px`
+
+						overlay.innerText = [
+							`FILE: ${fileName}`,
+							`SERVED: ${targetW}px (${format})`,
+							`NATURAL: ${img.naturalWidth}x${img.naturalHeight}px`,
+							`DISPLAY: ${Math.round(rect.width)}x${Math.round(rect.height)}px`,
+							`DPR: ${window.devicePixelRatio}x`,
+						].join('\n')
+
+						// Visual indicator: red border if the image is being upscaled (blurry)
+						overlay.style.borderColor = img.naturalWidth < rect.width ? 'red' : '#00ff00'
+					}
+
+					// Update on resize, scroll, or image source change
+					new ResizeObserver(update).observe(img)
+					img.addEventListener('load', update)
+					window.addEventListener('resize', update)
+
+					document.body.append(overlay)
+					update()
+				}
+
+				document.querySelectorAll('img').forEach(createOverlay)
+			})()
+		</script>
 	</head>
 	<body>
 		<nav>

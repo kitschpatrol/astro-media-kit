@@ -477,6 +477,8 @@ This means that the `Zoomer.astro` and `VideoPlayer.astro` crash Prettier and ca
 
 I have released [a fork of the Astro Prettier plugin](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags) incorporating fixes for these issues.
 
+This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com/Alos-no/Astro-Smart-Media)
+
 ## Maintainers
 
 [@kitschpatrol](https://github.com/kitschpatrol)

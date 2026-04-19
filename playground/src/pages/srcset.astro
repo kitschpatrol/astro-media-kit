@@ -1,4 +1,5 @@
 ---
+import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
 import Layout from '../layouts/Layout.astro'
 ---
@@ -41,6 +42,28 @@ import Layout from '../layouts/Layout.astro'
 			sizes="(min-width: 800px) 400px, 200px"
 			src="../assets/test.jpeg"
 			widths={[320, 640, 1280]}
+		/>
+	</div>
+
+	<h2>Full-width layout (Picture)</h2>
+	<div data-amk-test-case="full-width">
+		<Picture
+			alt="full width"
+			data-amk-test="full-width"
+			layout="full-width"
+			src="../assets/test.jpeg"
+			width={320}
+		/>
+	</div>
+
+	<h2>Constrained Image</h2>
+	<div data-amk-test-case="image-constrained" style="max-width:320px">
+		<Image
+			alt="image constrained"
+			data-amk-test="image-constrained"
+			layout="constrained"
+			src="../assets/test.jpeg"
+			width={320}
 		/>
 	</div>
 </Layout>

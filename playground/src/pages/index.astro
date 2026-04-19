@@ -1,4 +1,5 @@
 ---
+import Picture from 'astro-media-kit/components/Picture.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 ---
@@ -14,4 +15,14 @@ import { pages } from '../pages'
 			))
 		}
 	</ul>
+	<hr />
+	<Picture
+		alt="test"
+		decoding="async"
+		layout="constrained"
+		loading="lazy"
+		sizes="auto"
+		src="../assets/test.jpeg"
+	/>
+	<hr />
 </Layout>

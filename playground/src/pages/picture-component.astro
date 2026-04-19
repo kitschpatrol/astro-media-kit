@@ -227,8 +227,8 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
 			<tr>
-				<td>layout="responsive" (default)</td>
-				<td><Picture alt="responsive" layout="responsive" src="../assets/test.jpeg" /></td>
+				<td>layout="constrained" (default via config)</td>
+				<td><Picture alt="constrained default" src="../assets/test.jpeg" width={320} /></td>
 				<td class="check">Scales with container</td>
 			</tr>
 			<tr>
