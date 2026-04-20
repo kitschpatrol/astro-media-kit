@@ -156,6 +156,13 @@ const { light: backgroundStyle } = buildBackgroundStyle({
 // Assemble <img> attributes: let getImage's result attributes drive, pull
 // `class` off (we merge it via class:list), and add our superset markers.
 const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
+
+// `getImage()` returns the srcset on `.srcSet.attribute` rather than via
+// `.attributes` — wire it through explicitly (matches Picture's fallback img).
+if (image.srcSet.values.length > 0) {
+	imgAdditionalAttributes.srcset = image.srcSet.attribute
+}
+
 if (import.meta.env.DEV) {
 	imgAdditionalAttributes['data-image-component'] = 'true'
 }
