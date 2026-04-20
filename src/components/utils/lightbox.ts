@@ -54,7 +54,9 @@ function createFloatingControls(): {
 } {
 	const wrapper = document.createElement('div')
 	wrapper.className = 'pswp__floating-controls'
-	wrapper.hidden = true
+	// `data-unbound` drives opacity:0 (which can transition) so the bar
+	// fades in when binding completes rather than popping in post-open.
+	wrapper.dataset.unbound = ''
 
 	const bar = document.createElement('media-control-bar')
 	for (const tag of [
@@ -132,7 +134,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 	const hideFloatingControls = (): void => {
 		if (!floatingControls) return
-		floatingControls.wrapper.hidden = true
+		floatingControls.wrapper.dataset.unbound = ''
 		floatingControls.bar.removeAttribute('mediacontroller')
 		if (autohideTimerId !== undefined) {
 			clearTimeout(autohideTimerId)
@@ -221,10 +223,11 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 			pswp.mainScroll.moveIndexBy(-1, true)
 		}
 
-		// Mount floating control bar into the PhotoSwipe root (sibling of the
-		// zoom-wrap). It only becomes visible while a video slide is active.
+		// Mount floating control bar inside `pswp.scrollWrap` so it inherits
+		// the same open/close transition as the slide content (and the native
+		// top-bar buttons live as siblings here too).
 		floatingControls = createFloatingControls()
-		pswp.element?.append(floatingControls.wrapper)
+		pswp.scrollWrap?.append(floatingControls.wrapper)
 
 		// Track pointer activity across the entire PhotoSwipe root so the
 		// floating bar stays visible when the pointer is over the backdrop /
@@ -338,8 +341,45 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 	})
 
-	// Auto-play when slide becomes active; bind floating controls to this
-	// slide's controller.
+	// Single source of truth: read `pswp.currSlide` and bind/hide the floating
+	// bar accordingly. Called from events where `currSlide` is guaranteed
+	// up-to-date:
+	// - `change` — fires after mainScroll updates `currSlide` (on init after
+	//   setContent, on pan after the new center slide is assigned). Note:
+	//   `contentActivate` is NOT safe — it fires during `setIsActive()` in
+	//   the mainScroll forEach loop, which runs *before* `currSlide` is
+	//   updated (photoswipe.esm.js ~line 3045-3051).
+	// - `appendHeavyContent` — fires in `slide.appendHeavy` *after*
+	//   `content.append()` has attached `content.element` to the slide
+	//   container. Needed for direct-entry: on first open, `change` fires
+	//   during `init()` while `opener.isOpen` is still false, so
+	//   `slide.appendHeavy()` bails out and `content.element` isn't in the
+	//   DOM yet. The later `appendHeavyContent` (at `openingAnimationEnd`)
+	//   completes the binding.
+	const syncFloatingBar = (): void => {
+		if (!floatingControls) return
+		const content = lightbox.pswp?.currSlide?.content
+		if (!content || !isVideoData(content.data)) {
+			hideFloatingControls()
+			return
+		}
+
+		const controller = content.element?.querySelector('media-controller')
+		if (!(controller instanceof HTMLElement) || !controller.isConnected) {
+			// Content not attached yet — will retry on appendHeavyContent.
+			return
+		}
+
+		floatingControls.bar.setAttribute('mediacontroller', controller.id)
+		delete floatingControls.wrapper.dataset.unbound
+		markFloatingActive()
+	}
+
+	lightbox.on('change', syncFloatingBar)
+	lightbox.on('appendHeavyContent', syncFloatingBar)
+
+	// Auto-play on activate, pause on deactivate. Separate from the bar
+	// binding above — this is purely video lifecycle.
 	lightbox.on('contentActivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		const video = queryVideoElement(content.element)
@@ -352,27 +392,14 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
-
-		// Hand control off to the floating bar. Activity is tracked at the
-		// PhotoSwipe root (see uiRegister), so the bar stays visible while the
-		// pointer moves anywhere in the viewport — not just over the video.
-		const controller = content.element?.querySelector('media-controller')
-		if (floatingControls && controller instanceof HTMLElement) {
-			floatingControls.bar.setAttribute('mediacontroller', controller.id)
-			floatingControls.wrapper.hidden = false
-			markFloatingActive()
-		}
 	})
 
-	// Pause when swiping away to another slide; hide floating controls.
 	lightbox.on('contentDeactivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		const video = queryVideoElement(content.element)
 		if (video && !video.paused) {
 			video.pause()
 		}
-
-		hideFloatingControls()
 	})
 
 	// Sync position back to inline player and clean up lightbox player.

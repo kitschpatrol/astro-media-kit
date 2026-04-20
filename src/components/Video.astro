@@ -229,10 +229,14 @@ const sharedProps = {
 		pointer-events: none;
 	}
 
-	/* Floating control bar, mounted outside the slide zoom-wrap so it stays
-	   anchored to the viewport bottom while the video is zoomed/panned. Bound
-	   to the active slide's <media-controller> via its `mediacontroller`
-	   attribute (see utils/lightbox.ts). */
+	/* Floating control bar, mounted inside `pswp.scrollWrap` so it rides
+	   along with PhotoSwipe's open/close transition. Stays anchored to the
+	   viewport bottom while the video is zoomed/panned, bound to the active
+	   slide's <media-controller> via its `mediacontroller` attribute (see
+	   utils/lightbox.ts). `data-unbound` is set whenever the bar is not
+	   attached to a video slide's controller; `data-user-inactive` drives
+	   the autohide fade. Both drive opacity (rather than `display: none`)
+	   so the bar fades in/out smoothly. */
 	.pswp__floating-controls {
 		position: absolute;
 		z-index: 10;
@@ -240,10 +244,7 @@ const sharedProps = {
 		transition: opacity 0.2s ease;
 	}
 
-	.pswp__floating-controls[hidden] {
-		display: none;
-	}
-
+	.pswp__floating-controls[data-unbound],
 	.pswp__floating-controls[data-user-inactive] {
 		pointer-events: none;
 		opacity: 0;
