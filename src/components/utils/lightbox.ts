@@ -38,6 +38,45 @@ type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
 const VIDEO_ELEMENT_SELECTOR = 'video, hls-video, youtube-video, vimeo-video'
 
+/** Monotonic counter for unique media-controller ids across all lightbox instances. */
+let controllerIdCounter = 0
+
+/**
+ * Build a floating control bar to be appended outside the PhotoSwipe zoom
+ * transform (anchored to the viewport bottom). Bound to the active slide's
+ * `<media-controller>` via the `mediacontroller` attribute, which is swapped
+ * on each slide activation. Returns the wrapper element plus the control bar
+ * itself so callers can flip the binding.
+ */
+function createFloatingControls(): {
+	bar: HTMLElement
+	wrapper: HTMLElement
+} {
+	const wrapper = document.createElement('div')
+	wrapper.className = 'pswp__floating-controls'
+	wrapper.hidden = true
+
+	const bar = document.createElement('media-control-bar')
+	for (const tag of [
+		'media-play-button',
+		'media-mute-button',
+		'media-volume-range',
+		'media-time-range',
+		'media-time-display',
+	]) {
+		bar.append(document.createElement(tag))
+	}
+
+	// Stop pointer events on the control bar from reaching PhotoSwipe's gesture
+	// handler, so dragging the scrubber doesn't trigger a swipe/close.
+	bar.addEventListener('pointerdown', (pointerEvent) => {
+		pointerEvent.stopPropagation()
+	})
+
+	wrapper.append(bar)
+	return { bar, wrapper }
+}
+
 /** Type guard for video slide data stored in content.data. */
 function isVideoData(data: Record<string, unknown>): data is Record<string, unknown> & {
 	videoConfig: string
@@ -68,6 +107,38 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		...options,
 		pswpModule: async () => import('photoswipe'),
 	})
+
+	// Floating control bar, lazily mounted when PhotoSwipe's UI is ready. Lives
+	// outside the slide zoom-wrap so it stays anchored to the viewport bottom
+	// regardless of fit/fill/native zoom on the active video slide.
+	let floatingControls: ReturnType<typeof createFloatingControls> | undefined
+	let autohideTimerId: ReturnType<typeof globalThis.setTimeout> | undefined
+	let pointerListenersCleanup: (() => void) | undefined
+
+	// Autohide the floating bar based on pointer activity within the PhotoSwipe
+	// root rather than the in-slide `<media-controller>`. The controller only
+	// registers activity over the video itself — in fit mode, moving through
+	// the letterbox gap would otherwise mark the user inactive before they
+	// reach the bar. Tracking pointer activity on the whole viewport fixes it.
+	const USER_INACTIVE_MS = 2000
+	const markFloatingActive = (): void => {
+		if (!floatingControls) return
+		delete floatingControls.wrapper.dataset.userInactive
+		if (autohideTimerId !== undefined) clearTimeout(autohideTimerId)
+		autohideTimerId = globalThis.setTimeout(() => {
+			if (floatingControls) floatingControls.wrapper.dataset.userInactive = ''
+		}, USER_INACTIVE_MS)
+	}
+
+	const hideFloatingControls = (): void => {
+		if (!floatingControls) return
+		floatingControls.wrapper.hidden = true
+		floatingControls.bar.removeAttribute('mediacontroller')
+		if (autohideTimerId !== undefined) {
+			clearTimeout(autohideTimerId)
+			autohideTimerId = undefined
+		}
+	}
 
 	// --- Filters ---
 
@@ -103,18 +174,19 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		return itemData
 	})
 
-	// Disable pinch-zoom gestures for video slides.
-	lightbox.addFilter(
-		'isContentZoomable',
-		(isZoomable: boolean, content: { data: Record<string, unknown> }) =>
-			content.data.type === 'video' ? false : isZoomable,
-	)
-
 	// Enable placeholder for video — required for the zoom open/close animation.
 	lightbox.addFilter(
 		'useContentPlaceholder',
 		(usePlaceholder: boolean, content: { data: Record<string, unknown> }) =>
 			content.data.type === 'video' ? true : usePlaceholder,
+	)
+
+	// Mark video as zoomable so tap/double-tap triggers PhotoSwipe's secondary
+	// zoom (and wheel-to-zoom). Default is false for non-image content.
+	lightbox.addFilter(
+		'isContentZoomable',
+		(isZoomable: boolean, content: { data: Record<string, unknown> }) =>
+			content.data.type === 'video' ? true : isZoomable,
 	)
 
 	// Use video container / anchor as the zoom animation origin.
@@ -147,6 +219,24 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 		pswp.prev = () => {
 			pswp.mainScroll.moveIndexBy(-1, true)
+		}
+
+		// Mount floating control bar into the PhotoSwipe root (sibling of the
+		// zoom-wrap). It only becomes visible while a video slide is active.
+		floatingControls = createFloatingControls()
+		pswp.element?.append(floatingControls.wrapper)
+
+		// Track pointer activity across the entire PhotoSwipe root so the
+		// floating bar stays visible when the pointer is over the backdrop /
+		// letterbox gap between the video and the bottom-anchored bar.
+		const root = pswp.element
+		if (root) {
+			root.addEventListener('pointermove', markFloatingActive)
+			root.addEventListener('pointerdown', markFloatingActive)
+			pointerListenersCleanup = (): void => {
+				root.removeEventListener('pointermove', markFloatingActive)
+				root.removeEventListener('pointerdown', markFloatingActive)
+			}
 		}
 	})
 
@@ -210,50 +300,23 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 
 		// Build <media-controller> with lightbox control style:
 		// gesturesdisabled (no click-to-play), no fullscreen button.
+		// Controls live outside the slide (see floatingControls), bound to this
+		// controller's id via the `mediacontroller` attribute on activation.
 		const controller = document.createElement('media-controller')
-		controller.setAttribute('autohide', '1')
+		controller.id = `amk-lightbox-mc-${controllerIdCounter++}`
 		controller.setAttribute('gesturesdisabled', '')
 		controller.classList.add('lightbox')
 		videoElement.setAttribute('slot', 'media')
 		controller.append(videoElement)
 
-		const controlBar = document.createElement('media-control-bar')
-		for (const tag of [
-			'media-play-button',
-			'media-mute-button',
-			'media-volume-range',
-			'media-time-range',
-			'media-time-display',
-		]) {
-			controlBar.append(document.createElement(tag))
-		}
-
-		controller.append(controlBar)
-
-		// Stop pointer events on the control bar from reaching PhotoSwipe's
-		// gesture handler on scrollWrap. Without this, dragging the scrubber
-		// triggers PhotoSwipe's swipe gesture.
-		controlBar.addEventListener('pointerdown', (pointerEvent) => {
-			pointerEvent.stopPropagation()
-		})
-
-		// Hide controls when inactive, even while paused/ended.
-		// Media-chrome's shadow DOM keeps controls visible when mediapaused
-		// is set. Inline styles override ::slotted() rules.
-		const { style: barStyle } = controlBar
-		controller.addEventListener('userinactivechange', () => {
-			if (controller.hasAttribute('userinactive')) {
-				barStyle.opacity = '0'
-				barStyle.pointerEvents = 'none'
-			} else {
-				barStyle.opacity = ''
-				barStyle.pointerEvents = ''
-			}
-		})
-
-		// Wrapper element — PhotoSwipe controls its dimensions.
+		// Wrapper element. PhotoSwipe's click handler keys off
+		// `event.target.classList` — it fires `imageClickAction` only when the
+		// target carries `pswp__img`. Paired with `pointer-events: none` on
+		// the descendants (see Video.astro global styles), clicks fall through
+		// to this wrapper, so the video behaves exactly like an image slide
+		// (single-click zoom, zoom-in / grab cursors, etc.).
 		const wrapper = document.createElement('div')
-		wrapper.className = 'pswp__video-wrapper'
+		wrapper.className = 'pswp__video-wrapper pswp__img'
 		wrapper.append(controller)
 
 		content.element = wrapper
@@ -275,7 +338,8 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 	})
 
-	// Auto-play when slide becomes active.
+	// Auto-play when slide becomes active; bind floating controls to this
+	// slide's controller.
 	lightbox.on('contentActivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		const video = queryVideoElement(content.element)
@@ -288,15 +352,27 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
+
+		// Hand control off to the floating bar. Activity is tracked at the
+		// PhotoSwipe root (see uiRegister), so the bar stays visible while the
+		// pointer moves anywhere in the viewport — not just over the video.
+		const controller = content.element?.querySelector('media-controller')
+		if (floatingControls && controller instanceof HTMLElement) {
+			floatingControls.bar.setAttribute('mediacontroller', controller.id)
+			floatingControls.wrapper.hidden = false
+			markFloatingActive()
+		}
 	})
 
-	// Pause when swiping away to another slide.
+	// Pause when swiping away to another slide; hide floating controls.
 	lightbox.on('contentDeactivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		const video = queryVideoElement(content.element)
 		if (video && !video.paused) {
 			video.pause()
 		}
+
+		hideFloatingControls()
 	})
 
 	// Sync position back to inline player and clean up lightbox player.
@@ -312,6 +388,12 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (content && isVideoData(content.data)) {
 			syncBackToInline(content)
 		}
+
+		hideFloatingControls()
+		pointerListenersCleanup?.()
+		pointerListenersCleanup = undefined
+		floatingControls?.wrapper.remove()
+		floatingControls = undefined
 	})
 
 	// Caption plugin: extract caption from the <figcaption> sibling of the
@@ -398,14 +480,20 @@ for (const name of galleryNames) {
 	galleryLightboxes.set(name, lb)
 }
 
-// Prevent clicks inside inline video containers from bubbling to body,
-// where PhotoSwipe's gallery click handler would open the lightbox.
-// The expand button (.pswp-video-trigger) handles its own click separately.
+// Keep clicks on inline media controls (play/pause/time/mute/etc.) from
+// bubbling to PhotoSwipe's gallery click handler — they should operate the
+// player without opening the lightbox. Clicks on the video area itself bubble
+// and open the lightbox, matching how images behave.
 for (const container of document.querySelectorAll<HTMLElement>(
 	'.pswp-zoom[data-pswp-type="video"]',
 )) {
 	container.addEventListener('click', (event) => {
-		event.stopPropagation()
+		if (
+			event.target instanceof Element &&
+			event.target.closest('media-control-bar, [slot="centered-chrome"]')
+		) {
+			event.stopPropagation()
+		}
 	})
 }
 

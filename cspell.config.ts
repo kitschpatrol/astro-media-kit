@@ -10,6 +10,7 @@ export default cspellConfig({
 		'dailymotion',
 		'lightboxes',
 		'mediaaudiotrackunavailable',
+		'mediacontroller',
 		'mediaenterfullscreenrequest',
 		'mediaisfullscreen',
 		'mediapaused',

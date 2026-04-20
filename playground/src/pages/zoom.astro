@@ -40,10 +40,22 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		Images and videos share <code>zoom="mixed"</code>. Swipe between all media types.
 	</p>
 	<div class="grid">
-		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="mixed" />
-		<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
-		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" />
-		<Video controlStyle="minimal" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
+		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="mixed" zoomLevel="fill" />
+		<Video
+			controlStyle="full"
+			initialBandwidth={50_000_000}
+			src={bunnyId}
+			zoom="mixed"
+			zoomLevel="native"
+		/>
+		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" zoomLevel="fill" />
+		<Video
+			controlStyle="minimal"
+			initialBandwidth={50_000_000}
+			src={bunnyId}
+			zoom="mixed"
+			zoomLevel="fill"
+		/>
 	</div>
 
 	<h2>4. Scoped galleries</h2>

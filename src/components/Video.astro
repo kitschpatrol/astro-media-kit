@@ -220,6 +220,34 @@ const sharedProps = {
 		width: 100%;
 		height: 100%;
 	}
+
+	/* Let clicks fall through to the wrapper (which carries `pswp__img`)
+	   so PhotoSwipe's built-in click handler treats the slide like an
+	   image — single click runs `imageClickAction` (zoom-or-close).
+	   Controls live outside the slide via the floating control bar. */
+	.pswp__video-wrapper > * {
+		pointer-events: none;
+	}
+
+	/* Floating control bar, mounted outside the slide zoom-wrap so it stays
+	   anchored to the viewport bottom while the video is zoomed/panned. Bound
+	   to the active slide's <media-controller> via its `mediacontroller`
+	   attribute (see utils/lightbox.ts). */
+	.pswp__floating-controls {
+		position: absolute;
+		z-index: 10;
+		inset: auto 0 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.pswp__floating-controls[hidden] {
+		display: none;
+	}
+
+	.pswp__floating-controls[data-user-inactive] {
+		pointer-events: none;
+		opacity: 0;
+	}
 </style>
 
 {

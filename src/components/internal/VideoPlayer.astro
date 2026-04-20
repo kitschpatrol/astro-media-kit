@@ -138,7 +138,9 @@ const hlsConfigJson =
 	<media-controller
 		autohide="1"
 		class:list={[controlStyle, { autoplay: autoPlay }]}
-		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' ? '' : undefined}
+		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' || zoom
+			? ''
+			: undefined}
 		inert={controlStyle === 'none' ? 'true' : undefined}
 		style={controllerStyle}
 	>
