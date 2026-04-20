@@ -311,11 +311,11 @@ export function buildSrcsetAttribute(
  * `undefined` when no sizes value is present.
  */
 export function resolveSizesAttribute(
-	userSizes: string | null | undefined,
+	userSizes: string | undefined,
 	sizes: string | undefined,
 ): string | undefined {
 	if (sizes === undefined) return undefined
-	if (userSizes !== undefined && userSizes !== null) return sizes
+	if (userSizes !== undefined) return sizes
 	return `auto, ${sizes}`
 }
 

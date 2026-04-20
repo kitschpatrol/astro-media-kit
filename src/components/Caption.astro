@@ -5,14 +5,11 @@ import { getCreditFromXmpTags } from './utils/image'
 
 const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
-/**
- * Same shape as `Props` (minus `src`), with every key prefixed with `caption`
- * — used by components that embed a `<Caption>` so their caption-related props
- * don't collide with other props. For example, `type` becomes `captionType`.
- */
-export type PrefixedProps = {
-	[K in keyof Omit<Props, 'src'> as `caption${Capitalize<K>}`]: Omit<Props, 'src'>[K]
-}
+// Re-export PrefixedProps so it remains importable from `./Caption.astro`.
+// The type itself lives in `./caption-props-map` because astro-eslint-parser
+// fails to resolve mapped/derived types imported across `.astro` → `.astro`
+// file boundaries.
+export type { PrefixedProps } from './caption-props-map'
 
 /** Props for the `<Caption>` component — wraps content in `<figure>`/`<figcaption>` with optional XMP credit extraction. */
 export type Props = {

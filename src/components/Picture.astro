@@ -14,8 +14,10 @@ import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
-import type { PrefixedProps as PrefixedCaptionProps, Props as CaptionProps } from './Caption.astro'
+import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
 import type { GetImageResult } from './utils/image-orchestration'
+import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
+import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
 import {
 	buildBackgroundStyle,
@@ -35,6 +37,7 @@ import {
 	warnBackgroundDarkWithoutBackground,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
+import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
 /**
@@ -46,8 +49,9 @@ import Zoomer from './Zoomer.astro'
  * `pictureAttributes` extras Astro's `<Picture>` adds on top. Media-kit
  * extensions (`src` widening, dark mode, background, caption, zoom) follow.
  */
-export type Props = PrefixedCaptionProps &
-	Omit<LocalImageProps, 'height' | 'src' | 'width'> & {
+export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
+	PrefixedCaptionProps &
+	PrefixedZoomProps & {
 		/**
 		 * CSS background color for the image (visible behind transparent areas).
 		 */
@@ -104,30 +108,18 @@ export type Props = PrefixedCaptionProps &
 		 * numeric-only, since getImage() rejects string dimensions.
 		 */
 		width?: number | undefined
-		/**
-		 * Enable PhotoSwipe zoom. `true` uses default gallery, a string groups into a named gallery.
-		 * @default false
-		 */
-		zoom?: boolean | string | undefined
-		/**
-		 * CSS selector defining a gallery scope boundary. When set, galleries cannot
-		 * form across matching ancestors — items under separate ancestors matching
-		 * the selector become separate galleries. Ignored when `zoom` is `false`.
-		 */
-		zoomScope?: string | undefined
 	}
 
 const {
 	alt,
 	background,
 	backgroundDark: backgroundDarkProp,
-	captionCreator,
-	captionOrganization,
-	captionShowCredit,
-	captionType,
-	captionTypeFallback = 'image',
 	class: classFromAstro,
 	className: classFromJsx,
+	credit,
+	creditMediaType,
+	creditMediaTypeFallback,
+	creditOrganization,
 	darkMode = 'media',
 	fallbackFormat: fallbackFormatProp,
 	formats: formatsProp,
@@ -138,6 +130,8 @@ const {
 	zoomScope,
 	...imageProps
 } = Astro.props
+
+const zoomerProps = toZoomerProps({ zoom, zoomScope })
 
 // Merge class from both Astro-style `class` and JSX-style `className` props
 // (MDX may pass both; getImage() passes through `className` unfiltered)
@@ -271,7 +265,7 @@ const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 // candidate from a width-descriptor srcset.
 const fallbackSizes =
 	typeof fallbackImage.attributes.sizes === 'string' ? fallbackImage.attributes.sizes : undefined
-const effectiveSizes = resolveSizesAttribute(imageProps.sizes, fallbackSizes)
+const effectiveSizes = resolveSizesAttribute(imageProps.sizes ?? undefined, fallbackSizes)
 if (effectiveSizes) {
 	sourceAdditionalAttributes.sizes = effectiveSizes
 }
@@ -319,14 +313,10 @@ if (fallbackImageDark) {
 	imgAttributesDark = attributes
 }
 
-const captionProps: CaptionProps = {
-	creator: captionCreator,
-	organization: captionOrganization,
-	showCredit: captionShowCredit,
-	src: imageMetadata,
-	type: captionType,
-	typeFallback: captionTypeFallback,
-}
+const captionProps = toCaptionProps(
+	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
+	{ src: imageMetadata, typeFallback: 'image' },
+)
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Picture')
 warnWidthsWithoutSizes(
@@ -359,7 +349,7 @@ if (isSelector && hasDarkMode) {
 
 {selectorStyle && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
-	<Zoomer enabled={zoom} scope={zoomScope} slot="media-component">
+	<Zoomer {...zoomerProps} slot="media-component">
 		{
 			isSelector ? (
 				<div {...pictureAttributes}>

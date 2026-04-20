@@ -309,38 +309,30 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
 			<tr>
-				<td>creator + showCredit</td>
-				<td
-					><Image
-						alt="credit creator"
-						captionCreator="Test Creator"
-						captionShowCredit={true}
-						src="../assets/test.jpeg"
-					/></td
-				>
+				<td>credit creator</td>
+				<td><Image alt="credit creator" credit="Test Creator" src="../assets/test.jpeg" /></td>
 				<td class="check">Credit line with creator</td>
 			</tr>
 			<tr>
-				<td>organization + showCredit</td>
+				<td>credit organization</td>
 				<td
 					><Image
 						alt="credit org"
-						captionOrganization="Test Org"
-						captionShowCredit={true}
+						credit={true}
+						creditOrganization="Test Org"
 						src="../assets/test.jpeg"
 					/></td
 				>
 				<td class="check">Credit line with org</td>
 			</tr>
 			<tr>
-				<td>creator + org + type</td>
+				<td>credit + org + mediaType</td>
 				<td
 					><Image
 						alt="credit full"
-						captionCreator="Creator"
-						captionOrganization="Org"
-						captionShowCredit={true}
-						captionType="photo"
+						credit="Creator"
+						creditMediaType="photo"
+						creditOrganization="Org"
 						src="../assets/test.jpeg"
 					/></td
 				>

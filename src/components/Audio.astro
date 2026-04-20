@@ -1,7 +1,8 @@
 ---
-import type { Props as CaptionProps } from './Caption.astro'
+import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
 import type { AudioService } from './utils/audio'
 import type { OembedInfo } from './utils/oembed'
+import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
@@ -9,7 +10,7 @@ import { fetchOEmbed } from './utils/oembed'
 import './internal/amk-audio.css'
 
 /** Props for the `<Audio>` component — audio player supporting SoundCloud, oEmbed, and local files. */
-export type Props = Omit<CaptionProps, 'src'> & {
+export type Props = PrefixedCaptionProps & {
 	/***
 	 *
 	 * Start playback automatically.
@@ -47,17 +48,16 @@ export type Props = Omit<CaptionProps, 'src'> & {
 
 const {
 	autoPlay = false,
-	creator,
+	credit,
+	creditMediaType,
+	creditMediaTypeFallback,
+	creditOrganization,
 	label,
 	loop = false,
 	muted = false,
-	organization,
 	preload = 'metadata',
 	service,
-	showCredit = true,
 	src,
-	type,
-	typeFallback,
 } = Astro.props
 
 const { identifier, service: resolvedService } = resolveAudioSource(src, service)
@@ -79,14 +79,10 @@ if (resolvedService === 'soundcloud') {
 	}
 }
 
-const captionProps: CaptionProps = {
-	creator,
-	organization,
-	showCredit,
-	src: undefined,
-	type,
-	typeFallback: typeFallback ?? 'audio',
-}
+const captionProps = toCaptionProps(
+	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
+	{ typeFallback: 'audio' },
+)
 
 const oembedAspectRatio =
 	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
