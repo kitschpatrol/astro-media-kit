@@ -250,21 +250,14 @@ const sharedProps = {
 		   to a layer in Chromium; `will-change: opacity` does. */
 		isolation: isolate;
 		will-change: opacity;
-		/* Legibility gradient behind the controls. Applied on the wrapper
-		   (light DOM, same compositing layer as the isolated subtree) so
-		   it fades as one with the bar — unlike the shadow-DOM bgs on the
-		   individual media-chrome elements which composite independently
-		   and caused the black-rect artifact. */
-		background: linear-gradient(to top, rgb(0 0 0 / 50%), transparent);
-		padding-top: 2rem;
-		/* Let clicks in the gradient area above the bar fall through to
-		   whatever's underneath (the video / pswp). Only the bar itself
-		   captures input. */
-		pointer-events: none;
-	}
-
-	.pswp__floating-controls media-control-bar {
-		pointer-events: auto;
+		/* Match the bar's default background using media-chrome's own
+		   CSS custom property, so user overrides of the variable (or the
+		   library's own future changes) propagate here too. The bg lives
+		   on the wrapper (light DOM) rather than on the individual
+		   shadow-DOM media-chrome elements, because nested shadow-root
+		   translucency caused the black-rect artifact during opacity
+		   transitions. */
+		background: var(--media-control-background, rgb(20 20 30 / 70%));
 	}
 
 	/* Strip media-chrome's default semi-transparent dark backgrounds from
@@ -282,14 +275,8 @@ const sharedProps = {
 
 	.pswp__floating-controls[data-unbound],
 	.pswp__floating-controls[data-user-inactive] {
-		opacity: 0;
-	}
-
-	/* Disable pointer-events on the bar too when hidden — otherwise the
-	   still-present but invisible bar would intercept clicks. */
-	.pswp__floating-controls[data-unbound] media-control-bar,
-	.pswp__floating-controls[data-user-inactive] media-control-bar {
 		pointer-events: none;
+		opacity: 0;
 	}
 </style>
 
