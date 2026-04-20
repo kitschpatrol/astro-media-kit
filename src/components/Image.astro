@@ -25,6 +25,7 @@ import {
 	compositingBackground,
 	mergeLayoutDefaults,
 	pickFallbackFormat,
+	resolveSizesAttribute,
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
@@ -162,6 +163,14 @@ if (import.meta.env.DEV) {
 const { class: imgClassName, ...imgAttributes } = {
 	...imgAdditionalAttributes,
 	...image.attributes,
+}
+
+const resolvedSizes = resolveSizesAttribute(
+	imageProps.sizes,
+	typeof imgAttributes.sizes === 'string' ? imgAttributes.sizes : undefined,
+)
+if (resolvedSizes !== undefined) {
+	imgAttributes.sizes = resolvedSizes
 }
 
 const captionProps: CaptionProps = {

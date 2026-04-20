@@ -303,6 +303,22 @@ export function buildSrcsetAttribute(
 	return image.srcSet.attribute
 }
 
+/**
+ * Resolve the final `sizes` attribute value. When the user supplied `sizes`,
+ * it's passed through unchanged. When Astro auto-generated `sizes` (responsive
+ * layout without an explicit user value), the result is prefixed with `"auto, "`
+ * so lazy-loaded images can use the browser's auto-sizes behavior. Returns
+ * `undefined` when no sizes value is present.
+ */
+export function resolveSizesAttribute(
+	userSizes: string | null | undefined,
+	sizes: string | undefined,
+): string | undefined {
+	if (sizes === undefined) return undefined
+	if (userSizes !== undefined && userSizes !== null) return sizes
+	return `auto, ${sizes}`
+}
+
 /** Resolve the MIME `type` attribute for a `<source>` element. */
 export function getMimeType(image: GetImageResult): string {
 	return mime.lookup(image.options.format ?? image.src) ?? `image/${String(image.options.format)}`

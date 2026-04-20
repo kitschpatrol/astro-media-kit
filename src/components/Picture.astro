@@ -29,6 +29,7 @@ import {
 	needsBackgroundDarkVariant,
 	pickFallbackFormat,
 	propagateAstroCidAttributes,
+	resolveSizesAttribute,
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
@@ -270,7 +271,7 @@ const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 // candidate from a width-descriptor srcset.
 const fallbackSizes =
 	typeof fallbackImage.attributes.sizes === 'string' ? fallbackImage.attributes.sizes : undefined
-const effectiveSizes = imageProps.sizes ?? fallbackSizes
+const effectiveSizes = resolveSizesAttribute(imageProps.sizes, fallbackSizes)
 if (effectiveSizes) {
 	sourceAdditionalAttributes.sizes = effectiveSizes
 }
@@ -286,6 +287,12 @@ if (import.meta.env.DEV) {
 const { class: imgClassName, ...imgAttributes } = {
 	...imgAdditionalAttributes,
 	...fallbackImage.attributes,
+}
+
+// Mirror the resolved sizes (with "auto, " prefix for auto-generated values)
+// onto the <img> fallback too.
+if (effectiveSizes !== undefined) {
+	imgAttributes.sizes = effectiveSizes
 }
 
 // Build dark fallback img attributes for selector mode
@@ -304,6 +311,9 @@ if (fallbackImageDark) {
 	const { class: cls, ...attributes } = {
 		...imgAdditionalAttributesDark,
 		...fallbackImageDark.attributes,
+	}
+	if (effectiveSizes !== undefined) {
+		attributes.sizes = effectiveSizes
 	}
 	imgClassNameDark = cls ?? undefined
 	imgAttributesDark = attributes
