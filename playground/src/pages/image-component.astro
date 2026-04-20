@@ -313,8 +313,8 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 				<td
 					><Image
 						alt="credit creator"
-						creator="Test Creator"
-						showCredit={true}
+						captionCreator="Test Creator"
+						captionShowCredit={true}
 						src="../assets/test.jpeg"
 					/></td
 				>
@@ -325,8 +325,8 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 				<td
 					><Image
 						alt="credit org"
-						organization="Test Org"
-						showCredit={true}
+						captionOrganization="Test Org"
+						captionShowCredit={true}
 						src="../assets/test.jpeg"
 					/></td
 				>
@@ -337,11 +337,11 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 				<td
 					><Image
 						alt="credit full"
-						creator="Creator"
-						organization="Org"
-						showCredit={true}
+						captionCreator="Creator"
+						captionOrganization="Org"
+						captionShowCredit={true}
+						captionType="photo"
 						src="../assets/test.jpeg"
-						type="photo"
 					/></td
 				>
 				<td class="check">Full credit with type</td>

@@ -15,7 +15,7 @@ import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
-import type { Props as CaptionProps } from './Caption.astro'
+import type { PrefixedProps as PrefixedCaptionProps, Props as CaptionProps } from './Caption.astro'
 import type { GetImageResult } from './utils/image-orchestration'
 import Caption from './Caption.astro'
 import { isDarkLightImageMetadata } from './utils/image'
@@ -40,7 +40,7 @@ import Zoomer from './Zoomer.astro'
  * `quality`, `sizes`, `width`, `widths`, plus `<img>` HTMLAttributes). Media-kit
  * extensions (`src` widening, background, caption, zoom) follow.
  */
-export type Props = Omit<CaptionProps, 'src'> &
+export type Props = PrefixedCaptionProps &
 	Omit<LocalImageProps, 'height' | 'src' | 'width'> & {
 		/**
 		 * CSS background color for the image (visible behind transparent areas).
@@ -87,14 +87,14 @@ const {
 	alt,
 	background,
 	backgroundDark,
+	captionCreator,
+	captionOrganization,
+	captionShowCredit,
+	captionType,
+	captionTypeFallback = 'image',
 	class: classFromAstro,
 	className: classFromJsx,
-	creator,
-	organization,
-	showCredit,
 	src,
-	type,
-	typeFallback = 'image',
 	zoom,
 	zoomScope,
 	...imageProps
@@ -181,12 +181,12 @@ if (resolvedSizes !== undefined) {
 }
 
 const captionProps: CaptionProps = {
-	creator,
-	organization,
-	showCredit,
+	creator: captionCreator,
+	organization: captionOrganization,
+	showCredit: captionShowCredit,
 	src: imageMetadata,
-	type,
-	typeFallback,
+	type: captionType,
+	typeFallback: captionTypeFallback,
 }
 ---
 
