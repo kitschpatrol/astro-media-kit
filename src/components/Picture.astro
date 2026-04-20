@@ -1,8 +1,7 @@
 ---
-// Custom Picture component with dark mode support.
-// Renders <picture> directly using Astro's getImage() API (the same approach
-// as Astro's built-in Picture.astro), extended with prefers-color-scheme
-// media queries for light/dark image variants.
+// Reimplements Astro's `<Picture>` component with:
+// - Dark mode support
+// - TODO Some other stuff
 
 import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { HTMLAttributes } from 'astro/types'
@@ -214,10 +213,6 @@ if (isSelector && /[{}<>;]/.test(darkMode)) {
 
 // When darkMode='none', suppress all dark behavior
 const backgroundDark = isNone ? undefined : backgroundDarkProp
-
-// Default decoding and loading — decoding: 'sync' prevents flashes, loading: 'lazy' defers offscreen images
-imageProps.decoding ??= 'sync'
-imageProps.loading ??= 'lazy'
 
 // Resolve src — relative string paths only work with the mediaKit() auto-import integration.
 function assertNotRelativePath(path: unknown): void {
