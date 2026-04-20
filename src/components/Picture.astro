@@ -127,11 +127,12 @@ const {
 	src,
 	srcDark: srcDarkProp,
 	zoom,
+	zoomLevel,
 	zoomScope,
 	...imageProps
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomScope })
+const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
 
 // Merge class from both Astro-style `class` and JSX-style `className` props
 // (MDX may pass both; getImage() passes through `className` unfiltered)

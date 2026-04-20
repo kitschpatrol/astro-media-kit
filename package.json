@@ -45,6 +45,7 @@
 		"clean": "shx rm -f pnpm-lock.yaml && git clean -fdX -e !.claude/",
 		"dev": "pnpm run play",
 		"fix": "ksc fix",
+		"init": "pnpm -C playground run init",
 		"lint": "ksc lint && pnpm run -r --include-workspace-root astro check",
 		"play": "pnpm -C playground run dev",
 		"play-starlight": "pnpm -C playground-starlight run dev",

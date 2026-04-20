@@ -16,7 +16,22 @@ import PhotoSwipeDynamicCaption from 'photoswipe-dynamic-caption-plugin'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import { resolveScopedGalleries } from './zoom-scope'
 
-type LightboxOptions = ConstructorParameters<typeof PhotoSwipeLightbox>[0]
+type LightboxOptions = NonNullable<ConstructorParameters<typeof PhotoSwipeLightbox>[0]>
+
+/**
+ * Per-item secondary zoom level. Reads `data-pswp-level` from the triggering
+ * element — `'native'` zooms to 1:1 pixels, `'fill'` zooms to cover the
+ * viewport, anything else (including absent) keeps the fitted view.
+ */
+const secondaryZoomLevel: LightboxOptions['secondaryZoomLevel'] = (zoomLevelObject) => {
+	const { element } = zoomLevelObject.itemData
+	if (element instanceof HTMLElement) {
+		if (element.dataset.pswpLevel === 'native') return 1
+		if (element.dataset.pswpLevel === 'fill') return zoomLevelObject.fill
+	}
+
+	return zoomLevelObject.fit
+}
 
 /** Supported video element tag names for lightbox playback. */
 type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
@@ -355,7 +370,7 @@ resolveScopedGalleries()
 // Standalone items (zoom={true}, no gallery grouping).
 const standaloneLightbox = createLightbox({
 	gallery: '.pswp-zoom:not([data-pswp-gallery])',
-	secondaryZoomLevel: 'fit',
+	secondaryZoomLevel,
 	zoom: false,
 })
 
@@ -377,7 +392,7 @@ for (const name of galleryNames) {
 		gallery: 'body',
 		initialZoomLevel: 'fit',
 		loop: false,
-		secondaryZoomLevel: 'fit',
+		secondaryZoomLevel,
 		zoom: false,
 	})
 	galleryLightboxes.set(name, lb)

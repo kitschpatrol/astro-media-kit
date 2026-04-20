@@ -37,15 +37,18 @@ export type PrefixedProps = {
 	 * Credit line control. `true` shows the credit line using XMP-extracted or
 	 * explicit values, `false` hides it, and a string shows the credit line with
 	 * that string as the creator name.
+	 *
 	 * @default false
 	 */
 	credit?: boolean | string | undefined
 	/**
-	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the credit line.
+	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the
+	 * credit line.
 	 */
 	creditMediaType?: Props['type']
 	/**
 	 * Fallback media type when XMP Label tag is missing.
+	 *
 	 * @default 'image'
 	 */
 	creditMediaTypeFallback?: Props['typeFallback']

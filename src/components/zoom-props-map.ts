@@ -5,8 +5,8 @@ import type { Props } from './Zoomer.astro'
  * subset of `<Zoomer>` props they control. The remaining `<Zoomer>` props
  * (dimensions, source, srcset) are supplied by the embedding component.
  */
-export function toZoomerProps(props: PrefixedProps): Pick<Props, 'enabled' | 'scope'> {
-	return { enabled: props.zoom, scope: props.zoomScope }
+export function toZoomerProps(props: PrefixedProps): Pick<Props, 'enabled' | 'level' | 'scope'> {
+	return { enabled: props.zoom, level: props.zoomLevel, scope: props.zoomScope }
 }
 
 /**
@@ -25,6 +25,14 @@ export type PrefixedProps = {
 	 * @default false
 	 */
 	zoom?: Props['enabled']
+	/**
+	 * Secondary zoom level — the zoom applied when the user taps/clicks the
+	 * opened lightbox image. `'fit'` keeps the image fitted to the viewport,
+	 * `'fill'` zooms to cover the viewport (cropping the overflowing axis), and
+	 * `'native'` zooms to 100% (1:1 pixels).
+	 * @default 'fit'
+	 */
+	zoomLevel?: Props['level']
 	/**
 	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
 	 * form across matching ancestors — items under separate ancestors matching

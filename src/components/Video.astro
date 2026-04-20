@@ -87,10 +87,11 @@ const {
 	service,
 	src,
 	zoom = false,
+	zoomLevel,
 	zoomScope,
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomScope })
+const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
 
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 

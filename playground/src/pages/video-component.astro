@@ -63,10 +63,16 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<p>Video and image in the same gallery — swipe between them.</p>
 	<div style="display: flex; gap: 1rem; align-items: start;">
 		<div style="flex: 1;">
-			<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom="mixed" />
+			<Video
+				controlStyle="full"
+				initialBandwidth={50_000_000}
+				src={bunnyId}
+				zoom="mixed"
+				zoomLevel="fill"
+			/>
 		</div>
 		<div style="flex: 1;">
-			<Image alt="test image" src="../assets/test.jpeg" zoom="mixed" />
+			<Image alt="test image" src="../assets/test.jpeg" zoom="mixed" zoomLevel="fill" />
 		</div>
 	</div>
 

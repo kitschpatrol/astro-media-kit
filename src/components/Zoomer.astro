@@ -18,6 +18,14 @@ export type Props = {
 	 */
 	height?: number | undefined
 	/**
+	 * Secondary zoom level — the zoom applied when the user taps/clicks the
+	 * opened lightbox image. `'fit'` keeps the image fitted to the viewport,
+	 * `'fill'` zooms to cover the viewport (cropping the overflowing axis), and
+	 * `'native'` zooms to 100% (1:1 pixels).
+	 * @default 'fit'
+	 */
+	level?: 'fill' | 'fit' | 'native' | undefined
+	/**
 	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
 	 * form across matching ancestors — items under separate ancestors matching
 	 * the selector become separate galleries, even if they share the same gallery
@@ -43,6 +51,7 @@ export type Props = {
 const {
 	enabled = false,
 	height: heightProp,
+	level = 'fit',
 	scope,
 	src,
 	srcset: srcsetProp,
@@ -161,6 +170,7 @@ if (enabled) {
 					class="pswp-zoom"
 					data-pswp-gallery={galleryName}
 					data-pswp-height={resolvedHeight}
+					data-pswp-level={level === 'fit' ? undefined : level}
 					data-pswp-poster={videoTarget.poster ?? ''}
 					data-pswp-scope={scope}
 					data-pswp-type="video"
@@ -176,6 +186,7 @@ if (enabled) {
 					class="pswp-zoom"
 					data-pswp-gallery={galleryName}
 					data-pswp-height={resolvedHeight}
+					data-pswp-level={level === 'fit' ? undefined : level}
 					data-pswp-scope={scope}
 					data-pswp-self-thumb={selfThumb ? '' : undefined}
 					data-pswp-srcset={resolvedSrcset}
