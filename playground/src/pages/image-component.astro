@@ -14,7 +14,8 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 <Layout {title}>
 	<h1>{title}</h1>
 	<p class="note">
-		Toggle system dark mode to verify dark variants. Checkerboard = transparency preserved.
+		Toggle system dark mode to verify CSS dark backgrounds. Checkerboard = transparency preserved.
+		Note: {'<Image>'} has no dark-mode image-source variants — use {'<Picture>'} for that.
 	</p>
 
 	<h2>1. Basic imports</h2>
@@ -74,17 +75,48 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 		</tbody>
 	</table>
 
-	<h2>2. Background (CSS only)</h2>
+	<h2>2. Transparency-aware fallback</h2>
+	<p class="note">
+		{'<Image>'} chooses an output format based on the input when {'format'} isn't set: SVG / GIF / JPG
+		stay in-format, other inputs go PNG.
+	</p>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
 			<tr>
-				<td>SVG, background</td>
-				<td><Image alt="img bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
-				<td class="check">CSS bg behind SVG</td>
+				<td>SVG input, no format (default)</td>
+				<td class="cb"><Image alt="svg default" src="../assets/tiger.svg" /></td>
+				<td class="check">Output stays SVG</td>
 			</tr>
 			<tr>
-				<td>SVG, bg + bgDark</td>
+				<td>JPEG input, no format (default)</td>
+				<td><Image alt="jpeg default" src="../assets/test.jpeg" /></td>
+				<td class="check">Output stays JPEG</td>
+			</tr>
+			<tr>
+				<td>SVG input, format="webp"</td>
+				<td class="cb"><Image alt="svg webp" format="webp" src="../assets/tiger.svg" /></td>
+				<td class="check">Rasterized WebP</td>
+			</tr>
+			<tr>
+				<td>SVG input, format="jpg"</td>
+				<td><Image alt="svg jpg" format="jpg" src="../assets/tiger.svg" /></td>
+				<td class="check">Flattened JPEG (black bg)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>3. Background compositing</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>SVG default, background (CSS only)</td>
+				<td><Image alt="img bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+				<td class="check">CSS bg behind transparent SVG</td>
+			</tr>
+			<tr>
+				<td>SVG default, bg + bgDark (CSS only)</td>
 				<td
 					><Image
 						alt="img bgdark"
@@ -95,10 +127,184 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 				>
 				<td class="check">CSS light-dark() bg</td>
 			</tr>
+			<tr>
+				<td>SVG → jpg, background (composited)</td>
+				<td
+					><Image
+						alt="svg jpg bg"
+						background="#e8e4d0"
+						format="jpg"
+						src="../assets/tiger.svg"
+					/></td
+				>
+				<td class="check">Beige baked into pixels</td>
+			</tr>
+			<tr>
+				<td>SVG → jpg, bg + bgDark</td>
+				<td
+					><Image
+						alt="svg jpg bgdark"
+						background="#e8e4d0"
+						backgroundDark="#2a2520"
+						format="jpg"
+						src="../assets/tiger.svg"
+					/></td
+				>
+				<td class="check">Beige baked, CSS overrides in dark (no Image variant)</td>
+			</tr>
 		</tbody>
 	</table>
 
-	<h2>3. Caption &amp; credit</h2>
+	<h2>4. Layout modes</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>layout="constrained" (default via config)</td>
+				<td><Image alt="constrained default" src="../assets/test.jpeg" width={320} /></td>
+				<td class="check">Scales with container</td>
+			</tr>
+			<tr>
+				<td>layout="constrained"</td>
+				<td><Image alt="constrained" layout="constrained" src="../assets/test.jpeg" /></td>
+				<td class="check">Max width capped</td>
+			</tr>
+			<tr>
+				<td>layout="fixed"</td>
+				<td><Image alt="fixed" layout="fixed" src="../assets/test.jpeg" /></td>
+				<td class="check">Fixed size, no scaling</td>
+			</tr>
+			<tr>
+				<td>layout="full-width"</td>
+				<td><Image alt="full-width" layout="full-width" src="../assets/test.jpeg" /></td>
+				<td class="check">Fills container width</td>
+			</tr>
+			<tr>
+				<td>layout="none"</td>
+				<td><Image alt="none" layout="none" src="../assets/test.jpeg" /></td>
+				<td class="check">No layout styles</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>5. Fit &amp; position</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>fit="cover"</td>
+				<td
+					><Image
+						alt="cover"
+						fit="cover"
+						layout="constrained"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Cropped to fill</td>
+			</tr>
+			<tr>
+				<td>fit="contain"</td>
+				<td
+					><Image
+						alt="contain"
+						fit="contain"
+						layout="constrained"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Letterbox to fit</td>
+			</tr>
+			<tr>
+				<td>fit="cover" position="top"</td>
+				<td
+					><Image
+						alt="cover top"
+						fit="cover"
+						layout="constrained"
+						position="top"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Top edge visible</td>
+			</tr>
+			<tr>
+				<td>fit="cover" position="bottom"</td>
+				<td
+					><Image
+						alt="cover bottom"
+						fit="cover"
+						layout="constrained"
+						position="bottom"
+						src="../assets/test.jpeg"
+						widths={[160]}
+					/></td
+				>
+				<td class="check">Bottom edge visible</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>6. Loading &amp; decoding</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>loading="eager"</td>
+				<td><Image alt="eager" loading="eager" src="../assets/test.jpeg" /></td>
+				<td class="check">No lazy attr in HTML</td>
+			</tr>
+			<tr>
+				<td>loading="lazy" (default)</td>
+				<td><Image alt="lazy" loading="lazy" src="../assets/test.jpeg" /></td>
+				<td class="check">lazy attr in HTML</td>
+			</tr>
+			<tr>
+				<td>decoding="async" (default)</td>
+				<td><Image alt="async" decoding="async" src="../assets/test.jpeg" /></td>
+				<td class="check">async attr in HTML</td>
+			</tr>
+			<tr>
+				<td>decoding="sync"</td>
+				<td><Image alt="sync" decoding="sync" src="../assets/test.jpeg" /></td>
+				<td class="check">sync attr in HTML</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>7. Densities &amp; widths</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>densities={'{[1, 2]}'}</td>
+				<td><Image alt="densities" densities={[1, 2]} src="../assets/test.jpeg" /></td>
+				<td class="check">1x and 2x srcset</td>
+			</tr>
+			<tr>
+				<td>widths={'{[100, 200, 400]}'}</td>
+				<td><Image alt="widths" src="../assets/test.jpeg" widths={[100, 200, 400]} /></td>
+				<td class="check">3 widths in srcset</td>
+			</tr>
+			<tr>
+				<td>widths + sizes</td>
+				<td
+					><Image
+						alt="widths sizes"
+						sizes="(max-width: 400px) 100px, 200px"
+						src="../assets/test.jpeg"
+						widths={[100, 200]}
+					/></td
+				>
+				<td class="check">Responsive sizes attr</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>8. Caption &amp; credit</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -148,7 +354,7 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 		</tbody>
 	</table>
 
-	<h2>4. Zoom</h2>
+	<h2>9. Zoom</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>

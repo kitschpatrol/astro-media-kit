@@ -1,178 +1,120 @@
 ---
-// Reimplements Astro's `<Picture>` component with:
-// - Dark mode support
-// - TODO Some other stuff
+// Reimplements Astro's `<Picture>` component as a clean superset of the built-in:
+// - Dark mode (via prefers-color-scheme media queries, or a custom selector)
+// - Transparency-aware fallback format selection
+// - Responsive srcset mirroring the `sizes` attribute onto each <source>
+// - Background compositing for opaque output formats
+// - Caption + Zoom wrappers from the media-kit
+//
+// Remote image sources are intentionally not supported — pass a local
+// ImageMetadata object, a { dark, light } pair, or an absolute file path.
 
 import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
-import * as mime from 'mrmime'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
-import { needsBackgroundDarkVariant, opaqueFormats } from '../utilities/dark-variant'
+import type { GetImageResult } from './utils/image-orchestration'
 import Caption from './Caption.astro'
 import {
-	isDarkLightImageMetadata,
-	isImageMetadataObject,
-	resolveImageSource,
-	unwrapImageMetadata,
-} from './utils/image'
+	buildBackgroundStyle,
+	buildSrcsetAttribute,
+	cloneImageMetadata,
+	compositingBackground,
+	defaultFormats,
+	extractScopedStyleClass,
+	getMimeType,
+	mergeLayoutDefaults,
+	needsBackgroundDarkVariant,
+	pickFallbackFormat,
+	propagateAstroCidAttributes,
+	resolveSrc,
+	resolveSrcToMetadata,
+	warnBackgroundDarkWithoutBackground,
+	warnWidthsWithoutSizes,
+} from './utils/image-orchestration'
 import Zoomer from './Zoomer.astro'
 
-type GetImageResult = Awaited<ReturnType<typeof getImage>>
-
-const defaultFormats = ['webp'] as const
-const defaultFallbackFormat = 'png' as const
-const specialFormatsFallback = ['gif', 'svg', 'jpg', 'jpeg'] as const
-
-// Inlined from Astro internals — trivial helpers, avoids importing from internal paths
-function isESMImportedImage(src: ImageMetadata | string): src is ImageMetadata {
-	return typeof src === 'object' || (typeof src === 'function' && 'src' in src)
-}
-
-async function resolveSrc(
-	src: ImageMetadata | Promise<{ default: ImageMetadata }> | string,
-): Promise<ImageMetadata | string> {
-	if (typeof src === 'object' && 'then' in src) {
-		const resolved = await src
-		return resolved.default
+/**
+ * Props for the `<Picture>` component — renders `<picture>` with dark mode,
+ * responsive sources, and zoom. Derives from Astro's `LocalImageProps` (all
+ * getImage-compatible fields like `densities`, `fit`, `height`, `layout`,
+ * `loading`, `position`, `quality`, `sizes`, `width`, `widths`, plus `<img>`
+ * HTMLAttributes) and mirrors the `formats` / `fallbackFormat` /
+ * `pictureAttributes` extras Astro's `<Picture>` adds on top. Media-kit
+ * extensions (`src` widening, dark mode, background, caption, zoom) follow.
+ */
+export type Props = Omit<CaptionProps, 'src'> &
+	Omit<LocalImageProps, 'height' | 'src' | 'width'> & {
+		/**
+		 * CSS background color for the image (visible behind transparent areas).
+		 */
+		background?: string | undefined
+		/**
+		 * Dark mode background color override. Uses `light-dark()` with `background`.
+		 */
+		backgroundDark?: string | undefined
+		/**
+		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 */
+		className?: string | undefined
+		/**
+		 * Dark mode switching strategy.
+		 * - `'media'` (default): `prefers-color-scheme` media queries on `<source>` elements.
+		 *   Follows the OS/browser color scheme preference.
+		 * - `'none'`: disables all dark mode behavior (image sources and backgrounds).
+		 * - Any other string: a CSS selector (e.g. `"[data-theme='dark']"`, `".dark"`) that
+		 *   triggers dark mode. Renders two `<picture>` elements toggled via injected CSS.
+		 *   Use this for frameworks like Starlight (`[data-theme='dark']`) or Tailwind (`.dark`)
+		 *   that control dark mode via a class or attribute rather than the OS preference.
+		 */
+		darkMode?: 'media' | 'none' | (string & {})
+		/**
+		 * Format for the `<img>` fallback `src`. Defaults to `'png'`, or the input
+		 * format itself when the input is `gif`, `svg`, `jpg`, or `jpeg` (so we
+		 * don't flatten animations, rasterize vectors, or double-encode JPEGs).
+		 */
+		fallbackFormat?: ImageOutputFormat | undefined
+		/**
+		 * Output formats for `<source>` elements.
+		 * @default ['webp']
+		 */
+		formats?: ImageOutputFormat[] | undefined
+		/**
+		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
+		 * numeric-only, since getImage() rejects string dimensions.
+		 */
+		height?: number | undefined
+		/**
+		 * HTML attributes spread onto the outer `<picture>` (or wrapping `<div>` in selector mode).
+		 */
+		pictureAttributes?: HTMLAttributes<'picture'> | undefined
+		/**
+		 * Image source: `ImageMetadata`, a `{ dark, light }` pair, or an absolute file path string.
+		 */
+		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		/**
+		 * Dark mode image variant. Rendered via `prefers-color-scheme` media query on `<source>`. Pass `false` to disable auto dark mode generation.
+		 */
+		srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
+		/**
+		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
+		 * numeric-only, since getImage() rejects string dimensions.
+		 */
+		width?: number | undefined
+		/**
+		 * Enable PhotoSwipe zoom. `true` uses default gallery, a string groups into a named gallery.
+		 * @default false
+		 */
+		zoom?: boolean | string | undefined
+		/**
+		 * CSS selector defining a gallery scope boundary. When set, galleries cannot
+		 * form across matching ancestors — items under separate ancestors matching
+		 * the selector become separate galleries. Ignored when `zoom` is `false`.
+		 */
+		zoomScope?: string | undefined
 	}
-
-	return src
-}
-
-/** Props for the `<Picture>` component — renders `<picture>` with dark mode, responsive sources, and zoom. */
-export type Props = {
-	/**
-	 * Alt text for the image. Required for accessibility.
-	 */
-	alt: string
-	/**
-	 * CSS background color for the image (visible behind transparent areas).
-	 */
-	background?: string | undefined
-	/**
-	 * Dark mode background color override. Uses `light-dark()` with `background`.
-	 */
-	backgroundDark?: string | undefined
-	/**
-	 * CSS class applied to the `<img>` element.
-	 */
-	class?: string | undefined
-	/**
-	 * JSX-style class name (passed by MDX). Merged with `class`.
-	 */
-	className?: string | undefined
-	/**
-	 * Attribution name for the media creator. Overrides XMP-extracted creator.
-	 */
-	creator?: CaptionProps['creator']
-	/**
-	 * Dark mode switching strategy.
-	 * - `'media'` (default): `prefers-color-scheme` media queries on `<source>` elements.
-	 *   Follows the OS/browser color scheme preference.
-	 * - `'none'`: disables all dark mode behavior (image sources and backgrounds).
-	 * - Any other string: a CSS selector (e.g. `"[data-theme='dark']"`, `".dark"`) that
-	 *   triggers dark mode. Renders two `<picture>` elements toggled via injected CSS.
-	 *   Use this for frameworks like Starlight (`[data-theme='dark']`) or Tailwind (`.dark`)
-	 *   that control dark mode via a class or attribute rather than the OS preference.
-	 */
-	darkMode?: 'media' | 'none' | (string & {})
-	/**
-	 * Image decoding hint.
-	 * @default 'sync'
-	 */
-	decoding?: 'async' | 'auto' | 'sync' | undefined
-	/**
-	 * Pixel density descriptors for `srcset` (e.g. `[1, 2]` or `['1x', '2x']`).
-	 */
-	densities?: Array<`${number}x` | number> | undefined
-	/**
-	 * Format for the `<img>` fallback `src`.
-	 * @default 'png'
-	 */
-	fallbackFormat?: ImageOutputFormat | undefined
-	/**
-	 * CSS `object-fit` value passed to Astro's image optimizer.
-	 */
-	fit?: string | undefined
-	/**
-	 * Output formats for `<source>` elements.
-	 * @default ['webp']
-	 */
-	formats?: ImageOutputFormat[] | undefined
-	/**
-	 * Display height in pixels. For `layout="fixed"` this is the rendered box; otherwise it's used with `width` for aspect-ratio. Falls back to the `ImageMetadata` intrinsic height when omitted.
-	 */
-	height?: number | undefined
-	/**
-	 * Astro image layout mode. Defaults to `image.layout` from `astro.config`, or `'none'`.
-	 * @see https://docs.astro.build/en/reference/configuration-reference/#imagelayout
-	 */
-	layout?: 'constrained' | 'fixed' | 'full-width' | 'none' | undefined
-	/**
-	 * Lazy-loading behavior.
-	 * @default 'lazy'
-	 */
-	loading?: 'eager' | 'lazy' | undefined
-	/**
-	 * Organization or publication to credit alongside the creator.
-	 */
-	organization?: CaptionProps['organization']
-	/**
-	 * HTML attributes spread onto the `<picture>` element.
-	 */
-	pictureAttributes?: HTMLAttributes<'picture'> | undefined
-	/**
-	 * CSS `object-position` value passed to Astro's image optimizer.
-	 */
-	position?: string | undefined
-	/**
-	 * Show the credit line in the caption.
-	 * @default true
-	 */
-	showCredit?: CaptionProps['showCredit']
-	/**
-	 * `sizes` attribute for responsive images. Auto-generated when using `layout`.
-	 */
-	sizes?: string | undefined
-	/**
-	 * Image source: `ImageMetadata`, a `{ dark, light }` pair, or an absolute file path string.
-	 */
-	src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
-	/**
-	 * Dark mode image variant. Rendered via `prefers-color-scheme` media query on `<source>`. Pass `false` to disable auto dark mode generation.
-	 */
-	srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
-	/**
-	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the credit line.
-	 */
-	type?: CaptionProps['type']
-	/**
-	 * Fallback media type when XMP Label tag is missing.
-	 * @default 'image'
-	 */
-	typeFallback?: CaptionProps['typeFallback']
-	/**
-	 * Display width in pixels. Seeds the `sizes` formula for `layout="constrained"` and the rendered box for `layout="fixed"`. Falls back to the `ImageMetadata` intrinsic width when omitted — usually too large for a constrained slot, so prefer to set this explicitly.
-	 */
-	width?: number | undefined
-	/**
-	 * Explicit widths (in pixels) for `srcset` generation.
-	 */
-	widths?: number[] | undefined
-	/**
-	 * Enable PhotoSwipe zoom. `true` uses default gallery, a string groups into a named gallery.
-	 * @default false
-	 */
-	zoom?: boolean | string | undefined
-	/**
-	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
-	 * form across matching ancestors — items under separate ancestors matching
-	 * the selector become separate galleries. Ignored when `zoom` is `false`.
-	 */
-	zoomScope?: string | undefined
-}
 
 const {
 	alt,
@@ -214,19 +156,6 @@ if (isSelector && /[{}<>;]/.test(darkMode)) {
 // When darkMode='none', suppress all dark behavior
 const backgroundDark = isNone ? undefined : backgroundDarkProp
 
-// Resolve src — relative string paths only work with the mediaKit() auto-import integration.
-function assertNotRelativePath(path: unknown): void {
-	if (typeof path === 'string' && (path.startsWith('./') || path.startsWith('../'))) {
-		throw new Error(
-			`Picture received a relative string path "${path}". ` +
-				'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
-				'or import the image and pass the ImageMetadata object directly.',
-		)
-	}
-}
-
-assertNotRelativePath(src)
-
 // Normalize srcDark: true/undefined = auto, false = disabled, other = explicit source
 const darkDisabled = isNone || srcDarkProp === false
 const srcDarkSource = isNone
@@ -234,57 +163,20 @@ const srcDarkSource = isNone
 	: typeof srcDarkProp === 'boolean' || srcDarkProp === undefined
 		? undefined
 		: srcDarkProp
-assertNotRelativePath(srcDarkSource)
 
-let imageMetadata: ImageMetadata
-let imageMetadataDark: ImageMetadata | undefined
-
-if (isDarkLightImageMetadata(src)) {
-	// { dark, light } object passed directly
-	imageMetadata = src.light
-	if (srcDarkSource) {
-		imageMetadataDark = isImageMetadataObject(srcDarkSource)
-			? unwrapImageMetadata(srcDarkSource)
-			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
-	} else if (!darkDisabled) {
-		imageMetadataDark = src.dark
-	}
-} else if (isImageMetadataObject(src)) {
-	imageMetadata = unwrapImageMetadata(src)
-	if (srcDarkSource) {
-		imageMetadataDark = isImageMetadataObject(srcDarkSource)
-			? unwrapImageMetadata(srcDarkSource)
-			: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-				((await resolveImageSource(srcDarkSource)) as ImageMetadata)
-	}
-} else {
-	// String path
-	const resolved = srcDarkSource
-		? await resolveImageSource(src, srcDarkSource)
-		: await resolveImageSource(src)
-
-	if (isDarkLightImageMetadata(resolved)) {
-		imageMetadata = resolved.light
-		imageMetadataDark = darkDisabled ? undefined : resolved.dark
-	} else {
-		imageMetadata = resolved
-	}
-}
+const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(src, srcDarkSource, {
+	componentName: 'Picture',
+	darkDisabled,
+})
 
 // When input is SVG and user hasn't explicitly set formats, keep SVG format
 // to preserve vector quality (converting SVG → webp defeats the purpose).
 const formats =
 	formatsProp ?? (imageMetadata.format === 'svg' ? (['svg'] as const) : defaultFormats)
 
-// Props to pass to getImage
-const getImageProps = {
-	...imageProps,
-}
-
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
-const scopedStyleClass = className?.match(/\bastro-\w{8}\b/)?.[0]
+const scopedStyleClass = extractScopedStyleClass(className)
 if (scopedStyleClass) {
 	pictureAttributes.class = pictureAttributes.class
 		? `${pictureAttributes.class} ${scopedStyleClass}`
@@ -292,31 +184,10 @@ if (scopedStyleClass) {
 }
 
 // Handle responsive layout (same as Astro's Picture)
-const layout = imageProps.layout ?? imageConfig.layout ?? 'none'
-const useResponsive = layout !== 'none'
-
-if (useResponsive) {
-	getImageProps.layout ??= imageConfig.layout
-	getImageProps.fit ??= imageConfig.objectFit ?? 'cover'
-	getImageProps.position ??= imageConfig.objectPosition ?? 'center'
-} else if (imageConfig.objectFit ?? imageConfig.objectPosition) {
-	getImageProps.fit ??= imageConfig.objectFit
-	getImageProps.position ??= imageConfig.objectPosition
-}
+const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
 // Propagate data-astro-cid-* attributes to picture element
-for (const key in getImageProps) {
-	if (key.startsWith('data-astro-cid')) {
-		// @ts-expect-error Astro island props aren't typed
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- dynamic key access requires assertion
-		pictureAttributes[key] = getImageProps[key as keyof typeof getImageProps]
-	}
-}
-
-// Only pass background to getImage for opaque formats (JPEG) where transparency is lost
-function compositingBackground(format: string, bg: string | undefined): Record<string, string> {
-	return bg && opaqueFormats.has(format) ? { background: bg } : {}
-}
+propagateAstroCidAttributes(getImageProps, pictureAttributes)
 
 // Generate optimized images for each format (light variant)
 const originalSrc = await resolveSrc(imageMetadata)
@@ -357,22 +228,10 @@ if (needsDarkVariant) {
 }
 
 // Clone src object to avoid Astro thinking the image is used outside optimization pipeline
-// eslint-disable-next-line ts/no-unsafe-assignment -- clone is a private undocumented prop
-const clonedSrc = isESMImportedImage(originalSrc)
-	? // @ts-expect-error clone is a private prop on ImageMetadata
-		(originalSrc.clone ?? originalSrc)
-	: originalSrc
+const clonedSrc = cloneImageMetadata(originalSrc)
 
-// Determine fallback format
-let resultFallbackFormat = fallbackFormatProp ?? defaultFallbackFormat
-if (
-	!fallbackFormatProp &&
-	// eslint-disable-next-line ts/no-unsafe-argument -- clonedSrc type is narrowed by isESMImportedImage but ESLint doesn't see it
-	isESMImportedImage(clonedSrc) &&
-	(specialFormatsFallback as readonly string[]).includes(clonedSrc.format)
-) {
-	resultFallbackFormat = clonedSrc.format
-}
+// Determine fallback format (transparency-aware)
+const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
@@ -459,62 +318,27 @@ const captionProps: CaptionProps = {
 	typeFallback,
 }
 
-// Helper to build srcset attribute for a source
-function buildSrcsetAttribute(image: GetImageResult): string {
-	const { densities, widths } = imageProps
-	if (densities ?? (!widths && !useResponsive)) {
-		return `${image.src}${image.srcSet.values.length > 0 ? `, ${image.srcSet.attribute}` : ''}`
-	}
+warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Picture')
+warnWidthsWithoutSizes(
+	imageMetadata.src,
+	{
+		densities: imageProps.densities ?? undefined,
+		sizes: imageProps.sizes ?? undefined,
+		widths: imageProps.widths ?? undefined,
+	},
+	useResponsive,
+	'Picture',
+)
 
-	return image.srcSet.attribute
-}
+const { dark: backgroundStyleDark, light: backgroundStyle } = buildBackgroundStyle({
+	background,
+	backgroundDark,
+	isSelector,
+})
 
-function getMimeType(image: GetImageResult): string {
-	return mime.lookup(image.options.format ?? image.src) ?? `image/${image.options.format}`
-}
-
-// Build inline background-color style for transparent images
-if (backgroundDark && !background) {
-	console.warn(
-		'[astro-media-kit] backgroundDark is set without background — light mode will be transparent.',
-	)
-}
-
-// Dev-only warning: width-descriptor srcset without `sizes` falls back to
-// `100vw`, so the browser downloads a variant sized for the full viewport —
-// usually much larger than the slot. `constrained`/`fixed`/`full-width`
-// layouts get `sizes` auto-generated by Astro; `none` + `widths` does not.
-if (
-	import.meta.env.DEV &&
-	imageProps.widths &&
-	imageProps.widths.length > 0 &&
-	!imageProps.densities &&
-	!imageProps.sizes &&
-	!useResponsive
-) {
-	console.warn(
-		`[astro-media-kit] Picture "${imageMetadata.src}" has \`widths\` but no \`sizes\` or responsive layout. Browser will assume \`sizes="100vw"\` and download a larger image than needed. Pass \`sizes=\` or use \`layout="constrained"\` with \`width=\`.`,
-	)
-}
-
-let backgroundStyle: string | undefined
-let backgroundStyleDark: string | undefined
-if (isSelector) {
-	// Selector mode: each <img> gets its own plain background-color
-	if (background) backgroundStyle = `background-color:${background}`
-	const darkBg = backgroundDark ?? background
-	if (darkBg) backgroundStyleDark = `background-color:${darkBg}`
-} else {
-	// Media mode (and none mode, where backgroundDark is already undefined)
-	// eslint-disable-next-line no-lonely-if
-	if (background && backgroundDark) {
-		backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
-	} else if (backgroundDark) {
-		backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
-	} else if (background) {
-		backgroundStyle = `background-color:${background}`
-	}
-}
+// Template-level srcset helper — closes over the relevant props so the template stays tidy
+const srcsetFor = (image: GetImageResult): string =>
+	buildSrcsetAttribute(image, imageProps, useResponsive)
 
 // Build injected <style> for selector mode
 let selectorStyle: string | undefined
@@ -533,7 +357,7 @@ if (isSelector && hasDarkMode) {
 						<picture class="amk-dark">
 							{optimizedImagesDark!.map((image) => (
 								<source
-									srcset={buildSrcsetAttribute(image)}
+									srcset={srcsetFor(image)}
 									type={getMimeType(image)}
 									{...sourceAdditionalAttributes}
 								/>
@@ -551,7 +375,7 @@ if (isSelector && hasDarkMode) {
 					<picture class="amk-light">
 						{optimizedImages.map((image) => (
 							<source
-								srcset={buildSrcsetAttribute(image)}
+								srcset={srcsetFor(image)}
 								type={getMimeType(image)}
 								{...sourceAdditionalAttributes}
 							/>
@@ -571,7 +395,7 @@ if (isSelector && hasDarkMode) {
 						optimizedImagesDark!.map((image) => (
 							<source
 								media="(prefers-color-scheme: dark)"
-								srcset={buildSrcsetAttribute(image)}
+								srcset={srcsetFor(image)}
 								type={getMimeType(image)}
 								{...sourceAdditionalAttributes}
 							/>
@@ -579,7 +403,7 @@ if (isSelector && hasDarkMode) {
 					{optimizedImages.map((image) => (
 						<source
 							media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
-							srcset={buildSrcsetAttribute(image)}
+							srcset={srcsetFor(image)}
 							type={getMimeType(image)}
 							{...sourceAdditionalAttributes}
 						/>

@@ -1,26 +1,46 @@
 ---
-// Simple image component wrapping Astro's built-in Image.
-// Accepts ImageMetadata or a string path. When given a { dark, light }
-// pair (e.g. from a .tldr import), uses the light variant — use the
-// Picture component for full dark mode support.
+// Reimplements Astro's `<Image>` component as a clean superset of the built-in:
+// - Transparency-aware fallback format selection (PNG/SVG/GIF stay in-format)
+// - Background compositing for opaque output formats (JPEG)
+// - Caption + Zoom wrappers from the media-kit
+//
+// For dark-mode image sources, use `<Picture>`. When given a `{ dark, light }`
+// pair, this component picks `.light` and emits a dev warning.
+//
+// Remote image sources are intentionally not supported — pass a local
+// ImageMetadata object or an absolute file path.
 
 import type { ImageMetadata } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
-import { Image as AstroImage } from 'astro:assets'
+import type { HTMLAttributes } from 'astro/types'
+import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { Props as CaptionProps } from './Caption.astro'
+import type { GetImageResult } from './utils/image-orchestration'
 import Caption from './Caption.astro'
+import { isDarkLightImageMetadata } from './utils/image'
 import {
-	isDarkLightImageMetadata,
-	isImageMetadataObject,
-	resolveImageSource,
-	unwrapImageMetadata,
-} from './utils/image'
+	buildBackgroundStyle,
+	cloneImageMetadata,
+	compositingBackground,
+	mergeLayoutDefaults,
+	pickFallbackFormat,
+	resolveSrc,
+	resolveSrcToMetadata,
+	warnBackgroundDarkWithoutBackground,
+	warnWidthsWithoutSizes,
+} from './utils/image-orchestration'
 import Zoomer from './Zoomer.astro'
 
-/** Props for the `<Image>` component — wraps Astro's `<Image>` with caption and zoom support. Removes `densities` and augments `src`. */
+/**
+ * Props for the `<Image>` component — renders a single `<img>` with caption and
+ * zoom support. Derives from Astro's `LocalImageProps` (all getImage-compatible
+ * fields like `densities`, `fit`, `height`, `layout`, `loading`, `position`,
+ * `quality`, `sizes`, `width`, `widths`, plus `<img>` HTMLAttributes). Media-kit
+ * extensions (`src` widening, background, caption, zoom) follow.
+ */
 export type Props = Omit<CaptionProps, 'src'> &
-	Omit<LocalImageProps, 'src'> & {
+	Omit<LocalImageProps, 'height' | 'src' | 'width'> & {
 		/**
 		 * CSS background color for the image (visible behind transparent areas).
 		 */
@@ -30,9 +50,25 @@ export type Props = Omit<CaptionProps, 'src'> &
 		 */
 		backgroundDark?: string | undefined
 		/**
-		 * Image source: an imported `ImageMetadata` object. (TODO: Can this also be an absolute file path string?)
+		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 */
+		className?: string | undefined
+		/**
+		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
+		 * numeric-only, since getImage() rejects string dimensions.
+		 */
+		height?: number | undefined
+		/**
+		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only
+		 * `.light` is used — use `<Picture>` for dark-mode image sources), or an
+		 * absolute file path string.
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		/**
+		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
+		 * numeric-only, since getImage() rejects string dimensions.
+		 */
+		width?: number | undefined
 		/**
 		 * Enable PhotoSwipe zoom. `true` uses default gallery, a string groups into a named gallery.
 		 * @default false
@@ -47,43 +83,86 @@ export type Props = Omit<CaptionProps, 'src'> &
 	}
 
 const {
+	alt,
 	background,
 	backgroundDark,
+	class: classFromAstro,
+	className: classFromJsx,
 	creator,
 	organization,
-	showCredit = true,
+	showCredit,
 	src,
 	type,
 	typeFallback = 'image',
 	zoom,
 	zoomScope,
-	...imageRestProps
+	...imageProps
 } = Astro.props
 
-// Default decoding and loading — decoding: 'sync' prevents flashes, loading: 'lazy' defers offscreen images
-// imageRestProps.decoding ??= 'sync'
-// imageRestProps.loading ??= 'lazy'
+// Merge class from both Astro-style `class` and JSX-style `className` props
+// (MDX may pass both; getImage() passes through `className` unfiltered)
+const className = classFromAstro ?? classFromJsx
 
-// Resolve src — if it's still a string at this point, either the mediaKit() integration
-// isn't registered (which auto-imports string paths), or it's an absolute filesystem path.
-// Relative paths like "../assets/foo.jpg" only work with the auto-import integration.
-if (typeof src === 'string' && (src.startsWith('./') || src.startsWith('../'))) {
-	throw new Error(
-		`Image received a relative string path "${src}". ` +
-			'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
-			'or import the image and pass the ImageMetadata object directly.',
+// Dev-only hint when a { dark, light } pair is passed — Image silently uses
+// `.light`, but the user probably meant to reach for `<Picture>` instead.
+if (import.meta.env.DEV && isDarkLightImageMetadata(src)) {
+	console.warn(
+		'[astro-media-kit] Image received a { dark, light } source — rendering the `.light` variant only. Use `<Picture>` for dark-mode image sources.',
 	)
 }
 
-// When given a { dark, light } pair (e.g. from a .tldr import with autoDarkMode),
-// use the light variant. For full dark mode support, use <Picture> instead.
-const resolvedImage = isDarkLightImageMetadata(src)
-	? src.light
-	: isImageMetadataObject(src)
-		? unwrapImageMetadata(src)
-		: await resolveImageSource(src)
+const { imageMetadata } = await resolveSrcToMetadata(src, undefined, {
+	componentName: 'Image',
+	darkDisabled: true,
+})
 
-const imageMetadata = isDarkLightImageMetadata(resolvedImage) ? resolvedImage.light : resolvedImage
+// Handle responsive layout (same as Astro's Image)
+const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
+
+// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
+const originalSrc = await resolveSrc(imageMetadata)
+const clonedSrc = cloneImageMetadata(originalSrc)
+
+// Transparency-aware fallback format: when the user doesn't pass `format`, pick
+// one based on the input — `gif`/`svg`/`jpg`/`jpeg` stay in-format, others → png.
+const outputFormat = pickFallbackFormat(imageProps.format, clonedSrc)
+
+const image: GetImageResult = await getImage({
+	...getImageProps,
+	...compositingBackground(outputFormat, background),
+	format: outputFormat,
+	src: clonedSrc,
+})
+
+warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Image')
+warnWidthsWithoutSizes(
+	imageMetadata.src,
+	{
+		densities: imageProps.densities ?? undefined,
+		sizes: imageProps.sizes ?? undefined,
+		widths: imageProps.widths ?? undefined,
+	},
+	useResponsive,
+	'Image',
+)
+
+const { light: backgroundStyle } = buildBackgroundStyle({
+	background,
+	backgroundDark,
+	isSelector: false,
+})
+
+// Assemble <img> attributes: let getImage's result attributes drive, pull
+// `class` off (we merge it via class:list), and add our superset markers.
+const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
+if (import.meta.env.DEV) {
+	imgAdditionalAttributes['data-image-component'] = 'true'
+}
+
+const { class: imgClassName, ...imgAttributes } = {
+	...imgAdditionalAttributes,
+	...image.attributes,
+}
 
 const captionProps: CaptionProps = {
 	creator,
@@ -93,46 +172,17 @@ const captionProps: CaptionProps = {
 	type,
 	typeFallback,
 }
-
-// Build inline background-color style for transparent images
-if (backgroundDark && !background) {
-	console.warn(
-		'[astro-media-kit] backgroundDark is set without background — light mode will be transparent.',
-	)
-}
-
-let backgroundStyle: string | undefined
-if (background && backgroundDark) {
-	backgroundStyle = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
-} else if (backgroundDark) {
-	backgroundStyle = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
-} else if (background) {
-	backgroundStyle = `background-color:${background}`
-}
-
-// Only pass background for compositing when the output format is opaque (JPEG)
-const opaqueFormats = new Set(['jpeg', 'jpg'])
-const outputFormat = imageRestProps.format ?? imageMetadata.format
-const compositingBackground = background && opaqueFormats.has(outputFormat) ? { background } : {}
-
-// Assemble props for AstroImage. The assertion is necessary because Astro's
-// Image component accepts LocalImageProps | RemoteImageProps, and TypeScript's
-// exactOptionalPropertyTypes can't reconcile spread props with union types.
-// See: https://github.com/withastro/astro/issues/10780
-
-// eslint-disable-next-line ts/consistent-type-assertions -- Astro #10780
-const astroImageProps = {
-	class: 'amk',
-	src: imageMetadata,
-	style: backgroundStyle,
-	...compositingBackground,
-	...imageRestProps,
-} as LocalImageProps
 ---
 
 <Caption {...captionProps}>
 	<Zoomer enabled={zoom} scope={zoomScope} slot="media-component">
-		<AstroImage {...astroImageProps} />
+		<img
+			alt={alt}
+			src={image.src}
+			{...imgAttributes}
+			class:list={[className, imgClassName, 'amk']}
+			style={backgroundStyle}
+		/>
 	</Zoomer>
 	<slot />
 </Caption>
