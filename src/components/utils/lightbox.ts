@@ -53,9 +53,13 @@ function createFloatingControls(): {
 	wrapper: HTMLElement
 } {
 	const wrapper = document.createElement('div')
-	wrapper.className = 'pswp__floating-controls'
-	// `data-unbound` drives opacity:0 (which can transition) so the bar
-	// fades in when binding completes rather than popping in post-open.
+	// `pswp__hide-on-close` wires the bar into PhotoSwipe's open/close
+	// opacity transition (driven by the `.pswp--ui-visible` class on the
+	// root), matching the fade-out behavior of the native close/arrow
+	// buttons. `data-unbound` drives opacity:0 while no video is bound —
+	// overrides `pswp__hide-on-close`'s ui-visible opacity:1 via later
+	// source order (same specificity).
+	wrapper.className = 'pswp__floating-controls pswp__hide-on-close'
 	wrapper.dataset.unbound = ''
 
 	const bar = document.createElement('media-control-bar')
@@ -136,10 +140,34 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (!floatingControls) return
 		floatingControls.wrapper.dataset.unbound = ''
 		floatingControls.bar.removeAttribute('mediacontroller')
+		// Clear JS property binding too — attribute and property are independent
+		// paths into media-chrome's controller association.
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome property not in types
+		;(floatingControls.bar as unknown as { mediaController: unknown }).mediaController =
+			// eslint-disable-next-line unicorn/no-null -- media-chrome accepts null to clear
+			null
 		if (autohideTimerId !== undefined) {
 			clearTimeout(autohideTimerId)
 			autohideTimerId = undefined
 		}
+	}
+
+	/**
+	 * Bind the floating bar directly to a controller element via media-chrome's
+	 * `mediaController` JS property. Unlike the `mediacontroller` attribute
+	 * (which resolves via `document.getElementById`), property binding works
+	 * with a detached controller — we use this on direct-entry so the bar can
+	 * fade in with the rest of the PhotoSwipe UI during the open animation,
+	 * instead of waiting for `appendHeavyContent` at openingAnimationEnd.
+	 */
+	const bindFloatingBar = (controller: HTMLElement): void => {
+		if (!floatingControls) return
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome property not in types
+		;(floatingControls.bar as unknown as { mediaController: HTMLElement }).mediaController =
+			controller
+		floatingControls.bar.removeAttribute('mediacontroller')
+		delete floatingControls.wrapper.dataset.unbound
+		markFloatingActive()
 	}
 
 	// --- Filters ---
@@ -330,6 +358,17 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
+		// If this content belongs to the slide that's about to become active,
+		// bind the floating bar now (before the open animation) so it fades
+		// in alongside the native arrows/close button. Property binding
+		// works even though `controller` isn't in the DOM yet — PhotoSwipe
+		// defers the attachment until `openingAnimationEnd`.
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- slide is a public field on Content, not in the types
+		const { slide } = content as unknown as { slide?: { isActive?: boolean } }
+		if (slide?.isActive) {
+			bindFloatingBar(controller)
+		}
+
 		// Sync playback position from inline player (HLS only — embed
 		// players don't expose currentTime reliably before playback).
 		if (videoElementTag === 'hls-video') {
@@ -365,14 +404,11 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 
 		const controller = content.element?.querySelector('media-controller')
-		if (!(controller instanceof HTMLElement) || !controller.isConnected) {
-			// Content not attached yet — will retry on appendHeavyContent.
-			return
-		}
-
-		floatingControls.bar.setAttribute('mediacontroller', controller.id)
-		delete floatingControls.wrapper.dataset.unbound
-		markFloatingActive()
+		if (!(controller instanceof HTMLElement)) return
+		// Bind via property — works whether or not the controller is in DOM
+		// yet (direct-entry's content.element is detached until
+		// openingAnimationEnd).
+		bindFloatingBar(controller)
 	}
 
 	lightbox.on('change', syncFloatingBar)

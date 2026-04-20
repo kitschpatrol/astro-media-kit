@@ -235,19 +235,61 @@ const sharedProps = {
 	   slide's <media-controller> via its `mediacontroller` attribute (see
 	   utils/lightbox.ts). `data-unbound` is set whenever the bar is not
 	   attached to a video slide's controller; `data-user-inactive` drives
-	   the autohide fade. Both drive opacity (rather than `display: none`)
-	   so the bar fades in/out smoothly. */
+	   the autohide fade. Opacity transition is inherited from
+	   `pswp__hide-on-close` so the fade timing/easing matches the native
+	   close/arrow buttons on open, close, and autohide. */
 	.pswp__floating-controls {
 		position: absolute;
 		z-index: 10;
 		inset: auto 0 0;
-		transition: opacity 0.2s ease;
+		/* Force the subtree onto its own GPU composite layer so opacity
+		   fades the final rendered result uniformly, instead of fading
+		   each semi-transparent child independently (which caused the
+		   dark rectangle around the bar mid-transition). `isolation`
+		   alone creates a stacking context but doesn't always promote
+		   to a layer in Chromium; `will-change: opacity` does. */
+		isolation: isolate;
+		will-change: opacity;
+		/* Legibility gradient behind the controls. Applied on the wrapper
+		   (light DOM, same compositing layer as the isolated subtree) so
+		   it fades as one with the bar — unlike the shadow-DOM bgs on the
+		   individual media-chrome elements which composite independently
+		   and caused the black-rect artifact. */
+		background: linear-gradient(to top, rgb(0 0 0 / 50%), transparent);
+		padding-top: 2rem;
+		/* Let clicks in the gradient area above the bar fall through to
+		   whatever's underneath (the video / pswp). Only the bar itself
+		   captures input. */
+		pointer-events: none;
+	}
+
+	.pswp__floating-controls media-control-bar {
+		pointer-events: auto;
+	}
+
+	/* Strip media-chrome's default semi-transparent dark backgrounds from
+	   the bar and its buttons/ranges. Each media-chrome element has its
+	   own shadow DOM that composites independently, so nested translucent
+	   layers cause a black rectangle artifact during the opacity fade.
+	   Flattening all descendants to transparent leaves only the icons /
+	   progress bar to fade, eliminating the rect. */
+	.pswp__floating-controls media-control-bar,
+	.pswp__floating-controls media-control-bar > * {
+		--media-control-background: transparent;
+		--media-control-hover-background: rgb(255 255 255 / 10%);
+		background: transparent;
 	}
 
 	.pswp__floating-controls[data-unbound],
 	.pswp__floating-controls[data-user-inactive] {
-		pointer-events: none;
 		opacity: 0;
+	}
+
+	/* Disable pointer-events on the bar too when hidden — otherwise the
+	   still-present but invisible bar would intercept clicks. */
+	.pswp__floating-controls[data-unbound] media-control-bar,
+	.pswp__floating-controls[data-user-inactive] media-control-bar {
+		pointer-events: none;
 	}
 </style>
 
