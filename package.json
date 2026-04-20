@@ -65,6 +65,7 @@
 		"mrmime": "^2.0.1",
 		"photoswipe": "^5.4.4",
 		"photoswipe-dynamic-caption-plugin": "^1.2.7",
+		"pretty-bytes": "^7.1.0",
 		"vimeo-video-element": "^1.7.1",
 		"youtube-video-element": "^1.9.0"
 	},
@@ -77,6 +78,7 @@
 		"happy-dom": "^20.9.0",
 		"node-addon-api": "^8.7.0",
 		"node-gyp": "^12.2.0",
+		"sharp": "^0.34.5",
 		"shx": "^0.4.0",
 		"typescript": "~6.0.3",
 		"vitest": "^4.1.4"

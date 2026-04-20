@@ -8,6 +8,7 @@ process.env.BROWSER = 'chromium'
 
 export default defineConfig({
 	image: {
+		layout: 'constrained',
 		responsiveStyles: true,
 	},
 	integrations: [
@@ -21,6 +22,7 @@ export default defineConfig({
 				},
 			},
 			tldraw: true,
+			watermark: true,
 		}),
 		mdxKit({
 			attributes: true,

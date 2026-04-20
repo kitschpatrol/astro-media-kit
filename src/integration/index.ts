@@ -3,6 +3,7 @@
 
 import type { AstroConfig, AstroIntegration } from 'astro'
 import { envField } from 'astro/config'
+import { fileURLToPath } from 'node:url'
 import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
 import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
@@ -18,6 +19,28 @@ export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from '
 export { tldrawDarkImport, transformAstroSource } from './auto-import'
 export type { TldrawConfig } from './tldraw'
 export type { TldrawImageOptions } from './tldraw'
+
+/**
+ * Configuration for the dev-mode image watermark overlay. When enabled, every
+ * variant emitted by Astro's image pipeline is stamped with a tiled label
+ * showing its pixel dimensions and encoded byte size, making it easy to confirm
+ * visually which srcset candidate the browser loaded. The stamped byte count is
+ * the pre-watermark size (i.e. what the variant would weigh without the
+ * overlay) — that is the honest debug number.
+ */
+export type WatermarkConfig = {
+	/**
+	 * Counter-clockwise tilt in degrees applied to each repeated label. Defaults
+	 * to `-30`.
+	 */
+	angle?: number
+	/** Master toggle when object form is passed. Defaults to `true`. */
+	enabled?: boolean
+	/** Skip variants smaller than this on either axis (px). Defaults to `96`. */
+	minDimension?: number
+	/** Label fill/stroke opacity (0–1). Defaults to `0.6`. */
+	opacity?: number
+}
 
 /**
  * Configuration for the astro-media-kit integration.
@@ -93,6 +116,18 @@ export type MediaKitConfig = {
 	 * @default false
 	 */
 	video?: boolean | Service | Service[]
+	/**
+	 * Stamp every responsive image variant with its pixel dimensions and encoded
+	 * byte size as a tiled text overlay, for visual debugging of which srcset
+	 * candidate the browser actually loaded. Registers a custom local image
+	 * service that wraps Astro's built-in sharp service.
+	 *
+	 * Intended for dev use — a warning is logged if enabled outside `astro dev`.
+	 * When `false` (the default), the image pipeline is left entirely untouched.
+	 *
+	 * @default false
+	 */
+	watermark?: boolean | WatermarkConfig
 }
 
 const DEFAULT_AUTO_IMPORT_ENTRIES: AutoImportConfig = 'src'
@@ -180,6 +215,15 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					? video
 					: [video]
 
+	const watermark = config?.watermark ?? false
+	const watermarkEnabled =
+		watermark !== false && (watermark === true || watermark.enabled !== false)
+	const watermarkResolved = {
+		angle: typeof watermark === 'object' ? (watermark.angle ?? -30) : -30,
+		minDimension: typeof watermark === 'object' ? (watermark.minDimension ?? 96) : 96,
+		opacity: typeof watermark === 'object' ? (watermark.opacity ?? 0.8) : 0.8,
+	}
+
 	return {
 		hooks: {
 			async 'astro:build:done'({ dir, logger }) {
@@ -194,7 +238,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 			'astro:config:done'({ config }) {
 				astroConfig = config
 			},
-			'astro:config:setup'({ updateConfig }) {
+			'astro:config:setup'({ command, logger, updateConfig }) {
 				if (videoServices.length > 0) {
 					const envSchemaForService: Record<
 						CredentialService,
@@ -251,6 +295,22 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 						vite: {
 							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
 							plugins: [vitePluginMediaKitTldraw(tldrawConfig) as never],
+						},
+					})
+				}
+
+				if (watermarkEnabled) {
+					if (command !== 'dev') {
+						logger.warn(
+							`watermark enabled outside dev (command: ${command}) — image variants will be stamped in the build output`,
+						)
+					}
+					updateConfig({
+						image: {
+							service: {
+								config: { mediaKitWatermark: watermarkResolved },
+								entrypoint: fileURLToPath(new URL('watermark-image-service.ts', import.meta.url)),
+							},
 						},
 					})
 				}
