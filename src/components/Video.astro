@@ -239,9 +239,7 @@ const sharedProps = {
 	   `pswp__hide-on-close` so the fade timing/easing matches the native
 	   close/arrow buttons on open, close, and autohide. */
 	.pswp__floating-controls {
-		position: absolute;
-		z-index: 10;
-		inset: auto 0 0;
+		will-change: opacity;
 		/* Force the subtree onto its own GPU composite layer so opacity
 		   fades the final rendered result uniformly, instead of fading
 		   each semi-transparent child independently (which caused the
@@ -249,7 +247,9 @@ const sharedProps = {
 		   alone creates a stacking context but doesn't always promote
 		   to a layer in Chromium; `will-change: opacity` does. */
 		isolation: isolate;
-		will-change: opacity;
+		position: absolute;
+		z-index: 10;
+		inset: auto 0 0;
 		/* Match the bar's default background using media-chrome's own
 		   CSS custom property, so user overrides of the variable (or the
 		   library's own future changes) propagate here too. The bg lives
@@ -264,19 +264,42 @@ const sharedProps = {
 	   the bar and its buttons/ranges. Each media-chrome element has its
 	   own shadow DOM that composites independently, so nested translucent
 	   layers cause a black rectangle artifact during the opacity fade.
-	   Flattening all descendants to transparent leaves only the icons /
-	   progress bar to fade, eliminating the rect. */
-	.pswp__floating-controls media-control-bar,
+	   Flattening all descendants to transparent via the CSS var leaves
+	   only the icons / progress bar to fade, eliminating the rect. On the
+	   bar itself we also set `background: transparent` in light DOM to
+	   belt-and-braces the composite layer. Children use only the var so
+	   their shadow-DOM `:host(:hover)` rule — which depends on the
+	   background being set from inside the shadow root — can still paint
+	   the hover highlight.
+
+	   `--media-control-bar-display: flex` stretches the bar to fill the
+	   wrapper's width so the time-range expands across the full viewport
+	   (media-chrome defaults the :host display to `inline-flex`). */
+	.pswp__floating-controls media-control-bar {
+		--media-control-background: transparent;
+		--media-control-hover-background: rgb(255 255 255 / 10%);
+		--media-control-bar-display: flex;
+		background: transparent;
+	}
+
 	.pswp__floating-controls media-control-bar > * {
 		--media-control-background: transparent;
 		--media-control-hover-background: rgb(255 255 255 / 10%);
-		background: transparent;
 	}
 
 	.pswp__floating-controls[data-unbound],
 	.pswp__floating-controls[data-user-inactive] {
 		pointer-events: none;
 		opacity: 0;
+	}
+
+	/* Suppress the hover-background while the lightbox is mid-zoom. Each
+	   media-chrome control composites its own translucent shadow-DOM layer;
+	   stacking those while the wrapper's opacity is animating produces a
+	   black-rect artifact. `data-transitioning` is set by lightbox.ts during
+	   opening/closing animations (see `openingAnimationStart` listener). */
+	.pswp__floating-controls[data-transitioning] media-control-bar > * {
+		--media-control-hover-background: transparent;
 	}
 </style>
 

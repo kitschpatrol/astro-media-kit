@@ -22,6 +22,7 @@ export default cspellConfig({
 		'pswp',
 		'reposts',
 		'soundcloud',
+		'unassociate',
 		'userinactive',
 		'youtu',
 		'userinactivechange',

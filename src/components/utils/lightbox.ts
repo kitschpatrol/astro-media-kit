@@ -38,6 +38,16 @@ type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
 const VIDEO_ELEMENT_SELECTOR = 'video, hls-video, youtube-video, vimeo-video'
 
+/**
+ * Shape of a `<media-controller>` instance including the runtime-only
+ * association methods that media-chrome exposes but doesn't declare in its
+ * public types.
+ */
+type MediaChromeHost = HTMLElement & {
+	associateElement(element: Element): void
+	unassociateElement(element: Element): void
+}
+
 /** Monotonic counter for unique media-controller ids across all lightbox instances. */
 let controllerIdCounter = 0
 
@@ -108,6 +118,32 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
 	return element as unknown as HTMLMediaElement
 }
 
+/**
+ * Tear down the hls.js instance attached to an `<hls-video>` element.
+ * `hls-video-element` does not destroy its `Hls` worker in
+ * `disconnectedCallback` (see hls-video-element.js — only `load()` calls
+ * `#destroy`), so when PhotoSwipe removes lightbox content the HLS worker
+ * keeps running and its segment fetches keep using bandwidth. Across repeat
+ * opens this compounds into a visible delay before the next video can start
+ * playing.
+ */
+function destroyHlsInstance(element: Element | null | undefined): void {
+	if (!element || element.tagName.toLowerCase() !== 'hls-video') return
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- `api` is a public (non-#) field on hls-video-element
+	const hlsHost = element as unknown as {
+		api?: null | { destroy(): void; detachMedia(): void }
+	}
+	if (!hlsHost.api) return
+	try {
+		hlsHost.api.detachMedia()
+		hlsHost.api.destroy()
+	} catch (error) {
+		console.warn('[astro-media-kit] Failed to destroy HLS instance:', error)
+	}
+
+	hlsHost.api = null // eslint-disable-line unicorn/no-null -- matches hls-video-element's own teardown
+}
+
 function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	const lightbox = new PhotoSwipeLightbox({
 		...options,
@@ -120,7 +156,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	let floatingControls: ReturnType<typeof createFloatingControls> | undefined
 	let autohideTimerId: ReturnType<typeof globalThis.setTimeout> | undefined
 	let pointerListenersCleanup: (() => void) | undefined
-
+	// Currently-bound controller for the floating bar. Tracked so we can
+	// `unassociateElement` on slide change / close.
+	let boundController: HTMLElement | undefined
 	// Autohide the floating bar based on pointer activity within the PhotoSwipe
 	// root rather than the in-slide `<media-controller>`. The controller only
 	// registers activity over the video itself — in fit mode, moving through
@@ -140,12 +178,13 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		if (!floatingControls) return
 		floatingControls.wrapper.dataset.unbound = ''
 		floatingControls.bar.removeAttribute('mediacontroller')
-		// Clear JS property binding too — attribute and property are independent
-		// paths into media-chrome's controller association.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome property not in types
-		;(floatingControls.bar as unknown as { mediaController: unknown }).mediaController =
-			// eslint-disable-next-line unicorn/no-null -- media-chrome accepts null to clear
-			null
+
+		if (boundController) {
+			// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
+			;(boundController as MediaChromeHost).unassociateElement(floatingControls.bar)
+			boundController = undefined
+		}
+
 		if (autohideTimerId !== undefined) {
 			clearTimeout(autohideTimerId)
 			autohideTimerId = undefined
@@ -153,18 +192,34 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	}
 
 	/**
-	 * Bind the floating bar directly to a controller element via media-chrome's
-	 * `mediaController` JS property. Unlike the `mediacontroller` attribute
-	 * (which resolves via `document.getElementById`), property binding works
-	 * with a detached controller — we use this on direct-entry so the bar can
-	 * fade in with the rest of the PhotoSwipe UI during the open animation,
-	 * instead of waiting for `appendHeavyContent` at openingAnimationEnd.
+	 * Bind the floating bar to a controller by calling `associateElement`
+	 * directly. `<media-control-bar>` only exposes the `mediacontroller`
+	 * attribute (no JS property setter), and that attribute path requires the
+	 * bar to be connected and the controller to be findable via
+	 * `getRootNode().getElementById()`. Calling `associateElement` directly
+	 * sidesteps that lookup.
+	 *
+	 * Callers must ensure the controller is already attached to the DOM —
+	 * see `syncFloatingBar`. An attached controller has its `mediaStore`
+	 * already initialized (media-controller.js creates it in
+	 * `connectedCallback`), so `associateElement` propagates current state
+	 * synchronously. The bar then renders with correct initial state (e.g.
+	 * the play icon, since the video is paused before playback starts) —
+	 * no visible flash of default slotted content.
 	 */
 	const bindFloatingBar = (controller: HTMLElement): void => {
 		if (!floatingControls) return
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome property not in types
-		;(floatingControls.bar as unknown as { mediaController: HTMLElement }).mediaController =
-			controller
+		if (boundController !== controller) {
+			if (boundController) {
+				// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
+				;(boundController as MediaChromeHost).unassociateElement(floatingControls.bar)
+			}
+
+			// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
+			;(controller as MediaChromeHost).associateElement(floatingControls.bar)
+			boundController = controller
+		}
+
 		floatingControls.bar.removeAttribute('mediacontroller')
 		delete floatingControls.wrapper.dataset.unbound
 		markFloatingActive()
@@ -271,6 +326,23 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 	})
 
+	// Track opening/closing zoom animations so the floating bar can suppress
+	// hover backgrounds while its wrapper opacity is animating. Each
+	// media-chrome control's shadow DOM composites its own translucent layer;
+	// stacking them mid-fade causes a black-rect artifact. `pswp--ui-visible`
+	// can't be used here — PhotoSwipe adds it at the *start* of the opening
+	// animation (it's the class that drives the pswp__hide-on-close fade), so
+	// it's on throughout the transition.
+	lightbox.on('openingAnimationStart', () => {
+		if (floatingControls) floatingControls.wrapper.dataset.transitioning = ''
+	})
+	lightbox.on('openingAnimationEnd', () => {
+		if (floatingControls) delete floatingControls.wrapper.dataset.transitioning
+	})
+	lightbox.on('closingAnimationStart', () => {
+		if (floatingControls) floatingControls.wrapper.dataset.transitioning = ''
+	})
+
 	// Update `showHideAnimationType` when navigating between slides in a mixed
 	// gallery so the close animation matches the current slide's type. Opening
 	// is handled in the `domItemData` filter above (runs before pswp init).
@@ -314,7 +386,15 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		const videoElement = document.createElement(videoElementTag)
 		videoElement.setAttribute('crossorigin', 'anonymous')
 		videoElement.setAttribute('playsinline', 'true')
-		videoElement.setAttribute('preload', 'metadata')
+		videoElement.setAttribute('preload', 'auto')
+		// Start muted so browser autoplay policies allow immediate playback
+		// when the lightbox opens. Without this, `video.play()` in
+		// `contentActivate` silently rejects on first open (no user gesture
+		// yet on the lightbox video itself) and the floating bar — bound to
+		// a paused video — shows the play icon for seconds before anything
+		// happens. The inline player is muted by default too, and the user
+		// can unmute via the floating control bar.
+		videoElement.setAttribute('muted', '')
 		if (videoPoster) videoElement.setAttribute('poster', videoPoster)
 
 		// Apply hls.js config before setting src (HLS-specific).
@@ -358,16 +438,12 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
-		// If this content belongs to the slide that's about to become active,
-		// bind the floating bar now (before the open animation) so it fades
-		// in alongside the native arrows/close button. Property binding
-		// works even though `controller` isn't in the DOM yet — PhotoSwipe
-		// defers the attachment until `openingAnimationEnd`.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- slide is a public field on Content, not in the types
-		const { slide } = content as unknown as { slide?: { isActive?: boolean } }
-		if (slide?.isActive) {
-			bindFloatingBar(controller)
-		}
+		// Binding happens later via `syncFloatingBar` on `appendHeavyContent`
+		// — only once the controller is actually connected to the DOM.
+		// Binding here would call `associateElement` on a detached controller,
+		// which silently propagates no state (mediaStore isn't created until
+		// `connectedCallback`), leaving the bar's receivers with default
+		// slotted content that briefly flashes once state finally arrives.
 
 		// Sync playback position from inline player (HLS only — embed
 		// players don't expose currentTime reliably before playback).
@@ -395,6 +471,12 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	//   `slide.appendHeavy()` bails out and `content.element` isn't in the
 	//   DOM yet. The later `appendHeavyContent` (at `openingAnimationEnd`)
 	//   completes the binding.
+	//
+	// We only bind once the controller is connected to the DOM. A detached
+	// controller's `mediaStore` doesn't exist yet (only created in
+	// `connectedCallback`) so `associateElement` propagates zero state,
+	// which leaves receiver attributes unset and causes a visible flash of
+	// default slotted content once state finally arrives.
 	const syncFloatingBar = (): void => {
 		if (!floatingControls) return
 		const content = lightbox.pswp?.currSlide?.content
@@ -404,30 +486,55 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 
 		const controller = content.element?.querySelector('media-controller')
-		if (!(controller instanceof HTMLElement)) return
-		// Bind via property — works whether or not the controller is in DOM
-		// yet (direct-entry's content.element is detached until
-		// openingAnimationEnd).
+		if (!(controller instanceof HTMLElement) || !controller.isConnected) return
 		bindFloatingBar(controller)
 	}
 
 	lightbox.on('change', syncFloatingBar)
 	lightbox.on('appendHeavyContent', syncFloatingBar)
 
+	// Kick off playback. Safe to call multiple times — `play()` is idempotent
+	// on an already-playing element. Surfaces rejection reasons (autoplay
+	// blocked, network error) instead of swallowing them.
+	const tryPlay = (video: HTMLMediaElement): void => {
+		const result = video.play()
+		// Older browsers may return undefined from play(); guard before .catch.
+		if (result && typeof result.catch === 'function') {
+			result.catch((error: unknown) => {
+				console.warn('[astro-media-kit] Lightbox video play() rejected:', error)
+			})
+		}
+	}
+
 	// Auto-play on activate, pause on deactivate. Separate from the bar
-	// binding above — this is purely video lifecycle.
+	// binding above — this is purely video lifecycle. On first open,
+	// `contentActivate` fires BEFORE the content wrapper is attached to the
+	// slide (attachment happens in `appendHeavyContent` at
+	// `openingAnimationEnd`). hls-video-element doesn't start HLS loading
+	// until the element is connected, so calling `play()` here has no
+	// effect on first-open. The `appendHeavyContent` handler below re-runs
+	// `tryPlay` once the element is in the DOM.
 	lightbox.on('contentActivate', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		const video = queryVideoElement(content.element)
-		if (video) {
-			void video.play()
-		}
+		if (video) tryPlay(video)
 
 		// Pause the inline player.
 		const inlineVideo = queryVideoElement(content.data.videoContainer)
 		if (inlineVideo && !inlineVideo.paused) {
 			inlineVideo.pause()
 		}
+	})
+
+	// Start playback once the video element is actually in the DOM. This is
+	// the critical autoplay moment on first open — before this, the
+	// hls-video-element hasn't initialized hls.js (it waits for
+	// `connectedCallback` / src attribute processing once connected).
+	lightbox.on('appendHeavyContent', ({ slide }) => {
+		const { content } = slide
+		if (!content || !isVideoData(content.data)) return
+		const video = queryVideoElement(content.element)
+		if (video && video.paused) tryPlay(video)
 	})
 
 	lightbox.on('contentDeactivate', ({ content }) => {
@@ -438,18 +545,26 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 	})
 
-	// Sync position back to inline player and clean up lightbox player.
+	// Sync position back to inline player and tear down the lightbox video.
+	// Destroying the hls.js instance here is critical — without it, every
+	// closed slide leaves a live HLS worker fetching segments in the
+	// background, compounding latency and delaying subsequent opens by
+	// seconds.
 	lightbox.on('contentDestroy', ({ content }) => {
 		if (!isVideoData(content.data)) return
 		syncBackToInline(content)
+		destroyHlsInstance(content.element?.querySelector(VIDEO_ELEMENT_SELECTOR))
 	})
 
 	lightbox.on('destroy', () => {
-		const { pswp } = lightbox
-		if (!pswp) return
-		const content = pswp.currSlide?.content
+		// Do NOT guard on `lightbox.pswp` here. PhotoSwipe may null `pswp`
+		// before dispatching `destroy`, and an early-return in that branch
+		// would skip cleanup — leaking `boundController`, the pointer
+		// listeners, and the `floatingControls` DOM node.
+		const content = lightbox.pswp?.currSlide?.content
 		if (content && isVideoData(content.data)) {
 			syncBackToInline(content)
+			destroyHlsInstance(content.element?.querySelector(VIDEO_ELEMENT_SELECTOR))
 		}
 
 		hideFloatingControls()
