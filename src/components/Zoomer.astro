@@ -108,6 +108,16 @@ if (enabled) {
 ---
 
 <style is:global>
+	/* Lock the page scroll while the lightbox is open without causing a layout
+	   shift. Both `amk-lock-scroll` and `--amk-scrollbar-width` are toggled
+	   from utils/lightbox.ts and gated by the `LOCK_PAGE_SCROLL` flag there.
+	   The padding compensates for the scrollbar's disappearance; the
+	   (position: fixed) lightbox still spans full viewport width. */
+	html.amk-lock-scroll {
+		overflow: hidden;
+		padding-right: var(--amk-scrollbar-width, 0px);
+	}
+
 	div.pswp-zoom,
 	a.pswp-zoom {
 		cursor: zoom-in;

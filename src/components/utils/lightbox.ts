@@ -19,6 +19,19 @@ import { resolveScopedGalleries } from './zoom-scope'
 type LightboxOptions = NonNullable<ConstructorParameters<typeof PhotoSwipeLightbox>[0]>
 
 /**
+ * Lock page scroll while the lightbox is open.
+ *
+ * When true, adds `amk-lock-scroll` to `<html>` on open and writes the
+ * measured scrollbar width to `--amk-scrollbar-width`. Zoomer.astro's global
+ * stylesheet applies `overflow: hidden` and a compensating `padding-right` —
+ * scrollbar disappears, no layout shift, and the (position: fixed) lightbox
+ * spans the full viewport width.
+ *
+ * Flip to false to leave page scroll untouched.
+ */
+const LOCK_PAGE_SCROLL = true
+
+/**
  * Per-item secondary zoom level. Reads `data-pswp-level` from the triggering
  * element — `'native'` zooms to 1:1 pixels, `'fill'` zooms to cover the
  * viewport, anything else (including absent) keeps the fitted view.
@@ -226,6 +239,17 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		markFloatingActive()
 	}
 
+	// --- Page scroll lock ---
+
+	// Measured per-open because devicePixelRatio / browser zoom can change
+	// scrollbar width at runtime. Gated by LOCK_PAGE_SCROLL above.
+	lightbox.on('beforeOpen', () => {
+		if (!LOCK_PAGE_SCROLL) return
+		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+		document.documentElement.style.setProperty('--amk-scrollbar-width', `${scrollbarWidth}px`)
+		document.documentElement.classList.add('amk-lock-scroll')
+	})
+
 	// --- Filters ---
 
 	// Extract data from DOM elements. Also sets `showHideAnimationType` on the
@@ -372,6 +396,16 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	})
 	lightbox.on('closingAnimationStart', () => {
 		if (floatingControls) floatingControls.wrapper.dataset.transitioning = ''
+
+		// Release page scroll lock at the START of the close animation rather
+		// than at destroy. System scrollbars can't be CSS-transitioned, so
+		// instead we hand them back while the lightbox is still fading on top
+		// — the closing opacity masks the scrollbar's reappearance. The
+		// (position: fixed) backdrop loses ~scrollbar-width on its right edge
+		// for the duration of the animation; usually invisible against a
+		// fading overlay. Cleanup still runs in `destroy` as a fallback.
+		document.documentElement.classList.remove('amk-lock-scroll')
+		document.documentElement.style.removeProperty('--amk-scrollbar-width')
 	})
 
 	// Update `showHideAnimationType` when navigating between slides in a mixed
@@ -605,6 +639,11 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		keyboardListenerCleanup = undefined
 		floatingControls?.wrapper.remove()
 		floatingControls = undefined
+
+		// Release page scroll lock. Safe to run unconditionally — no-op when
+		// the class/variable aren't set (LOCK_PAGE_SCROLL was false).
+		document.documentElement.classList.remove('amk-lock-scroll')
+		document.documentElement.style.removeProperty('--amk-scrollbar-width')
 	})
 
 	// Caption plugin: extract caption from the <figcaption> sibling of the
