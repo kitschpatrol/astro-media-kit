@@ -128,7 +128,7 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
  * playing.
  */
 function destroyHlsInstance(element: Element | null | undefined): void {
-	if (!element || element.tagName.toLowerCase() !== 'hls-video') return
+	if (element?.tagName.toLowerCase() !== 'hls-video') return
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- `api` is a public (non-#) field on hls-video-element
 	const hlsHost = element as unknown as {
 		api?: null | { destroy(): void; detachMedia(): void }
@@ -156,6 +156,7 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	let floatingControls: ReturnType<typeof createFloatingControls> | undefined
 	let autohideTimerId: ReturnType<typeof globalThis.setTimeout> | undefined
 	let pointerListenersCleanup: (() => void) | undefined
+	let keyboardListenerCleanup: (() => void) | undefined
 	// Currently-bound controller for the floating bar. Tracked so we can
 	// `unassociateElement` on slide change / close.
 	let boundController: HTMLElement | undefined
@@ -323,6 +324,36 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 				root.removeEventListener('pointermove', markFloatingActive)
 				root.removeEventListener('pointerdown', markFloatingActive)
 			}
+		}
+
+		// Space key toggles play/pause on the active video slide, and is
+		// swallowed on any slide so it doesn't scroll the page behind the
+		// lightbox. Attached to the document while the lightbox is open
+		// (uiRegister → destroy).
+		const handleKeydown = (event: KeyboardEvent): void => {
+			if (event.code !== 'Space' && event.key !== ' ') return
+			const { target } = event
+			if (
+				target instanceof HTMLElement &&
+				(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+			)
+				return
+			event.preventDefault()
+			const content = lightbox.pswp?.currSlide?.content
+			if (!content || !isVideoData(content.data)) return
+			const video = queryVideoElement(content.element)
+			if (!video) return
+			markFloatingActive()
+			if (video.paused) {
+				tryPlay(video)
+			} else {
+				video.pause()
+			}
+		}
+
+		document.addEventListener('keydown', handleKeydown)
+		keyboardListenerCleanup = (): void => {
+			document.removeEventListener('keydown', handleKeydown)
 		}
 	})
 
@@ -570,6 +601,8 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		hideFloatingControls()
 		pointerListenersCleanup?.()
 		pointerListenersCleanup = undefined
+		keyboardListenerCleanup?.()
+		keyboardListenerCleanup = undefined
 		floatingControls?.wrapper.remove()
 		floatingControls = undefined
 	})
