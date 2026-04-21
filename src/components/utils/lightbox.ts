@@ -21,11 +21,11 @@ type LightboxOptions = NonNullable<ConstructorParameters<typeof PhotoSwipeLightb
 /**
  * Lock page scroll while the lightbox is open.
  *
- * When true, adds `amk-lock-scroll` to `<html>` on open and writes the
- * measured scrollbar width to `--amk-scrollbar-width`. Zoomer.astro's global
- * stylesheet applies `overflow: hidden` and a compensating `padding-right` —
- * scrollbar disappears, no layout shift, and the (position: fixed) lightbox
- * spans the full viewport width.
+ * When true, adds `amk-lock-scroll` to `<html>` on open and writes the measured
+ * scrollbar width to `--amk-scrollbar-width`. Zoomer.astro's global stylesheet
+ * applies `overflow: hidden` and a compensating `padding-right` — scrollbar
+ * disappears, no layout shift, and the (position: fixed) lightbox spans the
+ * full viewport width.
  *
  * Flip to false to leave page scroll untouched.
  */
@@ -61,14 +61,15 @@ type MediaChromeHost = HTMLElement & {
 	unassociateElement(element: Element): void
 }
 
-/** Monotonic counter for unique media-controller ids across all lightbox instances. */
+/** Monotonic counter for unique media-controller ids across all lightbox
+instances. */
 let controllerIdCounter = 0
 
 /**
  * Build a floating control bar to be appended outside the PhotoSwipe zoom
  * transform (anchored to the viewport bottom). Bound to the active slide's
- * `<media-controller>` via the `mediacontroller` attribute, which is swapped
- * on each slide activation. Returns the wrapper element plus the control bar
+ * `<media-controller>` via the `mediacontroller` attribute, which is swapped on
+ * each slide activation. Returns the wrapper element plus the control bar
  * itself so callers can flip the binding.
  */
 function createFloatingControls(): {
@@ -135,10 +136,9 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
  * Tear down the hls.js instance attached to an `<hls-video>` element.
  * `hls-video-element` does not destroy its `Hls` worker in
  * `disconnectedCallback` (see hls-video-element.js — only `load()` calls
- * `#destroy`), so when PhotoSwipe removes lightbox content the HLS worker
- * keeps running and its segment fetches keep using bandwidth. Across repeat
- * opens this compounds into a visible delay before the next video can start
- * playing.
+ * `#destroy`), so when PhotoSwipe removes lightbox content the HLS worker keeps
+ * running and its segment fetches keep using bandwidth. Across repeat opens
+ * this compounds into a visible delay before the next video can start playing.
  */
 function destroyHlsInstance(element: Element | null | undefined): void {
 	if (element?.tagName.toLowerCase() !== 'hls-video') return
@@ -208,18 +208,18 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	/**
 	 * Bind the floating bar to a controller by calling `associateElement`
 	 * directly. `<media-control-bar>` only exposes the `mediacontroller`
-	 * attribute (no JS property setter), and that attribute path requires the
-	 * bar to be connected and the controller to be findable via
+	 * attribute (no JS property setter), and that attribute path requires the bar
+	 * to be connected and the controller to be findable via
 	 * `getRootNode().getElementById()`. Calling `associateElement` directly
 	 * sidesteps that lookup.
 	 *
-	 * Callers must ensure the controller is already attached to the DOM —
-	 * see `syncFloatingBar`. An attached controller has its `mediaStore`
-	 * already initialized (media-controller.js creates it in
-	 * `connectedCallback`), so `associateElement` propagates current state
-	 * synchronously. The bar then renders with correct initial state (e.g.
-	 * the play icon, since the video is paused before playback starts) —
-	 * no visible flash of default slotted content.
+	 * Callers must ensure the controller is already attached to the DOM — see
+	 * `syncFloatingBar`. An attached controller has its `mediaStore` already
+	 * initialized (media-controller.js creates it in `connectedCallback`), so
+	 * `associateElement` propagates current state synchronously. The bar then
+	 * renders with correct initial state (e.g. the play icon, since the video is
+	 * paused before playback starts) — no visible flash of default slotted
+	 * content.
 	 */
 	const bindFloatingBar = (controller: HTMLElement): void => {
 		if (!floatingControls) return
@@ -248,6 +248,27 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 		document.documentElement.style.setProperty('--amk-scrollbar-width', `${scrollbarWidth}px`)
 		document.documentElement.classList.add('amk-lock-scroll')
+	})
+
+	// Tag the slide's holder element for video-slide-specific CSS before the
+	// caption plugin measures the caption. Hooked to `calcSlideSize` (not
+	// `slideInit`) because `slide.holderElement` is still null in the Slide
+	// constructor — it's only assigned in `slide.append()` right before
+	// `calcSlideSize` dispatches. Our listener is registered before the
+	// caption plugin is constructed, so in event-emitter order we run first
+	// and the plugin's `getBoundingClientRect()` sees a caption that already
+	// has the video-specific `padding-bottom` applied.
+	//
+	// Uses `classList.toggle` rather than `.add` because PhotoSwipe recycles
+	// only three `itemHolder` elements (prev/curr/next) across the whole
+	// gallery — when a holder that previously rendered a video slide gets
+	// reassigned to an image slide during a swipe, `calcSlideSize` fires
+	// again for the new slide and this sync clears the stale class. Without
+	// the toggle, mixed galleries leave the video padding stuck on the
+	// wrong slides.
+	lightbox.on('calcSlideSize', ({ slide }) => {
+		if (!slide.holderElement) return
+		slide.holderElement.classList.toggle('pswp__item--video', slide.data.type === 'video')
 	})
 
 	// --- Filters ---

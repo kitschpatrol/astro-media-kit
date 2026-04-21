@@ -115,7 +115,7 @@ if (enabled) {
 	   (position: fixed) lightbox still spans full viewport width. */
 	html.amk-lock-scroll {
 		overflow: hidden;
-		padding-right: var(--amk-scrollbar-width, 0px);
+		padding-right: var(--amk-scrollbar-width, 0);
 	}
 
 	div.pswp-zoom,
@@ -166,6 +166,18 @@ if (enabled) {
 
 	.pswp__img.amk-fade-in {
 		animation: amk-pswp-img-fade-in 0.15s ease;
+	}
+
+	/* Balance caption spacing above/below the text. The dynamic-caption plugin
+	   defaults `--below` to `padding: 15px 0 0` (symmetric top, flush bottom);
+	   mirror the 15px on the bottom so the caption feels visually centered.
+	   `.pswp` prefix raises specificity above the plugin's single-class
+	   shorthand (which would otherwise reset padding-bottom to 0 depending on
+	   stylesheet order). `--mobile` and `--aside` already have symmetric
+	   padding in the plugin, so no rule needed for them here. */
+	.pswp .pswp__dynamic-caption--below,
+	.pswp .pswp__dynamic-caption--mobile {
+		padding-bottom: 15px;
 	}
 </style>
 

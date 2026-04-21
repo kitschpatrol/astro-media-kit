@@ -301,6 +301,25 @@ const sharedProps = {
 	.pswp__floating-controls[data-transitioning] media-control-bar > * {
 		--media-control-hover-background: transparent;
 	}
+
+	/* Reserve space beneath the caption for the floating control bar on
+	   video slides. The dynamic-caption plugin measures the caption with
+	   getBoundingClientRect() (which includes padding) and subtracts its
+	   height from the slide's pan area, so `padding-bottom` here propagates
+	   into fit-mode zoom: the video shrinks to leave room, and the empty
+	   padding space is where the absolute-positioned bar lands. Scoped to
+	   `--below` only — in `--aside` layouts the caption is sideways and the
+	   bar overlays the video rather than the caption. `--amk-lightbox-bar-height`
+	   can be overridden if you customize media-chrome button sizing. */
+	/* Video slides: stack the floating control bar height on top of the
+	   plugin's own top padding (15px for --below, 10px for --mobile) so the
+	   caption text keeps that same breathing room above the bar. The plugin
+	   measures caption height via getBoundingClientRect() which includes
+	   padding, so fit-mode zoom shrinks the video to make room automatically. */
+	.pswp__item--video .pswp__dynamic-caption--below,
+	.pswp__item--video .pswp__dynamic-caption--mobile {
+		padding-bottom: calc(15px + var(--amk-lightbox-bar-height, 44px));
+	}
 </style>
 
 {
