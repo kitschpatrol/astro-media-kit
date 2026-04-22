@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-unnecessary-condition */
 /* eslint-disable ts/no-restricted-types */
 /**
  * Shared PhotoSwipe lightbox initialization for both image (Zoomer) and video
@@ -32,6 +33,23 @@ type LightboxOptions = NonNullable<ConstructorParameters<typeof PhotoSwipeLightb
 const LOCK_PAGE_SCROLL = true
 
 /**
+ * Enable the horizontal swipe/drag navigation gesture on single-item
+ * lightboxes.
+ *
+ * PhotoSwipe's drag handler shifts the main scroll on horizontal drag
+ * regardless of item count, producing a rubber-band bounce when there is
+ * nothing to navigate to. On multi-item galleries this is useful swipe
+ * navigation; on single-item lightboxes it's visually noisy for no functional
+ * gain.
+ *
+ * When false (default), single-item lightboxes intercept drag-originated
+ * main-scroll moves. Other gestures (pinch-zoom, zoomed pan, vertical
+ * drag-to-close, tap) are unaffected. Multi-item galleries always allow swipe
+ * navigation regardless of this flag.
+ */
+const ENABLE_SWIPE_GESTURE_ON_SINGLE_ITEM_LIGHTBOXES = false
+
+/**
  * Per-item secondary zoom level. Reads `data-pswp-level` from the triggering
  * element — `'native'` zooms to 1:1 pixels, `'fill'` zooms to cover the
  * viewport, anything else (including absent) keeps the fitted view.
@@ -39,8 +57,12 @@ const LOCK_PAGE_SCROLL = true
 const secondaryZoomLevel: LightboxOptions['secondaryZoomLevel'] = (zoomLevelObject) => {
 	const { element } = zoomLevelObject.itemData
 	if (element instanceof HTMLElement) {
-		if (element.dataset.pswpLevel === 'native') return 1
-		if (element.dataset.pswpLevel === 'fill') return zoomLevelObject.fill
+		if (element.dataset.pswpLevel === 'native') {
+			return 1
+		}
+		if (element.dataset.pswpLevel === 'fill') {
+			return zoomLevelObject.fill
+		}
 	}
 
 	return zoomLevelObject.fit
@@ -61,8 +83,10 @@ type MediaChromeHost = HTMLElement & {
 	unassociateElement(element: Element): void
 }
 
-/** Monotonic counter for unique media-controller ids across all lightbox
-instances. */
+/**
+ * Monotonic counter for unique media-controller ids across all lightbox
+ * instances.
+ */
 let controllerIdCounter = 0
 
 /**
@@ -124,10 +148,14 @@ function isVideoData(data: Record<string, unknown>): data is Record<string, unkn
  */
 function queryVideoElement(root: Element | null | undefined): HTMLMediaElement | null {
 	const element = root?.querySelector(VIDEO_ELEMENT_SELECTOR)
-	if (element instanceof HTMLMediaElement) return element
+	if (element instanceof HTMLMediaElement) {
+		return element
+	}
 	// Custom video elements extend HTMLElement with play/pause/currentTime via
 	// CustomVideoElement proxy — safe to treat as HTMLMediaElement.
-	if (!element) return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
+	if (!element) {
+		return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
+	}
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- CustomVideoElement proxies HTMLMediaElement API
 	return element as unknown as HTMLMediaElement
 }
@@ -141,12 +169,16 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
  * this compounds into a visible delay before the next video can start playing.
  */
 function destroyHlsInstance(element: Element | null | undefined): void {
-	if (element?.tagName.toLowerCase() !== 'hls-video') return
+	if (element?.tagName.toLowerCase() !== 'hls-video') {
+		return
+	}
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- `api` is a public (non-#) field on hls-video-element
 	const hlsHost = element as unknown as {
 		api?: null | { destroy(): void; detachMedia(): void }
 	}
-	if (!hlsHost.api) return
+	if (!hlsHost.api) {
+		return
+	}
 	try {
 		hlsHost.api.detachMedia()
 		hlsHost.api.destroy()
@@ -157,11 +189,47 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 	hlsHost.api = null // eslint-disable-line unicorn/no-null -- matches hls-video-element's own teardown
 }
 
-function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
+/**
+ * Kick off playback. Safe to call multiple times — `play()` is idempotent on
+ * an already-playing element. Surfaces rejection reasons (autoplay blocked,
+ * network error) instead of swallowing them.
+ */
+function tryPlay(video: HTMLMediaElement): void {
+	video.play().catch((error: unknown) => {
+		console.warn('[astro-media-kit] Lightbox video play() rejected:', error)
+	})
+}
+
+function createLightbox(
+	options: LightboxOptions,
+	{ singleItem = false }: { singleItem?: boolean } = {},
+): PhotoSwipeLightbox {
 	const lightbox = new PhotoSwipeLightbox({
 		...options,
 		pswpModule: async () => import('photoswipe'),
 	})
+
+	// Disable drag-to-navigate on single-item lightboxes by wrapping
+	// `mainScroll.moveTo` so drag-originated calls (second arg truthy) become
+	// no-ops. Non-drag calls — initial positioning, programmatic slide
+	// changes, and open/close animations — pass through unchanged. Hooked on
+	// `bindEvents` because `pswp.mainScroll` is instantiated during init by
+	// that point.
+	if (singleItem && !ENABLE_SWIPE_GESTURE_ON_SINGLE_ITEM_LIGHTBOXES) {
+		lightbox.on('bindEvents', () => {
+			const { pswp } = lightbox
+			if (!pswp?.mainScroll) {
+				return
+			}
+			const originalMoveTo = pswp.mainScroll.moveTo.bind(pswp.mainScroll)
+			pswp.mainScroll.moveTo = (x: number, dragging?: boolean): void => {
+				if (dragging) {
+					return
+				}
+				originalMoveTo(x, dragging)
+			}
+		})
+	}
 
 	// Floating control bar, lazily mounted when PhotoSwipe's UI is ready. Lives
 	// outside the slide zoom-wrap so it stays anchored to the viewport bottom
@@ -180,7 +248,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// reach the bar. Tracking pointer activity on the whole viewport fixes it.
 	const USER_INACTIVE_MS = 2000
 	const markFloatingActive = (): void => {
-		if (!floatingControls) return
+		if (!floatingControls) {
+			return
+		}
 		delete floatingControls.wrapper.dataset.userInactive
 		if (autohideTimerId !== undefined) clearTimeout(autohideTimerId)
 		autohideTimerId = globalThis.setTimeout(() => {
@@ -189,7 +259,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	}
 
 	const hideFloatingControls = (): void => {
-		if (!floatingControls) return
+		if (!floatingControls) {
+			return
+		}
 		floatingControls.wrapper.dataset.unbound = ''
 		floatingControls.bar.removeAttribute('mediacontroller')
 
@@ -222,7 +294,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	 * content.
 	 */
 	const bindFloatingBar = (controller: HTMLElement): void => {
-		if (!floatingControls) return
+		if (!floatingControls) {
+			return
+		}
 		if (boundController !== controller) {
 			if (boundController) {
 				// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
@@ -244,7 +318,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// Measured per-open because devicePixelRatio / browser zoom can change
 	// scrollbar width at runtime. Gated by LOCK_PAGE_SCROLL above.
 	lightbox.on('beforeOpen', () => {
-		if (!LOCK_PAGE_SCROLL) return
+		if (!LOCK_PAGE_SCROLL) {
+			return
+		}
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 		document.documentElement.style.setProperty('--amk-scrollbar-width', `${scrollbarWidth}px`)
 		document.documentElement.classList.add('amk-lock-scroll')
@@ -267,7 +343,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// the toggle, mixed galleries leave the video padding stuck on the
 	// wrong slides.
 	lightbox.on('calcSlideSize', ({ slide }) => {
-		if (!slide.holderElement) return
+		if (!slide.holderElement) {
+			return
+		}
 		slide.holderElement.classList.toggle('pswp__item--video', slide.data.type === 'video')
 	})
 
@@ -376,18 +454,25 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		// lightbox. Attached to the document while the lightbox is open
 		// (uiRegister → destroy).
 		const handleKeydown = (event: KeyboardEvent): void => {
-			if (event.code !== 'Space' && event.key !== ' ') return
+			if (event.code !== 'Space' && event.key !== ' ') {
+				return
+			}
 			const { target } = event
 			if (
 				target instanceof HTMLElement &&
 				(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-			)
+			) {
 				return
+			}
 			event.preventDefault()
 			const content = lightbox.pswp?.currSlide?.content
-			if (!content || !isVideoData(content.data)) return
+			if (!content || !isVideoData(content.data)) {
+				return
+			}
 			const video = queryVideoElement(content.element)
-			if (!video) return
+			if (!video) {
+				return
+			}
 			markFloatingActive()
 			if (video.paused) {
 				tryPlay(video)
@@ -434,7 +519,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// is handled in the `domItemData` filter above (runs before pswp init).
 	lightbox.on('change', () => {
 		const { pswp } = lightbox
-		if (!pswp?.currSlide) return
+		if (!pswp?.currSlide) {
+			return
+		}
 		const isSelfThumb = pswp.currSlide.data.selfThumbElement instanceof HTMLElement
 		pswp.options.showHideAnimationType = isSelfThumb ? 'fade' : 'zoom'
 	})
@@ -445,7 +532,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// animation plays reliably whether the image is cached or loads later.
 	lightbox.on('contentAppend', (event) => {
 		const { content } = event
-		if (!(content.data.selfThumbElement instanceof HTMLElement)) return
+		if (!(content.data.selfThumbElement instanceof HTMLElement)) {
+			return
+		}
 		const image = content.element
 		if (image instanceof HTMLImageElement) {
 			image.classList.add('amk-fade-in')
@@ -457,7 +546,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// Create a fresh video player in the lightbox.
 	lightbox.on('contentLoad', (event) => {
 		const { content } = event
-		if (!isVideoData(content.data)) return
+		if (!isVideoData(content.data)) {
+			return
+		}
 		event.preventDefault()
 
 		const {
@@ -564,7 +655,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// which leaves receiver attributes unset and causes a visible flash of
 	// default slotted content once state finally arrives.
 	const syncFloatingBar = (): void => {
-		if (!floatingControls) return
+		if (!floatingControls) {
+			return
+		}
 		const content = lightbox.pswp?.currSlide?.content
 		if (!content || !isVideoData(content.data)) {
 			hideFloatingControls()
@@ -572,25 +665,14 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 		}
 
 		const controller = content.element?.querySelector('media-controller')
-		if (!(controller instanceof HTMLElement) || !controller.isConnected) return
+		if (!(controller instanceof HTMLElement) || !controller.isConnected) {
+			return
+		}
 		bindFloatingBar(controller)
 	}
 
 	lightbox.on('change', syncFloatingBar)
 	lightbox.on('appendHeavyContent', syncFloatingBar)
-
-	// Kick off playback. Safe to call multiple times — `play()` is idempotent
-	// on an already-playing element. Surfaces rejection reasons (autoplay
-	// blocked, network error) instead of swallowing them.
-	const tryPlay = (video: HTMLMediaElement): void => {
-		const result = video.play()
-		// Older browsers may return undefined from play(); guard before .catch.
-		if (result && typeof result.catch === 'function') {
-			result.catch((error: unknown) => {
-				console.warn('[astro-media-kit] Lightbox video play() rejected:', error)
-			})
-		}
-	}
 
 	// Auto-play on activate, pause on deactivate. Separate from the bar
 	// binding above — this is purely video lifecycle. On first open,
@@ -601,7 +683,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// effect on first-open. The `appendHeavyContent` handler below re-runs
 	// `tryPlay` once the element is in the DOM.
 	lightbox.on('contentActivate', ({ content }) => {
-		if (!isVideoData(content.data)) return
+		if (!isVideoData(content.data)) {
+			return
+		}
 		const video = queryVideoElement(content.element)
 		if (video) tryPlay(video)
 
@@ -618,13 +702,17 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// `connectedCallback` / src attribute processing once connected).
 	lightbox.on('appendHeavyContent', ({ slide }) => {
 		const { content } = slide
-		if (!content || !isVideoData(content.data)) return
+		if (!content || !isVideoData(content.data)) {
+			return
+		}
 		const video = queryVideoElement(content.element)
-		if (video && video.paused) tryPlay(video)
+		if (video?.paused) tryPlay(video)
 	})
 
 	lightbox.on('contentDeactivate', ({ content }) => {
-		if (!isVideoData(content.data)) return
+		if (!isVideoData(content.data)) {
+			return
+		}
 		const video = queryVideoElement(content.element)
 		if (video && !video.paused) {
 			video.pause()
@@ -637,7 +725,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	// background, compounding latency and delaying subsequent opens by
 	// seconds.
 	lightbox.on('contentDestroy', ({ content }) => {
-		if (!isVideoData(content.data)) return
+		if (!isVideoData(content.data)) {
+			return
+		}
 		syncBackToInline(content)
 		destroyHlsInstance(content.element?.querySelector(VIDEO_ELEMENT_SELECTOR))
 	})
@@ -689,7 +779,9 @@ function createLightbox(options: LightboxOptions): PhotoSwipeLightbox {
 	}
 	const originalShowCaption = plugin.showCaption.bind(plugin)
 	plugin.showCaption = (slide: unknown) => {
-		if (!slide) return
+		if (!slide) {
+			return
+		}
 		originalShowCaption(slide)
 	}
 
@@ -704,9 +796,13 @@ function syncBackToInline(content: {
 	data: Record<string, unknown>
 	element?: HTMLElement | undefined
 }): void {
-	if (!isVideoData(content.data)) return
+	if (!isVideoData(content.data)) {
+		return
+	}
 	// Only sync for HLS — embed players handle their own state.
-	if (content.data.videoElement !== 'hls-video') return
+	if (content.data.videoElement !== 'hls-video') {
+		return
+	}
 	const lightboxVideo = queryVideoElement(content.element)
 	const inlineVideo = queryVideoElement(content.data.videoContainer)
 
@@ -720,12 +816,17 @@ function syncBackToInline(content: {
 // Resolve scoped galleries before collecting gallery names.
 resolveScopedGalleries()
 
-// Standalone items (zoom={true}, no gallery grouping).
-const standaloneLightbox = createLightbox({
-	gallery: '.pswp-zoom:not([data-pswp-gallery])',
-	secondaryZoomLevel,
-	zoom: false,
-})
+// Standalone items (zoom={true}, no gallery grouping). Each open passes the
+// clicked element as a single-item gallery via `loadAndOpen(0, { gallery })`,
+// so this lightbox is always single-item.
+const standaloneLightbox = createLightbox(
+	{
+		gallery: '.pswp-zoom:not([data-pswp-gallery])',
+		secondaryZoomLevel,
+		zoom: false,
+	},
+	{ singleItem: true },
+)
 
 // Grouped galleries — one lightbox per unique gallery name.
 const galleryNames = new Set(
@@ -738,16 +839,20 @@ const galleryNames = new Set(
 const galleryLightboxes = new Map<string, PhotoSwipeLightbox>()
 
 for (const name of galleryNames) {
-	const lb = createLightbox({
-		bgOpacity: 0.9,
-		children: `.pswp-zoom[data-pswp-gallery="${name}"]`,
-		counter: false,
-		gallery: 'body',
-		initialZoomLevel: 'fit',
-		loop: false,
-		secondaryZoomLevel,
-		zoom: false,
-	})
+	const itemCount = document.querySelectorAll(`.pswp-zoom[data-pswp-gallery="${name}"]`).length
+	const lb = createLightbox(
+		{
+			bgOpacity: 0.9,
+			children: `.pswp-zoom[data-pswp-gallery="${name}"]`,
+			counter: false,
+			gallery: 'body',
+			initialZoomLevel: 'fit',
+			loop: false,
+			secondaryZoomLevel,
+			zoom: false,
+		},
+		{ singleItem: itemCount === 1 },
+	)
 	galleryLightboxes.set(name, lb)
 }
 
@@ -773,13 +878,17 @@ for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-
 	trigger.addEventListener('click', (event) => {
 		event.stopPropagation()
 		const container = trigger.closest<HTMLElement>('.pswp-zoom')
-		if (!container) return
+		if (!container) {
+			return
+		}
 
 		const galleryName = container.dataset.pswpGallery
 
 		if (galleryName) {
 			const lb = galleryLightboxes.get(galleryName)
-			if (!lb) return
+			if (!lb) {
+				return
+			}
 			const children = [
 				...document.querySelectorAll<HTMLElement>(`.pswp-zoom[data-pswp-gallery="${galleryName}"]`),
 			]
