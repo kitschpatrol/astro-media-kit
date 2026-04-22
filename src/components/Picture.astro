@@ -6,8 +6,11 @@
 // - Background compositing for opaque output formats
 // - Caption + Zoom wrappers from the media-kit
 //
-// Remote image sources are intentionally not supported — pass a local
-// ImageMetadata object, a { dark, light } pair, or an absolute file path.
+// Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
+// `getImage()` + `inferSize`. Features that require local file bytes (XMP credit
+// extraction, background compositing, transparency-aware fallback, SVG format
+// preservation, and local/remote mixed dark-mode pairs) are skipped for remote
+// sources — dev warnings surface when those props are set.
 
 import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -19,11 +22,13 @@ import type { GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
+import { isRemoteImageSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
 	cloneImageMetadata,
 	compositingBackground,
+	defaultFallbackFormat,
 	defaultFormats,
 	extractScopedStyleClass,
 	getMimeType,
@@ -35,6 +40,7 @@ import {
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
+	warnRemoteIncompatibleProps,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
 import { toZoomerProps } from './zoom-props-map'
@@ -160,15 +166,47 @@ const srcDarkSource = isNone
 		? undefined
 		: srcDarkProp
 
-const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(src, srcDarkSource, {
-	componentName: 'Picture',
-	darkDisabled,
-})
+const isRemote = isRemoteImageSource(src)
+
+// Branch: remote URL sources skip metadata probing and use Astro's remote pipeline.
+let imageMetadata: ImageMetadata | undefined
+let imageMetadataDark: ImageMetadata | undefined
+let lightSrc: ImageMetadata | string
+let darkSrc: ImageMetadata | string | undefined
+let lightSrcLabel: string
+let captionSrc: ImageMetadata | string | undefined
+
+if (isRemote) {
+	const srcDarkIsLocal = srcDarkSource !== undefined && !isRemoteImageSource(srcDarkSource)
+	warnRemoteIncompatibleProps('Picture', {
+		background,
+		backgroundDark,
+		srcDarkIsLocal,
+	})
+	lightSrc = src
+	darkSrc =
+		darkDisabled || srcDarkSource === undefined || srcDarkIsLocal ? undefined : srcDarkSource
+	lightSrcLabel = src
+	captionSrc = undefined
+} else {
+	const resolved = await resolveSrcToMetadata(src, srcDarkSource, {
+		componentName: 'Picture',
+		darkDisabled,
+	})
+	imageMetadata = resolved.imageMetadata
+	imageMetadataDark = resolved.imageMetadataDark
+	lightSrc = imageMetadata
+	darkSrc = imageMetadataDark
+	lightSrcLabel = imageMetadata.src
+	captionSrc = imageMetadata
+}
 
 // When input is SVG and user hasn't explicitly set formats, keep SVG format
 // to preserve vector quality (converting SVG → webp defeats the purpose).
+// Remote sources skip this check since the input format is unknown.
 const formats =
-	formatsProp ?? (imageMetadata.format === 'svg' ? (['svg'] as const) : defaultFormats)
+	formatsProp ??
+	(!isRemote && imageMetadata?.format === 'svg' ? (['svg'] as const) : defaultFormats)
 
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
@@ -185,13 +223,20 @@ const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps,
 // Propagate data-astro-cid-* attributes to picture element
 propagateAstroCidAttributes(getImageProps, pictureAttributes)
 
+// For remote sources, default `inferSize: true` when neither explicit
+// dimensions nor `inferSize` were supplied.
+const hasDims = imageProps.width !== undefined && imageProps.height !== undefined
+// eslint-disable-next-line ts/no-unsafe-type-assertion -- inferSize isn't in LocalImageProps but getImage() accepts it for remote URLs
+const hasInferSize = (imageProps as { inferSize?: boolean }).inferSize !== undefined
+const remoteExtras = isRemote && !hasDims && !hasInferSize ? { inferSize: true } : {}
+
 // Generate optimized images for each format (light variant)
-const originalSrc = await resolveSrc(imageMetadata)
+const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
 			...getImageProps,
-			...compositingBackground(format, background),
+			...(isRemote ? remoteExtras : compositingBackground(format, background)),
 			densities: imageProps.densities,
 			format,
 			src: originalSrc,
@@ -203,17 +248,23 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 // Generate optimized images for dark variant when:
 // 1. A separate dark source image is provided (srcDark), or
 // 2. backgroundDark differs from background on an opaque format (same source, different composited bg)
-const needsDarkVariant =
-	imageMetadataDark ?? needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled)
+//    — skipped for remote sources (no compositing)
+const needsDarkVariant = isRemote
+	? Boolean(darkSrc)
+	: (darkSrc ?? needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled))
 let optimizedImagesDark: GetImageResult[] | undefined
 if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background
-	const originalSrcDark = imageMetadataDark ? await resolveSrc(imageMetadataDark) : originalSrc
+	const originalSrcDark = isRemote
+		? (darkSrc ?? originalSrc)
+		: darkSrc
+			? await resolveSrc(darkSrc)
+			: originalSrc
 	optimizedImagesDark = await Promise.all(
 		formats.map(async (format) =>
 			getImage({
 				...getImageProps,
-				...compositingBackground(format, darkBackground),
+				...(isRemote ? remoteExtras : compositingBackground(format, darkBackground)),
 				densities: imageProps.densities,
 				format,
 				src: originalSrcDark,
@@ -226,13 +277,17 @@ if (needsDarkVariant) {
 // Clone src object to avoid Astro thinking the image is used outside optimization pipeline
 const clonedSrc = cloneImageMetadata(originalSrc)
 
-// Determine fallback format (transparency-aware)
-const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
+// Determine fallback format. Remote: default to `defaultFallbackFormat` since
+// the input format is unknown; honor explicit `fallbackFormat`. Local:
+// transparency-aware selection based on input format.
+const resultFallbackFormat = isRemote
+	? (fallbackFormatProp ?? defaultFallbackFormat)
+	: pickFallbackFormat(fallbackFormatProp, clonedSrc)
 
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...getImageProps,
-	...compositingBackground(resultFallbackFormat, background),
+	...(isRemote ? remoteExtras : compositingBackground(resultFallbackFormat, background)),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
 	src: originalSrc,
@@ -245,10 +300,14 @@ const hasDarkMode = optimizedImagesDark !== undefined
 let fallbackImageDark: GetImageResult | undefined
 if (isSelector && hasDarkMode) {
 	const darkBackground = backgroundDark ?? background
-	const originalSrcDark = imageMetadataDark ? await resolveSrc(imageMetadataDark) : originalSrc
+	const originalSrcDark = isRemote
+		? (darkSrc ?? originalSrc)
+		: darkSrc
+			? await resolveSrc(darkSrc)
+			: originalSrc
 	fallbackImageDark = await getImage({
 		...getImageProps,
-		...compositingBackground(resultFallbackFormat, darkBackground),
+		...(isRemote ? remoteExtras : compositingBackground(resultFallbackFormat, darkBackground)),
 		densities: imageProps.densities,
 		format: resultFallbackFormat,
 		src: originalSrcDark,
@@ -316,12 +375,12 @@ if (fallbackImageDark) {
 
 const captionProps = toCaptionProps(
 	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
-	{ src: imageMetadata, typeFallback: 'image' },
+	{ src: captionSrc, typeFallback: 'image' },
 )
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Picture')
 warnWidthsWithoutSizes(
-	imageMetadata.src,
+	lightSrcLabel,
 	{
 		densities: imageProps.densities ?? undefined,
 		sizes: imageProps.sizes ?? undefined,

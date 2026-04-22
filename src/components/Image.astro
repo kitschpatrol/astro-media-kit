@@ -7,8 +7,10 @@
 // For dark-mode image sources, use `<Picture>`. When given a `{ dark, light }`
 // pair, this component picks `.light` and emits a dev warning.
 //
-// Remote image sources are intentionally not supported — pass a local
-// ImageMetadata object or an absolute file path.
+// Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
+// `getImage()` + `inferSize`. Features that require local file bytes (XMP credit
+// extraction, background compositing, transparency-aware fallback format) are
+// skipped for remote sources — dev warnings surface when those props are set.
 
 import type { ImageMetadata } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -20,7 +22,7 @@ import type { GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
-import { isDarkLightImageMetadata } from './utils/image'
+import { isDarkLightImageMetadata, isRemoteImageSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	cloneImageMetadata,
@@ -31,6 +33,7 @@ import {
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
+	warnRemoteIncompatibleProps,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
 import { toZoomerProps } from './zoom-props-map'
@@ -99,40 +102,68 @@ const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
 // (MDX may pass both; getImage() passes through `className` unfiltered)
 const className = classFromAstro ?? classFromJsx
 
+const isRemote = isRemoteImageSource(src)
+
+if (isRemote) {
+	warnRemoteIncompatibleProps('Image', { background, backgroundDark })
+}
+
 // Dev-only hint when a { dark, light } pair is passed — Image silently uses
 // `.light`, but the user probably meant to reach for `<Picture>` instead.
-if (import.meta.env.DEV && isDarkLightImageMetadata(src)) {
+if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(src)) {
 	console.warn(
 		'[astro-media-kit] Image received a { dark, light } source — rendering the `.light` variant only. Use `<Picture>` for dark-mode image sources.',
 	)
 }
 
-const { imageMetadata } = await resolveSrcToMetadata(src, undefined, {
-	componentName: 'Image',
-	darkDisabled: true,
-})
-
-// Handle responsive layout (same as Astro's Image)
+// Handle responsive layout (same as Astro's Image) — shared by both branches.
 const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
-// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
-const originalSrc = await resolveSrc(imageMetadata)
-const clonedSrc = cloneImageMetadata(originalSrc)
+let image: GetImageResult
+let imageMetadataSrc: string
+let captionSrc: ImageMetadata | string | undefined
 
-// Transparency-aware fallback format: when the user doesn't pass `format`, pick
-// one based on the input — `gif`/`svg`/`jpg`/`jpeg` stay in-format, others → png.
-const outputFormat = pickFallbackFormat(imageProps.format, clonedSrc)
+if (isRemote) {
+	// Remote: delegate to Astro's remote pipeline via getImage(). Default
+	// `inferSize: true` when the caller supplied neither explicit dimensions
+	// nor `inferSize` — preserves the "it just works" contract.
+	const hasDims = imageProps.width !== undefined && imageProps.height !== undefined
+	// eslint-disable-next-line ts/no-unsafe-type-assertion -- inferSize isn't in LocalImageProps but getImage() accepts it for remote URLs
+	const hasInferSize = (imageProps as { inferSize?: boolean }).inferSize !== undefined
+	image = await getImage({
+		...getImageProps,
+		...(hasDims || hasInferSize ? {} : { inferSize: true }),
+		src,
+	})
+	imageMetadataSrc = src
+	captionSrc = undefined
+} else {
+	const { imageMetadata } = await resolveSrcToMetadata(src, undefined, {
+		componentName: 'Image',
+		darkDisabled: true,
+	})
 
-const image: GetImageResult = await getImage({
-	...getImageProps,
-	...compositingBackground(outputFormat, background),
-	format: outputFormat,
-	src: clonedSrc,
-})
+	// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
+	const originalSrc = await resolveSrc(imageMetadata)
+	const clonedSrc = cloneImageMetadata(originalSrc)
+
+	// Transparency-aware fallback format: when the user doesn't pass `format`, pick
+	// one based on the input — `gif`/`svg`/`jpg`/`jpeg` stay in-format, others → png.
+	const outputFormat = pickFallbackFormat(imageProps.format, clonedSrc)
+
+	image = await getImage({
+		...getImageProps,
+		...compositingBackground(outputFormat, background),
+		format: outputFormat,
+		src: clonedSrc,
+	})
+	imageMetadataSrc = imageMetadata.src
+	captionSrc = imageMetadata
+}
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Image')
 warnWidthsWithoutSizes(
-	imageMetadata.src,
+	imageMetadataSrc,
 	{
 		densities: imageProps.densities ?? undefined,
 		sizes: imageProps.sizes ?? undefined,
@@ -177,7 +208,7 @@ if (resolvedSizes !== undefined) {
 
 const captionProps = toCaptionProps(
 	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
-	{ src: imageMetadata, typeFallback: 'image' },
+	{ src: captionSrc, typeFallback: 'image' },
 )
 ---
 

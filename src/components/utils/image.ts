@@ -4,6 +4,7 @@ import { parseHTML } from 'linkedom'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import { probeImageMetadata } from '../../utilities/image-probe'
 import { getAbsoluteFilePath } from '../../utilities/path'
+import { tryParseUrl } from './media'
 
 /**
  * Resolves an image source to ImageMetadata, with optional dark mode variant.
@@ -107,6 +108,15 @@ export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
 	// Fallback: extract known properties into a plain object
 	const { format, height, src: imgSrc, width } = src
 	return { format, height, src: imgSrc, width }
+}
+
+/**
+ * Checks if the given source is a remote `http(s)` URL string. Protocol-relative
+ * `//...` is not treated as remote — Astro's remote image pipeline requires an
+ * explicit protocol.
+ */
+export function isRemoteImageSource(src: unknown): src is string {
+	return typeof src === 'string' && tryParseUrl(src) !== undefined
 }
 
 /**

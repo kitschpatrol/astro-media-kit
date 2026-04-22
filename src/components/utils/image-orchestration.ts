@@ -366,4 +366,45 @@ export function warnBackgroundDarkWithoutBackground(
 	}
 }
 
+/**
+ * Dev-only warning emitted when a remote URL is passed with media-kit props
+ * that require local file bytes (background compositing, a `{ dark, light }`
+ * pair or local `ImageMetadata` override for `srcDark`). The affected feature
+ * is silently skipped — this warning is the user's breadcrumb.
+ */
+export function warnRemoteIncompatibleProps(
+	componentName: 'Image' | 'Picture',
+	conflicts: {
+		background?: unknown
+		backgroundDark?: unknown
+		pairSrc?: boolean
+		srcDarkIsLocal?: boolean
+	},
+): void {
+	if (!import.meta.env.DEV) return
+	if (conflicts.background !== undefined) {
+		console.warn(
+			`[astro-media-kit] ${componentName}: \`background\` is ignored for remote image sources — compositing requires a known input format. Skip \`background\` or use a local source.`,
+		)
+	}
+
+	if (conflicts.backgroundDark !== undefined) {
+		console.warn(
+			`[astro-media-kit] ${componentName}: \`backgroundDark\` is ignored for remote image sources — compositing requires a known input format. Skip \`backgroundDark\` or use a local source.`,
+		)
+	}
+
+	if (conflicts.pairSrc) {
+		console.warn(
+			`[astro-media-kit] ${componentName}: received a \`{ dark, light }\` pair mixed with a remote source. Pass either two remote URL strings (via \`src\` and \`srcDark\`) or two local ImageMetadata objects.`,
+		)
+	}
+
+	if (conflicts.srcDarkIsLocal) {
+		console.warn(
+			`[astro-media-kit] ${componentName}: \`srcDark\` is a local image but \`src\` is remote. Mixed local/remote dark pairs are not supported — \`srcDark\` is ignored.`,
+		)
+	}
+}
+
 export { needsBackgroundDarkVariant, opaqueFormats } from '../../utilities/dark-variant'

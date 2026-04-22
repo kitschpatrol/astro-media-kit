@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { isDarkLightImageMetadata, isImageMetadataObject } from '../src/components/utils/image'
+import {
+	isDarkLightImageMetadata,
+	isImageMetadataObject,
+	isRemoteImageSource,
+} from '../src/components/utils/image'
 
 const valid = { format: 'png', height: 100, src: '/image.png', width: 200 }
 
@@ -33,6 +37,31 @@ describe('isImageMetadataObject', () => {
 		for (const meta of ['not-an-object', null, { notSrc: true }]) {
 			expect(isImageMetadataObject({ meta })).toBe(false)
 		}
+	})
+})
+
+describe('isRemoteImageSource', () => {
+	it('accepts http and https URL strings', () => {
+		expect(isRemoteImageSource('https://example.com/image.jpg')).toBe(true)
+		expect(isRemoteImageSource('http://example.com/image.jpg')).toBe(true)
+	})
+
+	it('rejects absolute and relative file paths', () => {
+		expect(isRemoteImageSource('/absolute/path/image.jpg')).toBe(false)
+		expect(isRemoteImageSource('./relative/image.jpg')).toBe(false)
+		expect(isRemoteImageSource('../parent/image.jpg')).toBe(false)
+	})
+
+	it('rejects protocol-relative URLs', () => {
+		expect(isRemoteImageSource('//example.com/image.jpg')).toBe(false)
+	})
+
+	it('rejects non-string inputs', () => {
+		/* eslint-disable unicorn/no-null */
+		for (const input of [null, undefined, 42, true, {}, { src: 'https://x.com/y' }]) {
+			expect(isRemoteImageSource(input)).toBe(false)
+		}
+		/* eslint-enable unicorn/no-null */
 	})
 })
 
