@@ -1,5 +1,6 @@
 ---
 import Image from 'astro-media-kit/components/Image.astro'
+import Video from 'astro-media-kit/components/Video.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 ---
@@ -17,5 +18,6 @@ import { pages } from '../pages'
 	</ul>
 	<hr />
 	<Image alt="test" credit="Eric" src="../assets/test.jpeg" zoom="true" zoomLevel="native" />
+	<Video label="test2" service="vimeo" src="15722237" zoom="true" zoomLevel="native" />
 	<hr />
 </Layout>

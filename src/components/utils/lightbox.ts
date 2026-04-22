@@ -30,7 +30,7 @@ type LightboxOptions = NonNullable<ConstructorParameters<typeof PhotoSwipeLightb
  *
  * Flip to false to leave page scroll untouched.
  */
-const LOCK_PAGE_SCROLL = true
+const LOCK_PAGE_SCROLL = false
 
 /**
  * Enable the horizontal swipe/drag navigation gesture on single-item
@@ -88,6 +88,16 @@ type MediaChromeHost = HTMLElement & {
  * instances.
  */
 let controllerIdCounter = 0
+
+/**
+ * Tracks whether the lightbox player was playing at the moment it was
+ * deactivated, keyed by the inline player's container element. Read during
+ * `syncBackToInline` to decide whether to resume the inline player on close —
+ * `contentDeactivate` pauses the lightbox video before `contentDestroy` fires,
+ * so the paused/playing signal has to be captured earlier and stashed here.
+ * WeakMap so entries drop when the container element goes away.
+ */
+const wasPlayingMap = new WeakMap<HTMLElement, boolean>()
 
 /**
  * Build a floating control bar to be appended outside the PhotoSwipe zoom
@@ -190,8 +200,8 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 }
 
 /**
- * Kick off playback. Safe to call multiple times — `play()` is idempotent on
- * an already-playing element. Surfaces rejection reasons (autoplay blocked,
+ * Kick off playback. Safe to call multiple times — `play()` is idempotent on an
+ * already-playing element. Surfaces rejection reasons (autoplay blocked,
  * network error) instead of swallowing them.
  */
 function tryPlay(video: HTMLMediaElement): void {
@@ -622,14 +632,28 @@ function createLightbox(
 		// `connectedCallback`), leaving the bar's receivers with default
 		// slotted content that briefly flashes once state finally arrives.
 
-		// Sync playback position from inline player (HLS only — embed
-		// players don't expose currentTime reliably before playback).
-		if (videoElementTag === 'hls-video') {
-			const inlineVideo = queryVideoElement(videoContainer)
-			if (inlineVideo && inlineVideo.currentTime > 0 && 'currentTime' in videoElement) {
-				// eslint-disable-next-line ts/no-unsafe-type-assertion -- custom element (hls-video) exposes currentTime via CustomVideoElement proxy
-				;(videoElement as unknown as HTMLMediaElement).currentTime = inlineVideo.currentTime
+		// Sync playback position from the inline player. For hls-video the
+		// eager set lands on the custom element's internal buffer and is
+		// applied once the MediaSource is attached. For embed elements
+		// (vimeo-video-element / youtube-video-element) the setter stores the
+		// value and replays it after `loadComplete` resolves, but that promise
+		// only resolves after the iframe API fires `loadcomplete` — so add a
+		// one-shot event listener as a belt-and-braces fallback in case the
+		// eager set races the element's internal `#currentTime` initialization.
+		const inlineVideo = queryVideoElement(videoContainer)
+		const inlineCurrentTime = inlineVideo?.currentTime ?? 0
+		if (inlineCurrentTime > 0) {
+			// eslint-disable-next-line ts/no-unsafe-type-assertion -- all supported video elements expose currentTime via CustomVideoElement proxy
+			const proxiedVideo = videoElement as unknown as HTMLMediaElement
+			proxiedVideo.currentTime = inlineCurrentTime
+			const applySeek = (): void => {
+				proxiedVideo.currentTime = inlineCurrentTime
 			}
+			// `loadcomplete` is dispatched by vimeo-video-element /
+			// youtube-video-element once the iframe API is ready.
+			// `loadedmetadata` covers the native-video path (hls-video).
+			videoElement.addEventListener('loadcomplete', applySeek, { once: true })
+			videoElement.addEventListener('loadedmetadata', applySeek, { once: true })
 		}
 	})
 
@@ -714,7 +738,17 @@ function createLightbox(
 			return
 		}
 		const video = queryVideoElement(content.element)
-		if (video && !video.paused) {
+		if (!video) {
+			return
+		}
+		// Record play state *before* pausing so `syncBackToInline` can restore
+		// it on the inline player when the lightbox closes. Also fires on slide
+		// changes in multi-item galleries — harmless, the entry is overwritten
+		// the next time the slide activates and deactivates, and it's only
+		// read from the close path.
+		const wasPlaying = !video.paused
+		wasPlayingMap.set(content.data.videoContainer, wasPlaying)
+		if (wasPlaying) {
 			video.pause()
 		}
 	})
@@ -790,7 +824,13 @@ function createLightbox(
 }
 
 /**
- * Sync the lightbox player's position back to the inline player.
+ * Sync the lightbox player's position and play state back to the inline
+ * player, so closing the lightbox is transparent — same currentTime, same
+ * playing/paused status. Works for all video element types: hls-video reads
+ * currentTime off its native `<video>` and embed elements
+ * (vimeo-video-element / youtube-video-element) expose the last-known time
+ * cached from their `timeupdate` handlers, so the synchronous getter is
+ * non-blocking in every case.
  */
 function syncBackToInline(content: {
 	data: Record<string, unknown>
@@ -799,16 +839,25 @@ function syncBackToInline(content: {
 	if (!isVideoData(content.data)) {
 		return
 	}
-	// Only sync for HLS — embed players handle their own state.
-	if (content.data.videoElement !== 'hls-video') {
-		return
-	}
+
 	const lightboxVideo = queryVideoElement(content.element)
 	const inlineVideo = queryVideoElement(content.data.videoContainer)
+	if (!inlineVideo) {
+		return
+	}
 
-	if (lightboxVideo && inlineVideo && lightboxVideo.currentTime > 0) {
+	if (lightboxVideo && lightboxVideo.currentTime > 0) {
 		inlineVideo.currentTime = lightboxVideo.currentTime
 	}
+
+	// Resume inline playback if the lightbox video was playing when it was
+	// deactivated. `wasPlayingMap` is populated in `contentDeactivate` (before
+	// the pause) because by the time we get here the lightbox video is
+	// already paused, so `lightboxVideo.paused` can't be inspected directly.
+	if (wasPlayingMap.get(content.data.videoContainer)) {
+		tryPlay(inlineVideo)
+	}
+	wasPlayingMap.delete(content.data.videoContainer)
 }
 
 // --- Initialize lightboxes ---
@@ -857,20 +906,31 @@ for (const name of galleryNames) {
 }
 
 // Keep clicks on inline media controls (play/pause/time/mute/etc.) from
-// bubbling to PhotoSwipe's gallery click handler — they should operate the
+// reaching PhotoSwipe's gallery click handler — they should operate the
 // player without opening the lightbox. Clicks on the video area itself bubble
 // and open the lightbox, matching how images behave.
+//
+// The listener is attached to the control elements themselves, not to the
+// `.pswp-zoom` container. PhotoSwipe binds its own click handler to each
+// gallery node during `init()` (see photoswipe/lightbox.js `_bindEvents`),
+// and `stopPropagation` on a sibling listener attached to the same node
+// can't stop PhotoSwipe's handler — that would require
+// `stopImmediatePropagation` plus guaranteed earlier registration. Stopping
+// propagation from a descendant instead means the click never reaches the
+// `.pswp-zoom` node, so neither our handler nor PhotoSwipe's runs there.
+// The `.pswp-video-trigger` (fullscreen) button has its own click listener
+// that stops propagation and opens the lightbox programmatically, so it
+// continues to work unchanged.
 for (const container of document.querySelectorAll<HTMLElement>(
 	'.pswp-zoom[data-pswp-type="video"]',
 )) {
-	container.addEventListener('click', (event) => {
-		if (
-			event.target instanceof Element &&
-			event.target.closest('media-control-bar, [slot="centered-chrome"]')
-		) {
+	for (const control of container.querySelectorAll<HTMLElement>(
+		'media-control-bar, [slot="centered-chrome"]',
+	)) {
+		control.addEventListener('click', (event) => {
 			event.stopPropagation()
-		}
-	})
+		})
+	}
 }
 
 // Video trigger buttons: open the lightbox programmatically.

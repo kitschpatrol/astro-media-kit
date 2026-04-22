@@ -9,6 +9,7 @@ export default cspellConfig({
 		'gesturesdisabled',
 		'dailymotion',
 		'lightboxes',
+		'loadcomplete',
 		'mediaaudiotrackunavailable',
 		'mediacontroller',
 		'mediaenterfullscreenrequest',
