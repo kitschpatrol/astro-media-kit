@@ -38,7 +38,7 @@ export type WatermarkConfig = {
 	enabled?: boolean
 	/** Skip variants smaller than this on either axis (px). Defaults to `96`. */
 	minDimension?: number
-	/** Label fill/stroke opacity (0–1). Defaults to `0.6`. */
+	/** Label fill/stroke opacity (0–1). Defaults to `0.8`. */
 	opacity?: number
 }
 
