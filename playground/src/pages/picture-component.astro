@@ -1,5 +1,4 @@
 ---
-import aphexTest from '~aphex/Tiny/tiny'
 import Picture from 'astro-media-kit/components/Picture.astro'
 import testDark from '../assets/test-dark.jpeg'
 import test from '../assets/test.jpeg'
@@ -45,52 +44,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>2. Aphex (Apple Photos)</h2>
-	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
-		<tbody>
-			<tr>
-				<td>Picture (auto-import)</td>
-				<td><Picture alt="aphex ai" src="~aphex/Tiny/tiny" /></td>
-				<td class="check">Apple Photos image</td>
-			</tr>
-			<tr>
-				<td>Picture (imported)</td>
-				<td><Picture alt="aphex imp" src={aphexTest} /></td>
-				<td class="check">Same image</td>
-			</tr>
-		</tbody>
-	</table>
-
-	<h2>3. .tldr auto dark</h2>
-	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
-		<tbody>
-			<tr>
-				<td>.tldr auto dark</td>
-				<td><Picture alt="tldr auto" src="../assets/test-sketch.tldr" /></td>
-				<td class="check">Auto light/dark variants</td>
-			</tr>
-			<tr>
-				<td>.tldr explicit srcDark</td>
-				<td
-					><Picture
-						alt="tldr explicit"
-						src="../assets/test-sketch.tldr"
-						srcDark="../assets/test-sketch.tldr?dark=true&tldr"
-					/></td
-				>
-				<td class="check">Same as auto</td>
-			</tr>
-			<tr>
-				<td>.tldr srcDark={'{false}'}</td>
-				<td><Picture alt="tldr disabled" src="../assets/test-sketch.tldr" srcDark={false} /></td>
-				<td class="check">Light only</td>
-			</tr>
-		</tbody>
-	</table>
-
-	<h2>4. Background compositing</h2>
+	<h2>2. Background compositing</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -196,7 +150,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>5. SVG + explicit srcDark</h2>
+	<h2>3. SVG + explicit srcDark</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -222,7 +176,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>6. Layout modes</h2>
+	<h2>4. Layout modes</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -254,7 +208,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>7. Fit &amp; position</h2>
+	<h2>5. Fit &amp; position</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -315,7 +269,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>8. Loading &amp; decoding</h2>
+	<h2>6. Loading &amp; decoding</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -342,7 +296,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>9. Densities &amp; widths</h2>
+	<h2>7. Densities &amp; widths</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -371,7 +325,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>10. Caption &amp; credit</h2>
+	<h2>8. Caption &amp; credit</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -425,7 +379,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</tbody>
 	</table>
 
-	<h2>11. Zoom</h2>
+	<h2>9. Zoom</h2>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>

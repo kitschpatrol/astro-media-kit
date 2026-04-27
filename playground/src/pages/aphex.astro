@@ -1,0 +1,48 @@
+---
+import aphexTest from '~aphex/Tiny/tiny'
+import Image from 'astro-media-kit/components/Image.astro'
+import Picture from 'astro-media-kit/components/Picture.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/aphex')!
+---
+
+<Layout {title}>
+	<h1>{title}</h1>
+	<p class="note">Aphex (Apple Photos) plugin examples via the {'~aphex/'} virtual import.</p>
+
+	<h2>1. Image component</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>Auto-import aphex</td>
+				<td><Image alt="auto aphex" src="~aphex/Tiny/tiny" /></td>
+				<td class="check">Apple Photos image</td>
+			</tr>
+			<tr>
+				<td>Explicit import aphex</td>
+				<td><Image alt="explicit aphex" src={aphexTest} /></td>
+				<td class="check">Same image</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>2. Picture component</h2>
+	<table>
+		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>Picture (auto-import)</td>
+				<td><Picture alt="aphex ai" src="~aphex/Tiny/tiny" /></td>
+				<td class="check">Apple Photos image</td>
+			</tr>
+			<tr>
+				<td>Picture (imported)</td>
+				<td><Picture alt="aphex imp" src={aphexTest} /></td>
+				<td class="check">Same image</td>
+			</tr>
+		</tbody>
+	</table>
+</Layout>

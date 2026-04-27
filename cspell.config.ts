@@ -22,7 +22,6 @@ export default cspellConfig({
 		'oscnord',
 		'pswp',
 		'reposts',
-		'soundcloud',
 		'srcsets',
 		'unassociate',
 		'userinactive',
