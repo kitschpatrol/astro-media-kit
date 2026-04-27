@@ -305,6 +305,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 							`watermark enabled outside dev (command: ${command}) — image variants will be stamped in the build output`,
 						)
 					}
+
 					updateConfig({
 						image: {
 							service: {

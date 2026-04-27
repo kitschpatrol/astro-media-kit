@@ -1,5 +1,5 @@
 // Shared types for video service integrations
-import type { VideoInfo as VideoResolution } from '@oscnord/get-video-resolution'
+
 import { getVideoResolution } from '@oscnord/get-video-resolution'
 import type { BunnyConfig } from './bunny'
 import type { CloudflareConfig } from './cloudflare'
@@ -36,7 +36,10 @@ export type VideoInfo = {
 	width: number
 }
 
-/** Maps each video service name to its configuration type. Services without credentials use empty records. */
+/**
+ * Maps each video service name to its configuration type. Services without
+ * credentials use empty records.
+ */
 export type ServiceConfig = {
 	bunny: BunnyConfig
 	cloudflare: CloudflareConfig
@@ -57,9 +60,9 @@ export type CredentialService = 'bunny' | 'cloudflare' | 'mux'
 export type EmbedService = 'vimeo' | 'youtube'
 
 /**
- * Validates that required credentials are present for the given service.
- * Throws with actionable message naming missing env vars.
- * No-op for embed services (YouTube, Vimeo) which need no credentials.
+ * Validates that required credentials are present for the given service. Throws
+ * with actionable message naming missing env vars. No-op for embed services
+ * (YouTube, Vimeo) which need no credentials.
  */
 export function validateServiceConfig(service: Service, config: ServiceConfig): void {
 	const checks: Record<CredentialService, Array<{ envVar: string; value: string }>> = {
@@ -78,7 +81,9 @@ export function validateServiceConfig(service: Service, config: ServiceConfig): 
 		],
 	}
 
-	if (!(service in checks)) return
+	if (!(service in checks)) {
+		return
+	}
 
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- guarded by `in` check above
 	const missing = checks[service as CredentialService].filter((c) => !c.value).map((c) => c.envVar)
@@ -97,11 +102,12 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 	let duration = -1
 
 	try {
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- overload resolution picks the array variant; we call without `pick: "all"` so the return is always a single VideoInfo
-		const info = (await getVideoResolution(src)) as unknown as VideoResolution
+		const info = await getVideoResolution(src)
 		width = info.width
 		height = info.height
-		if (info.duration !== undefined) duration = info.duration
+		if (info.duration !== undefined) {
+			duration = info.duration
+		}
 	} catch {
 		// Probe failed — fall back to zero dimensions (no aspect ratio).
 	}
@@ -122,7 +128,10 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 
 const YOUTUBE_ID_RE = /^[\w-]{11}$/
 
-/** YouTube video IDs are exactly 11 characters: alphanumeric, hyphen, underscore. */
+/**
+ * YouTube video IDs are exactly 11 characters: alphanumeric, hyphen,
+ * underscore.
+ */
 export function youtubeIsValidMediaId(mediaId: string): boolean {
 	return YOUTUBE_ID_RE.test(mediaId)
 }
@@ -265,7 +274,9 @@ const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)/
 /** Extracts a YouTube video ID from various YouTube URL formats. */
 function extractYouTubeId(url: URL): string | undefined {
 	const host = url.hostname.toLowerCase()
-	if (!YOUTUBE_HOSTS.has(host)) return undefined
+	if (!YOUTUBE_HOSTS.has(host)) {
+		return undefined
+	}
 
 	// Short URL: youtu.be/ID
 	if (host === 'youtu.be') {
@@ -294,7 +305,9 @@ const VIMEO_HOSTS = new Set(['player.vimeo.com', 'vimeo.com', 'www.vimeo.com'])
 /** Extracts a Vimeo video ID from various Vimeo URL formats. */
 function extractVimeoId(url: URL): string | undefined {
 	const host = url.hostname.toLowerCase()
-	if (!VIMEO_HOSTS.has(host)) return undefined
+	if (!VIMEO_HOSTS.has(host)) {
+		return undefined
+	}
 
 	// Player.vimeo.com/video/ID
 	if (host === 'player.vimeo.com') {
@@ -318,23 +331,44 @@ export type ResolvedSource = {
 
 /** Infer service from a raw media ID string using format-based regex matching. */
 function inferServiceFromId(mediaId: string): Service | undefined {
-	if (bunnyIsValidMediaId(mediaId)) return 'bunny'
-	if (cloudflareIsValidMediaId(mediaId)) return 'cloudflare'
-	if (muxIsValidMediaId(mediaId)) return 'mux'
-	if (youtubeIsValidMediaId(mediaId)) return 'youtube'
-	if (vimeoIsValidMediaId(mediaId)) return 'vimeo'
+	if (bunnyIsValidMediaId(mediaId)) {
+		return 'bunny'
+	}
+
+	if (cloudflareIsValidMediaId(mediaId)) {
+		return 'cloudflare'
+	}
+
+	if (muxIsValidMediaId(mediaId)) {
+		return 'mux'
+	}
+
+	if (youtubeIsValidMediaId(mediaId)) {
+		return 'youtube'
+	}
+
+	if (vimeoIsValidMediaId(mediaId)) {
+		return 'vimeo'
+	}
+
 	return undefined
 }
 
 /** Resolve a URL into a service type and identifier. */
 function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
 	const youtubeId = extractYouTubeId(url)
-	if (youtubeId) return { identifier: youtubeId, service: 'youtube' }
+	if (youtubeId) {
+		return { identifier: youtubeId, service: 'youtube' }
+	}
 
 	const vimeoId = extractVimeoId(url)
-	if (vimeoId) return { identifier: vimeoId, service: 'vimeo' }
+	if (vimeoId) {
+		return { identifier: vimeoId, service: 'vimeo' }
+	}
 
-	if (isDirectMediaUrl(url)) return { identifier: src, service: 'local' }
+	if (isDirectMediaUrl(url)) {
+		return { identifier: src, service: 'local' }
+	}
 
 	return { identifier: src, service: 'oembed' }
 }
@@ -342,10 +376,10 @@ function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
 /**
  * Resolves a `src` string into a service type and identifier.
  *
- * Accepts URLs (YouTube, Vimeo, direct media files, or generic pages for oEmbed),
- * raw service IDs (Bunny UUID, Cloudflare hex, Mux alphanumeric, YouTube 11-char,
- * Vimeo numeric), local file paths, or Bunny title strings (when `service` is
- * explicitly `'bunny'`).
+ * Accepts URLs (YouTube, Vimeo, direct media files, or generic pages for
+ * oEmbed), raw service IDs (Bunny UUID, Cloudflare hex, Mux alphanumeric,
+ * YouTube 11-char, Vimeo numeric), local file paths, or Bunny title strings
+ * (when `service` is explicitly `'bunny'`).
  *
  * When `service` is explicitly provided, it overrides inference but URL-to-ID
  * extraction still runs so downstream code receives the extracted identifier.
@@ -362,20 +396,29 @@ export function resolveVideoSource(src: string, service?: Service): ResolvedSour
 
 	// Not a URL — try ID pattern matching
 	const inferred = inferServiceFromId(src)
-	if (inferred) return { identifier: src, service: service ?? inferred }
+	if (inferred) {
+		return { identifier: src, service: service ?? inferred }
+	}
 
 	// Local file path (e.g. /video.mp4, ./assets/video.webm)
-	if (isLocalPath(src)) return { identifier: src, service: service ?? 'local' }
+	if (isLocalPath(src)) {
+		return { identifier: src, service: service ?? 'local' }
+	}
 
 	// Bunny title search (requires explicit service)
-	if (service === 'bunny') return { identifier: src, service: 'bunny' }
+	if (service === 'bunny') {
+		return { identifier: src, service: 'bunny' }
+	}
 
 	throw new Error(
 		`Could not infer video service from "${src}". Pass a URL, a recognized service ID, or set the "service" prop explicitly.`,
 	)
 }
 
-/** Check if a service is an embed type (YouTube, Vimeo) that needs no API credentials. */
+/**
+ * Check if a service is an embed type (YouTube, Vimeo) that needs no API
+ * credentials.
+ */
 export function isEmbedService(service: Service): service is EmbedService {
 	return service === 'youtube' || service === 'vimeo'
 }

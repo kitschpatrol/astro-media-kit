@@ -16,8 +16,17 @@ export function needsBackgroundDarkVariant(
 	backgroundDark: string | undefined,
 	darkDisabled: boolean,
 ): boolean {
-	if (darkDisabled) return false
-	if (!backgroundDark) return false
-	if (backgroundDark === background) return false
+	if (darkDisabled) {
+		return false
+	}
+
+	if (!backgroundDark) {
+		return false
+	}
+
+	if (backgroundDark === background) {
+		return false
+	}
+
 	return formats.some((f) => opaqueFormats.has(f))
 }

@@ -94,14 +94,24 @@ const service: typeof baseSharpService = {
 		const base = await baseSharpService.transform(inputBuffer, transform, imageConfig)
 		const cfg = (imageConfig.service.config as WatermarkServiceConfig).mediaKitWatermark
 
-		if (!cfg) return base
-		if (SKIP_FORMATS.has(base.format)) return base
+		if (!cfg) {
+			return base
+		}
+
+		if (SKIP_FORMATS.has(base.format)) {
+			return base
+		}
 
 		const baseBuffer = Buffer.from(base.data)
 		const { height, pages, width } = await sharp(baseBuffer).metadata()
 		// Animated formats (GIF, animated WebP): compositing flattens to a single frame.
-		if (pages !== undefined && pages > 1) return base
-		if (width < cfg.minDimension || height < cfg.minDimension) return base
+		if (pages !== undefined && pages > 1) {
+			return base
+		}
+
+		if (width < cfg.minDimension || height < cfg.minDimension) {
+			return base
+		}
 
 		const overlay = Buffer.from(buildTiledStampSvg(width, height, baseBuffer.byteLength, cfg))
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- sharp.toFormat accepts all image output formats

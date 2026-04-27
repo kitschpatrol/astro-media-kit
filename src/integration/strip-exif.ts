@@ -33,9 +33,15 @@ export async function stripExifFromImages(
 
 	const targets: string[] = []
 	for (const entry of entries) {
-		if (!entry.isFile()) continue
+		if (!entry.isFile()) {
+			continue
+		}
+
 		const extension = path.extname(entry.name).toLowerCase()
-		if (!METADATA_IMAGE_EXTENSIONS.has(extension)) continue
+		if (!METADATA_IMAGE_EXTENSIONS.has(extension)) {
+			continue
+		}
+
 		targets.push(path.join(entry.parentPath, entry.name))
 	}
 

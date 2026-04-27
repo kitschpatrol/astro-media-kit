@@ -77,7 +77,10 @@ export const tldrawDarkImport: AutoImportEntry = {
 	from: 'src',
 	to: 'srcDark',
 	transform(path: string) {
-		if (!TLDRAW_EXTENSION_REGEX.test(path)) return
+		if (!TLDRAW_EXTENSION_REGEX.test(path)) {
+			return
+		}
+
 		return `${path}${path.includes('?') ? '&' : '?'}dark=true&tldr`
 	},
 }
@@ -128,12 +131,16 @@ function processComponent(
 	const primaryEntries = entries.filter((entry) => !entry.transform)
 	const derivedEntries = entries.filter((entry) => entry.transform)
 
-	if (primaryEntries.length === 0) return false
+	if (primaryEntries.length === 0) {
+		return false
+	}
 
 	// Use the first primary entry's value as the anchor path for derived entries
 	const anchorEntry = primaryEntries[0]!
 	const anchorAttribute = findQuotedAttribute(node.attributes, anchorEntry.fromProp)
-	if (!anchorAttribute || !isImportablePath(anchorAttribute.value)) return false
+	if (!anchorAttribute || !isImportablePath(anchorAttribute.value)) {
+		return false
+	}
 
 	const anchorPath = anchorAttribute.value
 	let modified = false
@@ -141,7 +148,9 @@ function processComponent(
 	// Process primary entries — replace quoted string attrs with expression imports
 	for (const entry of primaryEntries) {
 		const attribute = findQuotedAttribute(node.attributes, entry.fromProp)
-		if (!attribute || !isImportablePath(attribute.value)) continue
+		if (!attribute || !isImportablePath(attribute.value)) {
+			continue
+		}
 
 		const importEntry = getOrCreateImport(imports, attribute.value)
 
@@ -171,7 +180,9 @@ function processComponent(
 		} else {
 			// Derive from anchor path via transform
 			const transformedPath = entry.transform!(anchorPath)
-			if (transformedPath === undefined) continue
+			if (transformedPath === undefined) {
+				continue
+			}
 
 			const importEntry = getOrCreateImport(imports, transformedPath)
 			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
@@ -225,7 +236,9 @@ export async function transformAstroSource(
 	})
 
 	// eslint-disable-next-line ts/no-unnecessary-condition
-	if (!frontmatterNode || !modified) return undefined
+	if (!frontmatterNode || !modified) {
+		return undefined
+	}
 
 	// Append import statements to frontmatter
 	const importStatements = Array.from(
@@ -248,10 +261,16 @@ export function vitePluginMediaKitAutoImport(componentConfigs: Record<string, Re
 	return {
 		enforce: 'pre' as const,
 		async load(id: string) {
-			if (!id.endsWith('.astro')) return
+			if (!id.endsWith('.astro')) {
+				return
+			}
+
 			const source = await readFile(id, 'utf8')
 			const result = await transformAstroSource(source, componentConfigs)
-			if (result === undefined) return
+			if (result === undefined) {
+				return
+			}
+
 			return { code: result, map: undefined }
 		},
 		name: 'astro-media-kit:auto-import',

@@ -26,13 +26,23 @@ export function hasOriginalImageShape(file: string): boolean {
 	const { ext, name } = path.parse(file)
 	const fileFormat = ext.slice(1).toLowerCase()
 
-	if (!(ORIGINAL_IMAGE_FORMATS as readonly string[]).includes(fileFormat)) return false
+	if (!(ORIGINAL_IMAGE_FORMATS as readonly string[]).includes(fileFormat)) {
+		return false
+	}
 
 	const dot = name.lastIndexOf('.')
-	if (dot === -1) return false
+	if (dot === -1) {
+		return false
+	}
+
 	const tail = name.slice(dot + 1)
-	if (tail.length !== 8) return false
-	if (!ORIGINAL_HASH_CHARS.test(tail)) return false
+	if (tail.length !== 8) {
+		return false
+	}
+
+	if (!ORIGINAL_HASH_CHARS.test(tail)) {
+		return false
+	}
 
 	return true
 }
@@ -47,7 +57,9 @@ export function hasOriginalImageShape(file: string): boolean {
 export function findUnusedOriginals(files: readonly string[]): string[] {
 	const result: string[] = []
 	for (const file of files) {
-		if (!hasOriginalImageShape(file)) continue
+		if (!hasOriginalImageShape(file)) {
+			continue
+		}
 
 		// `path.parse(file).name` is `{base}.{HASH8}`; a variant sibling's name
 		// starts with that plus `_`.
@@ -55,8 +67,11 @@ export function findUnusedOriginals(files: readonly string[]): string[] {
 		const hasVariant = files.some(
 			(other) => other !== file && path.parse(other).name.startsWith(variantPrefix),
 		)
-		if (hasVariant) result.push(file)
+		if (hasVariant) {
+			result.push(file)
+		}
 	}
+
 	return result
 }
 

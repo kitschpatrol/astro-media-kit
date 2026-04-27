@@ -74,7 +74,9 @@ const hlsConfigJson =
 	// so we toggle inline styles via the userinactivechange event.
 	for (const controller of document.querySelectorAll<HTMLElement>('media-controller.lightbox')) {
 		const controlBar = controller.querySelector<HTMLElement>('media-control-bar')
-		if (!controlBar) continue
+		if (!controlBar) {
+			continue
+		}
 
 		const { style } = controlBar
 		const update = () => {

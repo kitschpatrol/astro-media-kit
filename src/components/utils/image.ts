@@ -9,13 +9,15 @@ import { tryParseUrl } from './media'
 /**
  * Resolves an image source to ImageMetadata, with optional dark mode variant.
  *
- * Accepts either an already-resolved ImageMetadata object or an absolute file path string.
- * When given a string, probes the file for dimensions and format.
+ * Accepts either an already-resolved ImageMetadata object or an absolute file
+ * path string. When given a string, probes the file for dimensions and format.
  *
- * Consuming projects should prefer passing imported ImageMetadata objects (the standard
- * Astro pattern) rather than string paths.
+ * Consuming projects should prefer passing imported ImageMetadata objects (the
+ * standard Astro pattern) rather than string paths.
+ *
  * @param src - ImageMetadata object or absolute file path to the image
  * @param srcDark - Optional path or ImageMetadata for the dark theme variant
+ *
  * @returns Promise resolving to ImageMetadata or a { dark, light } pair
  */
 export async function resolveImageSource(
@@ -41,9 +43,11 @@ export async function resolveImageSource(
 /**
  * Extracts metadata credit information from an image's XMP tags.
  *
- * Reads XMP metadata from an image file and extracts creator,
- * credit, and label information.
+ * Reads XMP metadata from an image file and extracts creator, credit, and label
+ * information.
+ *
  * @param src - The image source (ImageMetadata or file path string)
+ *
  * @returns Creator, credit, and label from XMP tags
  */
 export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise<{
@@ -77,13 +81,22 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 }
 
 /**
- * Checks if the given source is an ImageMetadata object, including
- * Astro's SVG component wrappers which nest metadata under `.meta`.
+ * Checks if the given source is an ImageMetadata object, including Astro's SVG
+ * component wrappers which nest metadata under `.meta`.
  */
 export function isImageMetadataObject(src: unknown): src is ImageMetadata {
-	if (src === null || src === undefined) return false
-	if (typeof src !== 'object' && typeof src !== 'function') return false
-	if ('src' in src && typeof src.src === 'string') return true
+	if (src === null || src === undefined) {
+		return false
+	}
+
+	if (typeof src !== 'object' && typeof src !== 'function') {
+		return false
+	}
+
+	if ('src' in src && typeof src.src === 'string') {
+		return true
+	}
+
 	// Astro wraps SVG imports in createSvgComponent in production builds,
 	// placing ImageMetadata under .meta instead of at the top level.
 	if ('meta' in src && typeof src.meta === 'object' && src.meta !== null) {
@@ -100,20 +113,26 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
  */
 export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
 	// Plain object with .src — already correct
-	if (typeof src === 'object' && 'src' in src && typeof src.src === 'string') return src
+	if (typeof src === 'object' && 'src' in src && typeof src.src === 'string') {
+		return src
+	}
 	// SVG component function: metadata is spread on the function AND available as .meta
 	// Extract .meta (a plain object) rather than returning the function
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- validated by isImageMetadataObject
-	if ('meta' in src) return (src as unknown as { meta: ImageMetadata }).meta
+
+	if ('meta' in src) {
+		// eslint-disable-next-line ts/no-unsafe-type-assertion
+		return (src as unknown as { meta: ImageMetadata }).meta
+	}
+
 	// Fallback: extract known properties into a plain object
 	const { format, height, src: imgSrc, width } = src
 	return { format, height, src: imgSrc, width }
 }
 
 /**
- * Checks if the given source is a remote `http(s)` URL string. Protocol-relative
- * `//...` is not treated as remote — Astro's remote image pipeline requires an
- * explicit protocol.
+ * Checks if the given source is a remote `http(s)` URL string.
+ * Protocol-relative `//...` is not treated as remote — Astro's remote image
+ * pipeline requires an explicit protocol.
  */
 export function isRemoteImageSource(src: unknown): src is string {
 	return typeof src === 'string' && tryParseUrl(src) !== undefined
@@ -160,7 +179,9 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 
 	for (const part of parts) {
 		const trimmed = part.trim()
-		if (!trimmed) continue
+		if (!trimmed) {
+			continue
+		}
 
 		const match = SRCSET_ENTRY_REGEX.exec(trimmed)
 		if (match?.[1] && match[2]) {
@@ -209,13 +230,17 @@ export type ZoomTarget = ImageZoomTarget | VideoZoomTarget
 function findVideoTarget(document: Document): undefined | VideoZoomTarget {
 	for (const tag of VIDEO_ELEMENT_TAGS) {
 		const element = document.querySelector(tag)
-		if (!element) continue
+		if (!element) {
+			continue
+		}
 
 		// Linkedom's Element type doesn't expose `dataset`; getAttribute is the typed equivalent
 		const src =
 			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
 			element.getAttribute('src') ?? element.getAttribute('data-src') ?? ''
-		if (!src) continue
+		if (!src) {
+			continue
+		}
 
 		return {
 			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
@@ -236,13 +261,19 @@ function collectImageEntries(document: Document): { aspectRatio: number; entries
 	// Collect srcset entries from <source> elements, skipping dark-mode variants
 	for (const source of document.querySelectorAll('source[srcset]')) {
 		const media = source.getAttribute('media')
-		if (media?.includes('prefers-color-scheme: dark')) continue
+		if (media?.includes('prefers-color-scheme: dark')) {
+			continue
+		}
 
 		const parentPicture = source.closest('picture')
-		if (parentPicture?.classList.contains('amk-dark')) continue
+		if (parentPicture?.classList.contains('amk-dark')) {
+			continue
+		}
 
 		const srcset = source.getAttribute('srcset')
-		if (srcset) entries.push(...parseSrcset(srcset))
+		if (srcset) {
+			entries.push(...parseSrcset(srcset))
+		}
 	}
 
 	// Get aspect ratio from <img> — prefer light-mode picture's img
@@ -256,10 +287,14 @@ function collectImageEntries(document: Document): { aspectRatio: number; entries
 		}
 
 		const srcset = img.getAttribute('srcset')
-		if (srcset) entries.push(...parseSrcset(srcset))
+		if (srcset) {
+			entries.push(...parseSrcset(srcset))
+		}
 
 		const src = img.getAttribute('src')
-		if (src && imgWidth > 0) entries.push({ url: src, width: imgWidth })
+		if (src && imgWidth > 0) {
+			entries.push({ url: src, width: imgWidth })
+		}
 	}
 
 	return { aspectRatio, entries }
@@ -267,7 +302,9 @@ function collectImageEntries(document: Document): { aspectRatio: number; entries
 
 function findImageTarget(document: Document): ImageZoomTarget | undefined {
 	const { aspectRatio, entries } = collectImageEntries(document)
-	if (entries.length === 0) return undefined
+	if (entries.length === 0) {
+		return undefined
+	}
 
 	// eslint-disable-next-line unicorn/no-array-reduce
 	const largest = entries.reduce((max, entry) => (entry.width > max.width ? entry : max))
@@ -285,10 +322,11 @@ function findImageTarget(document: Document): ImageZoomTarget | undefined {
 /**
  * Extracts zoom target info from rendered slot HTML.
  *
- * Single pass — checks for video player elements first
- * (`<hls-video>`, `<video>`, `<vimeo-video>`, `<youtube-video>`), then falls
- * back to image extraction (`<picture>` / `<img>` with srcset). Returns
- * `undefined` when neither is present.
+ * Single pass — checks for video player elements first (`<hls-video>`,
+ * `<video>`, `<vimeo-video>`, `<youtube-video>`), then falls back to image
+ * extraction (`<picture>` / `<img>` with srcset). Returns `undefined` when
+ * neither is present.
+ *
  * @param html - HTML string from a rendered Zoomer slot
  */
 export function extractZoomTarget(html: string): undefined | ZoomTarget {

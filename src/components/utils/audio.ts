@@ -48,7 +48,9 @@ export function resolveAudioSource(src: string, service?: AudioService): Resolve
 	}
 
 	// Not a URL — try ID pattern matching
-	if (soundcloudIsValidMediaId(src)) return { identifier: src, service: service ?? 'soundcloud' }
+	if (soundcloudIsValidMediaId(src)) {
+		return { identifier: src, service: service ?? 'soundcloud' }
+	}
 
 	// Assume local file path
 	return { identifier: src, service: service ?? 'local' }

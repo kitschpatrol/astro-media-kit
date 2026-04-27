@@ -14,8 +14,14 @@ function zoomElement(
 ): HTMLElement {
 	const element = document.createElement('a')
 	element.classList.add('pswp-zoom')
-	if (options.gallery !== undefined) element.dataset.pswpGallery = options.gallery
-	if (options.scope !== undefined) element.dataset.pswpScope = options.scope
+	if (options.gallery !== undefined) {
+		element.dataset.pswpGallery = options.gallery
+	}
+
+	if (options.scope !== undefined) {
+		element.dataset.pswpScope = options.scope
+	}
+
 	return element
 }
 

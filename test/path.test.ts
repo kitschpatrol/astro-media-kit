@@ -32,8 +32,7 @@ describe('getFileExtension', () => {
 	})
 
 	it('throws for object without src', () => {
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- intentionally testing invalid input
-		expect(() => getFileExtension({} as { src: string })).toThrow()
+		expect(() => getFileExtension({})).toThrow()
 	})
 })
 

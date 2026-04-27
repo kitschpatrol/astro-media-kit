@@ -36,7 +36,7 @@ async function runTransform(
 	const imageConfig = makeImageConfig(mediaKitWatermark)
 	return watermarkService.transform(
 		input,
-		{ format: 'png', src: '/test.png' } as Parameters<typeof watermarkService.transform>[1],
+		{ format: 'png', src: '/test.png' },
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- narrow test stub, full ImageConfig has heavy generics
 		imageConfig as Parameters<typeof watermarkService.transform>[2],
 	)

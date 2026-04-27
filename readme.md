@@ -22,7 +22,7 @@
 
 This is a small collection of Astro components to help you write minimalist, platonic markup in your content and templates without compromising robust output.
 
-`<Image>` and `<Picture>` are designed as **clean supersets** of Astro's built-in components — every prop Astro accepts is accepted here, and the component adds a handful of extras (dark-mode sources, captions, zoom, background compositing) on top. Both local and remote image sources are supported; remote sources skip the features that require access to the source file on disk (XMP credit extraction, background compositing, transparency-aware format selection).
+`<Image>` and `<Picture>` are designed as **clean super-sets** of Astro's built-in components — every prop Astro accepts is accepted here, and the component adds a handful of extras (dark-mode sources, captions, zoom, background compositing) on top. Both local and remote image sources are supported; remote sources skip the features that require access to the source file on disk (XMP credit extraction, background compositing, transparency-aware format selection).
 
 It includes:
 
@@ -85,7 +85,11 @@ export default defineConfig({
 })
 ```
 
-> **Tip:** in most cases you'll want `image.layout: 'constrained'` and `image.responsiveStyles: true` in your Astro config (as shown above). These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via `getImage()`, so responsive srcsets behave correctly without per-component overrides.
+> [!NOTE]
+>
+> In most cases you'll want `image.layout: 'constrained'` and `image.responsiveStyles: true` in your Astro config (as shown above).
+>
+> These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via `getImage()`, so responsive `srcsets` behave correctly without per-component overrides.
 
 ### Direct component usage
 
@@ -128,7 +132,7 @@ Caption text is passed as a slot child:
 <Image src={photo} alt="A sunset">A beautiful sunset over the mountains.</Image>
 ```
 
-#### Props
+#### Image Props
 
 Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps` (passed through unchanged to `getImage()`), `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL.
 
@@ -183,7 +187,7 @@ import heroDark from '../assets/hero-dark.png'
 <Picture src="https://example.com/hero.png" alt="Remote" />
 ```
 
-#### Props
+#### Picture Props
 
 All props from [Image](#image) above, plus:
 
@@ -257,7 +261,7 @@ import { Video } from 'astro-media-kit/components'
 <Video src="dQw4w9WgXcQ" service="youtube" controlStyle="none" autoPlay loop />
 ```
 
-#### Props
+#### Video Props
 
 | Prop                      | Type                                                                              | Default                     |
 | ------------------------- | --------------------------------------------------------------------------------- | --------------------------- |
@@ -306,7 +310,7 @@ import { Audio } from 'astro-media-kit/components'
 <Audio src="/audio/podcast.mp3" />
 ```
 
-#### Props
+#### Audio Props
 
 | Prop                      | Type                                  | Default      |
 | ------------------------- | ------------------------------------- | ------------ |
@@ -574,7 +578,7 @@ This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com
 
 ## Maintainers
 
-[@kitschpatrol](https://github.com/kitschpatrol)
+[kitschpatrol](https://github.com/kitschpatrol)
 
 ## Acknowledgments
 
@@ -584,7 +588,11 @@ Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome
 
 ## Contributing
 
-[Issues](https://github.com/kitschpatrol/astro-media-kit/issues) and pull requests are welcome.
+[Issues](https://github.com/kitschpatrol/astro-media-kit/issues) are welcome and appreciated.
+
+Please open an issue to discuss changes before submitting a pull request. Unsolicited PRs (especially AI-generated ones) are unlikely to be merged.
+
+This repository uses [@kitschpatrol/shared-config](https://github.com/kitschpatrol/shared-config) (via its `ksc` CLI) for linting and formatting, plus [MDAT](https://github.com/kitschpatrol/mdat) for readme placeholder expansion.
 
 <!-- /contributing -->
 
@@ -592,6 +600,6 @@ Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome
 
 ## License
 
-[MIT](license.txt) © Eric Mika
+[MIT](license.txt) © [Eric Mika](https://ericmika.com)
 
 <!-- /license -->

@@ -151,10 +151,12 @@ switch (resolvedService) {
 		videoSrc = src
 		break
 	}
+
 	case 'oembed': {
 		// Handled separately via fetchOEmbed
 		break
 	}
+
 	case 'vimeo': {
 		videoSrc = `https://vimeo.com/${identifier}`
 		break
@@ -178,8 +180,13 @@ const oembedAspectRatio =
 	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
 
 const hlsConfig: Record<string, boolean | number> = {}
-if (initialBandwidth !== undefined) hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
-if (capQualityToSize !== undefined) hlsConfig.capLevelToPlayerSize = capQualityToSize
+if (initialBandwidth !== undefined) {
+	hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
+}
+
+if (capQualityToSize !== undefined) {
+	hlsConfig.capLevelToPlayerSize = capQualityToSize
+}
 
 const posterUrl =
 	resolvedService === 'local'

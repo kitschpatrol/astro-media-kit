@@ -195,12 +195,15 @@ export function pickFallbackFormat(
 	fallbackFormatProp: ImageOutputFormat | undefined,
 	resolvedSrc: ImageMetadata | string,
 ): ImageOutputFormat {
-	if (fallbackFormatProp) return fallbackFormatProp
+	if (fallbackFormatProp) {
+		return fallbackFormatProp
+	}
+
 	if (
 		isESMImportedImage(resolvedSrc) &&
 		(specialFormatsFallback as readonly string[]).includes(resolvedSrc.format)
 	) {
-		return resolvedSrc.format as ImageOutputFormat
+		return resolvedSrc.format
 	}
 
 	return defaultFallbackFormat
@@ -213,7 +216,9 @@ export function pickFallbackFormat(
  * pipeline. Falls through for string paths.
  */
 export function cloneImageMetadata(src: ImageMetadata | string): ImageMetadata | string {
-	if (!isESMImportedImage(src)) return src
+	if (!isESMImportedImage(src)) {
+		return src
+	}
 
 	const withClone = src as ImageMetadata & { clone?: ImageMetadata }
 	return withClone.clone ?? src
@@ -314,8 +319,14 @@ export function resolveSizesAttribute(
 	userSizes: string | undefined,
 	sizes: string | undefined,
 ): string | undefined {
-	if (sizes === undefined) return undefined
-	if (userSizes !== undefined) return sizes
+	if (sizes === undefined) {
+		return undefined
+	}
+
+	if (userSizes !== undefined) {
+		return sizes
+	}
+
 	return `auto, ${sizes}`
 }
 
@@ -339,11 +350,20 @@ export function warnWidthsWithoutSizes(
 	useResponsive: boolean,
 	componentName: string,
 ): void {
-	if (!import.meta.env.DEV) return
-	if (!props.widths || props.widths.length === 0) return
+	if (!import.meta.env.DEV) {
+		return
+	}
+
+	if (!props.widths || props.widths.length === 0) {
+		return
+	}
+
 	const hasDensities = props.densities !== undefined && props.densities.length > 0
 	const hasSizes = props.sizes !== undefined && props.sizes.length > 0
-	if (hasDensities || hasSizes || useResponsive) return
+	if (hasDensities || hasSizes || useResponsive) {
+		return
+	}
+
 	console.warn(
 		`[astro-media-kit] ${componentName} "${imageName}" has \`widths\` but no \`sizes\` or responsive layout. Browser will assume \`sizes="100vw"\` and download a larger image than needed. Pass \`sizes=\` or use \`layout="constrained"\` with \`width=\`.`,
 	)
@@ -381,7 +401,10 @@ export function warnRemoteIncompatibleProps(
 		srcDarkIsLocal?: boolean
 	},
 ): void {
-	if (!import.meta.env.DEV) return
+	if (!import.meta.env.DEV) {
+		return
+	}
+
 	if (conflicts.background !== undefined) {
 		console.warn(
 			`[astro-media-kit] ${componentName}: \`background\` is ignored for remote image sources — compositing requires a known input format. Skip \`background\` or use a local source.`,

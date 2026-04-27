@@ -60,6 +60,7 @@ const secondaryZoomLevel: LightboxOptions['secondaryZoomLevel'] = (zoomLevelObje
 		if (element.dataset.pswpLevel === 'native') {
 			return 1
 		}
+
 		if (element.dataset.pswpLevel === 'fill') {
 			return zoomLevelObject.fill
 		}
@@ -161,11 +162,13 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
 	if (element instanceof HTMLMediaElement) {
 		return element
 	}
+
 	// Custom video elements extend HTMLElement with play/pause/currentTime via
 	// CustomVideoElement proxy — safe to treat as HTMLMediaElement.
 	if (!element) {
 		return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
 	}
+
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- CustomVideoElement proxies HTMLMediaElement API
 	return element as unknown as HTMLMediaElement
 }
@@ -182,6 +185,7 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 	if (element?.tagName.toLowerCase() !== 'hls-video') {
 		return
 	}
+
 	// eslint-disable-next-line ts/no-unsafe-type-assertion -- `api` is a public (non-#) field on hls-video-element
 	const hlsHost = element as unknown as {
 		api?: null | { destroy(): void; detachMedia(): void }
@@ -189,6 +193,7 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 	if (!hlsHost.api) {
 		return
 	}
+
 	try {
 		hlsHost.api.detachMedia()
 		hlsHost.api.destroy()
@@ -231,11 +236,13 @@ function createLightbox(
 			if (!pswp?.mainScroll) {
 				return
 			}
+
 			const originalMoveTo = pswp.mainScroll.moveTo.bind(pswp.mainScroll)
 			pswp.mainScroll.moveTo = (x: number, dragging?: boolean): void => {
 				if (dragging) {
 					return
 				}
+
 				originalMoveTo(x, dragging)
 			}
 		})
@@ -261,10 +268,16 @@ function createLightbox(
 		if (!floatingControls) {
 			return
 		}
+
 		delete floatingControls.wrapper.dataset.userInactive
-		if (autohideTimerId !== undefined) clearTimeout(autohideTimerId)
+		if (autohideTimerId !== undefined) {
+			clearTimeout(autohideTimerId)
+		}
+
 		autohideTimerId = globalThis.setTimeout(() => {
-			if (floatingControls) floatingControls.wrapper.dataset.userInactive = ''
+			if (floatingControls) {
+				floatingControls.wrapper.dataset.userInactive = ''
+			}
 		}, USER_INACTIVE_MS)
 	}
 
@@ -272,6 +285,7 @@ function createLightbox(
 		if (!floatingControls) {
 			return
 		}
+
 		floatingControls.wrapper.dataset.unbound = ''
 		floatingControls.bar.removeAttribute('mediacontroller')
 
@@ -307,6 +321,7 @@ function createLightbox(
 		if (!floatingControls) {
 			return
 		}
+
 		if (boundController !== controller) {
 			if (boundController) {
 				// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
@@ -331,6 +346,7 @@ function createLightbox(
 		if (!LOCK_PAGE_SCROLL) {
 			return
 		}
+
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 		document.documentElement.style.setProperty('--amk-scrollbar-width', `${scrollbarWidth}px`)
 		document.documentElement.classList.add('amk-lock-scroll')
@@ -356,6 +372,7 @@ function createLightbox(
 		if (!slide.holderElement) {
 			return
 		}
+
 		slide.holderElement.classList.toggle('pswp__item--video', slide.data.type === 'video')
 	})
 
@@ -378,8 +395,7 @@ function createLightbox(
 				type: 'video',
 				videoConfig: element.dataset.pswpVideoConfig ?? '',
 				videoContainer: element,
-				// eslint-disable-next-line ts/no-unsafe-type-assertion -- value controlled by our own data attribute
-				videoElement: (element.dataset.pswpVideoElement ?? 'hls-video') as VideoElementTag,
+				videoElement: element.dataset.pswpVideoElement ?? 'hls-video',
 				videoPoster: posterUrl,
 				videoSrc: element.dataset.pswpVideoSrc ?? '',
 				width: Number(element.dataset.pswpWidth) || 1920,
@@ -467,6 +483,7 @@ function createLightbox(
 			if (event.code !== 'Space' && event.key !== ' ') {
 				return
 			}
+
 			const { target } = event
 			if (
 				target instanceof HTMLElement &&
@@ -474,15 +491,18 @@ function createLightbox(
 			) {
 				return
 			}
+
 			event.preventDefault()
 			const content = lightbox.pswp?.currSlide?.content
 			if (!content || !isVideoData(content.data)) {
 				return
 			}
+
 			const video = queryVideoElement(content.element)
 			if (!video) {
 				return
 			}
+
 			markFloatingActive()
 			if (video.paused) {
 				tryPlay(video)
@@ -505,13 +525,19 @@ function createLightbox(
 	// animation (it's the class that drives the pswp__hide-on-close fade), so
 	// it's on throughout the transition.
 	lightbox.on('openingAnimationStart', () => {
-		if (floatingControls) floatingControls.wrapper.dataset.transitioning = ''
+		if (floatingControls) {
+			floatingControls.wrapper.dataset.transitioning = ''
+		}
 	})
 	lightbox.on('openingAnimationEnd', () => {
-		if (floatingControls) delete floatingControls.wrapper.dataset.transitioning
+		if (floatingControls) {
+			delete floatingControls.wrapper.dataset.transitioning
+		}
 	})
 	lightbox.on('closingAnimationStart', () => {
-		if (floatingControls) floatingControls.wrapper.dataset.transitioning = ''
+		if (floatingControls) {
+			floatingControls.wrapper.dataset.transitioning = ''
+		}
 
 		// Release page scroll lock at the START of the close animation rather
 		// than at destroy. System scrollbars can't be CSS-transitioned, so
@@ -532,6 +558,7 @@ function createLightbox(
 		if (!pswp?.currSlide) {
 			return
 		}
+
 		const isSelfThumb = pswp.currSlide.data.selfThumbElement instanceof HTMLElement
 		pswp.options.showHideAnimationType = isSelfThumb ? 'fade' : 'zoom'
 	})
@@ -545,6 +572,7 @@ function createLightbox(
 		if (!(content.data.selfThumbElement instanceof HTMLElement)) {
 			return
 		}
+
 		const image = content.element
 		if (image instanceof HTMLImageElement) {
 			image.classList.add('amk-fade-in')
@@ -559,6 +587,7 @@ function createLightbox(
 		if (!isVideoData(content.data)) {
 			return
 		}
+
 		event.preventDefault()
 
 		const {
@@ -582,7 +611,9 @@ function createLightbox(
 		// happens. The inline player is muted by default too, and the user
 		// can unmute via the floating control bar.
 		videoElement.setAttribute('muted', '')
-		if (videoPoster) videoElement.setAttribute('poster', videoPoster)
+		if (videoPoster) {
+			videoElement.setAttribute('poster', videoPoster)
+		}
 
 		// Apply hls.js config before setting src (HLS-specific).
 		if (videoElementTag === 'hls-video' && videoConfig) {
@@ -649,6 +680,7 @@ function createLightbox(
 			const applySeek = (): void => {
 				proxiedVideo.currentTime = inlineCurrentTime
 			}
+
 			// `loadcomplete` is dispatched by vimeo-video-element /
 			// youtube-video-element once the iframe API is ready.
 			// `loadedmetadata` covers the native-video path (hls-video).
@@ -682,6 +714,7 @@ function createLightbox(
 		if (!floatingControls) {
 			return
 		}
+
 		const content = lightbox.pswp?.currSlide?.content
 		if (!content || !isVideoData(content.data)) {
 			hideFloatingControls()
@@ -692,6 +725,7 @@ function createLightbox(
 		if (!(controller instanceof HTMLElement) || !controller.isConnected) {
 			return
 		}
+
 		bindFloatingBar(controller)
 	}
 
@@ -710,8 +744,11 @@ function createLightbox(
 		if (!isVideoData(content.data)) {
 			return
 		}
+
 		const video = queryVideoElement(content.element)
-		if (video) tryPlay(video)
+		if (video) {
+			tryPlay(video)
+		}
 
 		// Pause the inline player.
 		const inlineVideo = queryVideoElement(content.data.videoContainer)
@@ -729,18 +766,23 @@ function createLightbox(
 		if (!content || !isVideoData(content.data)) {
 			return
 		}
+
 		const video = queryVideoElement(content.element)
-		if (video?.paused) tryPlay(video)
+		if (video?.paused) {
+			tryPlay(video)
+		}
 	})
 
 	lightbox.on('contentDeactivate', ({ content }) => {
 		if (!isVideoData(content.data)) {
 			return
 		}
+
 		const video = queryVideoElement(content.element)
 		if (!video) {
 			return
 		}
+
 		// Record play state *before* pausing so `syncBackToInline` can restore
 		// it on the inline player when the lightbox closes. Also fires on slide
 		// changes in multi-item galleries — harmless, the entry is overwritten
@@ -762,6 +804,7 @@ function createLightbox(
 		if (!isVideoData(content.data)) {
 			return
 		}
+
 		syncBackToInline(content)
 		destroyHlsInstance(content.element?.querySelector(VIDEO_ELEMENT_SELECTOR))
 	})
@@ -816,6 +859,7 @@ function createLightbox(
 		if (!slide) {
 			return
 		}
+
 		originalShowCaption(slide)
 	}
 
@@ -857,6 +901,7 @@ function syncBackToInline(content: {
 	if (wasPlayingMap.get(content.data.videoContainer)) {
 		tryPlay(inlineVideo)
 	}
+
 	wasPlayingMap.delete(content.data.videoContainer)
 }
 
@@ -949,6 +994,7 @@ for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-
 			if (!lb) {
 				return
 			}
+
 			const children = [
 				...document.querySelectorAll<HTMLElement>(`.pswp-zoom[data-pswp-gallery="${galleryName}"]`),
 			]
