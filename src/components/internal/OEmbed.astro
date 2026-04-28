@@ -6,8 +6,9 @@ export type Props = {
 	html: string
 	resolvedLabel: string
 	/**
-	 * Sanitize provider HTML: adds missing `title` on iframes, removes deprecated
-	 * attributes (`frameborder`, `scrolling`), and lowercases non-standard attribute names.
+	 * Sanitize provider HTML: adds missing `title` on iframes, removes deprecated attributes
+	 * (`frameborder`, `scrolling`), and lowercases non-standard attribute names.
+	 *
 	 * @default true
 	 */
 	sanitize?: boolean | undefined

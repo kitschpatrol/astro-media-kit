@@ -12,8 +12,8 @@ export function toZoomerProps(props: PrefixedProps): Pick<Props, 'enabled' | 'le
 /**
  * Zoom-related props for components that embed a `<Zoomer>` (e.g. `<Image>`,
  * `<Picture>`). Renames `enabled` → `zoom` and `scope` → `zoomScope`; the
- * remaining `<Zoomer>` props (dimensions, source, srcset) are inferred from
- * the wrapped child.
+ * remaining `<Zoomer>` props (dimensions, source, srcset) are inferred from the
+ * wrapped child.
  *
  * Lives in a standalone `.ts` module because `astro-eslint-parser` fails to
  * resolve mapped types imported across `.astro` → `.astro` file boundaries.
@@ -22,6 +22,7 @@ export type PrefixedProps = {
 	/**
 	 * Enable PhotoSwipe zoom. `true` uses the default gallery, a string groups
 	 * items into a named gallery.
+	 *
 	 * @default false
 	 */
 	zoom?: Props['enabled']
@@ -30,6 +31,7 @@ export type PrefixedProps = {
 	 * opened lightbox image. `'fit'` keeps the image fitted to the viewport,
 	 * `'fill'` zooms to cover the viewport (cropping the overflowing axis), and
 	 * `'native'` zooms to 100% (1:1 pixels).
+	 *
 	 * @default 'fit'
 	 */
 	zoomLevel?: Props['level']

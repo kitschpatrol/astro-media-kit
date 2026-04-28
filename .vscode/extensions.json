@@ -1,8 +1,12 @@
 {
 	"recommendations": [
+		"astro-build.astro-vscode",
 		"dbaeumer.vscode-eslint",
 		"esbenp.prettier-vscode",
+		"kitschpatrol.aphex-preview",
+		"kitschpatrol.tldraw-preview",
 		"streetsidesoftware.code-spell-checker",
+		"stylelint.vscode-stylelint",
 		"unifiedjs.vscode-mdx"
 	]
 }

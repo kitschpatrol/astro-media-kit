@@ -311,8 +311,8 @@ export function buildSrcsetAttribute(
 /**
  * Resolve the final `sizes` attribute value. When the user supplied `sizes`,
  * it's passed through unchanged. When Astro auto-generated `sizes` (responsive
- * layout without an explicit user value), the result is prefixed with `"auto, "`
- * so lazy-loaded images can use the browser's auto-sizes behavior. Returns
+ * layout without an explicit user value), the result is prefixed with `"auto,
+ * "` so lazy-loaded images can use the browser's auto-sizes behavior. Returns
  * `undefined` when no sizes value is present.
  */
 export function resolveSizesAttribute(

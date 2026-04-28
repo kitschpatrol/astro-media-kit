@@ -17,9 +17,9 @@ export type OembedInfo = {
 /**
  * Discovers and fetches oEmbed metadata for a page URL.
  *
- * Follows redirects (e.g. short URLs like dai.ly/ → dailymotion.com/),
- * parses the page HTML for a `<link rel="alternate" type="application/json+oembed">` tag,
- * then fetches the oEmbed JSON endpoint.
+ * Follows redirects (e.g. short URLs like dai.ly/ → dailymotion.com/), parses
+ * the page HTML for a `<link rel="alternate" type="application/json+oembed">`
+ * tag, then fetches the oEmbed JSON endpoint.
  */
 export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	// Step 1: Fetch the page HTML, following redirects.

@@ -40,41 +40,33 @@ import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
 /**
- * Props for the `<Image>` component — renders a single `<img>` with caption and
- * zoom support. Derives from Astro's `LocalImageProps` (all getImage-compatible
- * fields like `densities`, `fit`, `height`, `layout`, `loading`, `position`,
- * `quality`, `sizes`, `width`, `widths`, plus `<img>` HTMLAttributes). Media-kit
- * extensions (`src` widening, background, caption, zoom) follow.
+ * Props for the `<Image>` component — renders a single `<img>` with caption and zoom support.
+ * Derives from Astro's `LocalImageProps` (all getImage-compatible fields like `densities`, `fit`,
+ * `height`, `layout`, `loading`, `position`, `quality`, `sizes`, `width`, `widths`, plus `<img>`
+ * HTMLAttributes). Media-kit extensions (`src` widening, background, caption, zoom) follow.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
-		/**
-		 * CSS background color for the image (visible behind transparent areas).
-		 */
+		/** CSS background color for the image (visible behind transparent areas). */
 		background?: string | undefined
-		/**
-		 * Dark mode background color override. Uses `light-dark()` with `background`.
-		 */
+		/** Dark mode background color override. Uses `light-dark()` with `background`. */
 		backgroundDark?: string | undefined
-		/**
-		 * JSX-style class name (passed by MDX). Merged with `class`.
-		 */
+		/** JSX-style class name (passed by MDX). Merged with `class`. */
 		className?: string | undefined
 		/**
-		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to numeric-only, since
+		 * getImage() rejects string dimensions.
 		 */
 		height?: number | undefined
 		/**
-		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only
-		 * `.light` is used — use `<Picture>` for dark-mode image sources), or an
-		 * absolute file path string.
+		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only `.light` is used —
+		 * use `<Picture>` for dark-mode image sources), or an absolute file path string.
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 		/**
-		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to numeric-only, since
+		 * getImage() rejects string dimensions.
 		 */
 		width?: number | undefined
 	}

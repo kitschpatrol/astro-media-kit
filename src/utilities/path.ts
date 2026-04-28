@@ -10,8 +10,11 @@ type PathLikeInput =
 	  }
 
 /**
- * Gets the file extension from a path or URL. Returns an empty string if the path or URL is not a valid file path or URL.
+ * Gets the file extension from a path or URL. Returns an empty string if the
+ * path or URL is not a valid file path or URL.
+ *
  * @param path - The path to get the file extension from.
+ *
  * @returns The file extension.
  */
 export function getFileExtension(path: PathLikeInput): string {
@@ -21,7 +24,9 @@ export function getFileExtension(path: PathLikeInput): string {
 
 /**
  * Gets the path without the extension from a path or URL.
+ *
  * @param path - The path to get the path without the extension from.
+ *
  * @returns The path without the extension.
  */
 export function getPathWithoutExtension(path: PathLikeInput): string {
@@ -35,7 +40,9 @@ export function getPathWithoutExtension(path: PathLikeInput): string {
 /**
  * Removes Vite's /@fs/ prefix if present, any URL prefix, and any query params.
  * Leaves relative / absolute/ leading / trailing slashes as they are.
+ *
  * @param path - The path, URL, or object to get the plain path from.
+ *
  * @returns The plain path string.
  */
 function getPlainPath(path: PathLikeInput): string {
@@ -63,8 +70,11 @@ function getPlainPath(path: PathLikeInput): string {
 }
 
 /**
- * Gets the absolute file path from a path or URL, handling special cases like Vite's /@fs/ URLs.
+ * Gets the absolute file path from a path or URL, handling special cases like
+ * Vite's /@fs/ URLs.
+ *
  * @param path - The path or URL to convert to an absolute file path.
+ *
  * @returns The absolute file path.
  */
 export function getAbsoluteFilePath(path: PathLikeInput, addDistribution = false): string {
@@ -80,8 +90,8 @@ export function stripCwd(path: string): string {
 }
 
 /**
- * Resolves aliases like ~/ to the absolute src path.
- * Must be synced with: astro.config.ts, tsconfig.json, and path.ts
+ * Resolves aliases like ~/ to the absolute src path. Must be synced with:
+ * astro.config.ts, tsconfig.json, and path.ts
  */
 export function resolveAliases(path: string): string {
 	if (!path.startsWith('~/')) {

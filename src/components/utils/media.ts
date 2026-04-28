@@ -23,7 +23,10 @@ export function isDirectMediaUrl(url: URL): boolean {
 	return DIRECT_MEDIA_EXTENSIONS.has(url.pathname.slice(dot).toLowerCase())
 }
 
-/** Returns true if the string looks like a local file path (starts with `/`, `./`, `../`, or has a media extension). */
+/**
+ * Returns true if the string looks like a local file path (starts with `/`,
+ * `./`, `../`, or has a media extension).
+ */
 export function isLocalPath(src: string): boolean {
 	if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) {
 		return true

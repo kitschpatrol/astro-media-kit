@@ -1,4 +1,7 @@
-/** Builds the inline style string for `<media-controller>` from video dimensions. */
+/**
+ * Builds the inline style string for `<media-controller>` from video
+ * dimensions.
+ */
 export function getControllerStyle(
 	intrinsicWidth: number | undefined,
 	aspectRatio: string | undefined,
@@ -14,9 +17,9 @@ export function getControllerStyle(
 }
 
 /**
- * Shared props passed from Video.astro to internal sub-components.
- * All service resolution and metadata fetching is done by Video.astro;
- * sub-components only handle rendering.
+ * Shared props passed from Video.astro to internal sub-components. All service
+ * resolution and metadata fetching is done by Video.astro; sub-components only
+ * handle rendering.
  */
 export type InternalVideoProps = {
 	aspectRatio: string | undefined

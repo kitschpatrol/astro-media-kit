@@ -5,19 +5,24 @@ import path from 'node:path'
 /** Image formats that may be emitted as originals by Astro's image pipeline. */
 const ORIGINAL_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'svg'] as const
 
-/** Valid characters in Astro's 8-char hash (base64url minus `_`, which is reserved as the variant separator). */
+/**
+ * Valid characters in Astro's 8-char hash (base64url minus `_`, which is
+ * reserved as the variant separator).
+ */
 const ORIGINAL_HASH_CHARS = /^[a-z0-9-]+$/i
 
 /**
  * Whether `file` has the structural shape of an Astro image-pipeline original.
  *
  * Astro's naming convention for image pipeline output:
- *   - Original: `{base}.{HASH8}.{ext}`
- *   - Variant:  `{base}.{HASH8}_{transform}.{ext}`
+ *
+ * - Original: `{base}.{HASH8}.{ext}`
+ * - Variant: `{base}.{HASH8}_{transform}.{ext}`
  *
  * Identified positionally: the penultimate `.`-separated segment must be
  * exactly 8 chars from `[A-Za-z0-9-]`. Variants are rejected by length (always
- * longer, due to the `_{transform}` suffix) and by charset (the `_` separator).
+ * longer, due to the `_{transform}` suffix) and by charset (the `_`
+ * separator).
  *
  * Shape alone does not mean the file is unused; use `findUnusedOriginals` to
  * select only those originals that have at least one variant sibling.
@@ -78,7 +83,8 @@ export function findUnusedOriginals(files: readonly string[]): string[] {
 /**
  * Delete unused original images from the Astro build output directory.
  *
- * Inspired by https://github.com/withastro/astro/issues/4961#issuecomment-2322936873
+ * Inspired by
+ * https://github.com/withastro/astro/issues/4961#issuecomment-2322936873
  */
 export async function removeOriginalImages(
 	directory: URL,

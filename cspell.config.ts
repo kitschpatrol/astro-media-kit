@@ -18,7 +18,6 @@ export default cspellConfig({
 		'mediavolumeunavailable',
 		'mixcloud',
 		'msrc',
-		'oembed',
 		'oscnord',
 		'pswp',
 		'reposts',

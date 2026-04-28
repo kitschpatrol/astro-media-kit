@@ -868,13 +868,13 @@ function createLightbox(
 }
 
 /**
- * Sync the lightbox player's position and play state back to the inline
- * player, so closing the lightbox is transparent — same currentTime, same
+ * Sync the lightbox player's position and play state back to the inline player,
+ * so closing the lightbox is transparent — same currentTime, same
  * playing/paused status. Works for all video element types: hls-video reads
- * currentTime off its native `<video>` and embed elements
- * (vimeo-video-element / youtube-video-element) expose the last-known time
- * cached from their `timeupdate` handlers, so the synchronous getter is
- * non-blocking in every case.
+ * currentTime off its native `<video>` and embed elements (vimeo-video-element
+ * / youtube-video-element) expose the last-known time cached from their
+ * `timeupdate` handlers, so the synchronous getter is non-blocking in every
+ * case.
  */
 function syncBackToInline(content: {
 	data: Record<string, unknown>
