@@ -89,7 +89,7 @@ export default defineConfig({
 >
 > In most cases you'll want `image.layout: 'constrained'` and `image.responsiveStyles: true` in your Astro config (as shown above).
 >
-> These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via `getImage()`, so responsive `srcsets` behave correctly without per-component overrides.
+> These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via `getImage()`, so responsive `srcset` behaves correctly without per-component overrides.
 
 ### Direct component usage
 
@@ -144,7 +144,7 @@ Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImagePr
 | `height`                  | `number`                                                                 | —                     | `astro`     | yes      |
 | `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | Astro's               | `astro`     | yes      |
 | `format`                  | `ImageOutputFormat`                                                      | Astro's               | `astro`     | yes      |
-| `densities`               | `readonly (number \| \`${number}x\`)\[]\`                                | —                     | `astro`     | yes      |
+| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —                     | `astro`     | yes      |
 | `widths`                  | `readonly number[]`                                                      | —                     | `astro`     | yes      |
 | `sizes`                   | `string`                                                                 | —                     | `astro`     | yes      |
 | `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | Astro's               | `astro`     | yes      |
@@ -152,12 +152,12 @@ Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImagePr
 | `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | Astro's               | `astro`     | yes      |
 | `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`              | `astro`     | yes      |
 | `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`             | `astro`     | yes      |
-| `inferSize`               | `boolean`                                                                | `true` (remote only)⁰ | `astro`     | yes      |
+| `inferSize`               | `boolean`                                                                | `true` (remote only)¹ | `astro`     | yes      |
 | (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —                     | `astro`     | yes      |
 | `className`               | `string`                                                                 | —                     | `media-kit` | yes      |
 | `background`              | `string` (CSS color)                                                     | —                     | `media-kit` | **no**   |
 | `backgroundDark`          | `string` (CSS color)                                                     | —                     | `media-kit` | **no**   |
-| `credit`                  | `boolean \| string`                                                      | `false`               | `media-kit` | partial¹ |
+| `credit`                  | `boolean \| string`                                                      | `false`               | `media-kit` | partial² |
 | `creditMediaType`         | `MediaType`                                                              | —                     | `media-kit` | yes      |
 | `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`             | `media-kit` | yes      |
 | `creditOrganization`      | `string`                                                                 | —                     | `media-kit` | yes      |
@@ -165,9 +165,9 @@ Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImagePr
 | `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`               | `media-kit` | yes      |
 | `zoomScope`               | `string` (CSS selector)                                                  | —                     | `media-kit` | yes      |
 
-⁰ For remote sources, `inferSize: true` is applied automatically when neither explicit `width`/`height` nor an explicit `inferSize` is supplied. Local sources derive dimensions from `ImageMetadata`.
+¹ For remote sources, `inferSize: true` is applied automatically when neither explicit `width`/`height` nor an explicit `inferSize` is supplied. Local sources derive dimensions from `ImageMetadata`.
 
-¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
+² Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
 Remote-source caveats: when `src` is an `http(s)` URL, Astro's `inferSize: true` is set automatically (unless explicitly overridden), and the following are skipped with dev-mode warnings: `background`, `backgroundDark`, transparency-aware fallback-format selection, and mixed local/remote `{ dark, light }` pairs.
 
@@ -194,14 +194,14 @@ All props from [Image](#image) above, plus:
 | Prop                | Type                                                      | Default                                 | Origin      | Remote   |
 | ------------------- | --------------------------------------------------------- | --------------------------------------- | ----------- | -------- |
 | `formats`           | `ImageOutputFormat[]`                                     | `['webp']`                              | `astro`     | yes      |
-| `fallbackFormat`    | `ImageOutputFormat`                                       | `'png'` (or input if gif/svg/jpg/jpeg)² | `astro`     | yes      |
+| `fallbackFormat`    | `ImageOutputFormat`                                       | `'png'` (or input if gif/svg/jpg/jpeg)³ | `astro`     | yes      |
 | `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`                                    | `astro`     | yes      |
-| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —                                       | `media-kit` | partial³ |
+| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —                                       | `media-kit` | partial⁴ |
 | `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`                               | `media-kit` | yes      |
 
-² Transparency-aware fallback-format selection (keeping gif/svg/jpg/jpeg in-format) only applies to local sources; remote sources fall back to the raw `fallbackFormat` prop or Astro's default.
+³ Transparency-aware fallback-format selection (keeping gif/svg/jpg/jpeg in-format) only applies to local sources; remote sources fall back to the raw `fallbackFormat` prop or Astro's default.
 
-³ `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
+⁴ `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
 
 When `src` is a `{ dark, light }` pair (e.g. from a tldraw import), the dark variant is used automatically unless `srcDark={false}`.
 
@@ -219,7 +219,7 @@ The `darkMode` prop controls how Picture switches between light and dark image v
 
 **CSS selector string** — Any string other than `'media'` or `'none'` is treated as a CSS selector that identifies dark mode on the page. This is for frameworks that control dark mode via a class or attribute rather than the OS preference, like Starlight (`[data-theme="dark"]`) or Tailwind CSS (`.dark`).
 
-Renders two `<picture>` elements (one light, one dark) and injects a `<style>` block that toggles visibility based on the selector. The dark variant's images load lazily when the selector activates.
+Renders two `<picture>` elements (one light, one dark) and injects a `<style>` block that toggles visibility based on the selector. The dark variant's images load lazily when the selector activates. Selectors containing `{`, `}`, `<`, `>`, or `;` are rejected to keep the injected stylesheet well-formed.
 
 ```astro
 <!-- Starlight -->
@@ -285,6 +285,8 @@ import { Video } from 'astro-media-kit/components'
 | `zoomScope`               | `string` (CSS selector)                                                           | —                           |
 
 `service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` only apply to HLS services (Bunny, Cloudflare, Mux). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
+
+`controlStyle` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'none'` renders the player without any controls and marks it inert.
 
 URL formats recognized automatically:
 
@@ -527,12 +529,12 @@ mediaKit({
 })
 ```
 
-| Option         | Type      | Default | Description                                    |
-| -------------- | --------- | ------- | ---------------------------------------------- |
-| `enabled`      | `boolean` | `true`  | Master toggle when an object is passed         |
-| `angle`        | `number`  | `-30`   | Counter-clockwise tilt in degrees              |
-| `minDimension` | `number`  | `96`    | Skip variants smaller than this on either axis |
-| `opacity`      | `number`  | `0.8`   | Label fill/stroke opacity (0–1)                |
+| Option         | Type      | Default | Description                                                                 |
+| -------------- | --------- | ------- | --------------------------------------------------------------------------- |
+| `enabled`      | `boolean` | `true`  | Object-form-only toggle. Set to `false` to disable without removing tuning. |
+| `angle`        | `number`  | `-30`   | Counter-clockwise tilt in degrees                                           |
+| `minDimension` | `number`  | `96`    | Skip variants smaller than this on either axis                              |
+| `opacity`      | `number`  | `0.8`   | Label fill/stroke opacity (0–1)                                             |
 
 The stamped byte count is the pre-watermark size — the variant's weight without the overlay. Registers a custom local image service that wraps Astro's built-in sharp service; when disabled (the default), the image pipeline is left entirely untouched.
 
