@@ -115,9 +115,10 @@ function createFloatingControls(): {
 	// `pswp__hide-on-close` wires the bar into PhotoSwipe's open/close
 	// opacity transition (driven by the `.pswp--ui-visible` class on the
 	// root), matching the fade-out behavior of the native close/arrow
-	// buttons. `data-unbound` drives opacity:0 while no video is bound —
-	// overrides `pswp__hide-on-close`'s ui-visible opacity:1 via later
-	// source order (same specificity).
+	// buttons. `data-unbound` drives opacity:0 while no video is bound;
+	// the rule in Video.astro repeats the class to reach specificity
+	// (0,3,0) so it beats `.pswp--ui-visible .pswp__hide-on-close`'s
+	// opacity:1 regardless of stylesheet source order.
 	wrapper.className = 'pswp__floating-controls pswp__hide-on-close'
 	wrapper.dataset.unbound = ''
 

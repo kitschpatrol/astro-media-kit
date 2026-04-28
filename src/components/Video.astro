@@ -296,8 +296,13 @@ const sharedProps = {
 		--media-control-hover-background: rgb(255 255 255 / 10%);
 	}
 
-	.pswp__floating-controls[data-unbound],
-	.pswp__floating-controls[data-user-inactive] {
+	/* Specificity (0,3,0) via repeated class so this beats PhotoSwipe core's
+	   `.pswp--ui-visible .pswp__hide-on-close { opacity: 1 }` (0,2,0)
+	   regardless of stylesheet source order. Consumer builds can merge the
+	   global block before the photoswipe vendor CSS, which would let the
+	   inherited opacity:1 win and leak the bar onto non-video slides. */
+	.pswp__floating-controls.pswp__floating-controls[data-unbound],
+	.pswp__floating-controls.pswp__floating-controls[data-user-inactive] {
 		pointer-events: none;
 		opacity: 0;
 	}
