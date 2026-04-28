@@ -18,37 +18,32 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<Video
 		autoPlay={true}
 		capQualityToSize={false}
-		controlStyle="none"
+		controls="none"
 		initialBandwidth={50_000_000}
 		loop={true}
 		src={bunnyId}
 	/>
 	<h3>Minimal</h3>
-	<Video
-		capQualityToSize={false}
-		controlStyle="minimal"
-		initialBandwidth={50_000_000}
-		src={bunnyId}
-	/>
+	<Video capQualityToSize={false} controls="minimal" initialBandwidth={50_000_000} src={bunnyId} />
 	<h3>Full</h3>
-	<Video capQualityToSize={false} controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video capQualityToSize={false} controls="full" initialBandwidth={50_000_000} src={bunnyId} />
 	<h3>Lightbox</h3>
-	<Video controlStyle="lightbox" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video controls="lightbox" initialBandwidth={50_000_000} src={bunnyId} />
 
 	<h2>Native controls</h2>
 	<p>
-		<code>controlStyle="native"</code> skips media-chrome and uses the underlying element's native controls
+		<code>controls="native"</code> skips media-chrome and uses the underlying element's native controls
 		— the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and
 		HLS.
 	</p>
 	<h3>YouTube</h3>
-	<Video controlStyle="native" src="dQw4w9WgXcQ" />
+	<Video controls="native" src="dQw4w9WgXcQ" />
 	<h3>Vimeo</h3>
-	<Video controlStyle="native" src="10184668" />
+	<Video controls="native" src="10184668" />
 	<h3>Local</h3>
-	<Video controlStyle="native" src="/test.mp4" />
+	<Video controls="native" src="/test.mp4" />
 	<h3>HLS</h3>
-	<Video controlStyle="native" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video controls="native" initialBandwidth={50_000_000} src={bunnyId} />
 
 	<h2>Local file</h2>
 	<Video src="/test.mp4" />
@@ -72,14 +67,14 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<Video src="https://vimeo.com/10184668" />
 
 	<h2>Zoom (standalone)</h2>
-	<Video controlStyle="full" initialBandwidth={50_000_000} src={bunnyId} zoom={true} />
+	<Video controls="full" initialBandwidth={50_000_000} src={bunnyId} zoom={true} />
 
 	<h2>Zoom (mixed gallery)</h2>
 	<p>Video and image in the same gallery — swipe between them.</p>
 	<div style="display: flex; gap: 1rem; align-items: start;">
 		<div style="flex: 1;">
 			<Video
-				controlStyle="full"
+				controls="full"
 				initialBandwidth={50_000_000}
 				src={bunnyId}
 				zoom="mixed"

@@ -13,7 +13,7 @@ import { getVideoInfo, resolveVideoSource } from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
-type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
+type Controls = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 
 /**
  * Props for the `<Video>` component — unified video player supporting Bunny, Cloudflare, Mux,
@@ -41,7 +41,7 @@ export type Props = PrefixedCaptionProps &
 		 *
 		 * @default 'full'
 		 */
-		controlStyle?: ControlStyles | undefined
+		controls?: Controls | undefined
 		/** Initial HLS bandwidth estimate in bits/s. Higher values start at higher quality. */
 		initialBandwidth?: number | undefined
 		/** Accessible label for the video player. Falls back to the video title. */
@@ -75,7 +75,7 @@ export type Props = PrefixedCaptionProps &
 const {
 	autoPlay = false,
 	capQualityToSize,
-	controlStyle = 'full',
+	controls = 'full',
 	credit,
 	creditMediaType,
 	creditMediaTypeFallback,
@@ -210,7 +210,7 @@ const videoElementMap = {
 const sharedProps = {
 	aspectRatio,
 	autoPlay,
-	controlStyle,
+	controls,
 	intrinsicWidth: videoInfo?.width,
 	loop,
 	muted,

@@ -29,7 +29,7 @@ export type InternalVideoProps = {
 		src: string
 		srclang: string
 	}>
-	controlStyle: 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
+	controls: 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 	hlsConfig: Record<string, boolean | number>
 	/** Intrinsic video width in pixels, used for native-like sizing. */
 	intrinsicWidth: number | undefined

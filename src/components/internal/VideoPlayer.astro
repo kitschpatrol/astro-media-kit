@@ -19,7 +19,7 @@ const {
 	aspectRatio,
 	autoPlay,
 	captions,
-	controlStyle,
+	controls,
 	element,
 	hlsConfig,
 	hlsUrl,
@@ -36,7 +36,7 @@ const {
 
 const isHls = element === 'hls-video'
 const isEmbed = element === 'vimeo-video' || element === 'youtube-video'
-const isNative = controlStyle === 'native'
+const isNative = controls === 'native'
 
 const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 
@@ -172,11 +172,9 @@ const hlsConfigJson =
 		!isNative && (
 			<media-controller
 				autohide="1"
-				class:list={[controlStyle, { autoplay: autoPlay }]}
-				gesturesdisabled={
-					controlStyle === 'lightbox' || controlStyle === 'none' || zoom ? '' : undefined
-				}
-				inert={controlStyle === 'none' ? 'true' : undefined}
+				class:list={[controls, { autoplay: autoPlay }]}
+				gesturesdisabled={controls === 'lightbox' || controls === 'none' || zoom ? '' : undefined}
+				inert={controls === 'none' ? 'true' : undefined}
 				style={controllerStyle}
 			>
 				{isHls ? (
@@ -199,7 +197,7 @@ const hlsConfigJson =
 					<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
 				)}
 
-				{controlStyle === 'full' && (
+				{controls === 'full' && (
 					<media-control-bar>
 						<media-play-button />
 						<media-mute-button />
@@ -213,7 +211,7 @@ const hlsConfigJson =
 					</media-control-bar>
 				)}
 
-				{controlStyle === 'lightbox' && (
+				{controls === 'lightbox' && (
 					<media-control-bar>
 						<media-play-button />
 						<media-mute-button />
@@ -223,7 +221,7 @@ const hlsConfigJson =
 						{captions.length > 0 && <media-captions-button />}
 					</media-control-bar>
 				)}
-				{controlStyle === 'minimal' && (
+				{controls === 'minimal' && (
 					<>
 						<media-control-bar style="justify-content: flex-end">
 							<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
