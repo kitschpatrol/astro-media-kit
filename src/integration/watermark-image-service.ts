@@ -43,7 +43,7 @@ function buildTiledStampSvg(
 	height: number,
 	bytes: number,
 	config: ResolvedWatermarkConfig,
-): Uint8Array {
+) {
 	const label = `${width} × ${height} · ${prettyBytes(bytes, {
 		maximumFractionDigits: 0,
 	})}`
@@ -65,7 +65,7 @@ function buildTiledStampSvg(
 	</defs>
 	<rect width="${width}" height="${height}" fill="url(#stamp)"/>
 </svg>`
-	return new TextEncoder().encode(svg)
+	return Buffer.from(svg)
 }
 
 type EncoderOptions = ReturnType<typeof resolveSharpEncoderOptions>

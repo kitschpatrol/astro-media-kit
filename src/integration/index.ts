@@ -228,8 +228,11 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					: [video]
 
 	const watermarkEnabled = isToggleEnabled(config?.watermark, false)
-	const { angle = -30, minDimension = 96, opacity = 0.8 } =
-		typeof config?.watermark === 'object' ? config.watermark : {}
+	const {
+		angle = -30,
+		minDimension = 96,
+		opacity = 0.8,
+	} = typeof config?.watermark === 'object' ? config.watermark : {}
 	const watermarkResolved: ResolvedWatermarkConfig = { angle, minDimension, opacity }
 
 	return {

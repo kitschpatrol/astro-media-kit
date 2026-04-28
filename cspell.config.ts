@@ -21,7 +21,6 @@ export default cspellConfig({
 		'oscnord',
 		'pswp',
 		'reposts',
-		'srcsets',
 		'unassociate',
 		'userinactive',
 		'userinactivechange',
