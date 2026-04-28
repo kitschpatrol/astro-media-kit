@@ -42,7 +42,9 @@ async function runTransform(
 	)
 }
 
-describe('watermark image service', () => {
+// Sharp + librsvg can have significant cold-start cost on Windows CI (font
+// cache init), so allow extra time for the first composite.
+describe('watermark image service', { timeout: 30_000 }, () => {
 	it('stamps a PNG variant above the min dimension', async () => {
 		const input = await makePng(400, 300)
 		const result = await runTransform(input, defaultWatermarkConfig)

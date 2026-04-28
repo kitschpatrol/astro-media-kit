@@ -1,6 +1,5 @@
 import { isPlainObject, isUrlInstance } from '@sindresorhus/is'
 import nodePath from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 type PathLikeInput =
 	| string
@@ -8,6 +7,14 @@ type PathLikeInput =
 	| {
 			src?: string | URL
 	  }
+
+function toPosix(path: string): string {
+	return path.replaceAll('\\', '/')
+}
+
+function posixCwd(): string {
+	return toPosix(process.cwd())
+}
 
 /**
  * Gets the file extension from a path or URL. Returns an empty string if the
@@ -19,7 +26,7 @@ type PathLikeInput =
  */
 export function getFileExtension(path: PathLikeInput): string {
 	const plainPath = getPlainPath(path)
-	return nodePath.extname(plainPath)
+	return nodePath.posix.extname(plainPath)
 }
 
 /**
@@ -31,9 +38,9 @@ export function getFileExtension(path: PathLikeInput): string {
  */
 export function getPathWithoutExtension(path: PathLikeInput): string {
 	const plainPath = getPlainPath(path)
-	return nodePath.join(
-		nodePath.dirname(plainPath),
-		nodePath.basename(plainPath, nodePath.extname(plainPath)),
+	return nodePath.posix.join(
+		nodePath.posix.dirname(plainPath),
+		nodePath.posix.basename(plainPath, nodePath.posix.extname(plainPath)),
 	)
 }
 
@@ -52,7 +59,11 @@ function getPlainPath(path: PathLikeInput): string {
 		throw new TypeError('Cannot derive absolute file path from provided input.')
 	}
 
-	let pathString = isUrlInstance(pathStringOrUrl) ? fileURLToPath(pathStringOrUrl) : pathStringOrUrl
+	// For URL instances, use pathname directly. fileURLToPath() throws on
+	// Windows for file URLs without a drive letter (e.g. file:///images/x.png).
+	let pathString = isUrlInstance(pathStringOrUrl)
+		? pathStringOrUrl.pathname
+		: toPosix(pathStringOrUrl)
 
 	// Strip Vite's /@fs/ prefix if present
 	if (pathString.startsWith('/@fs/')) {
@@ -60,9 +71,16 @@ function getPlainPath(path: PathLikeInput): string {
 	}
 
 	try {
-		// Try to parse string as URL
+		// Try to parse string as URL — primarily to strip query strings/hashes
+		// that Vite may append (e.g. ?import, ?url). Reject results whose
+		// protocol isn't file:, since URL parsing treats Windows drive letters
+		// (e.g. D:/foo) as a custom scheme and would silently drop the drive.
 		const url = new URL(pathString, 'file://')
-		return url.pathname
+		if (url.protocol === 'file:') {
+			return url.pathname
+		}
+
+		return pathString
 	} catch {
 		// Fall back to treating as file path
 		return pathString
@@ -71,7 +89,9 @@ function getPlainPath(path: PathLikeInput): string {
 
 /**
  * Gets the absolute file path from a path or URL, handling special cases like
- * Vite's /@fs/ URLs.
+ * Vite's /@fs/ URLs. Always returns a POSIX-style path (forward slashes) for
+ * cross-platform consistency. Node's fs APIs accept forward slashes on
+ * Windows.
  *
  * @param path - The path or URL to convert to an absolute file path.
  *
@@ -79,14 +99,16 @@ function getPlainPath(path: PathLikeInput): string {
  */
 export function getAbsoluteFilePath(path: PathLikeInput, addDistribution = false): string {
 	const plainPath = getPlainPath(path)
-	return nodePath.join(process.cwd(), addDistribution ? 'dist' : '', stripCwd(plainPath))
+	return nodePath.posix.join(posixCwd(), addDistribution ? 'dist' : '', stripCwd(plainPath))
 }
 
 /**
  * Strips the current working directory from the path if it is present.
  */
 export function stripCwd(path: string): string {
-	return path.startsWith(process.cwd()) ? path.slice(process.cwd().length) : path
+	const cwd = posixCwd()
+	const normalized = toPosix(path)
+	return normalized.startsWith(cwd) ? normalized.slice(cwd.length) : normalized
 }
 
 /**
@@ -98,5 +120,5 @@ export function resolveAliases(path: string): string {
 		return path
 	}
 
-	return nodePath.resolve(process.cwd(), 'src', path.slice(2))
+	return toPosix(nodePath.resolve(process.cwd(), 'src', path.slice(2)))
 }

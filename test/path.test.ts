@@ -50,10 +50,13 @@ describe('getPathWithoutExtension', () => {
 	})
 })
 
+// Path utilities normalize to POSIX (forward slashes) for cross-platform
+// consistency, so test expectations also use a POSIX-normalized cwd.
+const posixCwd = process.cwd().replaceAll('\\', '/')
+
 describe('stripCwd', () => {
 	it('strips cwd prefix', () => {
-		const cwd = process.cwd()
-		expect(stripCwd(`${cwd}/src/file.ts`)).toBe('/src/file.ts')
+		expect(stripCwd(`${posixCwd}/src/file.ts`)).toBe('/src/file.ts')
 	})
 
 	it('leaves non-cwd paths unchanged', () => {
@@ -68,18 +71,17 @@ describe('stripCwd', () => {
 describe('getAbsoluteFilePath', () => {
 	it('resolves relative path against cwd', () => {
 		const result = getAbsoluteFilePath('/src/file.ts')
-		expect(result).toBe(`${process.cwd()}/src/file.ts`)
+		expect(result).toBe(`${posixCwd}/src/file.ts`)
 	})
 
 	it('adds dist prefix when requested', () => {
 		const result = getAbsoluteFilePath('/src/file.ts', true)
-		expect(result).toBe(`${process.cwd()}/dist/src/file.ts`)
+		expect(result).toBe(`${posixCwd}/dist/src/file.ts`)
 	})
 
 	it('strips cwd before joining to avoid duplication', () => {
-		const cwd = process.cwd()
-		const result = getAbsoluteFilePath(`${cwd}/src/file.ts`)
-		expect(result).toBe(`${cwd}/src/file.ts`)
+		const result = getAbsoluteFilePath(`${posixCwd}/src/file.ts`)
+		expect(result).toBe(`${posixCwd}/src/file.ts`)
 	})
 
 	it('strips /@fs/ prefix', () => {
@@ -92,7 +94,7 @@ describe('resolveAliases', () => {
 	it('resolves ~/ to src directory', () => {
 		const result = resolveAliases('~/components/Image.astro')
 		expect(result).toContain('src/components/Image.astro')
-		expect(result).toContain(process.cwd())
+		expect(result).toContain(posixCwd)
 	})
 
 	it('leaves non-alias paths unchanged', () => {
