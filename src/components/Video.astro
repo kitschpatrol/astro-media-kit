@@ -13,7 +13,7 @@ import { getVideoInfo, resolveVideoSource } from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
-type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'none'
+type ControlStyles = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 
 /**
  * Props for the `<Video>` component — unified video player supporting Bunny, Cloudflare, Mux,
@@ -34,7 +34,10 @@ export type Props = PrefixedCaptionProps &
 		 */
 		capQualityToSize?: boolean | undefined
 		/**
-		 * Player chrome level. `'none'` hides all controls.
+		 * Player chrome level. `'none'` hides all controls. `'native'` skips media-chrome entirely and
+		 * uses the underlying element's native controls — the service's iframe chrome for
+		 * YouTube/Vimeo, the browser's built-in controls for local files and HLS. `zoom` is ignored
+		 * when `'native'`.
 		 *
 		 * @default 'full'
 		 */

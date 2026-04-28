@@ -10,9 +10,12 @@
 	max-width: 100%;
 }
 
+.amk > * {
+	max-width: 100%;
+}
+
 .amk media-controller {
 	--media-time-range-hover-bottom: 0;
-	max-width: 100%;
 }
 
 /* Lightbox mode: transition for JS-driven visibility toggle. */

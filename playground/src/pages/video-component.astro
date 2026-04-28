@@ -35,6 +35,21 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<h3>Lightbox</h3>
 	<Video controlStyle="lightbox" initialBandwidth={50_000_000} src={bunnyId} />
 
+	<h2>Native controls</h2>
+	<p>
+		<code>controlStyle="native"</code> skips media-chrome and uses the underlying element's native controls
+		— the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and
+		HLS.
+	</p>
+	<h3>YouTube</h3>
+	<Video controlStyle="native" src="dQw4w9WgXcQ" />
+	<h3>Vimeo</h3>
+	<Video controlStyle="native" src="10184668" />
+	<h3>Local</h3>
+	<Video controlStyle="native" src="/test.mp4" />
+	<h3>HLS</h3>
+	<Video controlStyle="native" initialBandwidth={50_000_000} src={bunnyId} />
+
 	<h2>Local file</h2>
 	<Video src="/test.mp4" />
 

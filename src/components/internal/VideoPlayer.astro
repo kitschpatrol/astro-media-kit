@@ -36,6 +36,7 @@ const {
 
 const isHls = element === 'hls-video'
 const isEmbed = element === 'vimeo-video' || element === 'youtube-video'
+const isNative = controlStyle === 'native'
 
 const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 
@@ -137,22 +138,22 @@ const hlsConfigJson =
 	class:list={['amk', 'not-content', { 'amk-embed': isEmbed }]}
 	role="group"
 >
-	<media-controller
-		autohide="1"
-		class:list={[controlStyle, { autoplay: autoPlay }]}
-		gesturesdisabled={controlStyle === 'lightbox' || controlStyle === 'none' || zoom
-			? ''
-			: undefined}
-		inert={controlStyle === 'none' ? 'true' : undefined}
-		style={controllerStyle}
-	>
-		{
-			isHls ? (
+	{
+		/* Native mode: skip <media-controller> and use the underlying element's
+		   native chrome. The `controls` attribute differs by element: native
+		   <video>/<hls-video> use the boolean form (`controls`), while the
+		   custom embed elements need a literal `controls=""` to satisfy the
+		   `attrs.controls === ""` check inside vimeo-video-element /
+		   youtube-video-element (anything else, including `controls="true"`,
+		   gets coerced to `?controls=0` and disables the iframe chrome). */
+		isNative &&
+			(isHls ? (
 				<hls-video
 					{...videoAttributes}
+					controls
 					data-hls-config={hlsConfigJson}
 					data-src={videoSrc}
-					slot="media"
+					style={controllerStyle}
 				>
 					{captions.map((caption) => (
 						<track kind="captions" {...caption} />
@@ -160,55 +161,81 @@ const hlsConfigJson =
 				</hls-video>
 			) : element === 'video' ? (
 				/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
-				<video {...videoAttributes} slot="media" src={videoSrc} />
+				<video {...videoAttributes} controls src={videoSrc} style={controllerStyle} />
 			) : element === 'vimeo-video' ? (
-				<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
+				<vimeo-video {...videoAttributes} controls="" src={videoSrc} style={controllerStyle} />
 			) : (
-				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
-			)
-		}
+				<youtube-video {...videoAttributes} controls="" src={videoSrc} style={controllerStyle} />
+			))
+	}
+	{
+		!isNative && (
+			<media-controller
+				autohide="1"
+				class:list={[controlStyle, { autoplay: autoPlay }]}
+				gesturesdisabled={
+					controlStyle === 'lightbox' || controlStyle === 'none' || zoom ? '' : undefined
+				}
+				inert={controlStyle === 'none' ? 'true' : undefined}
+				style={controllerStyle}
+			>
+				{isHls ? (
+					<hls-video
+						{...videoAttributes}
+						data-hls-config={hlsConfigJson}
+						data-src={videoSrc}
+						slot="media"
+					>
+						{captions.map((caption) => (
+							<track kind="captions" {...caption} />
+						))}
+					</hls-video>
+				) : element === 'video' ? (
+					/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
+					<video {...videoAttributes} slot="media" src={videoSrc} />
+				) : element === 'vimeo-video' ? (
+					<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
+				) : (
+					<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
+				)}
 
-		{
-			controlStyle === 'full' && (
-				<media-control-bar>
-					<media-play-button />
-					<media-mute-button />
-					<media-volume-range />
-					<media-time-range />
-					<media-time-display />
-					{captions.length > 0 && <media-captions-button />}
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-						{zoom && <span slot="tooltip-enter">Zoom</span>}
-					</media-fullscreen-button>
-				</media-control-bar>
-			)
-		}
-
-		{
-			controlStyle === 'lightbox' && (
-				<media-control-bar>
-					<media-play-button />
-					<media-mute-button />
-					<media-volume-range />
-					<media-time-range />
-					<media-time-display />
-					{captions.length > 0 && <media-captions-button />}
-				</media-control-bar>
-			)
-		}
-		{
-			controlStyle === 'minimal' && (
-				<>
-					<media-control-bar style="justify-content: flex-end">
+				{controlStyle === 'full' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+						{captions.length > 0 && <media-captions-button />}
 						<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
 							{zoom && <span slot="tooltip-enter">Zoom</span>}
 						</media-fullscreen-button>
 					</media-control-bar>
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				</>
-			)
-		}
-	</media-controller>
+				)}
+
+				{controlStyle === 'lightbox' && (
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+						{captions.length > 0 && <media-captions-button />}
+					</media-control-bar>
+				)}
+				{controlStyle === 'minimal' && (
+					<>
+						<media-control-bar style="justify-content: flex-end">
+							<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+								{zoom && <span slot="tooltip-enter">Zoom</span>}
+							</media-fullscreen-button>
+						</media-control-bar>
+						<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+					</>
+				)}
+			</media-controller>
+		)
+	}
 	{
 		isHls && hlsUrl && (
 			<noscript>

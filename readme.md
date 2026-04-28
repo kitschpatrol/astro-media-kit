@@ -271,7 +271,7 @@ import { Video } from 'astro-media-kit/components'
 | ------------------------- | --------------------------------------------------------------------------------- | --------------------------- |
 | `src`                     | `string`                                                                          | —                           |
 | `service`                 | `'bunny' \| 'cloudflare' \| 'local' \| 'mux' \| 'oembed' \| 'vimeo' \| 'youtube'` | inferred from `src`         |
-| `controlStyle`            | `'full' \| 'minimal' \| 'lightbox' \| 'none'`                                     | `'full'`                    |
+| `controlStyle`            | `'full' \| 'minimal' \| 'lightbox' \| 'native' \| 'none'`                         | `'full'`                    |
 | `autoPlay`                | `boolean`                                                                         | `false`                     |
 | `muted`                   | `boolean`                                                                         | `true`                      |
 | `loop`                    | `boolean`                                                                         | `false`                     |
@@ -290,7 +290,7 @@ import { Video } from 'astro-media-kit/components'
 
 `service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` only apply to HLS services (Bunny, Cloudflare, Mux). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
 
-`controlStyle` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'none'` renders the player without any controls and marks it inert.
+`controlStyle` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'native'` skips media-chrome entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without any controls and marks it inert.
 
 URL formats recognized automatically:
 
