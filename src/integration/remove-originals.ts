@@ -98,8 +98,6 @@ export async function removeOriginalImages(
 	let removedFilesCount = 0
 
 	for (const file of unusedOriginals) {
-		logger.info(`Removing ${file}`)
-
 		try {
 			await unlink(path.join(astroAssetsDirectory, file))
 			removedFilesCount++

@@ -86,8 +86,6 @@ function encoderOptions(
 	)
 }
 
-console.info('[astro-media-kit] watermark image service loaded')
-
 const service: typeof baseSharpService = {
 	...baseSharpService,
 	async transform(inputBuffer, transform, imageConfig) {
@@ -121,17 +119,6 @@ const service: typeof baseSharpService = {
 			.composite([{ input: overlay, left: 0, top: 0 }])
 			.toFormat(format, encoderOptions(imageConfig, base.format, quality))
 			.toBuffer()
-
-		console.info(
-			`[astro-media-kit] watermarked ${width}×${height} ${base.format} (${prettyBytes(
-				baseBuffer.byteLength,
-				{
-					maximumFractionDigits: 0,
-				},
-			)} → ${prettyBytes(composited.byteLength, {
-				maximumFractionDigits: 0,
-			})})`,
-		)
 
 		return { data: composited, format: base.format }
 	},
