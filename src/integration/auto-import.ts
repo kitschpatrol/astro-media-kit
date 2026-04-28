@@ -235,7 +235,7 @@ export async function transformAstroSource(
 		}
 	})
 
-	// eslint-disable-next-line ts/no-unnecessary-condition
+	// eslint-disable-next-line ts/no-unnecessary-condition -- frontmatterNode is assigned inside the walkNodes callback; TS narrowing doesn't track callback writes.
 	if (!frontmatterNode || !modified) {
 		return undefined
 	}

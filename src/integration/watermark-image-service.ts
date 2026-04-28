@@ -100,8 +100,7 @@ const service: typeof baseSharpService = {
 			return base
 		}
 
-		const baseBuffer = Buffer.from(base.data)
-		const { height, pages, width } = await sharp(baseBuffer).metadata()
+		const { height, pages, width } = await sharp(base.data).metadata()
 		// Animated formats (GIF, animated WebP): compositing flattens to a single frame.
 		if (pages !== undefined && pages > 1) {
 			return base
@@ -111,11 +110,11 @@ const service: typeof baseSharpService = {
 			return base
 		}
 
-		const overlay = Buffer.from(buildTiledStampSvg(width, height, baseBuffer.byteLength, cfg))
+		const overlay = buildTiledStampSvg(width, height, base.data.byteLength, cfg)
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- sharp.toFormat accepts all image output formats
 		const format = base.format as Parameters<ReturnType<typeof sharp>['toFormat']>[0]
 		const quality = typeof transform.quality === 'string' ? transform.quality : undefined
-		const composited = await sharp(baseBuffer)
+		const composited = await sharp(base.data)
 			.composite([{ input: overlay, left: 0, top: 0 }])
 			.toFormat(format, encoderOptions(imageConfig, base.format, quality))
 			.toBuffer()

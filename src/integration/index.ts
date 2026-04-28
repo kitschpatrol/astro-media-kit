@@ -8,6 +8,7 @@ import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
 import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
 import type { TldrawConfig } from './tldraw'
+import type { ResolvedWatermarkConfig } from './watermark-image-service'
 import { vitePluginMediaKitAphex } from './aphex'
 import { vitePluginMediaKitAutoImport } from './auto-import'
 import { removeOriginalImages } from './remove-originals'
@@ -159,6 +160,26 @@ function resolveAutoImportEntries(config: AutoImportConfig) {
 }
 
 /**
+ * Resolve a `boolean | { enabled?: boolean } | undefined` toggle config to a
+ * single enabled boolean. Default applies when the value is `undefined`; an
+ * object form is enabled unless `enabled: false` is explicitly set.
+ */
+function isToggleEnabled(
+	value: boolean | undefined | { enabled?: boolean },
+	defaultEnabled: boolean,
+): boolean {
+	if (value === undefined) {
+		return defaultEnabled
+	}
+
+	if (typeof value === 'boolean') {
+		return value
+	}
+
+	return value.enabled !== false
+}
+
+/**
  * Astro integration for astro-media-kit.
  *
  * @example
@@ -169,20 +190,12 @@ function resolveAutoImportEntries(config: AutoImportConfig) {
  * 	})
  */
 export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
-	const aphex = config?.aphex ?? false
-	const aphexEnabled = aphex !== false && (aphex === true || aphex.enabled !== false)
-	const aphexConfig: AphexConfig = typeof aphex === 'object' ? aphex : {}
+	const aphexEnabled = isToggleEnabled(config?.aphex, false)
+	const aphexConfig: AphexConfig = typeof config?.aphex === 'object' ? config.aphex : {}
 
-	const autoImport = config?.autoImport ?? true
-	const autoImportEnabled =
-		autoImport !== false && (autoImport === true || autoImport.enabled !== false)
-
-	// Resolve component configs to the internal format
-	const rawComponentConfigs =
-		typeof autoImport === 'object'
-			? // eslint-disable-next-line ts/no-unnecessary-condition
-				(autoImport.components ?? DEFAULT_COMPONENT_CONFIGS)
-			: DEFAULT_COMPONENT_CONFIGS
+	const autoImportEnabled = isToggleEnabled(config?.autoImport, true)
+	const autoImportObject = typeof config?.autoImport === 'object' ? config.autoImport : undefined
+	const rawComponentConfigs = autoImportObject?.components ?? DEFAULT_COMPONENT_CONFIGS
 	const resolvedComponentConfigs: Record<
 		string,
 		Array<{
@@ -195,9 +208,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 		resolvedComponentConfigs[name] = resolveAutoImportEntries(entries)
 	}
 
-	const tldraw = config?.tldraw ?? false
-	const tldrawEnabled = tldraw !== false && (tldraw === true || tldraw.enabled !== false)
-	const tldrawConfig: TldrawConfig = typeof tldraw === 'object' ? tldraw : {}
+	const tldrawEnabled = isToggleEnabled(config?.tldraw, false)
+	const tldrawConfig: TldrawConfig = typeof config?.tldraw === 'object' ? config.tldraw : {}
 
 	const removeOriginalsEnabled = config?.removeOriginals ?? false
 
@@ -215,14 +227,10 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					? video
 					: [video]
 
-	const watermark = config?.watermark ?? false
-	const watermarkEnabled =
-		watermark !== false && (watermark === true || watermark.enabled !== false)
-	const watermarkResolved = {
-		angle: typeof watermark === 'object' ? (watermark.angle ?? -30) : -30,
-		minDimension: typeof watermark === 'object' ? (watermark.minDimension ?? 96) : 96,
-		opacity: typeof watermark === 'object' ? (watermark.opacity ?? 0.8) : 0.8,
-	}
+	const watermarkEnabled = isToggleEnabled(config?.watermark, false)
+	const { angle = -30, minDimension = 96, opacity = 0.8 } =
+		typeof config?.watermark === 'object' ? config.watermark : {}
+	const watermarkResolved: ResolvedWatermarkConfig = { angle, minDimension, opacity }
 
 	return {
 		hooks: {
