@@ -35,7 +35,7 @@ It includes:
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
 - **Astro Integration**\
-  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [tldraw-cli](https://github.com/kitschpatrol/tldraw-cli), Apple Photos via [aphex](https://github.com/kitschpatrol/aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
+  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 
 The components work standalone via direct import, or you can use the Astro integration for streamlined auto-imports and Vite plugin configuration.
 
@@ -458,7 +458,7 @@ import { Image } from 'astro-media-kit/components'
 
 ### Tldraw
 
-Enable `.tldr` file support via `@kitschpatrol/unplugin-tldraw`. Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
+Enable `.tldr` file support via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw), which wraps [`tldraw-cli`](https://github.com/kitschpatrol/tldraw-cli). Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
 
 ```ts
 import mediaKit, { tldrawDarkImport } from 'astro-media-kit'
@@ -479,7 +479,7 @@ The `tldrawDarkImport` helper generates a `srcDark` prop with `?dark=true&tldr` 
 
 ### Aphex
 
-Enable Apple Photos `~aphex/` import support via `@kitschpatrol/unplugin-aphex`. Photos exported from macOS Photos.app can be referenced by album and title:
+Enable Apple Photos `~aphex/` import support via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), which wraps [`aphex`](https://github.com/kitschpatrol/aphex). Photos exported from macOS Photos.app can be referenced by album and title:
 
 ```ts
 mediaKit({
@@ -582,7 +582,7 @@ This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com
 
 ## Acknowledgments
 
-Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome), [hls-video-element](https://github.com/muxinc/hls-video-element), [youtube-video-element](https://github.com/nicknisi/youtube-video-element), and [vimeo-video-element](https://github.com/nicknisi/vimeo-video-element). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
+Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome), [hls-video-element](https://github.com/muxinc/media-elements/tree/main/packages/hls-video-element), [youtube-video-element](https://github.com/muxinc/media-elements/tree/main/packages/youtube-video-element), and [vimeo-video-element](https://github.com/muxinc/media-elements/tree/main/packages/vimeo-video-element). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
 
 <!-- contributing -->
 
