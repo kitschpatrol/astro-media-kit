@@ -1,6 +1,7 @@
 import type { AstroConfig, AstroIntegrationLogger } from 'astro'
 import { readdir, unlink } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 /** Image formats that may be emitted as originals by Astro's image pipeline. */
 const ORIGINAL_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'svg'] as const
@@ -91,7 +92,7 @@ export async function removeOriginalImages(
 	astroConfig: AstroConfig,
 	logger: AstroIntegrationLogger,
 ): Promise<void> {
-	const astroAssetsDirectory = path.join(directory.pathname, astroConfig.build.assets)
+	const astroAssetsDirectory = path.join(fileURLToPath(directory), astroConfig.build.assets)
 	const files = await readdir(astroAssetsDirectory)
 	const unusedOriginals = findUnusedOriginals(files)
 

@@ -2,6 +2,7 @@ import type { AstroIntegrationLogger } from 'astro'
 import { exiftool } from 'exiftool-vendored'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 /** Image formats we strip metadata from. */
 const METADATA_IMAGE_EXTENSIONS = new Set([
@@ -28,7 +29,7 @@ export async function stripExifFromImages(
 	directory: URL,
 	logger: AstroIntegrationLogger,
 ): Promise<void> {
-	const root = directory.pathname
+	const root = fileURLToPath(directory)
 	const entries = await readdir(root, { recursive: true, withFileTypes: true })
 
 	const targets: string[] = []

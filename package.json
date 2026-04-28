@@ -42,7 +42,7 @@
 		"src"
 	],
 	"scripts": {
-		"build": "pnpm astro sync && pnpm run -r astro sync",
+		"build": "pnpm astro sync && pnpm run -r --workspace-concurrency=1 astro sync",
 		"clean": "shx rm -f pnpm-lock.yaml && git clean -fdX -e !.claude/",
 		"dev": "pnpm run play",
 		"fix": "ksc fix",
