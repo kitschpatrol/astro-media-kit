@@ -55,8 +55,8 @@
 	},
 	"dependencies": {
 		"@astrojs/compiler": "3.0.1",
-		"@kitschpatrol/unplugin-aphex": "^0.2.0",
-		"@kitschpatrol/unplugin-tldraw": "^1.0.0",
+		"@kitschpatrol/unplugin-aphex": "^0.2.1",
+		"@kitschpatrol/unplugin-tldraw": "^1.1.0",
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.1",
 		"@sindresorhus/is": "^8.0.0",
