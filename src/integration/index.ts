@@ -3,6 +3,7 @@
 
 import type { AstroConfig, AstroIntegration } from 'astro'
 import { envField } from 'astro/config'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
@@ -131,6 +132,11 @@ export type MediaKitConfig = {
 	watermark?: boolean | WatermarkConfig
 }
 
+function readUpstreamClientTypes(specifier: string): string {
+	const url = import.meta.resolve(specifier)
+	return readFileSync(fileURLToPath(url), 'utf8')
+}
+
 const DEFAULT_AUTO_IMPORT_ENTRIES: AutoImportConfig = 'src'
 
 const DEFAULT_COMPONENT_CONFIGS: Record<string, AutoImportConfig> = {
@@ -246,8 +252,34 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					await stripExifFromImages(dir, logger)
 				}
 			},
-			'astro:config:done'({ config }) {
+			'astro:config:done'({ config, injectTypes, logger }) {
 				astroConfig = config
+
+				if (aphexEnabled) {
+					try {
+						injectTypes({
+							content: readUpstreamClientTypes('@kitschpatrol/unplugin-aphex/dist/client.d.ts'),
+							filename: 'aphex.d.ts',
+						})
+					} catch (error) {
+						logger.error(
+							`Failed to inject @kitschpatrol/unplugin-aphex client types: ${error instanceof Error ? error.message : String(error)}`,
+						)
+					}
+				}
+
+				if (tldrawEnabled) {
+					try {
+						injectTypes({
+							content: readUpstreamClientTypes('@kitschpatrol/unplugin-tldraw/dist/client.d.ts'),
+							filename: 'tldraw.d.ts',
+						})
+					} catch (error) {
+						logger.error(
+							`Failed to inject @kitschpatrol/unplugin-tldraw client types: ${error instanceof Error ? error.message : String(error)}`,
+						)
+					}
+				}
 			},
 			'astro:config:setup'({ command, logger, updateConfig }) {
 				if (videoServices.length > 0) {
