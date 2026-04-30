@@ -200,6 +200,15 @@ const VIDEO_ELEMENT_TAGS = ['hls-video', 'video', 'vimeo-video', 'youtube-video'
 
 /** Image zoom target — extracted from `<picture>` or `<img>`. */
 export type ImageZoomTarget = {
+	/**
+	 * True when the source `<picture>` carries a dark variant — either a `<source
+	 * media="(prefers-color-scheme: dark)" …>` (media-mode dark) or a sibling
+	 * `<picture class="amk-dark">` (selector-mode dark). Signals that the
+	 * lightbox should clone the original subtree so the browser resolves the
+	 * active variant natively, rather than loading the SSR-extracted light
+	 * URL/srcset directly.
+	 */
+	hasDark: boolean
 	/** Height in pixels of the largest available image. */
 	height: number
 	/** Combined `srcset` string for PhotoSwipe responsive zoom. */
@@ -255,18 +264,28 @@ function findVideoTarget(document: Document): undefined | VideoZoomTarget {
 	return undefined
 }
 
-function collectImageEntries(document: Document): { aspectRatio: number; entries: SrcsetEntry[] } {
+function collectImageEntries(document: Document): {
+	aspectRatio: number
+	entries: SrcsetEntry[]
+	hasDark: boolean
+} {
 	const entries: SrcsetEntry[] = []
+	let hasDark = false
 
-	// Collect srcset entries from <source> elements, skipping dark-mode variants
+	// Collect srcset entries from <source> elements, skipping dark-mode variants.
+	// `hasDark` records whether any dark variant exists so the lightbox can
+	// switch to a clone-the-subtree strategy and let the browser pick the
+	// active variant natively.
 	for (const source of document.querySelectorAll('source[srcset]')) {
 		const media = source.getAttribute('media')
 		if (media?.includes('prefers-color-scheme: dark')) {
+			hasDark = true
 			continue
 		}
 
 		const parentPicture = source.closest('picture')
 		if (parentPicture?.classList.contains('amk-dark')) {
+			hasDark = true
 			continue
 		}
 
@@ -297,11 +316,18 @@ function collectImageEntries(document: Document): { aspectRatio: number; entries
 		}
 	}
 
-	return { aspectRatio, entries }
+	// Catch selector-mode dark pictures even if they expose no <source srcset>
+	// (e.g. a single-image fallback): the presence of the wrapping picture is
+	// enough to flip the runtime takeover on.
+	if (!hasDark && document.querySelector('picture.amk-dark')) {
+		hasDark = true
+	}
+
+	return { aspectRatio, entries, hasDark }
 }
 
 function findImageTarget(document: Document): ImageZoomTarget | undefined {
-	const { aspectRatio, entries } = collectImageEntries(document)
+	const { aspectRatio, entries, hasDark } = collectImageEntries(document)
 	if (entries.length === 0) {
 		return undefined
 	}
@@ -311,6 +337,7 @@ function findImageTarget(document: Document): ImageZoomTarget | undefined {
 	const srcset = entries.map((entry) => `${entry.url} ${String(entry.width)}w`).join(', ')
 
 	return {
+		hasDark,
 		height: Math.round(largest.width * aspectRatio),
 		srcset,
 		type: 'image',

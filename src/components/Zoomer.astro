@@ -86,6 +86,10 @@ let galleryName: string | undefined
 // No media element in slot — PhotoSwipe has nothing to animate back to,
 // so mark for self-thumb (use the anchor itself as the close-animation origin).
 let selfThumb = false
+// Signals the lightbox to use the `picture` custom content type — clones the
+// original <picture> subtree so the browser resolves the active dark/light
+// variant natively. Only set for images that actually carry a dark variant.
+let isPicture = false
 
 if (enabled) {
 	if (typeof enabled === 'string') {
@@ -105,6 +109,10 @@ if (enabled) {
 		resolvedWidth = widthProp ?? srcWidth ?? target.width
 		resolvedHeight = heightProp ?? srcHeight ?? target.height
 		resolvedSrcset = srcsetProp ?? target.srcset
+		// Only flip into picture mode when no explicit src override was passed —
+		// an explicit `src` prop short-circuits to a single URL, defeating the
+		// point of cloning the multi-variant subtree.
+		isPicture = target.hasDark && srcUrl === undefined
 	} else {
 		selfThumb = true
 	}
@@ -172,6 +180,26 @@ if (enabled) {
 		animation: amk-pswp-img-fade-in 0.15s ease;
 	}
 
+	/* Custom 'picture' content type — the cloned <picture> (or, in selector
+	   mode, the wrapping <div> containing two <picture> elements) is the slide
+	   element. PhotoSwipe sizes it via inline width/height; the inner <img>
+	   needs to fill those dimensions. pointer-events: none routes clicks to
+	   the .pswp__img wrapper so PhotoSwipe's click-to-toggle-zoom keys off the
+	   right target. The <picture> elements themselves are intentionally
+	   left alone: in selector mode their display is toggled by the global
+	   \3c style> block injected by Picture.astro, and we don't want to override
+	   that cascade. */
+	.pswp__img.amk-pswp-picture {
+		display: block;
+	}
+
+	.pswp__img.amk-pswp-picture img {
+		pointer-events: none;
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
 	/* Balance caption spacing above/below the text. The dynamic-caption plugin
 	   defaults `--below` to `padding: 15px 0 0` (symmetric top, flush bottom);
 	   mirror the 15px on the bottom so the caption feels visually centered.
@@ -216,6 +244,7 @@ if (enabled) {
 					data-pswp-scope={scope}
 					data-pswp-self-thumb={selfThumb ? '' : undefined}
 					data-pswp-srcset={resolvedSrcset}
+					data-pswp-type={isPicture ? 'picture' : undefined}
 					data-pswp-width={resolvedWidth}
 					href={resolvedUrl}
 				>

@@ -154,6 +154,59 @@ function isVideoData(data: Record<string, unknown>): data is Record<string, unkn
 	return data.type === 'video' && data.videoContainer instanceof HTMLElement
 }
 
+/** Type guard for picture slide data stored in content.data. */
+function isPictureData(data: Record<string, unknown>): data is Record<string, unknown> & {
+	pictureContainer: HTMLElement
+} {
+	return data.type === 'picture' && data.pictureContainer instanceof HTMLElement
+}
+
+/**
+ * Find the on-page subtree to clone into the lightbox slide. In selector mode
+ * the anchor wraps a `<div>` containing both `<picture class="amk-light">` and
+ * `<picture class="amk-dark">`, toggled by global CSS — clone the wrapping
+ * `<div>` so the toggle keeps working in the cloned DOM. In media mode (and for
+ * any other shape) clone the first `<picture>` descendant.
+ */
+function findPictureSubtree(container: HTMLElement): HTMLElement | undefined {
+	const wrapper = container.querySelector(
+		':scope > div:has(> picture.amk-dark):has(> picture.amk-light)',
+	)
+	if (wrapper instanceof HTMLElement) {
+		return wrapper
+	}
+
+	const picture = container.querySelector('picture')
+	if (picture instanceof HTMLElement) {
+		return picture
+	}
+
+	return undefined
+}
+
+/**
+ * Pick the currently-visible `<img>` inside a picture container. In media mode
+ * there is one `<img>` and it's always visible; in selector mode there are two
+ * (`amk-light`/`amk-dark`) and only one is `display: block` at any time.
+ */
+function findVisibleImage(container: HTMLElement): HTMLImageElement | undefined {
+	const images = container.querySelectorAll('img')
+	for (const image of images) {
+		if (!(image instanceof HTMLImageElement)) {
+			continue
+		}
+
+		const ancestorPicture = image.closest('picture')
+		if (ancestorPicture && getComputedStyle(ancestorPicture).display === 'none') {
+			continue
+		}
+
+		return image
+	}
+
+	return undefined
+}
+
 /**
  * Query a video element (hls-video, youtube-video, vimeo-video) and return it
  * as HTMLMediaElement or null.
@@ -403,6 +456,32 @@ function createLightbox(
 			}
 		}
 
+		// Custom 'picture' type: anchor wraps a multi-variant <picture> (or, in
+		// selector mode, a <div> with two pictures). contentLoad clones that
+		// subtree as the slide content so the browser resolves dark/light
+		// natively from the original media queries / CSS toggles.
+		//
+		// We populate msrc + width/height (the same fields PhotoSwipe auto-fills
+		// for type='image' from the anchor) so the open/close zoom animation
+		// has dimensions to interpolate and a placeholder source to fade. msrc
+		// uses the visible <img>'s currentSrc when available so the thumb
+		// matches the user's active dark/light variant; falls back to the
+		// anchor's href.
+		if (element.dataset.pswpType === 'picture') {
+			const visibleImage = findVisibleImage(element)
+			const msrc =
+				visibleImage?.currentSrc ?? visibleImage?.src ?? element.getAttribute('href') ?? ''
+
+			return {
+				...itemData,
+				height: Number(element.dataset.pswpHeight) || 0,
+				msrc,
+				pictureContainer: element,
+				type: 'picture',
+				width: Number(element.dataset.pswpWidth) || 0,
+			}
+		}
+
 		if (isSelfThumb) {
 			return { ...itemData, selfThumbElement: element }
 		}
@@ -410,19 +489,34 @@ function createLightbox(
 		return itemData
 	})
 
-	// Enable placeholder for video — required for the zoom open/close animation.
+	// Enable placeholder for video and picture — required for the zoom
+	// open/close animation. The placeholder is the low-res image PhotoSwipe
+	// shows during the zoom transition; without it the transition snaps.
 	lightbox.addFilter(
 		'useContentPlaceholder',
-		(usePlaceholder: boolean, content: { data: Record<string, unknown> }) =>
-			content.data.type === 'video' ? true : usePlaceholder,
+		(usePlaceholder: boolean, content: { data: Record<string, unknown> }) => {
+			const { type } = content.data
+			if (type === 'video' || type === 'picture') {
+				return true
+			}
+
+			return usePlaceholder
+		},
 	)
 
 	// Mark video as zoomable so tap/double-tap triggers PhotoSwipe's secondary
 	// zoom (and wheel-to-zoom). Default is false for non-image content.
+	// 'picture' inherits the same zoomable-by-default behavior images get.
 	lightbox.addFilter(
 		'isContentZoomable',
-		(isZoomable: boolean, content: { data: Record<string, unknown> }) =>
-			content.data.type === 'video' ? true : isZoomable,
+		(isZoomable: boolean, content: { data: Record<string, unknown> }) => {
+			const { type } = content.data
+			if (type === 'video' || type === 'picture') {
+				return true
+			}
+
+			return isZoomable
+		},
 	)
 
 	// Use video container / anchor as the zoom animation origin.
@@ -434,6 +528,18 @@ function createLightbox(
 		): HTMLElement => {
 			if (itemData.type === 'video' && itemData.videoContainer instanceof HTMLElement) {
 				return itemData.videoContainer
+			}
+
+			// For picture: the anchor may contain two <picture> elements in
+			// selector mode (one display:none, one display:block). PhotoSwipe's
+			// default thumb pick is the first <img>, which can land on the
+			// hidden one and break the open/close animation. Prefer the visible
+			// <img> when there's a choice.
+			if (itemData.type === 'picture' && itemData.pictureContainer instanceof HTMLElement) {
+				const visibleImage = findVisibleImage(itemData.pictureContainer)
+				if (visibleImage) {
+					return visibleImage
+				}
 			}
 
 			if (itemData.selfThumbElement instanceof HTMLElement) {
@@ -581,6 +687,48 @@ function createLightbox(
 	})
 
 	// --- Content lifecycle ---
+
+	// Clone the on-page <picture> subtree as the slide content so the browser
+	// resolves the active dark/light variant natively from the original media
+	// queries (or selector-mode CSS). Mirrors the video custom-type handler:
+	// preventDefault to take over, set `content.element` to a `pswp__img`-classed
+	// element, and call `onLoaded()` to flip out of the LOADING state. The
+	// SSR-extracted light URL on the anchor's `href` / `data-pswp-srcset`
+	// remains the no-JS fallback and the open-animation thumb source.
+	lightbox.on('contentLoad', (event) => {
+		const { content } = event
+		if (!isPictureData(content.data)) {
+			return
+		}
+
+		const subtree = findPictureSubtree(content.data.pictureContainer)
+		if (!subtree) {
+			return
+		}
+
+		event.preventDefault()
+
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- cloneNode returns Node; the input is HTMLElement so the result is too
+		const clone = subtree.cloneNode(true) as HTMLElement
+		// PhotoSwipe's click-to-toggle-zoom keys off `event.target.classList`
+		// containing `pswp__img`. Apply the class to the slide element; CSS
+		// in Zoomer.astro's global block makes inner picture/img fill the
+		// slide and sets pointer-events: none so clicks fall through.
+		clone.classList.add('pswp__img', 'amk-pswp-picture')
+
+		// PhotoSwipe types `content.element` narrowly as
+		// HTMLDivElement | HTMLImageElement | undefined; in practice the
+		// custom-content docs sanction setting it to any element (the video
+		// handler below does the same with a div). The clone is a <picture>
+		// (media mode) or a <div> (selector mode), neither of which strictly
+		// fits the typed union.
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- intentional widening for the custom-content pattern
+		content.element = clone as HTMLDivElement
+
+		// Signal custom content ready, same trick as the video handler below.
+		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
+		;(content as unknown as { onLoaded: () => void }).onLoaded()
+	})
 
 	// Create a fresh video player in the lightbox.
 	lightbox.on('contentLoad', (event) => {
