@@ -50,17 +50,17 @@
 		"lint": "ksc lint && pnpm run -r --include-workspace-root astro check",
 		"play": "pnpm -C playground run dev",
 		"play-starlight": "pnpm -C playground-starlight run dev",
-		"release": "bumpp --commit 'Release: %s' && pnpm build && NPM_AUTH_TOKEN=$(op read 'op://Personal/npm/token') && pnpm publish",
+		"release": "bumpp --commit 'Release: %s' && pnpm build && NPM_AUTH_TOKEN=$(op read 'op://Personal/npm/token') pnpm publish",
 		"test": "vitest run"
 	},
 	"dependencies": {
 		"@astrojs/compiler": "3.0.1",
-		"@kitschpatrol/unplugin-aphex": "^0.2.1",
+		"@kitschpatrol/unplugin-aphex": "^0.2.2",
 		"@kitschpatrol/unplugin-tldraw": "^1.1.0",
 		"@mux/mux-node": "^12.8.1",
 		"@oscnord/get-video-resolution": "^1.1.1",
-		"@sindresorhus/is": "^8.0.0",
-		"exiftool-vendored": "^35.19.0",
+		"@sindresorhus/is": "^8.1.0",
+		"exiftool-vendored": "^35.20.0",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.12",
 		"media-chrome": "^4.19.0",
@@ -68,29 +68,29 @@
 		"photoswipe": "^5.4.4",
 		"photoswipe-dynamic-caption-plugin": "^1.2.7",
 		"pretty-bytes": "^7.1.0",
-		"vimeo-video-element": "^1.7.1",
+		"vimeo-video-element": "^1.7.2",
 		"youtube-video-element": "^1.9.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.9",
-		"@kitschpatrol/shared-config": "^7.5.2",
-		"@types/node": "~24.12.2",
-		"astro": "^6.1.10",
-		"bumpp": "^11.0.1",
+		"@kitschpatrol/shared-config": "^7.6.0",
+		"@types/node": "~24.12.4",
+		"astro": "^6.3.3",
+		"bumpp": "^11.1.0",
 		"happy-dom": "^20.9.0",
 		"node-addon-api": "^8.7.0",
 		"node-gyp": "^12.3.0",
 		"sharp": "^0.34.5",
 		"shx": "^0.4.0",
 		"typescript": "~6.0.3",
-		"vitest": "^4.1.5"
+		"vitest": "^4.1.6"
 	},
 	"peerDependencies": {
 		"astro": "^6.1.0"
 	},
-	"packageManager": "pnpm@10.33.2",
+	"packageManager": "pnpm@11.1.2",
 	"engines": {
-		"node": ">=22.18.0"
+		"node": ">=24.0.0"
 	},
 	"devEngines": {
 		"runtime": {
