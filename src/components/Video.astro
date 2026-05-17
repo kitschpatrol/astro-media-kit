@@ -16,13 +16,14 @@ import Zoomer from './Zoomer.astro'
 type Controls = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 
 /**
- * Props for the `<Video>` component — unified video player supporting Bunny, Cloudflare, Mux,
- * YouTube, Vimeo, oEmbed, and local files.
+ * Props for the `<Video>` component — unified video player supporting Bunny,
+ * Cloudflare, Mux, YouTube, Vimeo, oEmbed, and local files.
  */
 export type Props = PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
-		 * Start playback automatically (muted by default for browser autoplay policies).
+		 * Start playback automatically (muted by default for browser autoplay
+		 * policies).
 		 *
 		 * @default false
 		 */
@@ -34,15 +35,18 @@ export type Props = PrefixedCaptionProps &
 		 */
 		capQualityToSize?: boolean | undefined
 		/**
-		 * Player chrome level. `'none'` hides all controls. `'native'` skips media-chrome entirely and
-		 * uses the underlying element's native controls — the service's iframe chrome for
-		 * YouTube/Vimeo, the browser's built-in controls for local files and HLS. `zoom` is ignored
-		 * when `'native'`.
+		 * Player chrome level. `'none'` hides all controls. `'native'` skips
+		 * media-chrome entirely and uses the underlying element's native controls —
+		 * the service's iframe chrome for YouTube/Vimeo, the browser's built-in
+		 * controls for local files and HLS. `zoom` is ignored when `'native'`.
 		 *
 		 * @default 'full'
 		 */
 		controls?: Controls | undefined
-		/** Initial HLS bandwidth estimate in bits/s. Higher values start at higher quality. */
+		/**
+		 * Initial HLS bandwidth estimate in bits/s. Higher values start at higher
+		 * quality.
+		 */
 		initialBandwidth?: number | undefined
 		/** Accessible label for the video player. Falls back to the video title. */
 		label?: string | undefined
@@ -66,9 +70,15 @@ export type Props = PrefixedCaptionProps &
 		 * @default 'metadata'
 		 */
 		preload?: 'auto' | 'metadata' | 'none' | undefined
-		/** Video service override. Inferred from `src` when omitted. Required for Bunny title search. */
+		/**
+		 * Video service override. Inferred from `src` when omitted. Required for
+		 * Bunny title search.
+		 */
 		service?: Service | undefined
-		/** Video source: a URL, raw service ID, local file path, or Bunny title string. */
+		/**
+		 * Video source: a URL, raw service ID, local file path, or Bunny title
+		 * string.
+		 */
 		src: string
 	}
 

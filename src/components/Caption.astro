@@ -12,8 +12,8 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 export type { PrefixedProps } from './caption-props-map'
 
 /**
- * Props for the `<Caption>` component — wraps content in `<figure>`/`<figcaption>` with optional
- * XMP credit extraction.
+ * Props for the `<Caption>` component — wraps content in
+ * `<figure>`/`<figcaption>` with optional XMP credit extraction.
  */
 export type Props = {
 	/** Attribution name for the media creator. Overrides XMP-extracted creator. */
@@ -28,7 +28,10 @@ export type Props = {
 	showCredit?: boolean | undefined
 	/** Image source for XMP metadata extraction. Not rendered directly. */
 	src?: ImageMetadata | string | undefined
-	/** Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the credit line. */
+	/**
+	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the
+	 * credit line.
+	 */
 	type?: MediaType | undefined
 	/**
 	 * Fallback media type when XMP Label tag is missing.

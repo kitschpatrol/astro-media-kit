@@ -9,7 +9,10 @@ import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
 import { fetchOEmbed } from './utils/oembed'
 import './internal/amk-audio.css'
 
-/** Props for the `<Audio>` component — audio player supporting SoundCloud, oEmbed, and local files. */
+/**
+ * Props for the `<Audio>` component — audio player supporting SoundCloud,
+ * oEmbed, and local files.
+ */
 export type Props = PrefixedCaptionProps & {
 	/**
 	 * Start playback automatically.
