@@ -60,6 +60,35 @@ describe('Picture darkMode selector', () => {
 		})
 	})
 
+	describe('selector mode with a transparent image and a dark background only', () => {
+		// CSS light-dark() responds only to prefers-color-scheme, so selector-mode
+		// dark mode can't use it. For transparent formats with `background` and
+		// `backgroundDark` set, Picture must emit a second <picture> that carries
+		// the dark inline `background-color`. The image bytes are identical
+		// (compositingBackground is a no-op for transparent formats), but the
+		// markup carries the toggle.
+		it('emits a paired wrapper with light and dark <picture>s carrying different inline background-color', async () => {
+			const $ = await fx.readHTML('/selector-transparent-background-dark/')
+			const wrapper = $('div:has(> picture.amk-dark):has(> picture.amk-light)')
+			expect(wrapper.length).toBe(1)
+
+			const lightImg = wrapper.find('> picture.amk-light img')
+			const darkImg = wrapper.find('> picture.amk-dark img')
+			expect(lightImg.attr('style')).toContain('background-color:red')
+			expect(darkImg.attr('style')).toContain('background-color:blue')
+		})
+
+		it('injects the dark-mode toggle <style>', async () => {
+			const $ = await fx.readHTML('/selector-transparent-background-dark/')
+			const styleText = $('style')
+				.toArray()
+				.map((element) => $(element).html() ?? '')
+				.join('\n')
+			expect(styleText).toContain("[data-theme='dark'] picture.amk-dark{display:block}")
+			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
+		})
+	})
+
 	describe('selector mode mixing paired and solo pictures on one page', () => {
 		// The bug: the solo Picture used to carry `class="amk-light"`, so the global
 		// rule injected by the paired Picture would hide it in dark mode. After the

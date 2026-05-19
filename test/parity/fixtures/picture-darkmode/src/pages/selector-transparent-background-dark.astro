@@ -1,0 +1,19 @@
+---
+import { Picture } from 'astro-media-kit/components'
+import diagram from '../assets/diagram.svg'
+---
+
+<html>
+	<body>
+		<Picture
+			alt="a diagram"
+			background="red"
+			backgroundDark="blue"
+			darkMode="[data-theme='dark']"
+			height={200}
+			id="transparent"
+			src={diagram}
+			width={300}
+		/>
+	</body>
+</html>

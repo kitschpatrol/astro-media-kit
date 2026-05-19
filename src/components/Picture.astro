@@ -75,8 +75,12 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		background?: string | undefined
 		/**
 		 * Dark mode background color override. Used in conjunction with
-		 * `background`; rendered via `light-dark()` so a single `<img>` responds to
-		 * `prefers-color-scheme`. Ignored for remote sources.
+		 * `background`. In media mode (`darkMode: 'media'`) it's rendered via CSS
+		 * `light-dark()` so a single `<img>` responds to `prefers-color-scheme`.
+		 * In selector mode (`darkMode` set to a CSS selector) the component emits
+		 * a second `<picture>` carrying the dark background-color inline, since
+		 * `light-dark()` can't toggle on a custom selector. Ignored for remote
+		 * sources.
 		 *
 		 * Media-kit addition.
 		 *
@@ -334,11 +338,14 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 
 // Generate optimized images for dark variant when:
 // 1. A separate dark source image is provided (srcDark), or
-// 2. backgroundDark differs from background on an opaque format (same source, different composited bg)
-//    — skipped for remote sources (no compositing)
+// 2. backgroundDark differs from background on an opaque format (same source, different composited bg), or
+// 3. backgroundDark differs from background in selector mode (same source, dark <picture> carries the
+//    swapped inline background-color — CSS light-dark() can't toggle on a custom selector)
+//    — case (2)/(3) skipped for remote sources (no compositing, and no local metadata)
 const needsDarkVariant = isRemote
 	? Boolean(darkSrc)
-	: (darkSrc ?? needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled))
+	: (darkSrc ??
+		needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector))
 let optimizedImagesDark: GetImageResult[] | undefined
 if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background

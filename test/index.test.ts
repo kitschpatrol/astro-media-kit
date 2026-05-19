@@ -254,36 +254,73 @@ const title = 'Hello'
 })
 
 describe('needsBackgroundDarkVariant', () => {
-	it('returns true for opaque format with different backgroundDark', () => {
-		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', false)).toBe(true)
-		expect(needsBackgroundDarkVariant(['jpeg'], 'white', 'black', false)).toBe(true)
+	describe('media mode (isSelector=false)', () => {
+		it('returns true for opaque format with different backgroundDark', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', false, false)).toBe(true)
+			expect(needsBackgroundDarkVariant(['jpeg'], 'white', 'black', false, false)).toBe(true)
+		})
+
+		it('returns true when opaque format is among transparent formats', () => {
+			expect(needsBackgroundDarkVariant(['webp', 'jpg'], 'white', 'black', false, false)).toBe(true)
+		})
+
+		it('returns false for transparent-only formats (CSS light-dark() handles it)', () => {
+			expect(needsBackgroundDarkVariant(['webp'], 'white', 'black', false, false)).toBe(false)
+			expect(needsBackgroundDarkVariant(['png'], 'white', 'black', false, false)).toBe(false)
+			expect(needsBackgroundDarkVariant(['avif'], 'white', 'black', false, false)).toBe(false)
+			expect(needsBackgroundDarkVariant(['svg'], 'white', 'black', false, false)).toBe(false)
+			expect(
+				needsBackgroundDarkVariant(['webp', 'png', 'avif'], 'white', 'black', false, false),
+			).toBe(false)
+		})
+
+		it('returns false when backgroundDark is not set', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], 'white', undefined, false, false)).toBe(false)
+		})
+
+		it('returns false when backgroundDark equals background', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], 'white', 'white', false, false)).toBe(false)
+		})
+
+		it('returns false when darkDisabled is true', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', true, false)).toBe(false)
+		})
+
+		it('returns true when background is undefined but backgroundDark is set', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], undefined, 'black', false, false)).toBe(true)
+		})
 	})
 
-	it('returns true when opaque format is among transparent formats', () => {
-		expect(needsBackgroundDarkVariant(['webp', 'jpg'], 'white', 'black', false)).toBe(true)
-	})
+	describe('selector mode (isSelector=true)', () => {
+		// Selector-mode dark mode can't use CSS light-dark() (it only responds to
+		// prefers-color-scheme), so a separate <picture> must carry the swapped
+		// inline background-color — even for transparent formats where the image
+		// bytes are identical.
+		it('returns true for transparent formats with different backgroundDark', () => {
+			expect(needsBackgroundDarkVariant(['webp'], 'white', 'black', false, true)).toBe(true)
+			expect(needsBackgroundDarkVariant(['png'], 'white', 'black', false, true)).toBe(true)
+			expect(needsBackgroundDarkVariant(['avif'], 'white', 'black', false, true)).toBe(true)
+			expect(needsBackgroundDarkVariant(['svg'], 'white', 'black', false, true)).toBe(true)
+		})
 
-	it('returns false for transparent-only formats', () => {
-		expect(needsBackgroundDarkVariant(['webp'], 'white', 'black', false)).toBe(false)
-		expect(needsBackgroundDarkVariant(['png'], 'white', 'black', false)).toBe(false)
-		expect(needsBackgroundDarkVariant(['avif'], 'white', 'black', false)).toBe(false)
-		expect(needsBackgroundDarkVariant(['svg'], 'white', 'black', false)).toBe(false)
-		expect(needsBackgroundDarkVariant(['webp', 'png', 'avif'], 'white', 'black', false)).toBe(false)
-	})
+		it('returns true for opaque formats with different backgroundDark', () => {
+			expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', false, true)).toBe(true)
+		})
 
-	it('returns false when backgroundDark is not set', () => {
-		expect(needsBackgroundDarkVariant(['jpg'], 'white', undefined, false)).toBe(false)
-	})
+		it('returns true when background is undefined but backgroundDark is set on a transparent format', () => {
+			expect(needsBackgroundDarkVariant(['webp'], undefined, 'black', false, true)).toBe(true)
+		})
 
-	it('returns false when backgroundDark equals background', () => {
-		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'white', false)).toBe(false)
-	})
+		it('returns false when backgroundDark is not set (nothing to toggle to)', () => {
+			expect(needsBackgroundDarkVariant(['webp'], 'white', undefined, false, true)).toBe(false)
+		})
 
-	it('returns false when darkDisabled is true', () => {
-		expect(needsBackgroundDarkVariant(['jpg'], 'white', 'black', true)).toBe(false)
-	})
+		it('returns false when backgroundDark equals background', () => {
+			expect(needsBackgroundDarkVariant(['webp'], 'white', 'white', false, true)).toBe(false)
+		})
 
-	it('returns true when background is undefined but backgroundDark is set', () => {
-		expect(needsBackgroundDarkVariant(['jpg'], undefined, 'black', false)).toBe(true)
+		it('returns false when darkDisabled is true', () => {
+			expect(needsBackgroundDarkVariant(['webp'], 'white', 'black', true, true)).toBe(false)
+		})
 	})
 })
