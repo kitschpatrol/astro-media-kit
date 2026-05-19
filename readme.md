@@ -31,7 +31,7 @@ This is a small collection of Astro components to help you write minimalist, pla
 It includes:
 
 - **Image**\
-  Superset of Astro's `<Image>` with captions, XMP credit extraction, PhotoSwipe zoom, and background compositing.
+  Superset of Astro's `<Image>` with captions, XMP credit extraction, PhotoSwipe zoom, background compositing, and a per-input-format `format` override.
 - **Picture**\
   Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `formats` and `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
@@ -140,34 +140,34 @@ Caption text is passed as a slot child:
 
 Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps` (passed through unchanged to `getImage()`), `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL.
 
-| Prop                      | Type                                                                     | Default    | Origin      | Remote   |
-| ------------------------- | ------------------------------------------------------------------------ | ---------- | ----------- | -------- |
-| `src`                     | `ImageMetadata \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —          | `media-kit` | yes      |
-| `alt`                     | `string`                                                                 | —          | `astro`     | yes      |
-| `width`                   | `number`                                                                 | —          | `astro`     | yes      |
-| `height`                  | `number`                                                                 | —          | `astro`     | yes      |
-| `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | —          | `astro`     | yes      |
-| `format`                  | `ImageOutputFormat`                                                      | `'webp'`   | `astro`     | yes      |
-| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —          | `astro`     | yes      |
-| `widths`                  | `readonly number[]`                                                      | —          | `astro`     | yes      |
-| `sizes`                   | `string`                                                                 | —          | `astro`     | yes      |
-| `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | `'cover'`  | `astro`     | yes      |
-| `position`                | `string`                                                                 | `'center'` | `astro`     | yes      |
-| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | `'none'`   | `astro`     | yes      |
-| `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`   | `astro`     | yes      |
-| `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`  | `astro`     | yes      |
-| `inferSize`               | `boolean`                                                                | `false`    | `astro`     | yes      |
-| (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —          | `astro`     | yes      |
-| `className`               | `string`                                                                 | —          | `media-kit` | yes      |
-| `background`              | `string` (CSS color)                                                     | —          | `media-kit` | **no**   |
-| `backgroundDark`          | `string` (CSS color)                                                     | —          | `media-kit` | **no**   |
-| `credit`                  | `boolean \| string`                                                      | `false`    | `media-kit` | partial¹ |
-| `creditMediaType`         | `MediaType`                                                              | —          | `media-kit` | yes      |
-| `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`  | `media-kit` | yes      |
-| `creditOrganization`      | `string`                                                                 | —          | `media-kit` | yes      |
-| `zoom`                    | `boolean \| string`                                                      | `false`    | `media-kit` | yes      |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`    | `media-kit` | yes      |
-| `zoomScope`               | `string` (CSS selector)                                                  | —          | `media-kit` | yes      |
+| Prop                      | Type                                                                     | Default                | Origin            | Remote   |
+| ------------------------- | ------------------------------------------------------------------------ | ---------------------- | ----------------- | -------- |
+| `src`                     | `ImageMetadata \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                      | `media-kit`       | yes      |
+| `alt`                     | `string`                                                                 | —                      | `astro`           | yes      |
+| `width`                   | `number`                                                                 | —                      | `astro`           | yes      |
+| `height`                  | `number`                                                                 | —                      | `astro`           | yes      |
+| `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | —                      | `astro`           | yes      |
+| `format`                  | `ImageOutputFormat \| FormatRules`                                       | `'webp'` (`svg → svg`) | `astro` (widened) | yes      |
+| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —                      | `astro`           | yes      |
+| `widths`                  | `readonly number[]`                                                      | —                      | `astro`           | yes      |
+| `sizes`                   | `string`                                                                 | —                      | `astro`           | yes      |
+| `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | `'cover'`              | `astro`           | yes      |
+| `position`                | `string`                                                                 | `'center'`             | `astro`           | yes      |
+| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | `'none'`               | `astro`           | yes      |
+| `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`               | `astro`           | yes      |
+| `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`              | `astro`           | yes      |
+| `inferSize`               | `boolean`                                                                | `false`                | `astro`           | yes      |
+| (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —                      | `astro`           | yes      |
+| `className`               | `string`                                                                 | —                      | `media-kit`       | yes      |
+| `background`              | `string` (CSS color)                                                     | —                      | `media-kit`       | **no**   |
+| `backgroundDark`          | `string` (CSS color)                                                     | —                      | `media-kit`       | **no**   |
+| `credit`                  | `boolean \| string`                                                      | `false`                | `media-kit`       | partial¹ |
+| `creditMediaType`         | `MediaType`                                                              | —                      | `media-kit`       | yes      |
+| `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`              | `media-kit`       | yes      |
+| `creditOrganization`      | `string`                                                                 | —                      | `media-kit`       | yes      |
+| `zoom`                    | `boolean \| string`                                                      | `false`                | `media-kit`       | yes      |
+| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`                | `media-kit`       | yes      |
+| `zoomScope`               | `string` (CSS selector)                                                  | —                      | `media-kit`       | yes      |
 
 ¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
@@ -198,7 +198,7 @@ All props from [Image](#image) above, plus:
 | Prop                | Type                                                      | Default    | Origin            | Remote   |
 | ------------------- | --------------------------------------------------------- | ---------- | ----------------- | -------- |
 | `formats`           | `ImageOutputFormat[] \| FormatsRules`                     | `['webp']` | `astro` (widened) | yes      |
-| `fallbackFormat`    | `ImageOutputFormat \| FallbackRules`                      | —          | `astro` (widened) | yes      |
+| `fallbackFormat`    | `ImageOutputFormat \| FormatRules`                        | —          | `astro` (widened) | yes      |
 | `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`       | `astro`           | yes      |
 | `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial² |
 | `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`  | `media-kit`       | yes      |

@@ -16,13 +16,13 @@
 // background compositing) are skipped for remote sources — dev warnings surface
 // when those props are set.
 
-import type { ImageMetadata } from 'astro'
+import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { GetImageResult } from './utils/image-orchestration'
+import type { FormatRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -32,6 +32,7 @@ import {
 	cloneImageMetadata,
 	compositingBackground,
 	mergeLayoutDefaults,
+	pickImageFormat,
 	resolveSizesAttribute,
 	resolveSrc,
 	resolveSrcToMetadata,
@@ -49,7 +50,7 @@ import Zoomer from './Zoomer.astro'
  * `getImage()`-compatible fields plus `<img>` HTMLAttributes); only props
  * widened, narrowed, or added by media-kit are re-declared here.
  */
-export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
+export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
@@ -84,6 +85,20 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 * @default undefined — only Astro's `class` prop is applied.
 		 */
 		className?: string | undefined
+		/**
+		 * Output format for the `<img>`. Astro's built-in accepts an
+		 * `ImageOutputFormat` string only; media-kit widens it to also accept a
+		 * partial `FormatRules` object mapping input formats to output formats
+		 * (merged on top of a rule set matching Astro's `baseService` default).
+		 * Only consulted for local sources — the remote branch defers entirely to
+		 * Astro's remote pipeline.
+		 *
+		 * Astro `<Image>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — Astro's `baseService` default applies: `svg → svg`,
+		 *   everything else (and `'unknown'` for remote sources) → `webp`.
+		 */
+		format?: FormatRules | ImageOutputFormat | undefined
 		/**
 		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
 		 * the string-numeric form Astro's type allows.
@@ -141,6 +156,7 @@ const {
 	creditMediaType,
 	creditMediaTypeFallback,
 	creditOrganization,
+	format: formatProp,
 	src,
 	zoom,
 	zoomLevel,
@@ -183,9 +199,19 @@ let captionSrc: ImageMetadata | string | undefined
 if (isRemote) {
 	// Remote: delegate to Astro's remote pipeline via getImage(). Astro
 	// requires either `width` + `height` or `inferSize: true` on remote
-	// sources — getImage() throws otherwise.
+	// sources — getImage() throws otherwise. A `FormatRules` map can't be
+	// resolved without input format metadata, so only forward a forced string
+	// (warn on the map shape).
+	if (import.meta.env.DEV && formatProp && typeof formatProp !== 'string') {
+		console.warn(
+			"[astro-media-kit] Image received a `format` rules object on a remote source — rules-map shape requires local input format metadata. Pass a single `ImageOutputFormat` string instead, or omit `format` to use Astro's remote default.",
+		)
+	}
+
+	const remoteFormat = typeof formatProp === 'string' ? formatProp : undefined
 	image = await getImage({
 		...getImageProps,
+		...(remoteFormat ? { format: remoteFormat } : {}),
 		src,
 	})
 	imageMetadataSrc = src
@@ -200,10 +226,10 @@ if (isRemote) {
 	const originalSrc = await resolveSrc(imageMetadata)
 	const clonedSrc = cloneImageMetadata(originalSrc)
 
-	// Output format: user's explicit `format` wins, otherwise SVG sources stay
-	// SVG and everything else becomes WebP — mirrors Astro's `baseService`
-	// default applied inside `getImage()`.
-	const outputFormat = imageProps.format ?? (imageMetadata.format === 'svg' ? 'svg' : 'webp')
+	// Output format: resolve via `pickImageFormat`, which handles a forced
+	// string, a partial `FormatRules` map, or undefined (defaults to Astro's
+	// `baseService` rule — SVG stays SVG, everything else becomes WebP).
+	const outputFormat = pickImageFormat(formatProp, imageMetadata)
 
 	image = await getImage({
 		...getImageProps,

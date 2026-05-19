@@ -8,11 +8,13 @@ import {
 	compositingBackground,
 	DEFAULT_FALLBACK_RULES,
 	DEFAULT_FORMATS_RULES,
+	DEFAULT_IMAGE_OUTPUT_FORMAT_RULES,
 	extractScopedStyleClass,
 	getMimeType,
 	isESMImportedImage,
 	pickFallbackFormat,
 	pickFormats,
+	pickImageFormat,
 	propagateAstroCidAttributes,
 	resolveSrc,
 	resolveSrcToMetadata,
@@ -83,6 +85,61 @@ describe('DEFAULT_FALLBACK_RULES', () => {
 			tiff: 'png',
 			unknown: 'png',
 			webp: 'png',
+		})
+	})
+})
+
+describe('pickImageFormat', () => {
+	it('returns a single ImageOutputFormat string regardless of source format', () => {
+		expect(pickImageFormat('avif', pngMeta)).toBe('avif')
+		expect(pickImageFormat('webp', svgMeta)).toBe('webp')
+		expect(pickImageFormat('jpeg', '/img.png')).toBe('jpeg')
+	})
+
+	it("keeps SVG as SVG when format is undefined (mirrors Astro's baseService)", () => {
+		expect(pickImageFormat(undefined, svgMeta)).toBe('svg')
+	})
+
+	it('defaults to webp for every non-svg input when format is undefined', () => {
+		expect(pickImageFormat(undefined, pngMeta)).toBe('webp')
+		expect(pickImageFormat(undefined, jpgMeta)).toBe('webp')
+		expect(pickImageFormat(undefined, gifMeta)).toBe('webp')
+		expect(pickImageFormat(undefined, webpMeta)).toBe('webp')
+	})
+
+	it('uses the "unknown" rule for string-path inputs when format is undefined', () => {
+		expect(pickImageFormat(undefined, '/img.png')).toBe('webp')
+	})
+
+	it('merges a partial rules object on top of DEFAULT_IMAGE_OUTPUT_FORMAT_RULES', () => {
+		expect(pickImageFormat({ png: 'avif' }, pngMeta)).toBe('avif')
+		// Non-overridden entries fall through to defaults.
+		expect(pickImageFormat({ png: 'avif' }, jpgMeta)).toBe('webp')
+		expect(pickImageFormat({ png: 'avif' }, svgMeta)).toBe('svg')
+	})
+
+	it('lets a partial rules object override the "unknown" entry for remote/string sources', () => {
+		expect(pickImageFormat({ unknown: 'jpeg' }, '/img.png')).toBe('jpeg')
+	})
+
+	it('treats an empty rules object the same as undefined', () => {
+		expect(pickImageFormat({}, pngMeta)).toBe('webp')
+		expect(pickImageFormat({}, svgMeta)).toBe('svg')
+	})
+})
+
+describe('DEFAULT_IMAGE_OUTPUT_FORMAT_RULES', () => {
+	it("mirrors Astro Image's baseService default (SVG stays SVG, everything else becomes WebP)", () => {
+		expect(DEFAULT_IMAGE_OUTPUT_FORMAT_RULES).toEqual({
+			avif: 'webp',
+			gif: 'webp',
+			jpeg: 'webp',
+			jpg: 'webp',
+			png: 'webp',
+			svg: 'svg',
+			tiff: 'webp',
+			unknown: 'webp',
+			webp: 'webp',
 		})
 	})
 })

@@ -23,7 +23,7 @@ import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { FallbackRules, FormatsRules, GetImageResult } from './utils/image-orchestration'
+import type { FormatRules, FormatsRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -118,7 +118,7 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		/**
 		 * Output format for the `<img>` fallback. Astro's built-in accepts an
 		 * `ImageOutputFormat` string only; media-kit widens it to also accept a
-		 * partial `FallbackRules` object mapping input formats to fallback output
+		 * partial `FormatRules` object mapping input formats to fallback output
 		 * formats (merged on top of a rule set matching Astro's defaults).
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
@@ -127,7 +127,7 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 *   `gif → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything
 		 *   else (and `'unknown'` for remote sources) → `png`.
 		 */
-		fallbackFormat?: FallbackRules | ImageOutputFormat | undefined
+		fallbackFormat?: FormatRules | ImageOutputFormat | undefined
 		/**
 		 * Output formats for `<source>` elements. One `<source>` is emitted per
 		 * format, in order. Astro's built-in accepts an `ImageOutputFormat[]` only;
