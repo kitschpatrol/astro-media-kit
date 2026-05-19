@@ -63,14 +63,24 @@ import Zoomer from './Zoomer.astro'
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
-		/** CSS background color for the image (visible behind transparent areas). */
+		/**
+		 * CSS background color for the image (visible behind transparent areas).
+		 *
+		 * Media-kit addition.
+		 */
 		background?: string | undefined
 		/**
 		 * Dark mode background color override. Uses `light-dark()` with
 		 * `background`.
+		 *
+		 * Media-kit addition.
 		 */
 		backgroundDark?: string | undefined
-		/** JSX-style class name (passed by MDX). Merged with `class`. */
+		/**
+		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 *
+		 * Media-kit addition.
+		 */
 		className?: string | undefined
 		/**
 		 * Dark mode switching strategy.
@@ -84,12 +94,16 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 *   toggled via injected CSS. Use this for frameworks like Starlight
 		 *   (`[data-theme='dark']`) or Tailwind (`.dark`) that control dark mode
 		 *   via a class or attribute rather than the OS preference.
+		 *
+		 * Media-kit addition.
 		 */
 		darkMode?: 'media' | 'none' | (string & {})
 		/**
 		 * Force a single output format for the `<img>` fallback regardless of input
 		 * format. Astro's built-in semantics — wins over `fallbackRules` when set.
 		 * Leave unset to let `fallbackRules` pick per input format.
+		 *
+		 * Astro `<Picture>` built-in.
 		 */
 		fallbackFormat?: ImageOutputFormat | undefined
 		/**
@@ -97,10 +111,14 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 * `DEFAULT_FALLBACK_RULES`, so you can override a single entry (e.g. `{
 		 * webp: 'webp' }`) without restating the rest. Ignored when
 		 * `fallbackFormat` is set.
+		 *
+		 * Media-kit addition.
 		 */
 		fallbackRules?: Partial<Record<ImageInputFormat, ImageOutputFormat>> | undefined
 		/**
 		 * Output formats for `<source>` elements.
+		 *
+		 * Astro `<Picture>` built-in.
 		 *
 		 * @default ['webp']
 		 */
@@ -108,26 +126,36 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		/**
 		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
 		 * numeric-only, since getImage() rejects string dimensions.
+		 *
+		 * Astro `<Picture>` built-in (narrowed by media-kit).
 		 */
 		height?: number | undefined
 		/**
 		 * HTML attributes spread onto the outer `<picture>` (or wrapping `<div>` in
 		 * selector mode).
+		 *
+		 * Astro `<Picture>` built-in.
 		 */
 		pictureAttributes?: HTMLAttributes<'picture'> | undefined
 		/**
 		 * Image source: `ImageMetadata`, a `{ dark, light }` pair, or an absolute
 		 * file path string.
+		 *
+		 * Astro `<Picture>` built-in (widened by media-kit).
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 		/**
 		 * Dark mode image variant. Rendered via `prefers-color-scheme` media query
 		 * on `<source>`. Pass `false` to disable auto dark mode generation.
+		 *
+		 * Media-kit addition.
 		 */
 		srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
 		/**
 		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
 		 * numeric-only, since getImage() rejects string dimensions.
+		 *
+		 * Astro `<Picture>` built-in (narrowed by media-kit).
 		 */
 		width?: number | undefined
 	}

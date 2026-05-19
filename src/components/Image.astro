@@ -52,29 +52,45 @@ import Zoomer from './Zoomer.astro'
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
-		/** CSS background color for the image (visible behind transparent areas). */
+		/**
+		 * CSS background color for the image (visible behind transparent areas).
+		 *
+		 * Media-kit addition.
+		 */
 		background?: string | undefined
 		/**
 		 * Dark mode background color override. Uses `light-dark()` with
 		 * `background`.
+		 *
+		 * Media-kit addition.
 		 */
 		backgroundDark?: string | undefined
-		/** JSX-style class name (passed by MDX). Merged with `class`. */
+		/**
+		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 *
+		 * Media-kit addition.
+		 */
 		className?: string | undefined
 		/**
 		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
 		 * numeric-only, since getImage() rejects string dimensions.
+		 *
+		 * Astro `<Image>` built-in (narrowed by media-kit).
 		 */
 		height?: number | undefined
 		/**
 		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only
 		 * `.light` is used — use `<Picture>` for dark-mode image sources), or an
 		 * absolute file path string.
+		 *
+		 * Astro `<Image>` built-in (widened by media-kit).
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 		/**
 		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
 		 * numeric-only, since getImage() rejects string dimensions.
+		 *
+		 * Astro `<Image>` built-in (narrowed by media-kit).
 		 */
 		width?: number | undefined
 	}
