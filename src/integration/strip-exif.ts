@@ -55,7 +55,7 @@ export async function stripExifFromImages(
 		// can append `-overwrite_original` and skip the backup.
 		const results = await Promise.allSettled(
 			targets.map(async (filePath) =>
-				exiftool.write(filePath, {}, ['-all=', '-overwrite_original']),
+				exiftool.write(filePath, {}, { writeArgs: ['-all=', '-overwrite_original'] }),
 			),
 		)
 
