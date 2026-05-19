@@ -33,7 +33,7 @@ It includes:
 - **Image**\
   Superset of Astro's `<Image>` with captions, XMP credit extraction, PhotoSwipe zoom, and background compositing.
 - **Picture**\
-  Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `fallbackFormat` overrides, and everything `<Image>` adds.
+  Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `formats` and `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus integration with PhotoSwipe zoom.
 - **Audio**\
@@ -197,7 +197,7 @@ All props from [Image](#image) above, plus:
 
 | Prop                | Type                                                      | Default    | Origin            | Remote   |
 | ------------------- | --------------------------------------------------------- | ---------- | ----------------- | -------- |
-| `formats`           | `ImageOutputFormat[]`                                     | `['webp']` | `astro`           | yes      |
+| `formats`           | `ImageOutputFormat[] \| FormatsRules`                     | `['webp']` | `astro` (widened) | yes      |
 | `fallbackFormat`    | `ImageOutputFormat \| FallbackRules`                      | —          | `astro` (widened) | yes      |
 | `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`       | `astro`           | yes      |
 | `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial² |
@@ -242,18 +242,18 @@ Renders two `<picture>` elements (one light, one dark) and injects a `<style>` b
 `<Image>` and `<Picture>` match Astro's built-in defaults exactly. For projects that share a common image setup across many call sites, a thin wrapper is a natural place to bake in conventions — responsive breakpoints, zoom scope, and a few props worth defaulting:
 
 - **`inferSize` for remote sources.** `getImage()` throws on a remote `src` without either `inferSize` or `width` + `height` (a dev-mode warning fires up front when both are missing). `inferSize={true}` is a no-op on local `ImageMetadata` sources — Astro strips the flag before processing and only probes for remote URLs — so the default has no cost.
-- **`fallbackFormat` favoring WebP on `<Picture>`.** Astro's per-input defaults fall back to PNG for `avif`, `tiff`, `webp`, and unknown sources. For most modern projects WebP is a better fallback — near-universal support (Safari 14+, ~97% global), and noticeably smaller than PNG. Keep PNG only where transparency or pre-2020 browser compatibility matters.
-
-SVG inputs in `<Picture>` stay per-call-site: pass `formats={['svg']}` to keep them vector. (Without it, the default `formats={['webp']}` tries to rasterize the SVG, which throws unless `image.experimentalSvg.dangerouslyProcessSVG` is enabled in `astro.config`.) `formats` doesn't merge with anything, so it can't be a wrapper default — bitmap sources can't be encoded as SVG.
+- **`fallbackFormat` favoring WebP on `<Picture>`.** Astro's per-input defaults fall back to PNG for `avif`, `tiff`, `webp`, and unknown sources. For most modern projects WebP is a better fallback — near-universal support (Safari 14+, \~97% global), and noticeably smaller than PNG. Keep PNG only if targeting legacy browsers or targets like emails / RSS readers.
+- **`formats` preserving SVGs.** Astro's default `['webp']` applies to every input, so an SVG `src` hits the image service for raster conversion and throws unless `image.experimentalSvg.dangerouslyProcessSVG` is enabled in `astro.config`. Pass `formats={{ svg: ['svg'] }}` (per call site or as a wrapper default) to emit a single vector `<source>` for SVG inputs while every other input keeps the `['webp']` default. Empty entries like `{ svg: [] }` skip `<source>` generation entirely and let the `<img>` fallback carry the SVG directly.
 
 Destructured defaults still let each call site override:
+
+#### Image component recommendations
 
 ```astro
 ---
 // src/components/Image.astro
 import { Image as MediaKitImage, type ImageProps } from 'astro-media-kit/components'
 
-// eslint-disable-next-line ts/no-empty-object-type, ts/consistent-type-definitions
 interface Props extends ImageProps {}
 
 const { inferSize = true, ...imageProps } = Astro.props
@@ -262,12 +262,13 @@ const { inferSize = true, ...imageProps } = Astro.props
 <MediaKitImage {inferSize} {...imageProps} />
 ```
 
+#### Picture component recommendations
+
 ```astro
 ---
 // src/components/Picture.astro
 import { Picture as MediaKitPicture, type PictureProps } from 'astro-media-kit/components'
 
-// eslint-disable-next-line ts/no-empty-object-type, ts/consistent-type-definitions
 interface Props extends PictureProps {}
 
 const {
@@ -277,15 +278,13 @@ const {
     unknown: 'webp',
     webp: 'webp',
   },
+  formats = { svg: ['svg'] },
   inferSize = true,
-  sizes = '(max-width: 564px) 100vw, 564px',
-  widths = [564, 1128, 6016],
-  zoomScope = 'article',
   ...pictureProps
 } = Astro.props
 ---
 
-<MediaKitPicture {fallbackFormat} {inferSize} {sizes} {widths} {zoomScope} {...pictureProps} />
+<MediaKitPicture {fallbackFormat} {formats} {inferSize} {...pictureProps} />
 ```
 
 Then import from your project (e.g. `~/components/Image.astro`) instead of `astro-media-kit/components`.

@@ -23,7 +23,7 @@ import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { FallbackRules, GetImageResult } from './utils/image-orchestration'
+import type { FallbackRules, FormatsRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -33,12 +33,12 @@ import {
 	buildSrcsetAttribute,
 	cloneImageMetadata,
 	compositingBackground,
-	DEFAULT_FORMATS,
 	extractScopedStyleClass,
 	getMimeType,
 	mergeLayoutDefaults,
 	needsBackgroundDarkVariant,
 	pickFallbackFormat,
+	pickFormats,
 	propagateAstroCidAttributes,
 	resolveSizesAttribute,
 	resolveSrc,
@@ -126,13 +126,20 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		fallbackFormat?: FallbackRules | ImageOutputFormat | undefined
 		/**
 		 * Output formats for `<source>` elements. One `<source>` is emitted per
-		 * format, in order.
+		 * format, in order. Astro's built-in accepts an `ImageOutputFormat[]` only;
+		 * media-kit widens it to also accept a partial `FormatsRules` object
+		 * mapping input formats to output-format lists (merged on top of a rule set
+		 * matching Astro's defaults). An empty array entry (`{ svg: [] }`) emits
+		 * zero `<source>` elements for that input — the `<img>` fallback alone
+		 * carries the image.
 		 *
-		 * Astro `<Picture>` built-in.
+		 * Astro `<Picture>` built-in (widened by media-kit).
 		 *
-		 * @default ['webp']
+		 * @default undefined — Astro's per-input default applies: `['webp']` for
+		 *   every input format (and `'unknown'` for remote sources). Pass
+		 *   `formats={{ svg: ['svg'] }}` to preserve SVGs as vectors.
 		 */
-		formats?: ImageOutputFormat[] | undefined
+		formats?: FormatsRules | ImageOutputFormat[] | undefined
 		/**
 		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
 		 * the string-numeric form Astro's type allows.
@@ -289,8 +296,6 @@ if (isRemote) {
 	captionSrc = imageMetadata
 }
 
-const formats = formatsProp ?? DEFAULT_FORMATS
-
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
 const scopedStyleClass = extractScopedStyleClass(className)
@@ -308,6 +313,12 @@ propagateAstroCidAttributes(getImageProps, pictureAttributes)
 
 // Generate optimized images for each format (light variant)
 const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
+
+// Resolve `formats` against the source. `pickFormats` handles the three shapes
+// of `formats`: array (force), object (partial rules merged onto defaults),
+// undefined (defaults — remote/string sources land on `'unknown'`).
+const formats = pickFormats(formatsProp, originalSrc)
+
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({

@@ -116,4 +116,39 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		// JPEG input falls back to JPEG per DEFAULT_FALLBACK_RULES
 		expect(img.attr('src')).toMatch(/\.jpe?g$/)
 	})
+
+	it('Picture - per-input formats rules: SVG source with formats={{ svg: ["svg"] }} stays vector', async () => {
+		// The map form of `formats` lets a caller (or wrapper component) opt out of
+		// SVG rasterization without restating the default rule for every other input.
+		const $ = await fx.readHTML('/picture-formats-rules-svg/')
+		const picture = $('picture')
+		expect(picture.length).toBe(1)
+
+		const sources = picture.find('source')
+		expect(sources.length).toBe(1)
+		expect(sources.eq(0).attr('type')).toBe('image/svg+xml')
+
+		const img = picture.find('img')
+		expect(img.length).toBe(1)
+		// SVG input + svg fallback per DEFAULT_FALLBACK_RULES — no raster conversion.
+		expect(img.attr('src')).toMatch(/\.svg$/)
+	})
+
+	it('Picture - per-input formats rules: JPG source with formats={{ jpg: ["avif","webp"] }} picks the per-input rule', async () => {
+		// Verifies the map form looks up by the source's input format
+		// (`isESMImportedImage(src).format === "jpg"`) and uses the matching rule
+		// rather than the default ['webp'].
+		const $ = await fx.readHTML('/picture-formats-rules-jpg/')
+		const picture = $('picture')
+		expect(picture.length).toBe(1)
+
+		const sources = picture.find('source')
+		expect(sources.length).toBe(2)
+		expect(sources.eq(0).attr('type')).toBe('image/avif')
+		expect(sources.eq(1).attr('type')).toBe('image/webp')
+
+		const img = picture.find('img')
+		expect(img.length).toBe(1)
+		expect(img.attr('src')).toMatch(/\.jpe?g$/)
+	})
 })

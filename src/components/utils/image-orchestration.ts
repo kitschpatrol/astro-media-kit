@@ -30,13 +30,11 @@ export type GetImageResult = Awaited<ReturnType<typeof getImage>>
 /** Astro's runtime image config object (as exported from `astro:assets`). */
 export type ImageConfig = typeof imageConfig
 
-/** Default output formats for `<Picture>` sources when the user doesn't specify. */
-export const DEFAULT_FORMATS = ['webp'] as const
-
 /**
- * Key for `DEFAULT_FALLBACK_RULES` and the object form of `<Picture>`'s
- * `fallbackFormat` prop. Covers every `ImageInputFormat` plus `'unknown'` for
- * sources whose format can't be inferred (raw string paths, remote URLs).
+ * Key for `DEFAULT_FALLBACK_RULES` / `DEFAULT_FORMATS_RULES` and the object
+ * forms of `<Picture>`'s `fallbackFormat` and `formats` props. Covers every
+ * `ImageInputFormat` plus `'unknown'` for sources whose format can't be
+ * inferred (raw string paths, remote URLs).
  */
 export type FallbackKey = 'unknown' | ImageInputFormat
 
@@ -49,6 +47,17 @@ export type FallbackKey = 'unknown' | ImageInputFormat
  * rest.
  */
 export type FallbackRules = Simplify<Partial<Record<FallbackKey, ImageOutputFormat>>>
+
+/**
+ * Per-input-format `<source>` output overrides for `<Picture>`'s `formats`
+ * prop. Same key set as `FallbackRules`. Each value is a list of output
+ * formats; one `<source>` element is emitted per entry, in order. Merged on top
+ * of `DEFAULT_FORMATS_RULES`, so passing `formats={{ svg: ['svg'] }}` overrides
+ * one entry while every other input format keeps its default rule. An empty
+ * array (`{ svg: [] }`) emits zero `<source>` elements for that input — the
+ * `<img>` fallback alone carries the image.
+ */
+export type FormatsRules = Simplify<Partial<Record<FallbackKey, ImageOutputFormat[]>>>
 
 /**
  * Per-input-format `<img>` fallback format used by `<Picture>` when
@@ -72,6 +81,30 @@ export const DEFAULT_FALLBACK_RULES: Record<FallbackKey, ImageOutputFormat> = {
 	tiff: 'png',
 	unknown: 'png',
 	webp: 'png',
+}
+
+/**
+ * Per-input-format `<source>` output formats used by `<Picture>` when `formats`
+ * isn't a forced list. Matches Astro's built-in default exactly — `['webp']`
+ * for every input — so default rendering is byte-for-byte identical to Astro's
+ * `<Picture>`. Consumers override per instance by passing a `FormatsRules`
+ * object to `formats`; supplied entries are merged on top of these defaults.
+ *
+ * SVG defaults to `['webp']` to preserve Astro parity, but Sharp refuses to
+ * rasterize SVGs without `image.experimentalSvg.dangerouslyProcessSVG`. Pass
+ * `formats={{ svg: ['svg'] }}` (per call site or as a wrapper default) to
+ * preserve SVGs as vectors.
+ */
+export const DEFAULT_FORMATS_RULES: Record<FallbackKey, ImageOutputFormat[]> = {
+	avif: ['webp'],
+	gif: ['webp'],
+	jpeg: ['webp'],
+	jpg: ['webp'],
+	png: ['webp'],
+	svg: ['webp'],
+	tiff: ['webp'],
+	unknown: ['webp'],
+	webp: ['webp'],
 }
 
 /**
@@ -236,6 +269,31 @@ export function pickFallbackFormat(
 	}
 
 	const rules = { ...DEFAULT_FALLBACK_RULES, ...fallbackFormat }
+	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
+}
+
+/**
+ * Pick the `<source>` output formats list. Handles all three shapes accepted by
+ * `<Picture>`'s `formats` prop:
+ *
+ * - `ImageOutputFormat[]` — forces that list for every source, matching Astro's
+ *   built-in `formats` semantics.
+ * - `FormatsRules` object — merged on top of `DEFAULT_FORMATS_RULES`, then looked
+ *   up by the source's input format (or `'unknown'` for raw strings / remote
+ *   URLs).
+ * - `undefined` — same as passing an empty object: falls through to
+ *   `DEFAULT_FORMATS_RULES`, which mirrors Astro's `['webp']` default for every
+ *   input.
+ */
+export function pickFormats(
+	formats: FormatsRules | ImageOutputFormat[] | undefined,
+	resolvedSrc: ImageMetadata | string,
+): ImageOutputFormat[] {
+	if (Array.isArray(formats)) {
+		return formats
+	}
+
+	const rules = { ...DEFAULT_FORMATS_RULES, ...formats }
 	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
 }
 

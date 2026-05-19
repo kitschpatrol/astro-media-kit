@@ -7,10 +7,12 @@ import {
 	cloneImageMetadata,
 	compositingBackground,
 	DEFAULT_FALLBACK_RULES,
+	DEFAULT_FORMATS_RULES,
 	extractScopedStyleClass,
 	getMimeType,
 	isESMImportedImage,
 	pickFallbackFormat,
+	pickFormats,
 	propagateAstroCidAttributes,
 	resolveSrc,
 	resolveSrcToMetadata,
@@ -81,6 +83,62 @@ describe('DEFAULT_FALLBACK_RULES', () => {
 			tiff: 'png',
 			unknown: 'png',
 			webp: 'png',
+		})
+	})
+})
+
+describe('pickFormats', () => {
+	it('returns an ImageOutputFormat[] unchanged regardless of source format', () => {
+		expect(pickFormats(['avif', 'webp'], pngMeta)).toEqual(['avif', 'webp'])
+		expect(pickFormats(['svg'], svgMeta)).toEqual(['svg'])
+		expect(pickFormats(['jpeg'], '/img.png')).toEqual(['jpeg'])
+	})
+
+	it('returns Astro\'s ["webp"] default for every input when formats is undefined', () => {
+		expect(pickFormats(undefined, pngMeta)).toEqual(['webp'])
+		expect(pickFormats(undefined, jpgMeta)).toEqual(['webp'])
+		expect(pickFormats(undefined, svgMeta)).toEqual(['webp'])
+		expect(pickFormats(undefined, gifMeta)).toEqual(['webp'])
+		expect(pickFormats(undefined, webpMeta)).toEqual(['webp'])
+		expect(pickFormats(undefined, '/img.png')).toEqual(['webp'])
+	})
+
+	it('merges a partial rules object on top of DEFAULT_FORMATS_RULES', () => {
+		expect(pickFormats({ svg: ['svg'] }, svgMeta)).toEqual(['svg'])
+		// Non-overridden entries fall through to defaults.
+		expect(pickFormats({ svg: ['svg'] }, pngMeta)).toEqual(['webp'])
+		expect(pickFormats({ jpg: ['avif', 'webp'] }, jpgMeta)).toEqual(['avif', 'webp'])
+		expect(pickFormats({ jpg: ['avif', 'webp'] }, pngMeta)).toEqual(['webp'])
+	})
+
+	it('lets a partial rules object override the "unknown" entry for remote/string sources', () => {
+		expect(pickFormats({ unknown: ['avif', 'webp'] }, '/img.png')).toEqual(['avif', 'webp'])
+	})
+
+	it('treats an empty rules object the same as undefined', () => {
+		expect(pickFormats({}, svgMeta)).toEqual(['webp'])
+		expect(pickFormats({}, pngMeta)).toEqual(['webp'])
+	})
+
+	it('accepts an empty array entry to emit zero <source> elements for that input', () => {
+		expect(pickFormats({ svg: [] }, svgMeta)).toEqual([])
+		// Other inputs still get the default.
+		expect(pickFormats({ svg: [] }, pngMeta)).toEqual(['webp'])
+	})
+})
+
+describe('DEFAULT_FORMATS_RULES', () => {
+	it("mirrors Astro Picture's ['webp'] default for every input format", () => {
+		expect(DEFAULT_FORMATS_RULES).toEqual({
+			avif: ['webp'],
+			gif: ['webp'],
+			jpeg: ['webp'],
+			jpg: ['webp'],
+			png: ['webp'],
+			svg: ['webp'],
+			tiff: ['webp'],
+			unknown: ['webp'],
+			webp: ['webp'],
 		})
 	})
 })
