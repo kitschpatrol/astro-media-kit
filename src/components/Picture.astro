@@ -1,7 +1,11 @@
 ---
-// Reimplements Astro's `<Picture>` component as a clean superset of the built-in:
+// Reimplements Astro's `<Picture>` component as a clean superset of the
+// built-in. Upstream source (always latest `main`):
+// https://github.com/withastro/astro/blob/main/packages/astro/components/Picture.astro
+//
 // - Dark mode (via prefers-color-scheme media queries, or a custom selector)
-// - Transparency-aware fallback format selection
+// - `<img>` fallback selection via `fallbackFormat` (Astro built-in) and a
+//   per-input-format `fallbackRules` map (media-kit extension)
 // - Responsive srcset mirroring the `sizes` attribute onto each <source>
 // - Background compositing for opaque output formats
 // - Caption + Zoom wrappers from the media-kit
@@ -12,7 +16,7 @@
 // preservation, and local/remote mixed dark-mode pairs) are skipped for remote
 // sources — dev warnings surface when those props are set.
 
-import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
@@ -28,8 +32,8 @@ import {
 	buildSrcsetAttribute,
 	cloneImageMetadata,
 	compositingBackground,
-	defaultFallbackFormat,
-	defaultFormats,
+	DEFAULT_FALLBACK_RULES,
+	DEFAULT_FORMATS,
 	extractScopedStyleClass,
 	getMimeType,
 	mergeLayoutDefaults,
@@ -53,7 +57,8 @@ import Zoomer from './Zoomer.astro'
  * `loading`, `position`, `quality`, `sizes`, `width`, `widths`, plus `<img>`
  * HTMLAttributes) and mirrors the `formats` / `fallbackFormat` /
  * `pictureAttributes` extras Astro's `<Picture>` adds on top. Media-kit
- * extensions (`src` widening, dark mode, background, caption, zoom) follow.
+ * extensions (`src` widening, dark mode, background, caption, zoom,
+ * `fallbackRules`) follow.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
@@ -82,11 +87,18 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		darkMode?: 'media' | 'none' | (string & {})
 		/**
-		 * Format for the `<img>` fallback `src`. Defaults to `'png'`, or the input
-		 * format itself when the input is `gif`, `svg`, `jpg`, or `jpeg` (so we
-		 * don't flatten animations, rasterize vectors, or double-encode JPEGs).
+		 * Force a single output format for the `<img>` fallback regardless of input
+		 * format. Astro's built-in semantics — wins over `fallbackRules` when set.
+		 * Leave unset to let `fallbackRules` pick per input format.
 		 */
 		fallbackFormat?: ImageOutputFormat | undefined
+		/**
+		 * Per-input-format `<img>` fallback overrides. Merged on top of
+		 * `DEFAULT_FALLBACK_RULES`, so you can override a single entry (e.g. `{
+		 * webp: 'webp' }`) without restating the rest. Ignored when
+		 * `fallbackFormat` is set.
+		 */
+		fallbackRules?: Partial<Record<ImageInputFormat, ImageOutputFormat>> | undefined
 		/**
 		 * Output formats for `<source>` elements.
 		 *
@@ -132,6 +144,7 @@ const {
 	creditOrganization,
 	darkMode = 'media',
 	fallbackFormat: fallbackFormatProp,
+	fallbackRules: fallbackRulesProp,
 	formats: formatsProp,
 	pictureAttributes: pictureAttributesProp = {},
 	src,
@@ -210,7 +223,7 @@ if (isRemote) {
 // Remote sources skip this check since the input format is unknown.
 const formats =
 	formatsProp ??
-	(!isRemote && imageMetadata?.format === 'svg' ? (['svg'] as const) : defaultFormats)
+	(!isRemote && imageMetadata?.format === 'svg' ? (['svg'] as const) : DEFAULT_FORMATS)
 
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
@@ -281,12 +294,10 @@ if (needsDarkVariant) {
 // Clone src object to avoid Astro thinking the image is used outside optimization pipeline
 const clonedSrc = cloneImageMetadata(originalSrc)
 
-// Determine fallback format. Remote: default to `defaultFallbackFormat` since
-// the input format is unknown; honor explicit `fallbackFormat`. Local:
-// transparency-aware selection based on input format.
-const resultFallbackFormat = isRemote
-	? (fallbackFormatProp ?? defaultFallbackFormat)
-	: pickFallbackFormat(fallbackFormatProp, clonedSrc)
+// Determine `<img>` fallback format. `fallbackFormat` wins; otherwise the
+// merged `fallbackRules` are consulted (remote sources land on `'unknown'`).
+const mergedFallbackRules = { ...DEFAULT_FALLBACK_RULES, ...fallbackRulesProp }
+const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc, mergedFallbackRules)
 
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({

@@ -8,7 +8,7 @@
  * fallback-format selection, srcset/mime building, and dev-only warnings.
  */
 
-import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
 import type { getImage, imageConfig } from 'astro:assets'
 import * as mime from 'mrmime'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
@@ -30,19 +30,39 @@ export type GetImageResult = Awaited<ReturnType<typeof getImage>>
 export type ImageConfig = typeof imageConfig
 
 /** Default output formats for `<Picture>` sources when the user doesn't specify. */
-export const defaultFormats = ['webp'] as const
+export const DEFAULT_FORMATS = ['webp'] as const
 
 /**
- * Default `<img>` fallback format when the input format isn't
- * transparency-sensitive.
+ * Key for `DEFAULT_FALLBACK_RULES` / the `fallbackRules` prop. Covers every
+ * `ImageInputFormat` plus `'unknown'` for sources whose format can't be
+ * inferred (raw string paths, remote URLs).
  */
-export const defaultFallbackFormat: ImageOutputFormat = 'png'
+export type FallbackKey = 'unknown' | ImageInputFormat
 
 /**
- * Input formats that should stay in-format for the `<img>` fallback rather than
- * being converted to `png`.
+ * Per-input-format `<img>` fallback format used by `<Picture>` when
+ * `fallbackFormat` isn't set. Matches Astro's documented defaults exactly: `gif
+ * → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything else (and
+ * `'unknown'` for remote sources) → `png`. Consumers override per instance via
+ * the `fallbackRules` prop; supplied entries are merged on top of these
+ * defaults, so passing `fallbackRules={{ webp: 'webp' }}` overrides just that
+ * one input format and leaves the rest behaving as before.
+ *
+ * SVG maps to itself because sharp refuses to rasterize SVGs without
+ * `image.dangerouslyProcessSVG`. A caller who explicitly overrides
+ * `fallbackRules={{ svg: 'webp' }}` is responsible for enabling that config.
  */
-export const specialFormatsFallback = ['gif', 'svg', 'jpg', 'jpeg'] as const
+export const DEFAULT_FALLBACK_RULES: Record<FallbackKey, ImageOutputFormat> = {
+	avif: 'png',
+	gif: 'gif',
+	jpeg: 'jpeg',
+	jpg: 'jpg',
+	png: 'png',
+	svg: 'svg',
+	tiff: 'png',
+	unknown: 'png',
+	webp: 'png',
+}
 
 /**
  * Narrow a `src` value to an ESM-imported `ImageMetadata`. Mirrors the check
@@ -186,27 +206,21 @@ export function compositingBackground(
 }
 
 /**
- * Pick the `<img>` fallback format. Transparency-aware: when the input format
- * is in `specialFormatsFallback` (gif/svg/jpg/jpeg) we keep that format so we
- * don't flatten animations, rasterize vectors, or double-encode JPEGs.
- * Otherwise default to PNG.
+ * Pick the `<img>` fallback format. Astro's built-in `fallbackFormat` prop wins
+ * when set (matches Astro's semantics: explicit force-this-format). Otherwise
+ * the per-input-format `rules` map is looked up, keyed by the source's input
+ * format (or `'unknown'` when the source is a raw string or remote URL).
  */
 export function pickFallbackFormat(
 	fallbackFormatProp: ImageOutputFormat | undefined,
 	resolvedSrc: ImageMetadata | string,
+	rules: Record<FallbackKey, ImageOutputFormat> = DEFAULT_FALLBACK_RULES,
 ): ImageOutputFormat {
 	if (fallbackFormatProp) {
 		return fallbackFormatProp
 	}
 
-	if (
-		isESMImportedImage(resolvedSrc) &&
-		(specialFormatsFallback as readonly string[]).includes(resolvedSrc.format)
-	) {
-		return resolvedSrc.format
-	}
-
-	return defaultFallbackFormat
+	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
 }
 
 /**

@@ -195,15 +195,16 @@ import heroDark from '../assets/hero-dark.png'
 
 All props from [Image](#image) above, plus:
 
-| Prop                | Type                                                      | Default                                 | Origin      | Remote   |
-| ------------------- | --------------------------------------------------------- | --------------------------------------- | ----------- | -------- |
-| `formats`           | `ImageOutputFormat[]`                                     | `['webp']`                              | `astro`     | yes      |
-| `fallbackFormat`    | `ImageOutputFormat`                                       | `'png'` (or input if gif/svg/jpg/jpeg)³ | `astro`     | yes      |
-| `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`                                    | `astro`     | yes      |
-| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —                                       | `media-kit` | partial⁴ |
-| `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`                               | `media-kit` | yes      |
+| Prop                | Type                                                      | Default                       | Origin      | Remote   |
+| ------------------- | --------------------------------------------------------- | ----------------------------- | ----------- | -------- |
+| `formats`           | `ImageOutputFormat[]`                                     | `['webp']`                    | `astro`     | yes      |
+| `fallbackFormat`    | `ImageOutputFormat`                                       | resolved via `fallbackRules`³ | `astro`     | yes      |
+| `fallbackRules`     | `Partial<Record<ImageInputFormat, ImageOutputFormat>>`    | `DEFAULT_FALLBACK_RULES`³     | `media-kit` | yes      |
+| `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`                          | `astro`     | yes      |
+| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —                             | `media-kit` | partial⁴ |
+| `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`                     | `media-kit` | yes      |
 
-³ Transparency-aware fallback-format selection (keeping gif/svg/jpg/jpeg in-format) only applies to local sources; remote sources fall back to the raw `fallbackFormat` prop or Astro's default.
+³ The `<img>` fallback format is resolved as: `fallbackFormat` (explicit override, Astro built-in) → `fallbackRules[src.format]` (per-input-format map, media-kit extension) → `fallbackRules.unknown` (for remote/string sources). `DEFAULT_FALLBACK_RULES` mirrors Astro's documented Picture defaults: `gif → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything else (and `'unknown'`) → `png`. Override a single entry (e.g. `fallbackRules={{ webp: 'webp' }}`) to change one input without restating the rest.
 
 ⁴ `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
 

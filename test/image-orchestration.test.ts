@@ -6,6 +6,7 @@ import {
 	buildSrcsetAttribute,
 	cloneImageMetadata,
 	compositingBackground,
+	DEFAULT_FALLBACK_RULES,
 	extractScopedStyleClass,
 	getMimeType,
 	isESMImportedImage,
@@ -35,19 +36,53 @@ describe('pickFallbackFormat', () => {
 		expect(pickFallbackFormat('webp', svgMeta)).toBe('webp')
 	})
 
-	it('keeps gif/svg/jpg/jpeg in-format (transparency-aware fallback)', () => {
+	it('keeps gif/svg/jpg/jpeg in-format via default rules', () => {
 		expect(pickFallbackFormat(undefined, svgMeta)).toBe('svg')
 		expect(pickFallbackFormat(undefined, gifMeta)).toBe('gif')
 		expect(pickFallbackFormat(undefined, jpgMeta)).toBe('jpg')
 	})
 
-	it('defaults to png for png/webp/avif inputs', () => {
+	it('defaults to png for png/webp/avif inputs via default rules', () => {
 		expect(pickFallbackFormat(undefined, pngMeta)).toBe('png')
 		expect(pickFallbackFormat(undefined, webpMeta)).toBe('png')
 	})
 
-	it('defaults to png for string-path inputs (no format info)', () => {
+	it('uses the "unknown" rule for string-path inputs', () => {
 		expect(pickFallbackFormat(undefined, '/img.png')).toBe('png')
+	})
+
+	it('honors a per-input override in the supplied rules', () => {
+		const rules = { ...DEFAULT_FALLBACK_RULES, webp: 'webp' as const }
+		expect(pickFallbackFormat(undefined, webpMeta, rules)).toBe('webp')
+		// Non-overridden entries fall through to defaults.
+		expect(pickFallbackFormat(undefined, pngMeta, rules)).toBe('png')
+		expect(pickFallbackFormat(undefined, svgMeta, rules)).toBe('svg')
+	})
+
+	it('lets supplied rules override the "unknown" entry for remote/string sources', () => {
+		const rules = { ...DEFAULT_FALLBACK_RULES, unknown: 'jpeg' as const }
+		expect(pickFallbackFormat(undefined, '/img.png', rules)).toBe('jpeg')
+	})
+
+	it('fallbackFormatProp wins over rules', () => {
+		const rules = { ...DEFAULT_FALLBACK_RULES, webp: 'webp' as const }
+		expect(pickFallbackFormat('avif', webpMeta, rules)).toBe('avif')
+	})
+})
+
+describe('DEFAULT_FALLBACK_RULES', () => {
+	it("mirrors Astro Picture's documented defaults", () => {
+		expect(DEFAULT_FALLBACK_RULES).toEqual({
+			avif: 'png',
+			gif: 'gif',
+			jpeg: 'jpeg',
+			jpg: 'jpg',
+			png: 'png',
+			svg: 'svg',
+			tiff: 'png',
+			unknown: 'png',
+			webp: 'png',
+		})
 	})
 })
 
