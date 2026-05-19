@@ -16,13 +16,13 @@
 // preservation, and local/remote mixed dark-mode pairs) are skipped for remote
 // sources — dev warnings surface when those props are set.
 
-import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
+import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { GetImageResult } from './utils/image-orchestration'
+import type { FallbackKey, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -107,14 +107,16 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		fallbackFormat?: ImageOutputFormat | undefined
 		/**
-		 * Per-input-format `<img>` fallback overrides. Merged on top of
+		 * Per-input-format `<img>` fallback overrides. Keyed by `ImageInputFormat`,
+		 * plus `'unknown'` for remote URLs and raw string sources whose format
+		 * can't be probed at build time. Merged on top of
 		 * `DEFAULT_FALLBACK_RULES`, so you can override a single entry (e.g. `{
 		 * webp: 'webp' }`) without restating the rest. Ignored when
 		 * `fallbackFormat` is set.
 		 *
 		 * Media-kit addition.
 		 */
-		fallbackRules?: Partial<Record<ImageInputFormat, ImageOutputFormat>> | undefined
+		fallbackRules?: Partial<Record<FallbackKey, ImageOutputFormat>> | undefined
 		/**
 		 * Output formats for `<source>` elements.
 		 *
