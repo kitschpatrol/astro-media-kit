@@ -497,27 +497,25 @@ if (isSelector && hasDarkMode) {
 <Caption {...captionProps}>
 	<Zoomer {...zoomerProps} slot="media-component">
 		{
-			isSelector ? (
+			isSelector && hasDarkMode ? (
 				<div {...pictureAttributes}>
-					{hasDarkMode && (
-						<picture class="amk-dark">
-							{optimizedImagesDark!.map((image) => (
-								<source
-									srcset={srcsetFor(image)}
-									type={getMimeType(image)}
-									{...sourceAdditionalAttributes}
-								/>
-							))}
-							<img
-								alt=""
-								aria-hidden="true"
-								src={fallbackImageDark!.src}
-								{...imgAttributesDark}
-								class:list={[className, imgClassNameDark, 'amk']}
-								style={backgroundStyleDark}
+					<picture class="amk-dark">
+						{optimizedImagesDark!.map((image) => (
+							<source
+								srcset={srcsetFor(image)}
+								type={getMimeType(image)}
+								{...sourceAdditionalAttributes}
 							/>
-						</picture>
-					)}
+						))}
+						<img
+							alt=""
+							aria-hidden="true"
+							src={fallbackImageDark!.src}
+							{...imgAttributesDark}
+							class:list={[className, imgClassNameDark, 'amk']}
+							style={backgroundStyleDark}
+						/>
+					</picture>
 					<picture class="amk-light">
 						{optimizedImages.map((image) => (
 							<source

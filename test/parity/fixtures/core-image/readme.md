@@ -1,1 +1,1 @@
-Astro image parity test fixture
+Astro fixture for testing core image functionality

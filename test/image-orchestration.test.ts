@@ -202,6 +202,25 @@ describe('buildBackgroundStyle', () => {
 			buildBackgroundStyle({ background: undefined, backgroundDark: undefined, isSelector: false }),
 		).toEqual({ dark: undefined, light: undefined })
 	})
+
+	it('produces the same light style in selector and media modes when only background is set', () => {
+		// Guards Picture.astro: when isSelector is true but no dark variant exists,
+		// the template falls through to the single-<picture> branch and uses the
+		// `light` slot. That slot must match what media mode would produce for the
+		// same inputs — otherwise a no-dark Picture in selector mode would render
+		// with a different background than in media mode.
+		const selector = buildBackgroundStyle({
+			background: '#abc',
+			backgroundDark: undefined,
+			isSelector: true,
+		})
+		const media = buildBackgroundStyle({
+			background: '#abc',
+			backgroundDark: undefined,
+			isSelector: false,
+		})
+		expect(selector.light).toBe(media.light)
+	})
 })
 
 describe('isESMImportedImage', () => {

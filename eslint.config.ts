@@ -25,6 +25,7 @@ export default eslintConfig(
 			'playground/package.json',
 			'playground-starlight/package.json',
 			'test/parity/fixtures/core-image/package.json',
+			'test/parity/fixtures/picture-darkmode/package.json',
 		],
 		rules: {
 			'json-package/require-keywords': 'off',

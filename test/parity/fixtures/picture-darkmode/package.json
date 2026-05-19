@@ -1,0 +1,19 @@
+{
+	"name": "@fixtures/picture-darkmode",
+	"private": true,
+	"description": "Astro fixture for testing Picture darkMode selector behavior.",
+	"author": {
+		"name": "Eric Mika",
+		"email": "eric@ericmika.com",
+		"url": "https://ericmika.com"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "astro build"
+	},
+	"devDependencies": {
+		"astro": "^6.3.5",
+		"astro-media-kit": "link:../../../..",
+		"sharp": "^0.34.5"
+	}
+}

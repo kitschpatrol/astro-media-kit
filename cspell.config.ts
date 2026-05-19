@@ -6,6 +6,7 @@ export default cspellConfig({
 		'bgdark',
 		'blep',
 		'dailymotion',
+		'darkmode',
 		'Ewma',
 		'gesturesdisabled',
 		'letterboxed',

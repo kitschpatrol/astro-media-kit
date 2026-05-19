@@ -1,0 +1,27 @@
+---
+import { Picture } from 'astro-media-kit/components'
+import penguinDark from '../assets/penguin-dark.png'
+import penguinLight from '../assets/penguin-light.jpg'
+---
+
+<html>
+	<body>
+		<Picture
+			alt="paired penguin"
+			darkMode="[data-theme='dark']"
+			height={200}
+			id="paired"
+			src={penguinLight}
+			srcDark={penguinDark}
+			width={300}
+		/>
+		<Picture
+			alt="solo penguin"
+			darkMode="[data-theme='dark']"
+			height={200}
+			id="solo"
+			src={penguinLight}
+			width={300}
+		/>
+	</body>
+</html>
