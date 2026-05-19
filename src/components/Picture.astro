@@ -76,9 +76,9 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		/**
 		 * Dark mode background color override. Used in conjunction with
 		 * `background`. In media mode (`darkMode: 'media'`) it's rendered via CSS
-		 * `light-dark()` so a single `<img>` responds to `prefers-color-scheme`.
-		 * In selector mode (`darkMode` set to a CSS selector) the component emits
-		 * a second `<picture>` carrying the dark background-color inline, since
+		 * `light-dark()` so a single `<img>` responds to `prefers-color-scheme`. In
+		 * selector mode (`darkMode` set to a CSS selector) the component emits a
+		 * second `<picture>` carrying the dark background-color inline, since
 		 * `light-dark()` can't toggle on a custom selector. Ignored for remote
 		 * sources.
 		 *

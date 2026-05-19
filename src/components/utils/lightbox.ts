@@ -504,6 +504,57 @@ function createLightbox(
 		},
 	)
 
+	// Mirror the on-page <img>'s computed background-color onto a target element
+	// (placeholder during the open zoom transition, content.element once
+	// appended). Returns true when a non-transparent background was applied.
+	// `getComputedStyle` resolves CSS `light-dark()` against the page's current
+	// color-scheme, so this is correct for both media-mode and selector-mode
+	// dark backgrounds.
+	const mirrorVisibleImageBackground = (
+		sourceContainer: HTMLElement,
+		target: HTMLElement | null | undefined,
+	): boolean => {
+		if (!target) {
+			return false
+		}
+
+		const visibleImage = findVisibleImage(sourceContainer)
+		if (!visibleImage) {
+			return false
+		}
+
+		const { backgroundColor } = getComputedStyle(visibleImage)
+		if (
+			!backgroundColor ||
+			backgroundColor === 'rgba(0, 0, 0, 0)' ||
+			backgroundColor === 'transparent'
+		) {
+			return false
+		}
+
+		target.style.backgroundColor = backgroundColor
+		return true
+	}
+
+	// Tracks contents whose placeholder is carrying a background-color, so the
+	// placeholder isn't destroyed by removePlaceholder() before the open zoom
+	// animation can show it (the custom 'picture' handler calls onLoaded()
+	// synchronously; the default 'image' path destroys the placeholder once
+	// the high-res image loads — for cached SVGs that can fire before the
+	// animation even starts).
+	const placeholderBackgrounds = new WeakSet<object>()
+
+	lightbox.addFilter(
+		'isKeepingPlaceholder',
+		(isKeeping: boolean, content: { data: Record<string, unknown> }) => {
+			if (placeholderBackgrounds.has(content)) {
+				return true
+			}
+
+			return isKeeping
+		},
+	)
+
 	// Mark video as zoomable so tap/double-tap triggers PhotoSwipe's secondary
 	// zoom (and wheel-to-zoom). Default is false for non-image content.
 	// 'picture' inherits the same zoomable-by-default behavior images get.
@@ -688,6 +739,52 @@ function createLightbox(
 
 	// --- Content lifecycle ---
 
+	// Mirror the on-page <img>'s background-color onto both the placeholder
+	// (visible during the open zoom transition) and `content.element` (visible
+	// once appended, post-transition). Hooked into multiple events because the
+	// placeholder doesn't exist at every event firing — for content loaded via
+	// PhotoSwipeLightbox.preload() (the default path on first open), the
+	// initial `contentLoad` fires before the slide is assigned, so
+	// `content.placeholder` is still undefined; the placeholder gets created
+	// later in `slide.append → content.load`, but `contentLoad` doesn't
+	// re-dispatch because `content.element` already exists from preload.
+	// `contentResize` (dispatched from `slide.updateContentSize` right after
+	// the placeholder is created) catches that case.
+	const mirrorContentBackgrounds = (content: {
+		data: Record<string, unknown>
+		element?: HTMLDivElement | HTMLElement | HTMLImageElement | undefined
+		placeholder?: undefined | { element: HTMLDivElement | HTMLElement | HTMLImageElement | null }
+	}): void => {
+		if (content.data.type === 'video') {
+			return
+		}
+
+		const sourceElement = content.data.element
+		if (!(sourceElement instanceof HTMLElement)) {
+			return
+		}
+
+		if (mirrorVisibleImageBackground(sourceElement, content.placeholder?.element)) {
+			placeholderBackgrounds.add(content)
+		}
+
+		if (content.element instanceof HTMLElement) {
+			mirrorVisibleImageBackground(sourceElement, content.element)
+		}
+	}
+
+	lightbox.on('contentLoad', (event) => {
+		mirrorContentBackgrounds(event.content)
+	})
+
+	lightbox.on('contentResize', (event) => {
+		mirrorContentBackgrounds(event.content)
+	})
+
+	lightbox.on('contentAppend', (event) => {
+		mirrorContentBackgrounds(event.content)
+	})
+
 	// Clone the on-page <picture> subtree as the slide content so the browser
 	// resolves the active dark/light variant natively from the original media
 	// queries (or selector-mode CSS). Mirrors the video custom-type handler:
@@ -710,10 +807,14 @@ function createLightbox(
 
 		// eslint-disable-next-line ts/no-unsafe-type-assertion -- cloneNode returns Node; the input is HTMLElement so the result is too
 		const clone = subtree.cloneNode(true) as HTMLElement
+
 		// PhotoSwipe's click-to-toggle-zoom keys off `event.target.classList`
 		// containing `pswp__img`. Apply the class to the slide element; CSS
 		// in Zoomer.astro's global block makes inner picture/img fill the
-		// slide and sets pointer-events: none so clicks fall through.
+		// slide and sets pointer-events: none so clicks fall through. The
+		// `contentAppend` handler above mirrors the on-page <img>'s
+		// background-color onto this clone once PhotoSwipe is about to append
+		// it, so the dark/light background fill is preserved at full zoom.
 		clone.classList.add('pswp__img', 'amk-pswp-picture')
 
 		// PhotoSwipe types `content.element` narrowly as
