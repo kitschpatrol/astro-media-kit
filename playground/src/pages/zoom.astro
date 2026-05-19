@@ -112,10 +112,18 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	</div>
 
 	<h2>6. Manual src</h2>
-	<p class="note">TODO</p>
+	<p class="note">
+		<code>&lt;Zoomer&gt;</code> used directly with a <code>src</code> prop — the slot content (here, plain
+		text) becomes the trigger, and the lightbox opens the explicit image source. Useful when the trigger
+		isn't an <code>&lt;Image&gt;</code> or <code>&lt;Picture&gt;</code>.
+	</p>
 
 	<div class="grid">
-		<Zoomer enabled={true} src="../assets/test.jpeg">This is just text</Zoomer>
+		<Zoomer enabled={true} src="../assets/test.jpeg">
+			<p style=" cursor: zoom-in;padding: 1rem; background: light-dark(#eee, #222);">
+				Click this text to open the photo
+			</p>
+		</Zoomer>
 	</div>
 </Layout>
 

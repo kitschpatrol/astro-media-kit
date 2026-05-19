@@ -172,7 +172,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 						srcDark="../assets/tiger-dark.svg"
 					/></td
 				>
-				<td class="check">Tiger (light), photo (dark)</td>
+				<td class="check">Tiger swaps to dark-stroke variant</td>
 			</tr>
 			<tr>
 				<td>SVG srcDark (imported)</td>
@@ -185,38 +185,72 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 	</table>
 
 	<h2>4. Layout modes</h2>
+	<p class="note">
+		Result cells are pinned to 400px so the layout differences are visible (the global 160px image
+		cap is lifted here).
+	</p>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
 			<tr>
-				<td>layout="constrained" (default via config)</td>
-				<td><Picture alt="constrained default" src="../assets/test.jpeg" width={320} /></td>
-				<td class="check">Scales with container</td>
+				<td>Implicit (config sets constrained)</td>
+				<td class="layout-demo"
+					><Picture alt="constrained default" src="../assets/test.jpeg" width={320} /></td
+				>
+				<td class="check">320px wide, scales down with cell</td>
 			</tr>
 			<tr>
 				<td>layout="constrained"</td>
-				<td><Picture alt="constrained" layout="constrained" src="../assets/test.jpeg" /></td>
-				<td class="check">Max width capped</td>
+				<td class="layout-demo"
+					><Picture
+						alt="constrained"
+						layout="constrained"
+						src="../assets/test.jpeg"
+						width={320}
+					/></td
+				>
+				<td class="check">Same as above</td>
 			</tr>
 			<tr>
 				<td>layout="fixed"</td>
-				<td><Picture alt="fixed" layout="fixed" src="../assets/test.jpeg" /></td>
-				<td class="check">Fixed size, no scaling</td>
+				<td class="layout-demo"
+					><Picture
+						alt="fixed"
+						height={148}
+						layout="fixed"
+						src="../assets/test.jpeg"
+						width={200}
+					/></td
+				>
+				<td class="check">200×148, never scales</td>
 			</tr>
 			<tr>
 				<td>layout="full-width"</td>
-				<td><Picture alt="full-width" layout="full-width" src="../assets/test.jpeg" /></td>
-				<td class="check">Fills container width</td>
+				<td class="layout-demo"
+					><Picture
+						alt="full-width"
+						layout="full-width"
+						src="../assets/test.jpeg"
+						width={320}
+					/></td
+				>
+				<td class="check">Fills 400px cell regardless of width prop</td>
 			</tr>
 			<tr>
 				<td>layout="none"</td>
-				<td><Picture alt="none" layout="none" src="../assets/test.jpeg" /></td>
-				<td class="check">No layout styles</td>
+				<td class="layout-demo"
+					><Picture alt="none" layout="none" src="../assets/test.jpeg" width={120} /></td
+				>
+				<td class="check">No responsive styles, renders at 120px</td>
 			</tr>
 		</tbody>
 	</table>
 
 	<h2>5. Fit &amp; position</h2>
+	<p class="note">
+		Forcing a wide box (320×80) on a 4:3 source so {'fit'} crops/pads vertically — that's the axis
+		{'position="top"'} / {'"bottom"'} controls.
+	</p>
 	<table>
 		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
 		<tbody>
@@ -226,25 +260,27 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 					><Picture
 						alt="cover"
 						fit="cover"
+						height={80}
 						layout="constrained"
 						src="../assets/test.jpeg"
-						widths={[160]}
+						width={320}
 					/></td
 				>
-				<td class="check">Cropped to fill</td>
+				<td class="check">Center band of photo</td>
 			</tr>
 			<tr>
 				<td>fit="contain"</td>
-				<td
+				<td class="cb"
 					><Picture
 						alt="contain"
 						fit="contain"
+						height={80}
 						layout="constrained"
 						src="../assets/test.jpeg"
-						widths={[160]}
+						width={320}
 					/></td
 				>
-				<td class="check">Letterbox to fit</td>
+				<td class="check">Letterboxed (transparent bars left/right)</td>
 			</tr>
 			<tr>
 				<td>fit="cover" position="top"</td>
@@ -252,13 +288,14 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 					><Picture
 						alt="cover top"
 						fit="cover"
+						height={80}
 						layout="constrained"
 						position="top"
 						src="../assets/test.jpeg"
-						widths={[160]}
+						width={320}
 					/></td
 				>
-				<td class="check">Top edge visible</td>
+				<td class="check">Top band of photo</td>
 			</tr>
 			<tr>
 				<td>fit="cover" position="bottom"</td>
@@ -266,13 +303,14 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 					><Picture
 						alt="cover bottom"
 						fit="cover"
+						height={80}
 						layout="constrained"
 						position="bottom"
 						src="../assets/test.jpeg"
-						widths={[160]}
+						width={320}
 					/></td
 				>
-				<td class="check">Bottom edge visible</td>
+				<td class="check">Bottom band of photo</td>
 			</tr>
 		</tbody>
 	</table>

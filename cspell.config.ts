@@ -8,6 +8,7 @@ export default cspellConfig({
 		'dailymotion',
 		'Ewma',
 		'gesturesdisabled',
+		'letterboxed',
 		'librsvg',
 		'lightboxes',
 		'loadcomplete',

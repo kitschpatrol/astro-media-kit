@@ -127,6 +127,14 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 				height: auto;
 			}
 
+			td.layout-demo {
+				width: 400px;
+			}
+
+			td.layout-demo :where(img, picture) {
+				max-width: none;
+			}
+
 			.check {
 				margin-top: 0.25rem;
 				font-size: 0.7rem;
