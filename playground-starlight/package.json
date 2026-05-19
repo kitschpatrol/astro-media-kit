@@ -22,7 +22,7 @@
 		"@astrojs/mdx": "^5.0.6",
 		"@astrojs/starlight": "^0.39.2",
 		"@types/node": "~25.5.2",
-		"astro": "^6.3.3",
+		"astro": "^6.3.5",
 		"astro-mdx-kit": "^0.2.1",
 		"astro-media-kit": "link:..",
 		"poptab": "^1.1.1",

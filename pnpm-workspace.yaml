@@ -20,3 +20,5 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   ws: true
+minimumReleaseAgeExclude:
+  - astro@6.3.5
