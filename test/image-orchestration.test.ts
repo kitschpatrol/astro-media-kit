@@ -31,42 +31,41 @@ const relativePathError = /relative string path/
 const noop = (): void => undefined
 
 describe('pickFallbackFormat', () => {
-	it('returns the explicit fallbackFormatProp when provided', () => {
+	it('returns a single ImageOutputFormat string regardless of source format', () => {
 		expect(pickFallbackFormat('avif', pngMeta)).toBe('avif')
 		expect(pickFallbackFormat('webp', svgMeta)).toBe('webp')
+		expect(pickFallbackFormat('jpeg', '/img.png')).toBe('jpeg')
 	})
 
-	it('keeps gif/svg/jpg/jpeg in-format via default rules', () => {
+	it('keeps gif/svg/jpg/jpeg in-format when fallbackFormat is undefined', () => {
 		expect(pickFallbackFormat(undefined, svgMeta)).toBe('svg')
 		expect(pickFallbackFormat(undefined, gifMeta)).toBe('gif')
 		expect(pickFallbackFormat(undefined, jpgMeta)).toBe('jpg')
 	})
 
-	it('defaults to png for png/webp/avif inputs via default rules', () => {
+	it('defaults to png for png/webp/avif inputs when fallbackFormat is undefined', () => {
 		expect(pickFallbackFormat(undefined, pngMeta)).toBe('png')
 		expect(pickFallbackFormat(undefined, webpMeta)).toBe('png')
 	})
 
-	it('uses the "unknown" rule for string-path inputs', () => {
+	it('uses the "unknown" rule for string-path inputs when fallbackFormat is undefined', () => {
 		expect(pickFallbackFormat(undefined, '/img.png')).toBe('png')
 	})
 
-	it('honors a per-input override in the supplied rules', () => {
-		const rules = { ...DEFAULT_FALLBACK_RULES, webp: 'webp' as const }
-		expect(pickFallbackFormat(undefined, webpMeta, rules)).toBe('webp')
+	it('merges a partial rules object on top of DEFAULT_FALLBACK_RULES', () => {
+		expect(pickFallbackFormat({ webp: 'webp' }, webpMeta)).toBe('webp')
 		// Non-overridden entries fall through to defaults.
-		expect(pickFallbackFormat(undefined, pngMeta, rules)).toBe('png')
-		expect(pickFallbackFormat(undefined, svgMeta, rules)).toBe('svg')
+		expect(pickFallbackFormat({ webp: 'webp' }, pngMeta)).toBe('png')
+		expect(pickFallbackFormat({ webp: 'webp' }, svgMeta)).toBe('svg')
 	})
 
-	it('lets supplied rules override the "unknown" entry for remote/string sources', () => {
-		const rules = { ...DEFAULT_FALLBACK_RULES, unknown: 'jpeg' as const }
-		expect(pickFallbackFormat(undefined, '/img.png', rules)).toBe('jpeg')
+	it('lets a partial rules object override the "unknown" entry for remote/string sources', () => {
+		expect(pickFallbackFormat({ unknown: 'jpeg' }, '/img.png')).toBe('jpeg')
 	})
 
-	it('fallbackFormatProp wins over rules', () => {
-		const rules = { ...DEFAULT_FALLBACK_RULES, webp: 'webp' as const }
-		expect(pickFallbackFormat('avif', webpMeta, rules)).toBe('avif')
+	it('treats an empty rules object the same as undefined', () => {
+		expect(pickFallbackFormat({}, webpMeta)).toBe('png')
+		expect(pickFallbackFormat({}, svgMeta)).toBe('svg')
 	})
 })
 

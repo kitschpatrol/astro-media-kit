@@ -4,8 +4,9 @@
 // https://github.com/withastro/astro/blob/main/packages/astro/components/Picture.astro
 //
 // - Dark mode (via prefers-color-scheme media queries, or a custom selector)
-// - `<img>` fallback selection via `fallbackFormat` (Astro built-in) and a
-//   per-input-format `fallbackRules` map (media-kit extension)
+// - `<img>` fallback selection via `fallbackFormat`, widened to accept either
+//   a single forced output format (Astro built-in semantics) or a partial
+//   per-input-format rules map (media-kit extension)
 // - Responsive srcset mirroring the `sizes` attribute onto each <source>
 // - Background compositing for opaque output formats
 // - Caption + Zoom wrappers from the media-kit
@@ -22,8 +23,7 @@ import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { FallbackKey, GetImageResult } from './utils/image-orchestration'
-import type { Simplify } from './utils/types'
+import type { FallbackRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -33,7 +33,6 @@ import {
 	buildSrcsetAttribute,
 	cloneImageMetadata,
 	compositingBackground,
-	DEFAULT_FALLBACK_RULES,
 	DEFAULT_FORMATS,
 	extractScopedStyleClass,
 	getMimeType,
@@ -57,9 +56,9 @@ import Zoomer from './Zoomer.astro'
  * getImage-compatible fields like `densities`, `fit`, `height`, `layout`,
  * `loading`, `position`, `quality`, `sizes`, `width`, `widths`, plus `<img>`
  * HTMLAttributes) and mirrors the `formats` / `fallbackFormat` /
- * `pictureAttributes` extras Astro's `<Picture>` adds on top. Media-kit
- * extensions (`src` widening, dark mode, background, caption, zoom,
- * `fallbackRules`) follow.
+ * `pictureAttributes` extras Astro's `<Picture>` adds on top — `fallbackFormat`
+ * is widened to also accept a partial per-input-format rules object. Media-kit
+ * extensions (`src` widening, dark mode, background, caption, zoom) follow.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
@@ -100,23 +99,19 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		darkMode?: 'media' | 'none' | (string & {})
 		/**
-		 * Force a single output format for the `<img>` fallback regardless of input
-		 * format. Astro's built-in semantics — wins over `fallbackRules` when set.
-		 * Leave unset to let `fallbackRules` pick per input format.
+		 * Output format for the `<img>` fallback. Accepts:
 		 *
-		 * Astro `<Picture>` built-in.
-		 */
-		fallbackFormat?: ImageOutputFormat | undefined
-		/**
-		 * Per-input-format `<img>` fallback overrides. Keyed by `ImageInputFormat`,
-		 * plus `'unknown'` for remote URLs and raw string sources whose format
-		 * can't be probed at build time. Merged on top of `DEFAULT_FALLBACK_RULES`,
-		 * so you can override a single entry (e.g. `{ webp: 'webp' }`) without
-		 * restating the rest. Ignored when `fallbackFormat` is set.
+		 * - An `ImageOutputFormat` string (e.g. `'webp'`) to force that format for
+		 *   every source — matches Astro's built-in `fallbackFormat` semantics.
+		 * - Media-kit expands the type to also accept a partial `FallbackRules` object mapping input formats to fallback output formats. Merged on top of a
+		 *   rule set matching Astro's defaults. 
 		 *
-		 * Media-kit addition.
+		 * Leave unset to use Astro's built-in `<Picture>` per-input-format
+		 * behavior: `gif → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything else (and `'unknown'`) → `png`
+		 *
+		 * Astro `<Picture>` built-in (widened by media-kit).
 		 */
-		fallbackRules?: Simplify<Partial<Record<FallbackKey, ImageOutputFormat>>> | undefined
+		fallbackFormat?: FallbackRules | ImageOutputFormat | undefined
 		/**
 		 * Output formats for `<source>` elements.
 		 *
@@ -174,7 +169,6 @@ const {
 	creditOrganization,
 	darkMode = 'media',
 	fallbackFormat: fallbackFormatProp,
-	fallbackRules: fallbackRulesProp,
 	formats: formatsProp,
 	pictureAttributes: pictureAttributesProp = {},
 	src,
@@ -324,10 +318,10 @@ if (needsDarkVariant) {
 // Clone src object to avoid Astro thinking the image is used outside optimization pipeline
 const clonedSrc = cloneImageMetadata(originalSrc)
 
-// Determine `<img>` fallback format. `fallbackFormat` wins; otherwise the
-// merged `fallbackRules` are consulted (remote sources land on `'unknown'`).
-const mergedFallbackRules = { ...DEFAULT_FALLBACK_RULES, ...fallbackRulesProp }
-const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc, mergedFallbackRules)
+// Determine `<img>` fallback format. `pickFallbackFormat` handles the three
+// shapes of `fallbackFormat`: string (force), object (partial rules merged
+// onto defaults), undefined (defaults — remote sources land on `'unknown'`).
+const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
