@@ -2,4 +2,8 @@ import { defineConfig } from 'astro/config'
 
 process.env.BROWSER = 'chromium'
 
-export default defineConfig({})
+export default defineConfig({
+	image: {
+		dangerouslyProcessSVG: true,
+	},
+})

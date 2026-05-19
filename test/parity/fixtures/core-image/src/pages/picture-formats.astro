@@ -1,10 +1,26 @@
 ---
-import { Picture } from 'astro-media-kit/components'
+import { Picture as MediaKitPicture } from 'astro-media-kit/components'
+import { Picture as AstroPicture } from 'astro:assets'
 import penguin from '../assets/penguin1.jpg'
 ---
 
 <html>
 	<body>
-		<Picture alt="a penguin" formats={['avif', 'webp']} height={200} src={penguin} width={300} />
+		<MediaKitPicture
+			alt="a penguin"
+			formats={['avif', 'webp']}
+			height={200}
+			pictureAttributes={{ id: 'local' }}
+			src={penguin}
+			width={300}
+		/>
+		<AstroPicture
+			alt="a penguin"
+			formats={['avif', 'webp']}
+			height={200}
+			pictureAttributes={{ id: 'astro' }}
+			src={penguin}
+			width={300}
+		/>
 	</body>
 </html>

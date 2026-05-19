@@ -1,11 +1,11 @@
 ---
-import { Picture } from 'astro-media-kit/components'
+import { Picture as MediaKitPicture } from 'astro-media-kit/components'
 import penguin from '../assets/penguin1.jpg'
 ---
 
 <html>
 	<body>
-		<Picture
+		<MediaKitPicture
 			alt="a penguin"
 			formats={{ jpg: ['avif', 'webp'] }}
 			height={200}

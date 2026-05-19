@@ -1,14 +1,24 @@
 ---
-import { Image } from 'astro-media-kit/components'
+import { Image as MediaKitImage } from 'astro-media-kit/components'
+import { Image as AstroImage } from 'astro:assets'
 import penguin from '../assets/penguin1.jpg'
 ---
 
 <html>
 	<body>
-		<Image
+		<MediaKitImage
 			alt="a penguin"
 			height={640}
 			id="local"
+			sizes="(max-width: 600px) 100vw, 50vw"
+			src={penguin}
+			width={960}
+			widths={[240, 540, 720, 960]}
+		/>
+		<AstroImage
+			alt="a penguin"
+			height={640}
+			id="astro"
 			sizes="(max-width: 600px) 100vw, 50vw"
 			src={penguin}
 			width={960}

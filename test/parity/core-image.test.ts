@@ -99,8 +99,10 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 	})
 
 	it('Picture - emits <picture> with one <source> per format and an <img> fallback', async () => {
+		// The fixture page also renders an astro:assets <Picture id="astro"> for
+		// the diff layer; scope to the media-kit <picture id="local"> here.
 		const $ = await fx.readHTML('/picture-formats/')
-		const picture = $('picture')
+		const picture = $('picture#local')
 		expect(picture.length).toBe(1)
 
 		const sources = picture.find('source')
