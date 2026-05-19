@@ -13,8 +13,19 @@ export default eslintConfig(
 		type: 'lib',
 	},
 	{
+		files: ['test/parity/**/*.ts', 'test/parity/**/*.astro'],
+		rules: {
+			'astro/jsx-a11y/html-has-lang': 'off',
+			'e18e/prefer-static-regex': 'off',
+		},
+	},
+	{
 		// Unpublished workspace packages...
-		files: ['playground/package.json', 'playground-starlight/package.json'],
+		files: [
+			'playground/package.json',
+			'playground-starlight/package.json',
+			'test/parity/fixtures/core-image/package.json',
+		],
 		rules: {
 			'json-package/require-keywords': 'off',
 			'json-package/require-version': 'off',

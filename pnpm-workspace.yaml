@@ -2,6 +2,7 @@ packages:
   - .
   - playground
   - playground-starlight
+  - test/parity/fixtures/core-image
 ignoreWorkspaceRootCheck: true
 publicHoistPattern:
   - '@kitschpatrol/repo-config'

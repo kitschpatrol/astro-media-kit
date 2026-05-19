@@ -203,7 +203,6 @@ All props from [Image](#image) above, plus:
 | `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial⁴ |
 | `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`  | `media-kit`       | yes      |
 
-
 ⁴ `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
 
 When `src` is a `{ dark, light }` pair (e.g. from a tldraw import), the dark variant is used automatically unless `srcDark={false}`.

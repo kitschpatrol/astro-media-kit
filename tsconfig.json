@@ -22,7 +22,8 @@
 		"**/**.*",
 		".astro/types.d.ts",
 		"./playground-starlight/.astro/types.d.ts",
-		"./playground/.astro/types.d.ts"
+		"./playground/.astro/types.d.ts",
+		"./test/parity/fixtures/core-image/.astro/types.d.ts"
 	],
 	"exclude": ["**/dist/", "**/bin/", "**/node_modules/"],
 	"mdx": {
