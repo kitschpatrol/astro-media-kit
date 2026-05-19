@@ -417,6 +417,35 @@ export function warnBackgroundDarkWithoutBackground(
 }
 
 /**
+ * Dev-only warning when a remote source is passed without enough information
+ * for `getImage()` to size the image. Astro requires either `width` + `height`
+ * or `inferSize: true` on remote URLs; without one of those `getImage()`
+ * throws. Surfaced up front so the actionable fix is obvious.
+ */
+export function warnRemoteMissingDimsOrInferSize(
+	componentName: 'Image' | 'Picture',
+	src: string,
+	options: {
+		height?: number | undefined
+		inferSize?: boolean | undefined
+		width?: number | undefined
+	},
+): void {
+	if (!import.meta.env.DEV) {
+		return
+	}
+
+	const hasDims = options.width !== undefined && options.height !== undefined
+	if (hasDims || options.inferSize) {
+		return
+	}
+
+	console.warn(
+		`[astro-media-kit] ${componentName}: remote source "${src}" needs \`width\` + \`height\` or \`inferSize\` — \`getImage()\` will throw otherwise. Set both dimensions, or pass \`inferSize\` to probe the URL at build time.`,
+	)
+}
+
+/**
  * Dev-only warning emitted when a remote URL is passed with media-kit props
  * that require local file bytes (background compositing, a `{ dark, light }`
  * pair or local `ImageMetadata` override for `srcDark`). The affected feature

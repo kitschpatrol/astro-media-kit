@@ -12,10 +12,10 @@
 // - Caption + Zoom wrappers from the media-kit
 //
 // Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
-// `getImage()` + `inferSize`. Features that require local file bytes (XMP credit
-// extraction, background compositing, transparency-aware fallback, SVG format
-// preservation, and local/remote mixed dark-mode pairs) are skipped for remote
-// sources — dev warnings surface when those props are set.
+// `getImage()`. Features that require local file bytes (XMP credit extraction,
+// background compositing, transparency-aware fallback, and local/remote mixed
+// dark-mode pairs) are skipped for remote sources — dev warnings surface when
+// those props are set.
 
 import type { ImageMetadata, ImageOutputFormat } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -45,6 +45,7 @@ import {
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
 	warnRemoteIncompatibleProps,
+	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
 import { toZoomerProps } from './zoom-props-map'
@@ -52,41 +53,51 @@ import Zoomer from './Zoomer.astro'
 
 /**
  * Props for the `<Picture>` component — renders `<picture>` with dark mode,
- * responsive sources, and zoom. Derives from Astro's `LocalImageProps` (all
- * getImage-compatible fields like `densities`, `fit`, `height`, `layout`,
- * `loading`, `position`, `quality`, `sizes`, `width`, `widths`, plus `<img>`
- * HTMLAttributes) and mirrors the `formats` / `fallbackFormat` /
- * `pictureAttributes` extras Astro's `<Picture>` adds on top — `fallbackFormat`
- * is widened to also accept a partial per-input-format rules object. Media-kit
- * extensions (`src` widening, dark mode, background, caption, zoom) follow.
+ * responsive sources, and zoom. Inherits from Astro's `LocalImageProps` (all
+ * `getImage()`-compatible fields plus `<img>` HTMLAttributes) and Astro's
+ * `<Picture>` extras (`formats`, `pictureAttributes`); only props widened,
+ * narrowed, or added by media-kit are re-declared here.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
 		 * CSS background color for the image (visible behind transparent areas).
+		 * For opaque output formats (JPEG) the color is composited into the pixels
+		 * via the image service; for transparent formats it's applied via inline
+		 * CSS. Ignored for remote sources.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — transparency is preserved; no background color
+		 *   is applied.
 		 */
 		background?: string | undefined
 		/**
-		 * Dark mode background color override. Uses `light-dark()` with
-		 * `background`.
+		 * Dark mode background color override. Used in conjunction with
+		 * `background`; rendered via `light-dark()` so a single `<img>` responds to
+		 * `prefers-color-scheme`. Ignored for remote sources.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — light mode `background` applies in both modes.
 		 */
 		backgroundDark?: string | undefined
 		/**
-		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 * JSX-style class name (passed by MDX, which uses `className` instead of
+		 * `class`). Merged with Astro's `class` prop (`class` wins when both are
+		 * present).
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — only Astro's `class` prop is applied.
 		 */
 		className?: string | undefined
 		/**
 		 * Dark mode switching strategy.
 		 *
-		 * - `'media'` (default): `prefers-color-scheme` media queries on `<source>`
-		 *   elements. Follows the OS/browser color scheme preference.
+		 * - `'media'`: `prefers-color-scheme` media queries on `<source>` elements.
+		 *   Follows the OS/browser color scheme preference.
 		 * - `'none'`: disables all dark mode behavior (image sources and
 		 *   backgrounds).
 		 * - Any other string: a CSS selector (e.g. `"[data-theme='dark']"`,
@@ -96,24 +107,26 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 *   via a class or attribute rather than the OS preference.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default 'media' — follows `prefers-color-scheme`.
 		 */
 		darkMode?: 'media' | 'none' | (string & {})
 		/**
-		 * Output format for the `<img>` fallback. Accepts:
-		 *
-		 * - An `ImageOutputFormat` string (e.g. `'webp'`) to force that format for
-		 *   every source — matches Astro's built-in `fallbackFormat` semantics.
-		 * - Media-kit expands the type to also accept a partial `FallbackRules` object mapping input formats to fallback output formats. Merged on top of a
-		 *   rule set matching Astro's defaults. 
-		 *
-		 * Leave unset to use Astro's built-in `<Picture>` per-input-format
-		 * behavior: `gif → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything else (and `'unknown'`) → `png`
+		 * Output format for the `<img>` fallback. Astro's built-in accepts an
+		 * `ImageOutputFormat` string only; media-kit widens it to also accept a
+		 * partial `FallbackRules` object mapping input formats to fallback output
+		 * formats (merged on top of a rule set matching Astro's defaults).
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — Astro's per-input-format defaults apply:
+		 *   `gif → gif`, `svg → svg`, `jpg → jpg`, `jpeg → jpeg`, everything
+		 *   else (and `'unknown'` for remote sources) → `png`.
 		 */
 		fallbackFormat?: FallbackRules | ImageOutputFormat | undefined
 		/**
-		 * Output formats for `<source>` elements.
+		 * Output formats for `<source>` elements. One `<source>` is emitted per
+		 * format, in order.
 		 *
 		 * Astro `<Picture>` built-in.
 		 *
@@ -121,17 +134,35 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		formats?: ImageOutputFormat[] | undefined
 		/**
-		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
+		 * the string-numeric form Astro's type allows.
 		 *
 		 * Astro `<Picture>` built-in (narrowed by media-kit).
+		 *
+		 * @default undefined — for local sources, derived from the image's
+		 *   intrinsic dimensions (combined with `width` if set). For remote
+		 *   sources, omitting both `width` and `height` requires
+		 *   `inferSize: true`.
 		 */
 		height?: number | undefined
+		/**
+		 * Probe the source at build time to determine its intrinsic dimensions.
+		 * Required for remote sources without explicit `width` + `height` —
+		 * `getImage()` throws otherwise. No-op for local sources, which already
+		 * carry dimensions on the `ImageMetadata` object.
+		 *
+		 * Astro `<Picture>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — equivalent to `false`.
+		 */
+		inferSize?: boolean
 		/**
 		 * HTML attributes spread onto the outer `<picture>` (or wrapping `<div>` in
 		 * selector mode).
 		 *
 		 * Astro `<Picture>` built-in.
+		 *
+		 * @default {}
 		 */
 		pictureAttributes?: HTMLAttributes<'picture'> | undefined
 		/**
@@ -139,20 +170,31 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 * file path string.
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — required; rendering throws if omitted.
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 		/**
 		 * Dark mode image variant. Rendered via `prefers-color-scheme` media query
-		 * on `<source>`. Pass `false` to disable auto dark mode generation.
+		 * on `<source>`. Pass `false` to disable auto dark mode generation from a
+		 * `{ dark, light }` `src` pair.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — when `src` is a `{ dark, light }` pair, `.dark`
+		 *   is used automatically; otherwise no dark variant is emitted.
 		 */
 		srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
 		/**
-		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display width in pixels. Narrowed to numeric-only — `getImage()` rejects
+		 * the string-numeric form Astro's type allows.
 		 *
 		 * Astro `<Picture>` built-in (narrowed by media-kit).
+		 *
+		 * @default undefined — for local sources, derived from the image's
+		 *   intrinsic dimensions (combined with `height` if set). For remote
+		 *   sources, omitting both `width` and `height` requires
+		 *   `inferSize: true`.
 		 */
 		width?: number | undefined
 	}
@@ -224,6 +266,11 @@ if (isRemote) {
 		backgroundDark,
 		srcDarkIsLocal,
 	})
+	warnRemoteMissingDimsOrInferSize('Picture', src, {
+		height: imageProps.height,
+		inferSize: imageProps.inferSize,
+		width: imageProps.width,
+	})
 	lightSrc = src
 	darkSrc =
 		darkDisabled || srcDarkSource === undefined || srcDarkIsLocal ? undefined : srcDarkSource
@@ -242,12 +289,7 @@ if (isRemote) {
 	captionSrc = imageMetadata
 }
 
-// When input is SVG and user hasn't explicitly set formats, keep SVG format
-// to preserve vector quality (converting SVG → webp defeats the purpose).
-// Remote sources skip this check since the input format is unknown.
-const formats =
-	formatsProp ??
-	(!isRemote && imageMetadata?.format === 'svg' ? (['svg'] as const) : DEFAULT_FORMATS)
+const formats = formatsProp ?? DEFAULT_FORMATS
 
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
@@ -264,20 +306,13 @@ const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps,
 // Propagate data-astro-cid-* attributes to picture element
 propagateAstroCidAttributes(getImageProps, pictureAttributes)
 
-// For remote sources, default `inferSize: true` when neither explicit
-// dimensions nor `inferSize` were supplied.
-const hasDims = imageProps.width !== undefined && imageProps.height !== undefined
-// eslint-disable-next-line ts/no-unsafe-type-assertion -- inferSize isn't in LocalImageProps but getImage() accepts it for remote URLs
-const hasInferSize = (imageProps as { inferSize?: boolean }).inferSize !== undefined
-const remoteExtras = isRemote && !hasDims && !hasInferSize ? { inferSize: true } : {}
-
 // Generate optimized images for each format (light variant)
 const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
 			...getImageProps,
-			...(isRemote ? remoteExtras : compositingBackground(format, background)),
+			...(isRemote ? {} : compositingBackground(format, background)),
 			densities: imageProps.densities,
 			format,
 			src: originalSrc,
@@ -305,7 +340,7 @@ if (needsDarkVariant) {
 		formats.map(async (format) =>
 			getImage({
 				...getImageProps,
-				...(isRemote ? remoteExtras : compositingBackground(format, darkBackground)),
+				...(isRemote ? {} : compositingBackground(format, darkBackground)),
 				densities: imageProps.densities,
 				format,
 				src: originalSrcDark,
@@ -326,7 +361,7 @@ const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...getImageProps,
-	...(isRemote ? remoteExtras : compositingBackground(resultFallbackFormat, background)),
+	...(isRemote ? {} : compositingBackground(resultFallbackFormat, background)),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
 	src: originalSrc,
@@ -346,7 +381,7 @@ if (isSelector && hasDarkMode) {
 			: originalSrc
 	fallbackImageDark = await getImage({
 		...getImageProps,
-		...(isRemote ? remoteExtras : compositingBackground(resultFallbackFormat, darkBackground)),
+		...(isRemote ? {} : compositingBackground(resultFallbackFormat, darkBackground)),
 		densities: imageProps.densities,
 		format: resultFallbackFormat,
 		src: originalSrcDark,

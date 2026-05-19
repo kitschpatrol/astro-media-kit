@@ -26,14 +26,14 @@
 
 This is a small collection of Astro components to help you write minimalist, platonic markup in your content and templates without compromising robust output.
 
-`<Image>` and `<Picture>` are designed as **clean super-sets** of Astro's built-in components — every prop Astro accepts is accepted here, and the component adds a handful of extras (dark-mode sources, captions, zoom, background compositing) on top. Both local and remote image sources are supported; remote sources skip the features that require access to the source file on disk (XMP credit extraction, background compositing, transparency-aware format selection).
+`<Image>` and `<Picture>` are designed as **clean super-sets** of Astro's built-in components — every prop Astro accepts is accepted here, and the component adds a handful of extras (dark-mode sources, captions, zoom, background compositing) on top. Both local and remote image sources are supported; remote sources skip the features that require access to the source file on disk (XMP credit extraction, background compositing).
 
 It includes:
 
 - **Image**\
   Superset of Astro's `<Image>` with captions, XMP credit extraction, PhotoSwipe zoom, and background compositing.
 - **Picture**\
-  Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), transparency-aware fallback formats, and everything `<Image>` adds.
+  Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus integration with PhotoSwipe zoom.
 - **Audio**\
@@ -140,40 +140,40 @@ Caption text is passed as a slot child:
 
 Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps` (passed through unchanged to `getImage()`), `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL.
 
-| Prop                      | Type                                                                     | Default               | Origin      | Remote   |
-| ------------------------- | ------------------------------------------------------------------------ | --------------------- | ----------- | -------- |
-| `src`                     | `ImageMetadata \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                     | `media-kit` | yes      |
-| `alt`                     | `string`                                                                 | —                     | `astro`     | yes      |
-| `width`                   | `number`                                                                 | —                     | `astro`     | yes      |
-| `height`                  | `number`                                                                 | —                     | `astro`     | yes      |
-| `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | Astro's               | `astro`     | yes      |
-| `format`                  | `ImageOutputFormat`                                                      | Astro's               | `astro`     | yes      |
-| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —                     | `astro`     | yes      |
-| `widths`                  | `readonly number[]`                                                      | —                     | `astro`     | yes      |
-| `sizes`                   | `string`                                                                 | —                     | `astro`     | yes      |
-| `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | Astro's               | `astro`     | yes      |
-| `position`                | `string`                                                                 | Astro's               | `astro`     | yes      |
-| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | Astro's               | `astro`     | yes      |
-| `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`              | `astro`     | yes      |
-| `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`             | `astro`     | yes      |
-| `inferSize`               | `boolean`                                                                | `true` (remote only)¹ | `astro`     | yes      |
-| (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —                     | `astro`     | yes      |
-| `className`               | `string`                                                                 | —                     | `media-kit` | yes      |
-| `background`              | `string` (CSS color)                                                     | —                     | `media-kit` | **no**   |
-| `backgroundDark`          | `string` (CSS color)                                                     | —                     | `media-kit` | **no**   |
-| `credit`                  | `boolean \| string`                                                      | `false`               | `media-kit` | partial² |
-| `creditMediaType`         | `MediaType`                                                              | —                     | `media-kit` | yes      |
-| `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`             | `media-kit` | yes      |
-| `creditOrganization`      | `string`                                                                 | —                     | `media-kit` | yes      |
-| `zoom`                    | `boolean \| string`                                                      | `false`               | `media-kit` | yes      |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`               | `media-kit` | yes      |
-| `zoomScope`               | `string` (CSS selector)                                                  | —                     | `media-kit` | yes      |
+| Prop                      | Type                                                                     | Default    | Origin      | Remote   |
+| ------------------------- | ------------------------------------------------------------------------ | ---------- | ----------- | -------- |
+| `src`                     | `ImageMetadata \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —          | `media-kit` | yes      |
+| `alt`                     | `string`                                                                 | —          | `astro`     | yes      |
+| `width`                   | `number`                                                                 | —          | `astro`     | yes      |
+| `height`                  | `number`                                                                 | —          | `astro`     | yes      |
+| `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | —          | `astro`     | yes      |
+| `format`                  | `ImageOutputFormat`                                                      | `'webp'`   | `astro`     | yes      |
+| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —          | `astro`     | yes      |
+| `widths`                  | `readonly number[]`                                                      | —          | `astro`     | yes      |
+| `sizes`                   | `string`                                                                 | —          | `astro`     | yes      |
+| `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | `'cover'`  | `astro`     | yes      |
+| `position`                | `string`                                                                 | `'center'` | `astro`     | yes      |
+| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | `'none'`   | `astro`     | yes      |
+| `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`   | `astro`     | yes      |
+| `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`  | `astro`     | yes      |
+| `inferSize`               | `boolean`                                                                | `false`    | `astro`     | yes      |
+| (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —          | `astro`     | yes      |
+| `className`               | `string`                                                                 | —          | `media-kit` | yes      |
+| `background`              | `string` (CSS color)                                                     | —          | `media-kit` | **no**   |
+| `backgroundDark`          | `string` (CSS color)                                                     | —          | `media-kit` | **no**   |
+| `credit`                  | `boolean \| string`                                                      | `false`    | `media-kit` | partial¹ |
+| `creditMediaType`         | `MediaType`                                                              | —          | `media-kit` | yes      |
+| `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`  | `media-kit` | yes      |
+| `creditOrganization`      | `string`                                                                 | —          | `media-kit` | yes      |
+| `zoom`                    | `boolean \| string`                                                      | `false`    | `media-kit` | yes      |
+| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`    | `media-kit` | yes      |
+| `zoomScope`               | `string` (CSS selector)                                                  | —          | `media-kit` | yes      |
 
-¹ For remote sources, `inferSize: true` is applied automatically when neither explicit `width`/`height` nor an explicit `inferSize` is supplied. Local sources derive dimensions from `ImageMetadata`.
+¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
-² Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
+`layout` falls back to `image.layout` from `astro.config` first; the listed `'none'` is the un-configured baseline. `fit` and `position` defaults only apply when a responsive `layout` is active — under `layout='none'` they're left unset unless `image.objectFit` / `image.objectPosition` are configured globally. `quality` is resolved by the configured image service (sharp baseService picks format-specific values, e.g. `80` for WebP/JPEG).
 
-Remote-source caveats: when `src` is an `http(s)` URL, Astro's `inferSize: true` is set automatically (unless explicitly overridden), and the following are skipped with dev-mode warnings: `background`, `backgroundDark`, transparency-aware fallback-format selection, and mixed local/remote `{ dark, light }` pairs.
+Remote-source caveats: when `src` is an `http(s)` URL, you must pass either `width` + `height` or `inferSize` — `getImage()` throws otherwise. A dev-mode warning fires up front if both are missing. The following media-kit features are also skipped for remote sources (with dev-mode warnings): `background` / `backgroundDark` compositing and mixed local/remote `{ dark, light }` pairs.
 
 ### Picture
 
@@ -200,10 +200,10 @@ All props from [Image](#image) above, plus:
 | `formats`           | `ImageOutputFormat[]`                                     | `['webp']` | `astro`           | yes      |
 | `fallbackFormat`    | `ImageOutputFormat \| FallbackRules`                      | —          | `astro` (widened) | yes      |
 | `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`       | `astro`           | yes      |
-| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial⁴ |
+| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial² |
 | `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`  | `media-kit`       | yes      |
 
-⁴ `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
+² `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
 
 When `src` is a `{ dark, light }` pair (e.g. from a tldraw import), the dark variant is used automatically unless `srcDark={false}`.
 
@@ -236,6 +236,59 @@ Renders two `<picture>` elements (one light, one dark) and injects a `<style>` b
 ```astro
 <Picture src={heroLight} alt="Always light" darkMode="none" />
 ```
+
+### Recommended defaults
+
+`<Image>` and `<Picture>` match Astro's built-in defaults exactly. For projects that share a common image setup across many call sites, a thin wrapper is a natural place to bake in conventions — responsive breakpoints, zoom scope, and a few props worth defaulting:
+
+- **`inferSize` for remote sources.** `getImage()` throws on a remote `src` without either `inferSize` or `width` + `height` (a dev-mode warning fires up front when both are missing). `inferSize={true}` is a no-op on local `ImageMetadata` sources — Astro strips the flag before processing and only probes for remote URLs — so the default has no cost.
+- **`fallbackFormat` favoring WebP on `<Picture>`.** Astro's per-input defaults fall back to PNG for `avif`, `tiff`, `webp`, and unknown sources. For most modern projects WebP is a better fallback — near-universal support (Safari 14+, ~97% global), and noticeably smaller than PNG. Keep PNG only where transparency or pre-2020 browser compatibility matters.
+
+SVG inputs in `<Picture>` stay per-call-site: pass `formats={['svg']}` to keep them vector. (Without it, the default `formats={['webp']}` tries to rasterize the SVG, which throws unless `image.experimentalSvg.dangerouslyProcessSVG` is enabled in `astro.config`.) `formats` doesn't merge with anything, so it can't be a wrapper default — bitmap sources can't be encoded as SVG.
+
+Destructured defaults still let each call site override:
+
+```astro
+---
+// src/components/Image.astro
+import { Image as MediaKitImage, type ImageProps } from 'astro-media-kit/components'
+
+// eslint-disable-next-line ts/no-empty-object-type, ts/consistent-type-definitions
+interface Props extends ImageProps {}
+
+const { inferSize = true, ...imageProps } = Astro.props
+---
+
+<MediaKitImage {inferSize} {...imageProps} />
+```
+
+```astro
+---
+// src/components/Picture.astro
+import { Picture as MediaKitPicture, type PictureProps } from 'astro-media-kit/components'
+
+// eslint-disable-next-line ts/no-empty-object-type, ts/consistent-type-definitions
+interface Props extends PictureProps {}
+
+const {
+  fallbackFormat = {
+    avif: 'webp',
+    tiff: 'webp',
+    unknown: 'webp',
+    webp: 'webp',
+  },
+  inferSize = true,
+  sizes = '(max-width: 564px) 100vw, 564px',
+  widths = [564, 1128, 6016],
+  zoomScope = 'article',
+  ...pictureProps
+} = Astro.props
+---
+
+<MediaKitPicture {fallbackFormat} {inferSize} {sizes} {widths} {zoomScope} {...pictureProps} />
+```
+
+Then import from your project (e.g. `~/components/Image.astro`) instead of `astro-media-kit/components`.
 
 ### Video
 

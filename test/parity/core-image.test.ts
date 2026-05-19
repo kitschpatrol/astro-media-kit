@@ -80,6 +80,24 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		expect(src).toMatch(/\.avif$/)
 	})
 
+	it('Local images - inferSize is a no-op for ESM-imported sources (Astro deletes the flag, never re-probes the file)', async () => {
+		// Two pages render the same penguin1.jpg with width=300 / height=200 — one
+		// with `inferSize` set, one without. Astro's getImage() unconditionally
+		// strips inferSize before hashing, and only probes the size for remote
+		// (http/https) sources. Local ImageMetadata always carries width/height,
+		// so the asset URL and emitted img attributes must match byte-for-byte.
+		const [$basic, $infer] = await Promise.all([
+			fx.readHTML('/local-basic/'),
+			fx.readHTML('/local-infer-size/'),
+		])
+		const basicImg = $basic('#local')
+		const inferImg = $infer('#local')
+		expect(inferImg.attr('src')).toBe(basicImg.attr('src'))
+		expect(inferImg.attr('width')).toBe(basicImg.attr('width'))
+		expect(inferImg.attr('height')).toBe(basicImg.attr('height'))
+		expect(inferImg.attr('srcset')).toBe(basicImg.attr('srcset'))
+	})
+
 	it('Picture - emits <picture> with one <source> per format and an <img> fallback', async () => {
 		const $ = await fx.readHTML('/picture-formats/')
 		const picture = $('picture')

@@ -50,12 +50,19 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		<tbody>
 			<tr>
 				<td>SVG → webp, no bg</td>
-				<td class="cb"><Picture alt="svg no bg" src="../assets/tiger.svg" /></td>
+				<td class="cb"><Picture alt="svg no bg" formats={['svg']} src="../assets/tiger.svg" /></td>
 				<td class="check">Transparent both modes</td>
 			</tr>
 			<tr>
 				<td>SVG → webp, bg only</td>
-				<td><Picture alt="svg bg" background="#e8e4d0" src="../assets/tiger.svg" /></td>
+				<td
+					><Picture
+						alt="svg bg"
+						background="#e8e4d0"
+						formats={['svg']}
+						src="../assets/tiger.svg"
+					/></td
+				>
 				<td class="check">CSS bg both modes</td>
 			</tr>
 			<tr>
@@ -65,6 +72,7 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 						alt="svg bgdark webp"
 						background="#e8e4d0"
 						backgroundDark="#2a2520"
+						formats={['svg']}
 						src="../assets/tiger.svg"
 					/></td
 				>
@@ -395,7 +403,14 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 			</tr>
 			<tr>
 				<td>Gallery zoom (2 of 2)</td>
-				<td><Picture alt="gallery 2" src="../assets/tiger.svg" zoom="gallery" /></td>
+				<td
+					><Picture
+						alt="gallery 2"
+						formats={['svg']}
+						src="../assets/tiger.svg"
+						zoom="gallery"
+					/></td
+				>
 				<td class="check">Swipe to other picture</td>
 			</tr>
 		</tbody>

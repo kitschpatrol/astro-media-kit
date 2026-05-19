@@ -12,9 +12,9 @@
 // pair, this component picks `.light` and emits a dev warning.
 //
 // Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
-// `getImage()` + `inferSize`. Features that require local file bytes (XMP credit
-// extraction, background compositing) are skipped for remote sources — dev
-// warnings surface when those props are set.
+// `getImage()`. Features that require local file bytes (XMP credit extraction,
+// background compositing) are skipped for remote sources — dev warnings surface
+// when those props are set.
 
 import type { ImageMetadata } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -37,6 +37,7 @@ import {
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
 	warnRemoteIncompatibleProps,
+	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
 import { toZoomerProps } from './zoom-props-map'
@@ -44,53 +45,88 @@ import Zoomer from './Zoomer.astro'
 
 /**
  * Props for the `<Image>` component — renders a single `<img>` with caption and
- * zoom support. Derives from Astro's `LocalImageProps` (all getImage-compatible
- * fields like `densities`, `fit`, `height`, `layout`, `loading`, `position`,
- * `quality`, `sizes`, `width`, `widths`, plus `<img>` HTMLAttributes).
- * Media-kit extensions (`src` widening, background, caption, zoom) follow.
+ * zoom support. Inherits from Astro's `LocalImageProps` (all
+ * `getImage()`-compatible fields plus `<img>` HTMLAttributes); only props
+ * widened, narrowed, or added by media-kit are re-declared here.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
 		 * CSS background color for the image (visible behind transparent areas).
+		 * For opaque output formats (JPEG) the color is composited into the pixels
+		 * via the image service; for transparent formats it's applied via inline
+		 * CSS. Ignored for remote sources.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — transparency is preserved; no background color
+		 *   is applied.
 		 */
 		background?: string | undefined
 		/**
-		 * Dark mode background color override. Uses `light-dark()` with
-		 * `background`.
+		 * Dark mode background color override. Used in conjunction with
+		 * `background`; rendered via `light-dark()` so a single `<img>` responds to
+		 * `prefers-color-scheme`. Ignored for remote sources.
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — light mode `background` applies in both modes.
 		 */
 		backgroundDark?: string | undefined
 		/**
-		 * JSX-style class name (passed by MDX). Merged with `class`.
+		 * JSX-style class name (passed by MDX, which uses `className` instead of
+		 * `class`). Merged with Astro's `class` prop (`class` wins when both are
+		 * present).
 		 *
 		 * Media-kit addition.
+		 *
+		 * @default undefined — only Astro's `class` prop is applied.
 		 */
 		className?: string | undefined
 		/**
-		 * Display height in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
+		 * the string-numeric form Astro's type allows.
 		 *
 		 * Astro `<Image>` built-in (narrowed by media-kit).
+		 *
+		 * @default undefined — for local sources, derived from the image's
+		 *   intrinsic dimensions (combined with `width` if set). For remote
+		 *   sources, omitting both `width` and `height` requires
+		 *   `inferSize: true`.
 		 */
 		height?: number | undefined
+		/**
+		 * Probe the source at build time to determine its intrinsic dimensions.
+		 * Required for remote sources without explicit `width` + `height` —
+		 * `getImage()` throws otherwise. No-op for local sources, which already
+		 * carry dimensions on the `ImageMetadata` object.
+		 *
+		 * Astro `<Image>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — equivalent to `false`.
+		 */
+		inferSize?: boolean
 		/**
 		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only
 		 * `.light` is used — use `<Picture>` for dark-mode image sources), or an
 		 * absolute file path string.
 		 *
 		 * Astro `<Image>` built-in (widened by media-kit).
+		 *
+		 * @default undefined — required; rendering throws if omitted.
 		 */
 		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
 		/**
-		 * Display width in pixels. Narrowed from Astro's `<img>` HTMLAttributes to
-		 * numeric-only, since getImage() rejects string dimensions.
+		 * Display width in pixels. Narrowed to numeric-only — `getImage()` rejects
+		 * the string-numeric form Astro's type allows.
 		 *
 		 * Astro `<Image>` built-in (narrowed by media-kit).
+		 *
+		 * @default undefined — for local sources, derived from the image's
+		 *   intrinsic dimensions (combined with `height` if set). For remote
+		 *   sources, omitting both `width` and `height` requires
+		 *   `inferSize: true`.
 		 */
 		width?: number | undefined
 	}
@@ -122,6 +158,11 @@ const isRemote = isRemoteImageSource(src)
 
 if (isRemote) {
 	warnRemoteIncompatibleProps('Image', { background, backgroundDark })
+	warnRemoteMissingDimsOrInferSize('Image', src, {
+		height: imageProps.height,
+		inferSize: imageProps.inferSize,
+		width: imageProps.width,
+	})
 }
 
 // Dev-only hint when a { dark, light } pair is passed — Image silently uses
@@ -140,15 +181,11 @@ let imageMetadataSrc: string
 let captionSrc: ImageMetadata | string | undefined
 
 if (isRemote) {
-	// Remote: delegate to Astro's remote pipeline via getImage(). Default
-	// `inferSize: true` when the caller supplied neither explicit dimensions
-	// nor `inferSize` — preserves the "it just works" contract.
-	const hasDims = imageProps.width !== undefined && imageProps.height !== undefined
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- inferSize isn't in LocalImageProps but getImage() accepts it for remote URLs
-	const hasInferSize = (imageProps as { inferSize?: boolean }).inferSize !== undefined
+	// Remote: delegate to Astro's remote pipeline via getImage(). Astro
+	// requires either `width` + `height` or `inferSize: true` on remote
+	// sources — getImage() throws otherwise.
 	image = await getImage({
 		...getImageProps,
-		...(hasDims || hasInferSize ? {} : { inferSize: true }),
 		src,
 	})
 	imageMetadataSrc = src
