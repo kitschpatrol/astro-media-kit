@@ -8,6 +8,7 @@ process.env.BROWSER = 'chromium'
 
 export default defineConfig({
 	image: {
+		dangerouslyProcessSVG: true,
 		layout: 'constrained',
 		responsiveStyles: true,
 	},
