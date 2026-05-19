@@ -50,8 +50,13 @@ export async function stripExifFromImages(
 	let failedCount = 0
 
 	try {
+		// `exiftool.deleteAllTags` hardcodes its write args to `['-all=']`, which
+		// leaves a `${file}_original` backup behind. We use `write` directly so we
+		// can append `-overwrite_original` and skip the backup.
 		const results = await Promise.allSettled(
-			targets.map(async (filePath) => exiftool.deleteAllTags(filePath)),
+			targets.map(async (filePath) =>
+				exiftool.write(filePath, {}, ['-all=', '-overwrite_original']),
+			),
 		)
 
 		for (const [index, result] of results.entries()) {
