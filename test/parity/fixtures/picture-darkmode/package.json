@@ -12,7 +12,7 @@
 		"build": "astro build"
 	},
 	"devDependencies": {
-		"astro": "^6.3.5",
+		"astro": "^6.4.5",
 		"astro-media-kit": "link:../../../..",
 		"sharp": "^0.34.5"
 	}

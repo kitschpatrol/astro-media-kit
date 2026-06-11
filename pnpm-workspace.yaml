@@ -23,4 +23,5 @@ allowBuilds:
   unrs-resolver: true
   ws: true
 minimumReleaseAgeExclude:
-  - astro@6.3.5
+  - astro@6.4.5
+  - astro-mdx-kit@0.3.0
