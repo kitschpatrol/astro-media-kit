@@ -13,6 +13,23 @@ export default eslintConfig(
 		type: 'lib',
 	},
 	{
+		// Applies to all TypeScript files because typescript-eslint creates a single shared
+		// project service from the first file parsed, so a per-file override is ignored in
+		// multi-file runs. The Astro config is excluded from tsconfig.json because Starlight 0.40
+		// ships TypeScript source that fails type checking when imported.
+		// See https://github.com/withastro/starlight/issues/3950
+		files: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
+		// Markdown code blocks are virtual files with type-aware linting disabled
+		ignores: ['**/*.md/**'],
+		languageOptions: {
+			parserOptions: {
+				projectService: {
+					allowDefaultProject: ['playground-starlight/astro.config.ts'],
+				},
+			},
+		},
+	},
+	{
 		files: ['test/parity/**/*.ts', 'test/parity/**/*.astro'],
 		rules: {
 			'astro/jsx-a11y/html-has-lang': 'off',
