@@ -49,12 +49,25 @@ const { title } = pages.find((p) => p.href === '/tldraw')!
 		<tbody>
 			<tr>
 				<td>.tldr auto dark</td>
-				<td><Picture alt="tldr auto" src="../assets/test-sketch.tldr" /></td>
+				<td
+					><Picture
+						alt="tldr auto"
+						formats={{ svg: ['svg'] }}
+						src="../assets/test-sketch.tldr"
+					/></td
+				>
 				<td class="check">Auto light/dark variants</td>
 			</tr>
 			<tr>
 				<td>.tldr auto dark zoom</td>
-				<td><Picture alt="tldr auto" src="../assets/test-sketch.tldr" zoom="true" /></td>
+				<td
+					><Picture
+						alt="tldr auto"
+						formats={{ svg: ['svg'] }}
+						src="../assets/test-sketch.tldr"
+						zoom="true"
+					/></td
+				>
 				<td class="check">Auto light/dark variants</td>
 			</tr>
 			<tr>
@@ -62,6 +75,7 @@ const { title } = pages.find((p) => p.href === '/tldraw')!
 				<td
 					><Picture
 						alt="tldr explicit"
+						formats={{ svg: ['svg'] }}
 						src="../assets/test-sketch.tldr"
 						srcDark="../assets/test-sketch.tldr?dark=true&tldr"
 					/></td
@@ -70,7 +84,14 @@ const { title } = pages.find((p) => p.href === '/tldraw')!
 			</tr>
 			<tr>
 				<td>.tldr srcDark={'{false}'}</td>
-				<td><Picture alt="tldr disabled" src="../assets/test-sketch.tldr" srcDark={false} /></td>
+				<td
+					><Picture
+						alt="tldr disabled"
+						formats={{ svg: ['svg'] }}
+						src="../assets/test-sketch.tldr"
+						srcDark={false}
+					/></td
+				>
 				<td class="check">Light only</td>
 			</tr>
 		</tbody>
