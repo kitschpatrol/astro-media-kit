@@ -4,7 +4,7 @@ import { isDirectMediaUrl, tryParseUrl } from './media'
 export type AudioService = 'local' | 'oembed' | 'soundcloud'
 
 /** SoundCloud track IDs are numeric. */
-const SOUNDCLOUD_ID_RE = /^\d+$/
+const SOUNDCLOUD_ID_RE = /^\d+$/v
 
 /** SoundCloud track IDs are numeric-only, variable length. */
 export function soundcloudIsValidMediaId(mediaId: string): boolean {

@@ -38,7 +38,7 @@ async function runTransform(
 	return watermarkService.transform(
 		input,
 		{ format: 'png', src: '/test.png' },
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- narrow test stub, full ImageConfig has heavy generics
+
 		imageConfig as Parameters<typeof watermarkService.transform>[2],
 	)
 }
@@ -63,7 +63,7 @@ describe('watermark image service', { timeout: 30_000 }, () => {
 	it('skips images smaller than minDimension', async () => {
 		const input = await makePng(40, 40)
 		const watermarked = await runTransform(input, defaultWatermarkConfig)
-		// eslint-disable-next-line unicorn/no-useless-undefined -- explicit parameter
+
 		const bypass = await runTransform(input, undefined)
 		expect(watermarked.data.length).toBe(bypass.data.length)
 	})
@@ -71,7 +71,7 @@ describe('watermark image service', { timeout: 30_000 }, () => {
 	it('passes through when watermark config is absent', async () => {
 		const input = await makePng(400, 300)
 		const withConfig = await runTransform(input, defaultWatermarkConfig)
-		// eslint-disable-next-line unicorn/no-useless-undefined -- explicit parameter
+
 		const withoutConfig = await runTransform(input, undefined)
 		expect(withConfig.data.length === withoutConfig.data.length).toBe(false)
 	})

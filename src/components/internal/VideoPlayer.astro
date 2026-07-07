@@ -235,12 +235,12 @@ const hlsConfigJson =
 		)
 	}
 	{
-		isHls && hlsUrl && (
+		isHls && hlsUrl !== undefined && hlsUrl !== '' && (
 			<noscript>
 				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
 				<video {...videoAttributes}>
 					<source src={hlsUrl} type="application/x-mpegURL" />
-					{mp4Url && <source src={mp4Url} type="video/mp4" />}
+					{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
 					Your browser does not support HTML5 video.
 				</video>
 			</noscript>

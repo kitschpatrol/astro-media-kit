@@ -16,7 +16,8 @@ export type Props = {
 }
 
 const { aspectRatio, html, resolvedLabel, sanitize = true } = Astro.props
-const style = aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined
+const style =
+	aspectRatio !== undefined && aspectRatio !== '' ? `aspect-ratio: ${aspectRatio}` : undefined
 
 const resolvedHtml = sanitize ? sanitizeEmbedHtml(html, resolvedLabel) : html
 ---

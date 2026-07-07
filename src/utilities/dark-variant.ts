@@ -29,7 +29,7 @@ export function needsBackgroundDarkVariant(
 		return false
 	}
 
-	if (!backgroundDark) {
+	if (backgroundDark === undefined || backgroundDark === '') {
 		return false
 	}
 

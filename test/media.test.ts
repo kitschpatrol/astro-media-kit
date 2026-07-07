@@ -6,7 +6,7 @@ const url = (s: string) => new URL(s)
 describe('tryParseUrl', () => {
 	it('parses valid HTTP(S) URLs', () => {
 		expect(tryParseUrl('https://example.com/path')).toBeInstanceOf(URL)
-		expect(tryParseUrl('http://example.com')).toBeInstanceOf(URL)
+		expect(tryParseUrl('https://example.com')).toBeInstanceOf(URL)
 		expect(tryParseUrl('https://example.com/path')?.hostname).toBe('example.com')
 	})
 

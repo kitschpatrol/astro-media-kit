@@ -197,26 +197,25 @@ export async function resolveSrcToMetadata(
 
 	if (isDarkLightImageMetadata(src)) {
 		imageMetadata = src.light
-		if (srcDarkSource) {
+		if (srcDarkSource !== undefined && srcDarkSource !== '') {
 			imageMetadataDark = isImageMetadataObject(srcDarkSource)
 				? unwrapImageMetadata(srcDarkSource)
-				: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-					((await resolveImageSource(srcDarkSource)) as ImageMetadata)
+				: ((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 		} else if (!options.darkDisabled) {
 			imageMetadataDark = src.dark
 		}
 	} else if (isImageMetadataObject(src)) {
 		imageMetadata = unwrapImageMetadata(src)
-		if (srcDarkSource) {
+		if (srcDarkSource !== undefined && srcDarkSource !== '') {
 			imageMetadataDark = isImageMetadataObject(srcDarkSource)
 				? unwrapImageMetadata(srcDarkSource)
-				: // eslint-disable-next-line ts/no-unsafe-type-assertion -- resolveImageSource returns ImageMetadata when called without srcDark
-					((await resolveImageSource(srcDarkSource)) as ImageMetadata)
+				: ((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 		}
 	} else {
-		const resolved = srcDarkSource
-			? await resolveImageSource(src, srcDarkSource)
-			: await resolveImageSource(src)
+		const resolved =
+			srcDarkSource !== undefined && srcDarkSource !== ''
+				? await resolveImageSource(src, srcDarkSource)
+				: await resolveImageSource(src)
 
 		if (isDarkLightImageMetadata(resolved)) {
 			imageMetadata = resolved.light
@@ -257,9 +256,12 @@ export function mergeLayoutDefaults<T extends LayoutMergeProps>(
 		merged.layout ??= config.layout
 		merged.fit ??= config.objectFit ?? 'cover'
 		merged.position ??= config.objectPosition ?? 'center'
-	} else if (config.objectFit ?? config.objectPosition) {
-		merged.fit ??= config.objectFit
-		merged.position ??= config.objectPosition
+	} else {
+		const configuredFitOrPosition = config.objectFit ?? config.objectPosition
+		if (configuredFitOrPosition !== undefined && configuredFitOrPosition !== '') {
+			merged.fit ??= config.objectFit
+			merged.position ??= config.objectPosition
+		}
 	}
 
 	return { layout, merged, useResponsive }
@@ -275,7 +277,9 @@ export function compositingBackground(
 	format: string | undefined,
 	background?: string,
 ): Record<string, string> {
-	return background && opaqueFormats.has(format!) ? { background } : {}
+	return background !== undefined && background !== '' && opaqueFormats.has(format!)
+		? { background }
+		: {}
 }
 
 /**
@@ -367,7 +371,7 @@ export function cloneImageMetadata(src: ImageMetadata | string): ImageMetadata |
 	return withClone.clone ?? src
 }
 
-const SCOPED_STYLE_CLASS_REGEX = /\bastro-\w{8}\b/
+const SCOPED_STYLE_CLASS_REGEX = /\bastro-\w{8}\b/v
 
 /**
  * Extract Astro's auto-generated scoped-style class (e.g. `astro-ab12cd34`)
@@ -408,18 +412,24 @@ export function buildBackgroundStyle(options: {
 }): { dark: string | undefined; light: string | undefined } {
 	const { background, backgroundDark, isSelector } = options
 	if (isSelector) {
-		const light = background ? `background-color:${background}` : undefined
+		const light =
+			background !== undefined && background !== '' ? `background-color:${background}` : undefined
 		const darkBg = backgroundDark ?? background
-		const dark = darkBg ? `background-color:${darkBg}` : undefined
+		const dark = darkBg !== undefined && darkBg !== '' ? `background-color:${darkBg}` : undefined
 		return { dark, light }
 	}
 
 	let light: string | undefined
-	if (background && backgroundDark) {
+	if (
+		background !== undefined &&
+		background !== '' &&
+		backgroundDark !== undefined &&
+		backgroundDark !== ''
+	) {
 		light = `color-scheme:light dark;background-color:light-dark(${background},${backgroundDark})`
-	} else if (backgroundDark) {
+	} else if (backgroundDark !== undefined && backgroundDark !== '') {
 		light = `color-scheme:light dark;background-color:light-dark(transparent,${backgroundDark})`
-	} else if (background) {
+	} else if (background !== undefined && background !== '') {
 		light = `background-color:${background}`
 	}
 
@@ -444,7 +454,7 @@ export function buildSrcsetAttribute(
 	useResponsive: boolean,
 ): string {
 	const { densities, widths } = props
-	if (densities ?? (!widths && !useResponsive)) {
+	if (densities !== undefined || (widths === undefined && !useResponsive)) {
 		return `${image.src}${image.srcSet.values.length > 0 ? `, ${image.srcSet.attribute}` : ''}`
 	}
 
@@ -522,7 +532,11 @@ export function warnBackgroundDarkWithoutBackground(
 	backgroundDark: string | undefined,
 	componentName: string,
 ): void {
-	if (backgroundDark && !background) {
+	if (
+		backgroundDark !== undefined &&
+		backgroundDark !== '' &&
+		(background === undefined || background === '')
+	) {
 		console.warn(
 			`[astro-media-kit] ${componentName}: \`backgroundDark\` is set without \`background\` — light mode will be transparent.`,
 		)

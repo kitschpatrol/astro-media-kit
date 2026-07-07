@@ -43,8 +43,8 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 		)
 	}
 
-	const endpointUrl = oembedLink.getAttribute('href')
-	if (!endpointUrl) {
+	const endpointUrl = oembedLink.getAttribute('href') ?? undefined
+	if (endpointUrl === undefined || endpointUrl === '') {
 		throw new Error(
 			`oEmbed link tag found but has no href for "${canonicalUrl}". Set the "service" prop explicitly.`,
 		)
@@ -58,7 +58,6 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 		)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- oEmbed JSON shape is well-known
 	const data = (await oembedResponse.json()) as {
 		height?: number
 		html?: string
@@ -67,7 +66,7 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 		width?: number
 	}
 
-	if (!data.html) {
+	if (data.html === undefined || data.html === '') {
 		throw new Error(
 			`oEmbed response for "${canonicalUrl}" contains no embed HTML. This URL may not support rich/video embeds.`,
 		)

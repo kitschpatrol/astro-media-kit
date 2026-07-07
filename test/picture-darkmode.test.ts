@@ -32,8 +32,8 @@ describe('Picture darkMode selector', () => {
 		it('does not inject the dark-mode toggle <style>', async () => {
 			const $ = await fx.readHTML('/selector-no-dark/')
 			const styles = $('style')
+				.map((_, element) => $(element).html() ?? '')
 				.toArray()
-				.map((element) => $(element).html() ?? '')
 			expect(styles.some((text) => text.includes('picture.amk-light'))).toBe(false)
 			expect(styles.some((text) => text.includes('picture.amk-dark'))).toBe(false)
 		})
@@ -51,8 +51,8 @@ describe('Picture darkMode selector', () => {
 		it('injects a <style> that toggles the pair on the configured selector', async () => {
 			const $ = await fx.readHTML('/selector-with-dark/')
 			const styleText = $('style')
+				.map((_, element) => $(element).html() ?? '')
 				.toArray()
-				.map((element) => $(element).html() ?? '')
 				.join('\n')
 			expect(styleText).toContain('picture.amk-dark{display:none}')
 			expect(styleText).toContain("[data-theme='dark'] picture.amk-dark{display:block}")
@@ -81,8 +81,8 @@ describe('Picture darkMode selector', () => {
 		it('injects the dark-mode toggle <style>', async () => {
 			const $ = await fx.readHTML('/selector-transparent-background-dark/')
 			const styleText = $('style')
+				.map((_, element) => $(element).html() ?? '')
 				.toArray()
-				.map((element) => $(element).html() ?? '')
 				.join('\n')
 			expect(styleText).toContain("[data-theme='dark'] picture.amk-dark{display:block}")
 			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
@@ -111,8 +111,8 @@ describe('Picture darkMode selector', () => {
 
 			// The style exists (the paired Picture emitted it).
 			const styleText = $('style')
+				.map((_, element) => $(element).html() ?? '')
 				.toArray()
-				.map((element) => $(element).html() ?? '')
 				.join('\n')
 			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
 

@@ -97,9 +97,9 @@ function getPlainPath(path: PathLikeInput): string {
  *
  * @returns The absolute file path.
  */
-export function getAbsoluteFilePath(path: PathLikeInput, addDistribution = false): string {
+export function getAbsoluteFilePath(path: PathLikeInput, shouldAddDistribution = false): string {
 	const plainPath = getPlainPath(path)
-	return nodePath.posix.join(posixCwd(), addDistribution ? 'dist' : '', stripCwd(plainPath))
+	return nodePath.posix.join(posixCwd(), shouldAddDistribution ? 'dist' : '', stripCwd(plainPath))
 }
 
 /**

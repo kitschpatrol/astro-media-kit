@@ -40,7 +40,7 @@ function normalize(map: AttributeMap, stripClasses: boolean): AttributeMap {
 
 		if (key === 'class' && stripClasses) {
 			const remaining = value
-				.split(/\s+/)
+				.split(/\s+/v)
 				.filter((c) => c.length > 0 && !ALLOWLISTED_CLASSES.has(c))
 			if (remaining.length > 0) {
 				next.class = remaining.join(' ')

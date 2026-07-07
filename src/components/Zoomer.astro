@@ -94,7 +94,7 @@ let selfThumb = false
 // variant natively. Only set for images that actually carry a dark variant.
 let isPicture = false
 
-if (enabled) {
+if (enabled !== false && enabled !== '') {
 	if (typeof enabled === 'string') {
 		galleryName = enabled
 	}
@@ -162,10 +162,12 @@ if (enabled) {
 		margin-right: auto;
 	}
 
-	.pswp__button--arrow:hover,
-	.pswp__button--close:hover {
-		opacity: 1;
-		transition: none;
+	@media (hover: hover) {
+		.pswp__button--arrow:hover,
+		.pswp__button--close:hover {
+			opacity: 1;
+			transition: none;
+		}
 	}
 
 	/* Fade image in alongside the backdrop for self-thumb slides */
@@ -179,8 +181,12 @@ if (enabled) {
 		}
 	}
 
-	.pswp__img.amk-fade-in {
-		animation: amk-pswp-img-fade-in 0.15s ease;
+	/* Reduced-motion users skip the fade and see the image at full opacity
+	   immediately (the animation's final state). */
+	@media (prefers-reduced-motion: no-preference) {
+		.pswp__img.amk-fade-in {
+			animation: amk-pswp-img-fade-in 0.15s ease;
+		}
 	}
 
 	/* Custom 'picture' content type — the cloned <picture> (or, in selector
@@ -225,7 +231,7 @@ if (enabled) {
 </style>
 
 {
-	enabled ? (
+	enabled !== false && enabled !== '' ? (
 		<>
 			<script>
 				import './utils/lightbox'

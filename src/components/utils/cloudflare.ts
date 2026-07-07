@@ -95,7 +95,6 @@ async function cloudflareApiGetVideo(
 				// eslint-disable-next-line ts/naming-convention
 				Authorization: `Bearer ${apiToken}`,
 			},
-			method: 'GET',
 		},
 	)
 
@@ -103,7 +102,6 @@ async function cloudflareApiGetVideo(
 		throw new Error(`Cloudflare API returned status ${response.status}: "${response.statusText}"`)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion
 	const json = (await response.json()) as { result: CloudflareGetVideoResponse }
 	return json.result
 }
@@ -123,11 +121,12 @@ export async function cloudflareGetVideoInfo(
 
 	const videoInfo = await cloudflareApiGetVideo(config.accountId, mediaId, config.apiToken)
 
-	const logPrefix = videoInfo.meta.name
-		? `Cloudflare video "${videoInfo.meta.name}" with id "${mediaId}"`
-		: `Cloudflare video with id "${mediaId}"`
+	const logPrefix =
+		videoInfo.meta.name !== undefined && videoInfo.meta.name !== ''
+			? `Cloudflare video "${videoInfo.meta.name}" with id "${mediaId}"`
+			: `Cloudflare video with id "${mediaId}"`
 
-	if (!videoInfo.readyToStream || !(videoInfo.status.state === 'ready')) {
+	if (!videoInfo.readyToStream || videoInfo.status.state !== 'ready') {
 		throw new Error(`${logPrefix} is not ready to stream. Try again in a bit.`)
 	}
 
@@ -163,7 +162,7 @@ export async function cloudflareGetVideoInfo(
 	}
 }
 
-const HEX32_REGEX = /^[\da-f]{32}$/i
+const HEX32_REGEX = /^[\da-f]{32}$/iv
 
 /**
  * Check if a string is a valid Cloudflare media ID

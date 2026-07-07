@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { transformAstroSource } from '../src/integration/auto-import.ts'
 import { needsBackgroundDarkVariant } from '../src/utilities/dark-variant.ts'
 
-const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/
+const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/v
 
 // Default config: Image and Picture both auto-import 'src'
 const defaultConfig = {
@@ -76,15 +76,17 @@ import { Image } from 'astro-media-kit'
 `
 		const result = await transformAstroSource(source, defaultConfig)
 		expect(result).toBeDefined()
-		const importCount = (result!.match(/import __ami_0/g) ?? []).length
+		const importCount = (result!.match(/import __ami_0/gv) ?? []).length
 		expect(importCount).toBe(1)
 	})
 
 	it('skips expression attributes (curly braces)', async () => {
+		// Interpolated so the braces aren't mistaken for a missing-`$` template typo
+		const expressionAttribute = '{img}'
 		const source = `---
 import img from '../assets/test.jpeg'
 ---
-<Image src={img} alt="Already imported" />
+<Image src=${expressionAttribute} alt="Already imported" />
 `
 		const result = await transformAstroSource(source, defaultConfig)
 		expect(result).toBeUndefined()
@@ -230,9 +232,11 @@ const title = 'Hello'
 	})
 
 	it('does not insert srcDark when srcDark={false} (expression attribute)', async () => {
+		// Interpolated so the braces aren't mistaken for a missing-`$` template typo
+		const expressionAttribute = '{false}'
 		const source = `---
 ---
-<Picture src="../assets/sketch.tldr" srcDark={false} alt="Sketch" />
+<Picture src="../assets/sketch.tldr" srcDark=${expressionAttribute} alt="Sketch" />
 `
 		const result = await transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')

@@ -28,9 +28,9 @@ const svgMeta = { format: 'svg' as const, height: 100, src: '/img.svg', width: 2
 const gifMeta = { format: 'gif' as const, height: 100, src: '/img.gif', width: 200 }
 const webpMeta = { format: 'webp' as const, height: 100, src: '/img.webp', width: 200 }
 
-const imageRelativePathError = /Image received a relative string path/
-const pictureRelativePathError = /Picture received a relative string path/
-const relativePathError = /relative string path/
+const imageRelativePathError = /Image received a relative string path/v
+const pictureRelativePathError = /Picture received a relative string path/v
+const relativePathError = /relative string path/v
 
 const noop = (): void => undefined
 
@@ -288,7 +288,7 @@ describe('isESMImportedImage', () => {
 	it('accepts SVG component function wrappers', () => {
 		// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
 		const svgFn = Object.assign(() => {}, { src: '/img.svg' })
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- function-with-src simulates Astro's SVG wrapper shape
+
 		expect(isESMImportedImage(svgFn as unknown as typeof pngMeta)).toBe(true)
 	})
 

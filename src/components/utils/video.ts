@@ -81,12 +81,13 @@ export function validateServiceConfig(service: Service, config: ServiceConfig): 
 		],
 	}
 
-	if (!(service in checks)) {
+	if (!Object.hasOwn(checks, service)) {
 		return
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- guarded by `in` check above
-	const missing = checks[service as CredentialService].filter((c) => !c.value).map((c) => c.envVar)
+	const missing = checks[service as CredentialService]
+		.filter((c) => c.value === '')
+		.map((c) => c.envVar)
 	if (missing.length > 0) {
 		throw new Error(
 			`Missing env vars for "${service}" video service: ${missing.join(', ')}. Set these as secrets via astro:env or as environment variables.`,
@@ -126,7 +127,7 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 
 // --- YouTube oEmbed ---
 
-const YOUTUBE_ID_RE = /^[\w-]{11}$/
+const YOUTUBE_ID_RE = /^[\w\-]{11}$/v
 
 /**
  * YouTube video IDs are exactly 11 characters: alphanumeric, hyphen,
@@ -149,7 +150,6 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 		throw new Error(`YouTube oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- oEmbed JSON shape is well-known
 	const data = (await response.json()) as {
 		height: number
 		thumbnail_url: string // eslint-disable-line ts/naming-convention -- oEmbed API field name
@@ -172,7 +172,7 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 
 // --- Vimeo oEmbed ---
 
-const VIMEO_ID_RE = /^\d+$/
+const VIMEO_ID_RE = /^\d+$/v
 
 /** Vimeo video IDs are numeric-only, variable length. */
 export function vimeoIsValidMediaId(mediaId: string): boolean {
@@ -190,7 +190,6 @@ async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 		throw new Error(`Vimeo oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- oEmbed JSON shape is well-known
 	const data = (await response.json()) as {
 		duration: number
 		height: number
@@ -268,8 +267,8 @@ const YOUTUBE_HOSTS = new Set([
 	'youtube.com',
 ])
 
-const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w-]{11})/
-const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)/
+const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w\-]{11})/v
+const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)/v
 
 /** Extracts a YouTube video ID from various YouTube URL formats. */
 function extractYouTubeId(url: URL): string | undefined {
@@ -280,21 +279,21 @@ function extractYouTubeId(url: URL): string | undefined {
 
 	// Short URL: youtu.be/ID
 	if (host === 'youtu.be') {
-		const id = url.pathname.slice(1).split('/')[0]
-		return id && youtubeIsValidMediaId(id) ? id : undefined
+		const id = url.pathname.slice(1).split('/', 1)[0]
+		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
 	}
 
 	// /watch?v=ID
 	if (url.pathname === '/watch') {
-		const id = url.searchParams.get('v')
-		return id && youtubeIsValidMediaId(id) ? id : undefined
+		const id = url.searchParams.get('v') ?? undefined
+		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
 	}
 
 	// /embed/ID, /shorts/ID, /live/ID, /v/ID
 	const pathMatch = YOUTUBE_PATH_ID_REGEX.exec(url.pathname)
 	if (pathMatch) {
 		const id = pathMatch[1]
-		return id && youtubeIsValidMediaId(id) ? id : undefined
+		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
 	}
 
 	return undefined
@@ -318,7 +317,9 @@ function extractVimeoId(url: URL): string | undefined {
 	// Vimeo.com/ID or vimeo.com/channels/.../ID
 	const segments = url.pathname.split('/').filter(Boolean)
 	const lastSegment = segments.at(-1)
-	return lastSegment && vimeoIsValidMediaId(lastSegment) ? lastSegment : undefined
+	return lastSegment !== undefined && lastSegment !== '' && vimeoIsValidMediaId(lastSegment)
+		? lastSegment
+		: undefined
 }
 
 /** Result of resolving a `src` string into a service and its identifier. */
@@ -357,12 +358,12 @@ function inferServiceFromId(mediaId: string): Service | undefined {
 /** Resolve a URL into a service type and identifier. */
 function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
 	const youtubeId = extractYouTubeId(url)
-	if (youtubeId) {
+	if (youtubeId !== undefined && youtubeId !== '') {
 		return { identifier: youtubeId, service: 'youtube' }
 	}
 
 	const vimeoId = extractVimeoId(url)
-	if (vimeoId) {
+	if (vimeoId !== undefined && vimeoId !== '') {
 		return { identifier: vimeoId, service: 'vimeo' }
 	}
 
@@ -396,7 +397,7 @@ export function resolveVideoSource(src: string, service?: Service): ResolvedSour
 
 	// Not a URL — try ID pattern matching
 	const inferred = inferServiceFromId(src)
-	if (inferred) {
+	if (inferred !== undefined) {
 		return { identifier: src, service: service ?? inferred }
 	}
 

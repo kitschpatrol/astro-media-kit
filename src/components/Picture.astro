@@ -242,7 +242,7 @@ const className = classFromAstro ?? classFromJsx
 const isSelector = darkMode !== 'media' && darkMode !== 'none'
 const isNone = darkMode === 'none'
 
-if (isSelector && /[{}<>;]/.test(darkMode)) {
+if (isSelector && /[\{\}<>;]/v.test(darkMode)) {
 	throw new Error(
 		`Picture darkMode selector "${darkMode}" contains invalid characters. ` +
 			'Provide a valid CSS selector (e.g. "[data-theme=\'dark\']", ".dark").',
@@ -254,17 +254,12 @@ const backgroundDark = isNone ? undefined : backgroundDarkProp
 
 // Normalize srcDark: true/undefined = auto, false = disabled, other = explicit source
 const darkDisabled = isNone || srcDarkProp === false
-const srcDarkSource = isNone
-	? undefined
-	: typeof srcDarkProp === 'boolean' || srcDarkProp === undefined
-		? undefined
-		: srcDarkProp
+const srcDarkSource =
+	isNone || typeof srcDarkProp === 'boolean' || srcDarkProp === undefined ? undefined : srcDarkProp
 
 const isRemote = isRemoteImageSource(src)
 
 // Branch: remote URL sources skip metadata probing and use Astro's remote pipeline.
-let imageMetadata: ImageMetadata | undefined
-let imageMetadataDark: ImageMetadata | undefined
 let lightSrc: ImageMetadata | string
 let darkSrc: ImageMetadata | string | undefined
 let lightSrcLabel: string
@@ -288,12 +283,10 @@ if (isRemote) {
 	lightSrcLabel = src
 	captionSrc = undefined
 } else {
-	const resolved = await resolveSrcToMetadata(src, srcDarkSource, {
+	const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(src, srcDarkSource, {
 		componentName: 'Picture',
 		darkDisabled,
 	})
-	imageMetadata = resolved.imageMetadata
-	imageMetadataDark = resolved.imageMetadataDark
 	lightSrc = imageMetadata
 	darkSrc = imageMetadataDark
 	lightSrcLabel = imageMetadata.src
@@ -303,10 +296,12 @@ if (isRemote) {
 // Propagate scoped style class to picture element
 const pictureAttributes = { ...pictureAttributesProp }
 const scopedStyleClass = extractScopedStyleClass(className)
-if (scopedStyleClass) {
-	pictureAttributes.class = pictureAttributes.class
-		? `${pictureAttributes.class} ${scopedStyleClass}`
-		: scopedStyleClass
+if (scopedStyleClass !== undefined && scopedStyleClass !== '') {
+	const existingClass = pictureAttributes.class ?? undefined
+	pictureAttributes.class =
+		existingClass !== undefined && existingClass !== ''
+			? `${existingClass} ${scopedStyleClass}`
+			: scopedStyleClass
 }
 
 // Handle responsive layout (same as Astro's Picture)
@@ -327,7 +322,7 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
 			...getImageProps,
-			...(isRemote ? {} : compositingBackground(format, background)),
+			...(!isRemote && compositingBackground(format, background)),
 			densities: imageProps.densities,
 			format,
 			src: originalSrc,
@@ -343,22 +338,22 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 //    swapped inline background-color — CSS light-dark() can't toggle on a custom selector)
 //    — case (2)/(3) skipped for remote sources (no compositing, and no local metadata)
 const needsDarkVariant = isRemote
-	? Boolean(darkSrc)
-	: (darkSrc ??
-		needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector))
+	? darkSrc !== undefined
+	: darkSrc !== undefined ||
+		needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector)
 let optimizedImagesDark: GetImageResult[] | undefined
 if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background
 	const originalSrcDark = isRemote
 		? (darkSrc ?? originalSrc)
-		: darkSrc
-			? await resolveSrc(darkSrc)
-			: originalSrc
+		: darkSrc === undefined
+			? originalSrc
+			: await resolveSrc(darkSrc)
 	optimizedImagesDark = await Promise.all(
 		formats.map(async (format) =>
 			getImage({
 				...getImageProps,
-				...(isRemote ? {} : compositingBackground(format, darkBackground)),
+				...(!isRemote && compositingBackground(format, darkBackground)),
 				densities: imageProps.densities,
 				format,
 				src: originalSrcDark,
@@ -379,7 +374,7 @@ const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...getImageProps,
-	...(isRemote ? {} : compositingBackground(resultFallbackFormat, background)),
+	...(!isRemote && compositingBackground(resultFallbackFormat, background)),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
 	src: originalSrc,
@@ -394,12 +389,12 @@ if (isSelector && hasDarkMode) {
 	const darkBackground = backgroundDark ?? background
 	const originalSrcDark = isRemote
 		? (darkSrc ?? originalSrc)
-		: darkSrc
-			? await resolveSrc(darkSrc)
-			: originalSrc
+		: darkSrc === undefined
+			? originalSrc
+			: await resolveSrc(darkSrc)
 	fallbackImageDark = await getImage({
 		...getImageProps,
-		...(isRemote ? {} : compositingBackground(resultFallbackFormat, darkBackground)),
+		...(!isRemote && compositingBackground(resultFallbackFormat, darkBackground)),
 		densities: imageProps.densities,
 		format: resultFallbackFormat,
 		src: originalSrcDark,
@@ -418,7 +413,7 @@ const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 const fallbackSizes =
 	typeof fallbackImage.attributes.sizes === 'string' ? fallbackImage.attributes.sizes : undefined
 const effectiveSizes = resolveSizesAttribute(imageProps.sizes ?? undefined, fallbackSizes)
-if (effectiveSizes) {
+if (effectiveSizes !== undefined && effectiveSizes !== '') {
 	sourceAdditionalAttributes.sizes = effectiveSizes
 }
 
@@ -500,7 +495,7 @@ if (isSelector && hasDarkMode) {
 }
 ---
 
-{selectorStyle && <Fragment set:html={selectorStyle} />}
+{selectorStyle !== undefined && selectorStyle !== '' && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
 	<Zoomer {...zoomerProps} slot="media-component">
 		{

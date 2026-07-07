@@ -223,7 +223,6 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
 		return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- CustomVideoElement proxies HTMLMediaElement API
 	return element as unknown as HTMLMediaElement
 }
 
@@ -240,7 +239,6 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 		return
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- `api` is a public (non-#) field on hls-video-element
 	const hlsHost = element as unknown as {
 		api?: null | { destroy(): void; detachMedia(): void }
 	}
@@ -259,14 +257,29 @@ function destroyHlsInstance(element: Element | null | undefined): void {
 }
 
 /**
+ * Parse a `data-pswp-width` / `data-pswp-height` dataset value, falling back
+ * when it's absent, non-numeric, or zero (same falsy set `Number(x) ||
+ * fallback` covered: 0, -0, and NaN).
+ */
+function parseDimension(value: string | undefined, fallback: number): number {
+	const parsed = Number(value)
+	return parsed !== 0 && !Number.isNaN(parsed) ? parsed : fallback
+}
+
+/**
  * Kick off playback. Safe to call multiple times — `play()` is idempotent on an
  * already-playing element. Surfaces rejection reasons (autoplay blocked,
  * network error) instead of swallowing them.
  */
 function tryPlay(video: HTMLMediaElement): void {
-	video.play().catch((error: unknown) => {
-		console.warn('[astro-media-kit] Lightbox video play() rejected:', error)
-	})
+	// Fire-and-forget async IIFE — callers intentionally don't await playback.
+	void (async () => {
+		try {
+			await video.play()
+		} catch (error) {
+			console.warn('[astro-media-kit] Lightbox video play() rejected:', error)
+		}
+	})()
 }
 
 function createLightbox(
@@ -306,7 +319,7 @@ function createLightbox(
 	// outside the slide zoom-wrap so it stays anchored to the viewport bottom
 	// regardless of fit/fill/native zoom on the active video slide.
 	let floatingControls: ReturnType<typeof createFloatingControls> | undefined
-	let autohideTimerId: ReturnType<typeof globalThis.setTimeout> | undefined
+	let autohideTimerId: ReturnType<typeof setTimeout> | undefined
 	let pointerListenersCleanup: (() => void) | undefined
 	let keyboardListenerCleanup: (() => void) | undefined
 	// Currently-bound controller for the floating bar. Tracked so we can
@@ -328,7 +341,7 @@ function createLightbox(
 			clearTimeout(autohideTimerId)
 		}
 
-		autohideTimerId = globalThis.setTimeout(() => {
+		autohideTimerId = setTimeout(() => {
 			if (floatingControls) {
 				floatingControls.wrapper.dataset.userInactive = ''
 			}
@@ -344,7 +357,6 @@ function createLightbox(
 		floatingControls.bar.removeAttribute('mediacontroller')
 
 		if (boundController) {
-			// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
 			;(boundController as MediaChromeHost).unassociateElement(floatingControls.bar)
 			boundController = undefined
 		}
@@ -378,11 +390,9 @@ function createLightbox(
 
 		if (boundController !== controller) {
 			if (boundController) {
-				// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
 				;(boundController as MediaChromeHost).unassociateElement(floatingControls.bar)
 			}
 
-			// eslint-disable-next-line ts/no-unsafe-type-assertion -- media-chrome method not in public types
 			;(controller as MediaChromeHost).associateElement(floatingControls.bar)
 			boundController = controller
 		}
@@ -444,7 +454,7 @@ function createLightbox(
 			const posterUrl = element.dataset.pswpPoster ?? ''
 			return {
 				...itemData,
-				height: Number(element.dataset.pswpHeight) || 1080,
+				height: parseDimension(element.dataset.pswpHeight, 1080),
 				msrc: posterUrl,
 				type: 'video',
 				videoConfig: element.dataset.pswpVideoConfig ?? '',
@@ -452,7 +462,7 @@ function createLightbox(
 				videoElement: element.dataset.pswpVideoElement ?? 'hls-video',
 				videoPoster: posterUrl,
 				videoSrc: element.dataset.pswpVideoSrc ?? '',
-				width: Number(element.dataset.pswpWidth) || 1920,
+				width: parseDimension(element.dataset.pswpWidth, 1920),
 			}
 		}
 
@@ -474,11 +484,11 @@ function createLightbox(
 
 			return {
 				...itemData,
-				height: Number(element.dataset.pswpHeight) || 0,
+				height: parseDimension(element.dataset.pswpHeight, 0),
 				msrc,
 				pictureContainer: element,
 				type: 'picture',
-				width: Number(element.dataset.pswpWidth) || 0,
+				width: parseDimension(element.dataset.pswpWidth, 0),
 			}
 		}
 
@@ -524,11 +534,7 @@ function createLightbox(
 		}
 
 		const { backgroundColor } = getComputedStyle(visibleImage)
-		if (
-			!backgroundColor ||
-			backgroundColor === 'rgba(0, 0, 0, 0)' ||
-			backgroundColor === 'transparent'
-		) {
+		if (['', 'rgba(0, 0, 0, 0)', 'transparent'].includes(backgroundColor)) {
 			return false
 		}
 
@@ -805,7 +811,6 @@ function createLightbox(
 
 		event.preventDefault()
 
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- cloneNode returns Node; the input is HTMLElement so the result is too
 		const clone = subtree.cloneNode(true) as HTMLElement
 
 		// PhotoSwipe's click-to-toggle-zoom keys off `event.target.classList`
@@ -823,11 +828,11 @@ function createLightbox(
 		// handler below does the same with a div). The clone is a <picture>
 		// (media mode) or a <div> (selector mode), neither of which strictly
 		// fits the typed union.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- intentional widening for the custom-content pattern
+
 		content.element = clone as HTMLDivElement
 
 		// Signal custom content ready, same trick as the video handler below.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
+
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 	})
 
@@ -861,14 +866,14 @@ function createLightbox(
 		// happens. The inline player is muted by default too, and the user
 		// can unmute via the floating control bar.
 		videoElement.setAttribute('muted', '')
-		if (videoPoster) {
+		if (videoPoster !== '') {
 			videoElement.setAttribute('poster', videoPoster)
 		}
 
 		// Apply hls.js config before setting src (HLS-specific).
-		if (videoElementTag === 'hls-video' && videoConfig) {
+		if (videoElementTag === 'hls-video' && videoConfig !== '') {
 			try {
-				// eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-type-assertion -- JSON.parse returns any; guarded by tag check above
+				// eslint-disable-next-line ts/no-unsafe-assignment -- JSON.parse returns any; guarded by tag check above
 				;(videoElement as unknown as HlsVideoElement).config = JSON.parse(videoConfig)
 			} catch {
 				console.warn('[astro-media-kit] Failed to parse HLS config:', videoConfig)
@@ -903,7 +908,7 @@ function createLightbox(
 		// Signal that custom content is ready. Without this, PhotoSwipe
 		// keeps the content in LOADING state, which breaks slide transition
 		// animations for the entire gallery.
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- onLoaded is a public method on Content, not in the types
+
 		;(content as unknown as { onLoaded: () => void }).onLoaded()
 
 		// Binding happens later via `syncFloatingBar` on `appendHeavyContent`
@@ -924,7 +929,6 @@ function createLightbox(
 		const inlineVideo = queryVideoElement(videoContainer)
 		const inlineCurrentTime = inlineVideo?.currentTime ?? 0
 		if (inlineCurrentTime > 0) {
-			// eslint-disable-next-line ts/no-unsafe-type-assertion -- all supported video elements expose currentTime via CustomVideoElement proxy
 			const proxiedVideo = videoElement as unknown as HTMLMediaElement
 			proxiedVideo.currentTime = inlineCurrentTime
 			const applySeek = (): void => {
@@ -1012,8 +1016,10 @@ function createLightbox(
 	// hls-video-element hasn't initialized hls.js (it waits for
 	// `connectedCallback` / src attribute processing once connected).
 	lightbox.on('appendHeavyContent', ({ slide }) => {
+		// `slide.content` is always assigned in the Slide constructor, so no
+		// existence check is needed.
 		const { content } = slide
-		if (!content || !isVideoData(content.data)) {
+		if (!isVideoData(content.data)) {
 			return
 		}
 
@@ -1100,13 +1106,14 @@ function createLightbox(
 	// Guard against plugin crash when pswp.currSlide is undefined during
 	// the initial 'change' event in pswp.init(). The plugin calls
 	// showCaption(pswp.currSlide) without checking for undefined.
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- plugin instance type not exported
+
 	const plugin = captionPlugin as unknown as {
 		showCaption: (slide: unknown) => void
 	}
 	const originalShowCaption = plugin.showCaption.bind(plugin)
 	plugin.showCaption = (slide: unknown) => {
-		if (!slide) {
+		// The plugin passes `pswp.currSlide`, which is a slide object or nullish.
+		if (slide === null || slide === undefined) {
 			return
 		}
 
@@ -1183,7 +1190,9 @@ const galleryNames = new Set(
 const galleryLightboxes = new Map<string, PhotoSwipeLightbox>()
 
 for (const name of galleryNames) {
-	const itemCount = document.querySelectorAll(`.pswp-zoom[data-pswp-gallery="${name}"]`).length
+	const itemCount = document.querySelectorAll(
+		`.pswp-zoom[data-pswp-gallery="${CSS.escape(name)}"]`,
+	).length
 	const lb = createLightbox(
 		{
 			bgOpacity: 0.9,
@@ -1239,14 +1248,16 @@ for (const trigger of document.querySelectorAll<HTMLButtonElement>('.pswp-video-
 
 		const galleryName = container.dataset.pswpGallery
 
-		if (galleryName) {
+		if (galleryName !== undefined && galleryName !== '') {
 			const lb = galleryLightboxes.get(galleryName)
 			if (!lb) {
 				return
 			}
 
 			const children = [
-				...document.querySelectorAll<HTMLElement>(`.pswp-zoom[data-pswp-gallery="${galleryName}"]`),
+				...document.querySelectorAll<HTMLElement>(
+					`.pswp-zoom[data-pswp-gallery="${CSS.escape(galleryName)}"]`,
+				),
 			]
 			const index = children.indexOf(container)
 			if (index !== -1) {

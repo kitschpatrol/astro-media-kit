@@ -33,8 +33,8 @@ export async function buildFixture(fixtureName: string): Promise<{
 	return {
 		dist: distribution,
 		async readHTML(pagePath: string): Promise<CheerioAPI> {
-			const relative = pagePath.replaceAll(/^\/|\/$/g, '')
-			const file = path.join(distribution, relative || '.', 'index.html')
+			const relative = pagePath.replaceAll(/^\/|\/$/gv, '')
+			const file = path.join(distribution, relative === '' ? '.' : relative, 'index.html')
 			const html = await readFile(file, 'utf8')
 			return load(html)
 		},

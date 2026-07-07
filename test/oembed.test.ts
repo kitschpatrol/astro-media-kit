@@ -63,7 +63,7 @@ describe('sanitizeEmbedHtml', () => {
 			'<iframe src="https://a.example/1" frameborder="0"></iframe><iframe src="https://a.example/2" frameborder="0"></iframe>',
 			'T',
 		)
-		expect(result.match(/<iframe/g)).toHaveLength(2)
+		expect(result.match(/<iframe/gv)).toHaveLength(2)
 		expect(result).not.toContain('frameborder')
 	})
 })

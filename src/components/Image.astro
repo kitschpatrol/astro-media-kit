@@ -202,7 +202,7 @@ if (isRemote) {
 	// sources — getImage() throws otherwise. A `FormatRules` map can't be
 	// resolved without input format metadata, so only forward a forced string
 	// (warn on the map shape).
-	if (import.meta.env.DEV && formatProp && typeof formatProp !== 'string') {
+	if (import.meta.env.DEV && formatProp !== undefined && typeof formatProp !== 'string') {
 		console.warn(
 			"[astro-media-kit] Image received a `format` rules object on a remote source — rules-map shape requires local input format metadata. Pass a single `ImageOutputFormat` string instead, or omit `format` to use Astro's remote default.",
 		)
@@ -211,7 +211,7 @@ if (isRemote) {
 	const remoteFormat = typeof formatProp === 'string' ? formatProp : undefined
 	image = await getImage({
 		...getImageProps,
-		...(remoteFormat ? { format: remoteFormat } : {}),
+		...(remoteFormat !== undefined && remoteFormat !== '' && { format: remoteFormat }),
 		src,
 	})
 	imageMetadataSrc = src

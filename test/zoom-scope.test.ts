@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveScopedGalleries } from '../src/components/utils/zoom-scope'
 
-const SCOPE_SUFFIX_PATTERN = /^album__scope_\d+$/
+const SCOPE_SUFFIX_PATTERN = /^album__scope_\d+$/v
 
 /** Build a `.pswp-zoom` element with optional data attributes. */
 function zoomElement(
@@ -26,7 +26,7 @@ function zoomElement(
 }
 
 afterEach(() => {
-	document.body.innerHTML = ''
+	document.body.replaceChildren()
 })
 
 describe('resolveScopedGalleries', () => {

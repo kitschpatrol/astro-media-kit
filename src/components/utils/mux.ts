@@ -59,7 +59,7 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 
 	// For HLS URL
 	const playbackId = video.playback_ids?.at(0)?.id
-	if (!playbackId) {
+	if (playbackId === undefined || playbackId === '') {
 		throw new Error(`${logPrefix} does not have a playback ID.`)
 	}
 
@@ -124,7 +124,7 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 	}
 }
 
-const ALPHANUMERIC44_REGEX = /^[\da-z]{44}$/i
+const ALPHANUMERIC44_REGEX = /^[\da-z]{44}$/iv
 
 /**
  * Check if a string is a valid Mux media ID

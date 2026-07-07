@@ -59,20 +59,18 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 	const absoluteSrc = getAbsoluteFilePath(src, isProduction)
 
 	try {
-		const {
-			XMP: { Creator: creator, Credit: credit, Label: label } = {},
-			// eslint-disable-next-line ts/no-unsafe-type-assertion -- exiftool returns untyped data
-		} = (await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
-			// eslint-disable-next-line ts/naming-convention
-			XMP?: {
+		const { XMP: { Creator: creator, Credit: credit, Label: label } = {} } =
+			(await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
 				// eslint-disable-next-line ts/naming-convention
-				Creator?: string | string[] | undefined
-				// eslint-disable-next-line ts/naming-convention
-				Credit?: string | undefined
-				// eslint-disable-next-line ts/naming-convention
-				Label?: string | undefined
+				XMP?: {
+					// eslint-disable-next-line ts/naming-convention
+					Creator?: string | string[] | undefined
+					// eslint-disable-next-line ts/naming-convention
+					Credit?: string | undefined
+					// eslint-disable-next-line ts/naming-convention
+					Label?: string | undefined
+				}
 			}
-		}
 
 		return { creator: Array.isArray(creator) ? creator[0] : creator, credit, label }
 	} catch {
@@ -120,7 +118,6 @@ export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
 	// Extract .meta (a plain object) rather than returning the function
 
 	if ('meta' in src) {
-		// eslint-disable-next-line ts/no-unsafe-type-assertion
 		return (src as unknown as { meta: ImageMetadata }).meta
 	}
 
@@ -167,8 +164,29 @@ type SrcsetEntry = {
 	width: number
 }
 
-const SRCSET_SEPARATOR_REGEX = /,\s*(?=\S)/
-const SRCSET_ENTRY_REGEX = /^(\S+)\s+(\d+)w$/
+const SRCSET_SEPARATOR_REGEX = /,\s*(?=\S)/v
+const SRCSET_ENTRY_REGEX = /^(\S+)\s+(\d+)w$/v
+const LEADING_INTEGER_REGEX = /^\s*([+\-]?\d+)/v
+
+/**
+ * Parses the leading integer from an HTML dimension attribute, mirroring
+ * `Number.parseInt(value, 10)`: leading whitespace and a sign are accepted,
+ * trailing non-digits (e.g. `100px`) are ignored. Returns NaN when no leading
+ * integer is present.
+ */
+function parseLeadingInteger(value: string): number {
+	const integer = LEADING_INTEGER_REGEX.exec(value)?.[1]
+	return integer === undefined ? NaN : Number(integer)
+}
+
+/**
+ * Type guard for a non-empty string. Collapses `value !== undefined && value
+ * !== ''` checks (including DOM `string | null` attribute returns) into a
+ * single predicate.
+ */
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === 'string' && value !== ''
+}
 
 /**
  * Parses a srcset string and returns an array of URL/width pairs.
@@ -179,15 +197,15 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 
 	for (const part of parts) {
 		const trimmed = part.trim()
-		if (!trimmed) {
+		if (trimmed === '') {
 			continue
 		}
 
 		const match = SRCSET_ENTRY_REGEX.exec(trimmed)
-		if (match?.[1] && match[2]) {
+		if (match?.[1] !== undefined && match[1] !== '' && match[2] !== undefined && match[2] !== '') {
 			entries.push({
 				url: match[1].trim(),
-				width: Number.parseInt(match[2], 10),
+				width: Number(match[2]),
 			})
 		}
 	}
@@ -238,22 +256,20 @@ export type ZoomTarget = ImageZoomTarget | VideoZoomTarget
 
 function findVideoTarget(document: Document): undefined | VideoZoomTarget {
 	for (const tag of VIDEO_ELEMENT_TAGS) {
-		const element = document.querySelector(tag)
+		// Query as HTMLElement to recover `dataset` typing — linkedom parses custom
+		// tags into HTMLElement instances, but its Document types surface bare Element
+		const element = document.querySelector<HTMLElement>(tag)
 		if (!element) {
 			continue
 		}
 
-		// Linkedom's Element type doesn't expose `dataset`; getAttribute is the typed equivalent
-		const src =
-			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
-			element.getAttribute('src') ?? element.getAttribute('data-src') ?? ''
-		if (!src) {
+		const src = element.getAttribute('src') ?? element.dataset.src ?? ''
+		if (src === '') {
 			continue
 		}
 
 		return {
-			// eslint-disable-next-line unicorn/prefer-dom-node-dataset
-			config: element.getAttribute('data-hls-config') ?? undefined,
+			config: element.dataset.hlsConfig ?? undefined,
 			element: tag,
 			poster: element.getAttribute('poster') ?? undefined,
 			src,
@@ -290,7 +306,7 @@ function collectImageEntries(document: Document): {
 		}
 
 		const srcset = source.getAttribute('srcset')
-		if (srcset) {
+		if (isNonEmptyString(srcset)) {
 			entries.push(...parseSrcset(srcset))
 		}
 	}
@@ -299,19 +315,19 @@ function collectImageEntries(document: Document): {
 	const img = document.querySelector('picture.amk-light img') ?? document.querySelector('img')
 	let aspectRatio = 1
 	if (img) {
-		const imgWidth = Number.parseInt(img.getAttribute('width') ?? '0', 10)
-		const imgHeight = Number.parseInt(img.getAttribute('height') ?? '0', 10)
+		const imgWidth = parseLeadingInteger(img.getAttribute('width') ?? '0')
+		const imgHeight = parseLeadingInteger(img.getAttribute('height') ?? '0')
 		if (imgWidth > 0 && imgHeight > 0) {
 			aspectRatio = imgHeight / imgWidth
 		}
 
 		const srcset = img.getAttribute('srcset')
-		if (srcset) {
+		if (isNonEmptyString(srcset)) {
 			entries.push(...parseSrcset(srcset))
 		}
 
 		const src = img.getAttribute('src')
-		if (src && imgWidth > 0) {
+		if (isNonEmptyString(src) && imgWidth > 0) {
 			entries.push({ url: src, width: imgWidth })
 		}
 	}
@@ -357,7 +373,6 @@ function findImageTarget(document: Document): ImageZoomTarget | undefined {
  * @param html - HTML string from a rendered Zoomer slot
  */
 export function extractZoomTarget(html: string): undefined | ZoomTarget {
-	// eslint-disable-next-line ts/no-unsafe-type-assertion -- linkedom returns HTMLDocument-like, compatible with Document
 	const { document } = parseHTML(html) as unknown as { document: Document }
 	return findVideoTarget(document) ?? findImageTarget(document)
 }

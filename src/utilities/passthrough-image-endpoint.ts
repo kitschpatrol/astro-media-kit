@@ -4,7 +4,7 @@ import type { APIContext } from 'astro'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const FS_PATH_PREFIX_REGEX = /^\/@fs\//
+const FS_PATH_PREFIX_REGEX = /^\/@fs\//v
 
 /**
  * Don't process images at all, which keeps things snappy. Set conditionally on
@@ -12,13 +12,14 @@ const FS_PATH_PREFIX_REGEX = /^\/@fs\//
  */
 export async function GET({ request }: APIContext): Promise<Response> {
 	const url = new URL(request.url)
-	const href = url.searchParams.get('href')
-	if (!href) {
+	const href = url.searchParams.get('href') ?? undefined
+	if (href === undefined || href === '') {
 		return new Response('Missing href parameter', { status: 400 })
 	}
 
 	const imagePath =
-		'./' + path.relative(path.resolve('.'), href.replace(FS_PATH_PREFIX_REGEX, '/')).split('?')[0]
+		'./' +
+		path.relative(path.resolve('.'), href.replace(FS_PATH_PREFIX_REGEX, '/')).split('?', 1)[0]
 
 	// Check if the image exists
 	try {

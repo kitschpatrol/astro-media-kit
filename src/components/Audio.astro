@@ -85,7 +85,9 @@ const captionProps = toCaptionProps(
 )
 
 const oembedAspectRatio =
-	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
+	oembedInfo !== undefined && oembedInfo.width !== 0 && oembedInfo.height !== 0
+		? `${oembedInfo.width} / ${oembedInfo.height}`
+		: undefined
 ---
 
 {
@@ -96,7 +98,7 @@ const oembedAspectRatio =
 }
 
 {
-	fetchError ? (
+	fetchError !== undefined && fetchError !== '' ? (
 		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
 	) : (
 		<Caption {...captionProps}>

@@ -6,14 +6,16 @@ export function getControllerStyle(
 	intrinsicWidth: number | undefined,
 	aspectRatio: string | undefined,
 ): string | undefined {
-	return (
-		[
-			intrinsicWidth && `width: ${String(intrinsicWidth)}px`,
-			aspectRatio && `aspect-ratio: ${aspectRatio}`,
-		]
-			.filter(Boolean)
-			.join('; ') || undefined
-	)
+	const parts: string[] = []
+	if (intrinsicWidth !== undefined && intrinsicWidth !== 0 && !Number.isNaN(intrinsicWidth)) {
+		parts.push(`width: ${String(intrinsicWidth)}px`)
+	}
+
+	if (aspectRatio !== undefined && aspectRatio !== '') {
+		parts.push(`aspect-ratio: ${aspectRatio}`)
+	}
+
+	return parts.length > 0 ? parts.join('; ') : undefined
 }
 
 /**

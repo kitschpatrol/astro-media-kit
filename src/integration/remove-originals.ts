@@ -10,7 +10,7 @@ const ORIGINAL_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'svg'] as const
  * Valid characters in Astro's 8-char hash (base64url minus `_`, which is
  * reserved as the variant separator).
  */
-const ORIGINAL_HASH_CHARS = /^[a-z0-9-]+$/i
+const ORIGINAL_HASH_CHARS = /^[a-z0-9\-]+$/iv
 
 /**
  * Whether `file` has the structural shape of an Astro image-pipeline original.

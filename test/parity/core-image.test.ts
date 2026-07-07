@@ -18,7 +18,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		const $ = await fx.readHTML('/local-basic/')
 		const src = $('#local').attr('src')
 		expect(src).toBeDefined()
-		expect(src).toMatch(/^\/_astro\//)
+		expect(src).toMatch(/^\/_astro\//v)
 		expect(src).toContain('penguin1')
 	})
 
@@ -41,7 +41,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		const candidates = srcset!.split(',').map((s) => s.trim())
 		expect(candidates.length).toBeGreaterThan(0)
 		for (const candidate of candidates) {
-			expect(candidate).toMatch(/\s\d+(?:\.\d+)?x$/)
+			expect(candidate).toMatch(/\s\d+(?:\.\d+)?x$/v)
 		}
 	})
 
@@ -53,7 +53,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		const candidates = srcset!.split(',').map((s) => s.trim())
 		expect(candidates.length).toBeGreaterThan(0)
 		for (const candidate of candidates) {
-			expect(candidate).toMatch(/\s\d+w$/)
+			expect(candidate).toMatch(/\s\d+w$/v)
 		}
 
 		expect(img.attr('sizes')).toContain('50vw')
@@ -68,7 +68,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		])
 		const basicSrc = $basic('#local').attr('src')!
 		const qualitySrc = $quality('#local').attr('src')!
-		expect(qualitySrc).toMatch(/^\/_astro\//)
+		expect(qualitySrc).toMatch(/^\/_astro\//v)
 		expect(qualitySrc).toContain('penguin1')
 		expect(qualitySrc).not.toBe(basicSrc)
 	})
@@ -76,8 +76,8 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 	it('Local images - format propagates (output file uses the requested extension)', async () => {
 		const $ = await fx.readHTML('/local-format/')
 		const src = $('#local').attr('src')!
-		expect(src).toMatch(/^\/_astro\//)
-		expect(src).toMatch(/\.avif$/)
+		expect(src).toMatch(/^\/_astro\//v)
+		expect(src).toMatch(/\.avif$/v)
 	})
 
 	it('Local images - inferSize is a no-op for ESM-imported sources (Astro deletes the flag, never re-probes the file)', async () => {
@@ -116,7 +116,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		expect(img.attr('width')).toBe('300')
 		expect(img.attr('height')).toBe('200')
 		// JPEG input falls back to JPEG per DEFAULT_FALLBACK_RULES
-		expect(img.attr('src')).toMatch(/\.jpe?g$/)
+		expect(img.attr('src')).toMatch(/\.jpe?g$/v)
 	})
 
 	it('Picture - per-input formats rules: SVG source with formats={{ svg: ["svg"] }} stays vector', async () => {
@@ -133,7 +133,7 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		const img = picture.find('img')
 		expect(img.length).toBe(1)
 		// SVG input + svg fallback per DEFAULT_FALLBACK_RULES — no raster conversion.
-		expect(img.attr('src')).toMatch(/\.svg$/)
+		expect(img.attr('src')).toMatch(/\.svg$/v)
 	})
 
 	it('Picture - per-input formats rules: JPG source with formats={{ jpg: ["avif","webp"] }} picks the per-input rule', async () => {
@@ -151,6 +151,6 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 
 		const img = picture.find('img')
 		expect(img.length).toBe(1)
-		expect(img.attr('src')).toMatch(/\.jpe?g$/)
+		expect(img.attr('src')).toMatch(/\.jpe?g$/v)
 	})
 })

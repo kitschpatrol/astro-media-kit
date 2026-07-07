@@ -58,7 +58,7 @@ export type AutoImportPluginConfig = {
 	enabled?: boolean
 }
 
-const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/
+const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/v
 
 /**
  * Auto-import entry that generates a dark variant for `.tldr` files via
@@ -129,11 +129,12 @@ function processComponent(
 	const existingProps = new Set(node.attributes.map((attribute) => attribute.name))
 
 	const primaryEntries = entries.filter((entry) => !entry.transform)
-	const derivedEntries = entries.filter((entry) => entry.transform)
 
 	if (primaryEntries.length === 0) {
 		return false
 	}
+
+	const derivedEntries = entries.filter((entry) => entry.transform)
 
 	// Use the first primary entry's value as the anchor path for derived entries
 	const anchorEntry = primaryEntries[0]!

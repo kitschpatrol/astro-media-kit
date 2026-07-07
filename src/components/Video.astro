@@ -187,9 +187,17 @@ const captionProps = toCaptionProps(
 )
 
 const aspectRatio =
-	videoInfo?.width && videoInfo.height ? `${videoInfo.width} / ${videoInfo.height}` : undefined
+	videoInfo !== undefined &&
+	videoInfo.width !== 0 &&
+	!Number.isNaN(videoInfo.width) &&
+	videoInfo.height !== 0 &&
+	!Number.isNaN(videoInfo.height)
+		? `${videoInfo.width} / ${videoInfo.height}`
+		: undefined
 const oembedAspectRatio =
-	oembedInfo?.width && oembedInfo.height ? `${oembedInfo.width} / ${oembedInfo.height}` : undefined
+	oembedInfo !== undefined && oembedInfo.width !== 0 && oembedInfo.height !== 0
+		? `${oembedInfo.width} / ${oembedInfo.height}`
+		: undefined
 
 const hlsConfig: Record<string, boolean | number> = {}
 if (initialBandwidth !== undefined) {
@@ -347,7 +355,7 @@ const sharedProps = {
 </style>
 
 {
-	fetchError ? (
+	fetchError !== undefined && fetchError !== '' ? (
 		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
 	) : resolvedService === 'oembed' ? (
 		oembedInfo && (
@@ -361,7 +369,7 @@ const sharedProps = {
 				<slot />
 			</Caption>
 		)
-	) : videoInfo && videoSrc ? (
+	) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
 		<Caption {...captionProps}>
 			<Zoomer
 				{...zoomerProps}

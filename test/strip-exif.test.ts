@@ -12,7 +12,6 @@ import { stripExifFromImages } from '../src/integration/strip-exif.ts'
 
 const noop = (): undefined => undefined
 
-// eslint-disable-next-line ts/no-unsafe-type-assertion
 const silentLogger = {
 	debug: noop,
 	error: noop,

@@ -109,7 +109,6 @@ async function bunnyApiListVideos(
 				// eslint-disable-next-line ts/naming-convention
 				AccessKey: apiAccessKey,
 			},
-			method: 'GET',
 		},
 	)
 
@@ -119,7 +118,6 @@ async function bunnyApiListVideos(
 		)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion
 	const json = (await response.json()) as BunnyListVideosResponse
 	return json
 }
@@ -138,7 +136,6 @@ async function bunnyApiGetVideo(
 				// eslint-disable-next-line ts/naming-convention
 				AccessKey: apiAccessKey,
 			},
-			method: 'GET',
 		},
 	)
 
@@ -148,7 +145,6 @@ async function bunnyApiGetVideo(
 		)
 	}
 
-	// eslint-disable-next-line ts/no-unsafe-type-assertion
 	const json = (await response.json()) as BunnyGetVideoResponse
 	return json
 }
@@ -194,9 +190,10 @@ export async function bunnyGetVideoInfo(
 		width,
 	} = videoInfo
 
-	const logPrefix = title
-		? `Bunny video "${title}" with id "${guid}"`
-		: `Bunny video with id "${mediaIdOrTitle}"`
+	const logPrefix =
+		title !== undefined && title !== ''
+			? `Bunny video "${title}" with id "${guid}"`
+			: `Bunny video with id "${mediaIdOrTitle}"`
 
 	if (status !== 4) {
 		throw new Error(`${logPrefix} is not ready. Try again in a bit.`)
@@ -209,16 +206,16 @@ export async function bunnyGetVideoInfo(
 		)
 	}
 
-	if (!availableResolutions) {
+	if (availableResolutions === undefined || availableResolutions === '') {
 		throw new Error(`${logPrefix} has no available resolutions. This should be impossible.`)
 	}
 
-	const matches = availableResolutions.match(/\d+/g)
+	const matches = availableResolutions.match(/\d+/gv)
 	if (!matches || matches.length === 0) {
 		throw new Error(`${logPrefix} had un-parsable available resolutions: ${availableResolutions}`)
 	}
 
-	const resolutions = matches.map((number_) => Number.parseInt(number_, 10))
+	const resolutions = matches.map(Number)
 	// eslint-disable-next-line unicorn/no-array-reduce
 	const fallbackResolution = resolutions.reduce((max, current) => {
 		if (current <= 720 && current > max) {
@@ -226,7 +223,7 @@ export async function bunnyGetVideoInfo(
 		}
 
 		return max
-	}, Number.NEGATIVE_INFINITY)
+	}, -Infinity)
 
 	// Find captions, if available
 	const captionsWithUrls = captions.map((caption) => ({
@@ -250,7 +247,7 @@ export async function bunnyGetVideoInfo(
 	}
 }
 
-const UUID_REGEX = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i
+const UUID_REGEX = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/iv
 
 /**
  * Check if a string is a valid Bunny CDN media id

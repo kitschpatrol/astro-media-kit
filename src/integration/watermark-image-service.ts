@@ -91,9 +91,9 @@ const service: typeof baseSharpService = {
 	...baseSharpService,
 	async transform(inputBuffer, transform, imageConfig) {
 		const base = await baseSharpService.transform(inputBuffer, transform, imageConfig)
-		const cfg = (imageConfig.service.config as WatermarkServiceConfig).mediaKitWatermark
+		const config = (imageConfig.service.config as WatermarkServiceConfig).mediaKitWatermark
 
-		if (!cfg) {
+		if (!config) {
 			return base
 		}
 
@@ -107,12 +107,12 @@ const service: typeof baseSharpService = {
 			return base
 		}
 
-		if (width < cfg.minDimension || height < cfg.minDimension) {
+		if (width < config.minDimension || height < config.minDimension) {
 			return base
 		}
 
-		const overlay = buildTiledStampSvg(width, height, base.data.byteLength, cfg)
-		// eslint-disable-next-line ts/no-unsafe-type-assertion -- sharp.toFormat accepts all image output formats
+		const overlay = buildTiledStampSvg(width, height, base.data.byteLength, config)
+
 		const format = base.format as Parameters<ReturnType<typeof sharp>['toFormat']>[0]
 		const quality = typeof transform.quality === 'string' ? transform.quality : undefined
 		const composited = await sharp(base.data)

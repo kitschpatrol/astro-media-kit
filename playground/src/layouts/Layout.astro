@@ -7,7 +7,8 @@ type Props = {
 
 const { title } = Astro.props
 
-const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
+const trimmedPath = Astro.url.pathname.replace(/\/$/v, '')
+const currentPath = trimmedPath === '' ? '/' : trimmedPath
 ---
 
 <html lang="en">
@@ -41,6 +42,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 				z-index: 100;
 				top: 0;
 				display: flex;
+				flex-wrap: wrap;
 				gap: 0;
 				border-bottom: 1px solid light-dark(#ddd, #333);
 				background: light-dark(#fff, #1a1a1a);
@@ -55,8 +57,10 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 				transition: color 0.15s;
 			}
 
-			nav a:hover {
-				color: light-dark(#000, #fff);
+			@media (hover: hover) {
+				nav a:hover {
+					color: light-dark(#000, #fff);
+				}
 			}
 
 			nav a[aria-current='page'] {
@@ -148,6 +152,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/'
 					light-dark(#ccc, #444) 180deg 270deg,
 					transparent 270deg
 				);
+				background-repeat: repeat;
 				background-size: 12px 12px;
 			}
 		</style>

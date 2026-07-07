@@ -156,7 +156,7 @@ function resolveAutoImportEntry(entry: AutoImportEntry): {
 	return {
 		fromProp: entry.from,
 		toProp: entry.to,
-		...(entry.transform ? { transform: entry.transform } : {}),
+		...(entry.transform && { transform: entry.transform }),
 	}
 }
 
@@ -217,7 +217,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	const tldrawEnabled = isToggleEnabled(config?.tldraw, false)
 	const tldrawConfig: TldrawConfig = typeof config?.tldraw === 'object' ? config.tldraw : {}
 
-	const removeOriginalsEnabled = config?.removeOriginals ?? false
+	const shouldRemoveOriginals = config?.removeOriginals ?? false
 
 	const stripExifEnabled = config?.stripExif ?? false
 
@@ -244,7 +244,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	return {
 		hooks: {
 			async 'astro:build:done'({ dir, logger }) {
-				if (removeOriginalsEnabled && astroConfig) {
+				if (shouldRemoveOriginals && astroConfig) {
 					await removeOriginalImages(dir, astroConfig, logger)
 				}
 
@@ -252,8 +252,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					await stripExifFromImages(dir, logger)
 				}
 			},
-			'astro:config:done'({ config, injectTypes, logger }) {
-				astroConfig = config
+			'astro:config:done'({ config: resolvedAstroConfig, injectTypes, logger }) {
+				astroConfig = resolvedAstroConfig
 
 				if (aphexEnabled) {
 					try {
@@ -307,8 +307,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 					let schema: Record<string, ReturnType<typeof envField.string>> = {}
 					for (const s of videoServices) {
-						if (s in envSchemaForService) {
-							// eslint-disable-next-line ts/no-unsafe-type-assertion -- guarded by in check
+						if (Object.hasOwn(envSchemaForService, s)) {
 							schema = { ...schema, ...envSchemaForService[s as CredentialService] }
 						}
 					}
@@ -327,7 +326,6 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				if (aphexEnabled) {
 					updateConfig({
 						vite: {
-							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
 							plugins: [vitePluginMediaKitAphex(aphexConfig) as never],
 						},
 					})
@@ -336,7 +334,6 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				if (tldrawEnabled) {
 					updateConfig({
 						vite: {
-							// eslint-disable-next-line ts/no-unsafe-type-assertion -- return typed as unknown to avoid Vite type graph bloat in .d.ts
 							plugins: [vitePluginMediaKitTldraw(tldrawConfig) as never],
 						},
 					})

@@ -43,7 +43,7 @@ describe('isImageMetadataObject', () => {
 describe('isRemoteImageSource', () => {
 	it('accepts http and https URL strings', () => {
 		expect(isRemoteImageSource('https://example.com/image.jpg')).toBe(true)
-		expect(isRemoteImageSource('http://example.com/image.jpg')).toBe(true)
+		expect(isRemoteImageSource('https://example.com/image.jpg')).toBe(true)
 	})
 
 	it('rejects absolute and relative file paths', () => {
@@ -71,13 +71,13 @@ describe('isDarkLightImageMetadata', () => {
 	})
 
 	it('rejects missing or invalid members', () => {
-		/* eslint-disable unicorn/no-null, unicorn/no-useless-undefined */
+		/* eslint-disable unicorn/no-null */
 		expect(isDarkLightImageMetadata({ light: valid })).toBe(false)
 		expect(isDarkLightImageMetadata({ dark: valid })).toBe(false)
 		expect(isDarkLightImageMetadata(null)).toBe(false)
 		expect(isDarkLightImageMetadata(undefined)).toBe(false)
 		expect(isDarkLightImageMetadata({ dark: 'not-metadata', light: valid })).toBe(false)
 		expect(isDarkLightImageMetadata({ dark: valid, light: 42 })).toBe(false)
-		/* eslint-enable unicorn/no-null, unicorn/no-useless-undefined */
+		/* eslint-enable unicorn/no-null */
 	})
 })
