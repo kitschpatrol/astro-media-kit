@@ -1,5 +1,6 @@
 /* eslint-disable ts/naming-convention */
 
+import { unified } from '@astrojs/markdown-remark'
 import starlight from '@astrojs/starlight'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit from 'astro-media-kit'
@@ -63,4 +64,8 @@ export default defineConfig({
 			title: 'astro-media-kit',
 		}),
 	],
+	markdown: {
+		// Stick with Unified for attributes syntax support
+		processor: unified(),
+	},
 })

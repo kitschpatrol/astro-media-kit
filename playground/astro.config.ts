@@ -1,4 +1,5 @@
 /* eslint-disable ts/naming-convention */
+import { unified } from '@astrojs/markdown-remark'
 import mdx from '@astrojs/mdx'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit from 'astro-media-kit'
@@ -50,4 +51,8 @@ export default defineConfig({
 		// GFM enabled by default
 		mdx(),
 	],
+	markdown: {
+		// Stick with Unified for attributes syntax support
+		processor: unified(),
+	},
 })
