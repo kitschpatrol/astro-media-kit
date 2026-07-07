@@ -81,3 +81,38 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 		width: data.width ?? 0,
 	}
 }
+
+/**
+ * Sanitizes oEmbed provider HTML: adds a missing `title` attribute on iframes
+ * (for accessibility), removes deprecated attributes (`frameborder`,
+ * `scrolling`), and lowercases non-standard attribute names.
+ */
+export function sanitizeEmbedHtml(html: string, title: string): string {
+	const deprecatedAttributes = new Set(['frameborder', 'scrolling'])
+
+	// Wrap in a full document — linkedom only wires `document.body` to the
+	// parsed content when the input is a complete HTML document. A bare
+	// fragment (or one wrapped in a lone `<body>` tag) parses into a tree
+	// where `document.body` is a synthesized empty element, so serializing it
+	// silently returns an empty string.
+	const { document } = parseHTML(`<html><body>${html}</body></html>`)
+	for (const iframe of document.querySelectorAll('iframe')) {
+		if (!iframe.hasAttribute('title')) {
+			iframe.setAttribute('title', title)
+		}
+
+		// Snapshot the attribute list — removing/renaming while iterating the
+		// live collection skips entries
+		// eslint-disable-next-line unicorn/no-useless-spread -- the copy is intentional, see above
+		for (const { name, value } of [...iframe.attributes]) {
+			if (deprecatedAttributes.has(name.toLowerCase())) {
+				iframe.removeAttribute(name)
+			} else if (name !== name.toLowerCase()) {
+				iframe.removeAttribute(name)
+				iframe.setAttribute(name.toLowerCase(), value)
+			}
+		}
+	}
+
+	return document.body.innerHTML
+}

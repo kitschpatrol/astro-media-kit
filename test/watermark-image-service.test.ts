@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-named-as-default -- sharp 0.35 types declare a named 'sharp' export, but the runtime ESM wrapper only provides a default export
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 import watermarkService from '../src/integration/watermark-image-service'

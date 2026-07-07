@@ -26,10 +26,7 @@
 		"./test/parity/fixtures/core-image/.astro/types.d.ts",
 		"./test/parity/fixtures/picture-darkmode/.astro/types.d.ts"
 	],
-	// The playground-starlight Astro config is excluded because Starlight 0.40 ships TypeScript
-	// source that fails type checking when imported. It's still covered by `astro check`.
-	// See https://github.com/withastro/starlight/issues/3950
-	"exclude": ["**/dist/", "**/bin/", "**/node_modules/", "playground-starlight/astro.config.ts"],
+	"exclude": ["**/dist/", "**/bin/", "**/node_modules/"],
 	"mdx": {
 		"plugins": ["remark-directive", "remark-attribute-list"]
 	}

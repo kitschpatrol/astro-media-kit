@@ -5,8 +5,6 @@ export default cspellConfig({
 		'Alos',
 		'bgdark',
 		'blep',
-		'dailymotion',
-		'darkmode',
 		'Ewma',
 		'gesturesdisabled',
 		'letterboxed',
@@ -28,6 +26,5 @@ export default cspellConfig({
 		'userinactive',
 		'userinactivechange',
 		'youtu',
-		'Zoomable',
 	],
 })

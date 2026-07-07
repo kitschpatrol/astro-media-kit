@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-named-as-default
 import Mux from '@mux/mux-node'
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo

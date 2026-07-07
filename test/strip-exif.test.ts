@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+// eslint-disable-next-line import/no-named-as-default -- sharp 0.35 types declare a named 'sharp' export, but the runtime ESM wrapper only provides a default export
 import sharp from 'sharp'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { stripExifFromImages } from '../src/integration/strip-exif.ts'

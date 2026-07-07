@@ -23,5 +23,6 @@ allowBuilds:
   unrs-resolver: true
   ws: true
 minimumReleaseAgeExclude:
-  - astro@6.4.5
-  - astro-mdx-kit@0.3.0
+  - '@astrojs/*'
+  - '@kitschpatrol/*'
+  - astro

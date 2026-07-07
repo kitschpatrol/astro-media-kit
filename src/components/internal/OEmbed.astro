@@ -1,5 +1,5 @@
 ---
-import { parseHTML } from 'linkedom'
+import { sanitizeEmbedHtml } from '../utils/oembed'
 
 export type Props = {
 	aspectRatio?: string | undefined
@@ -18,30 +18,7 @@ export type Props = {
 const { aspectRatio, html, resolvedLabel, sanitize = true } = Astro.props
 const style = aspectRatio ? `aspect-ratio: ${aspectRatio}` : undefined
 
-let resolvedHtml = html
-
-if (sanitize) {
-	const deprecatedAttributes = new Set(['frameborder', 'scrolling'])
-
-	const { document } = parseHTML(`<body>${html}</body>`)
-	for (const iframe of document.querySelectorAll('iframe')) {
-		if (!iframe.hasAttribute('title')) {
-			iframe.setAttribute('title', resolvedLabel)
-		}
-
-		// Remove deprecated attributes and fix non-lowercase names
-		for (const { name, value } of iframe.attributes) {
-			if (deprecatedAttributes.has(name.toLowerCase())) {
-				iframe.removeAttribute(name)
-			} else if (name !== name.toLowerCase()) {
-				iframe.removeAttribute(name)
-				iframe.setAttribute(name.toLowerCase(), value)
-			}
-		}
-	}
-
-	resolvedHtml = document.body.innerHTML
-}
+const resolvedHtml = sanitize ? sanitizeEmbedHtml(html, resolvedLabel) : html
 ---
 
 <div aria-label={resolvedLabel} class="amk not-content" role="group" style={style}>
