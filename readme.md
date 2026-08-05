@@ -6,8 +6,8 @@
 
 <!-- badges -->
 
-[![NPM Package astro-media-kit](https://img.shields.io/npm/v/astro-media-kit.svg)](https://npmjs.com/package/astro-media-kit)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit/)
+[![NPM Package astro-media-kit](https://img.shields.io/npm/v/astro-media-kit.svg)](https://www.npmjs.com/package/astro-media-kit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
 [![CI](https://github.com/kitschpatrol/astro-media-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/kitschpatrol/astro-media-kit/actions/workflows/ci.yml)
 
 <!-- /badges -->

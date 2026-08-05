@@ -5,8 +5,6 @@ import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
-process.env.BROWSER = 'chromium'
-
 export default defineConfig({
 	image: {
 		dangerouslyProcessSVG: true,
@@ -52,7 +50,7 @@ export default defineConfig({
 		mdx(),
 	],
 	markdown: {
-		// Stick with Unified for attributes syntax support
+		// Stick with Unified for attributes
 		processor: unified(),
 	},
 })

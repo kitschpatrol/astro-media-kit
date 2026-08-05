@@ -1,22 +1,17 @@
 {
-	"extends": "@kitschpatrol/typescript-config",
+	"extends": "@kitschpatrol/typescript-config/astro",
 	"compilerOptions": {
-		// Additions and changes from Astro's strictest tsconfig
-		// vs. the extended @kitschpatrol/typescript-config
-		"target": "ESNext",
-		"jsx": "preserve",
-		"jsxImportSource": "astro",
-		"types": ["@kitschpatrol/unplugin-tldraw/client", "@kitschpatrol/unplugin-aphex/client"],
-		"allowUnusedLabels": false,
-		"exactOptionalPropertyTypes": true,
-		"noImplicitOverride": true,
-		"noImplicitReturns": true,
-		"noUncheckedIndexedAccess": true,
-		"noEmit": true,
-		"esModuleInterop": true,
-		"verbatimModuleSyntax": true
+		// Additions from Astro's strictest tsconfig not covered by the extended config
+		"types": [
+			"@kitschpatrol/unplugin-tldraw/client",
+			"@kitschpatrol/unplugin-aphex/client",
+			"node"
+		],
+		"allowUnusedLabels": false
 	},
-	// Includes project dot-files files for typescript-eslint integration
+	// Overrides the extended include entirely: adds project dot-files for
+	// typescript-eslint integration, and lists nested .astro/types.d.ts files
+	// explicitly since `**` doesn't match dot-directories
 	"include": [
 		"**/*",
 		"**/**.*",

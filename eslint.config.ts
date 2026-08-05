@@ -13,10 +13,29 @@ export default eslintConfig(
 		type: 'lib',
 	},
 	{
+		// Astro types JSX as `Element = HTMLElement | any` (astro-jsx.d.ts), so any
+		// callback returning template JSX (e.g. `items.map(() => <li />)`) is `any`
+		files: ['**/*.astro'],
+		rules: {
+			'ts/no-unsafe-return': 'off',
+		},
+	},
+	{
+		// Linkedom doesn't implement `Element.getHTML()`, so the auto-fix to
+		// replace `innerHTML` breaks at runtime
+		rules: {
+			'unicorn/prefer-dom-node-html-methods': 'off',
+		},
+	},
+	{
 		files: ['test/parity/**/*.ts', 'test/parity/**/*.astro'],
 		rules: {
 			'astro/jsx-a11y/html-has-lang': 'off',
 			'e18e/prefer-static-regex': 'off',
+			'test/expect-expect': [
+				'error',
+				{ assertFunctionNames: ['expect', 'compareImg', 'comparePicture'] },
+			],
 		},
 	},
 	{

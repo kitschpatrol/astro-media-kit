@@ -1098,7 +1098,7 @@ function createLightbox(
 			const { element } = slide.data
 			const figure = element?.closest('figure')
 			const figcaption = figure?.querySelector('figcaption')
-			return figcaption?.innerHTML ?? false
+			return figcaption?.getHTML() ?? false
 		},
 		type: 'below',
 	})
