@@ -35,6 +35,10 @@ export type ImageConfig = typeof imageConfig
  * forms of `<Picture>`'s `fallbackFormat` and `formats` props. Covers every
  * `ImageInputFormat` plus `'unknown'` for sources whose format can't be
  * inferred (raw string paths, remote URLs).
+ *
+ * `apng` (Astro ≥ 7.2.5) is importable only for use with plain `<img>` —
+ * Astro's image service rejects it to avoid stripping animation, so its rule
+ * entries exist for key-completeness and never reach a transform.
  */
 export type FallbackKey = 'unknown' | ImageInputFormat
 
@@ -81,6 +85,7 @@ export type FormatsRules = Simplify<Partial<Record<FallbackKey, ImageOutputForma
  * `fallbackFormat={{ svg: 'webp' }}` is responsible for enabling that config.
  */
 export const DEFAULT_FALLBACK_RULES: Record<FallbackKey, ImageOutputFormat> = {
+	apng: 'png',
 	avif: 'png',
 	gif: 'gif',
 	jpeg: 'jpeg',
@@ -102,6 +107,7 @@ export const DEFAULT_FALLBACK_RULES: Record<FallbackKey, ImageOutputFormat> = {
  * `format`; supplied entries are merged on top of these defaults.
  */
 export const DEFAULT_IMAGE_OUTPUT_FORMAT_RULES: Record<FallbackKey, ImageOutputFormat> = {
+	apng: 'webp',
 	avif: 'webp',
 	gif: 'webp',
 	jpeg: 'webp',
@@ -126,6 +132,7 @@ export const DEFAULT_IMAGE_OUTPUT_FORMAT_RULES: Record<FallbackKey, ImageOutputF
  * preserve SVGs as vectors.
  */
 export const DEFAULT_FORMATS_RULES: Record<FallbackKey, ImageOutputFormat[]> = {
+	apng: ['webp'],
 	avif: ['webp'],
 	gif: ['webp'],
 	jpeg: ['webp'],

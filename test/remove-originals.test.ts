@@ -1,6 +1,6 @@
 /**
  * Synthetic hash fragments from Astro build output — unknown "words".
- * cSpell:disable
+ * CSpell:disable
  */
 import { describe, expect, it } from 'vitest'
 import { findUnusedOriginals, hasOriginalImageShape } from '../src/integration/remove-originals'

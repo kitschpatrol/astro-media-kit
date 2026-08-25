@@ -41,7 +41,7 @@ It includes:
 - **Astro Integration**\
   Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 
-The components work standalone via direct import, or you can use the Astro integration for streamlined auto-imports and Vite plugin configuration.
+The components work standalone via direct import, or you can use the Astro integration for streamlined auto-imports and automatic Vite plugin configuration.
 
 This library pairs well with [astro-mdx-kit](https://github.com/kitschpatrol/astro-mdx-kit).
 
@@ -49,7 +49,7 @@ This library pairs well with [astro-mdx-kit](https://github.com/kitschpatrol/ast
 
 ### Prerequisites
 
-An [Astro](https://astro.build/) 6+ project.
+An [Astro](https://astro.build/) 7+ project.
 
 ### Installation
 
@@ -93,7 +93,7 @@ export default defineConfig({
 >
 > In most cases you'll want `image.layout: 'constrained'` and `image.responsiveStyles: true` in your Astro config (as shown above).
 >
-> These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via `getImage()`, so responsive `srcset` behaves correctly without per-component overrides.
+> These are Astro's own image options, not part of `mediaKit()` — `<Image>` and `<Picture>` pick them up automatically via their internal calls to `getImage()`, so a responsive `srcset` behaves correctly without per-component overrides.
 
 ### Direct component usage
 
@@ -115,9 +115,11 @@ import hero from '../assets/hero.jpg'
 
 ### Image
 
-A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, XMP credit extraction, PhotoSwipe zoom, and CSS/pixel-level background compositing. Accepts `ImageMetadata`, a `{ dark, light }` pair, a local file path string, or a remote `http(s)` URL.
+A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates PhotoSwipe zoom, and handles CSS/pixel-level background compositing.
 
-For `{ dark, light }` pairs, `<Image>` uses the light variant only and emits a dev warning — use `<Picture>` for full dark mode support.
+Accepts `ImageMetadata`, a `{ dark, light }` pair, a local file path string, or a remote `http(s)` URL.
+
+The `{ dark, light }` pair is permitted for symmetry with the `<Picture>` component, but note that `<Image>` uses the light variant _only_ and emits a dev warning if `dark` is defined. Use `<Picture>` instead for full dark mode support.
 
 ```astro
 ---
