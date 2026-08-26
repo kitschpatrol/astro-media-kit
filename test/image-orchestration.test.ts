@@ -76,6 +76,7 @@ describe('pickFallbackFormat', () => {
 describe('DEFAULT_FALLBACK_RULES', () => {
 	it("mirrors Astro Picture's documented defaults", () => {
 		expect(DEFAULT_FALLBACK_RULES).toEqual({
+			apng: 'png',
 			avif: 'png',
 			gif: 'gif',
 			jpeg: 'jpeg',
@@ -131,6 +132,7 @@ describe('pickImageFormat', () => {
 describe('DEFAULT_IMAGE_OUTPUT_FORMAT_RULES', () => {
 	it("mirrors Astro Image's baseService default (SVG stays SVG, everything else becomes WebP)", () => {
 		expect(DEFAULT_IMAGE_OUTPUT_FORMAT_RULES).toEqual({
+			apng: 'webp',
 			avif: 'webp',
 			gif: 'webp',
 			jpeg: 'webp',
@@ -187,6 +189,7 @@ describe('pickFormats', () => {
 describe('DEFAULT_FORMATS_RULES', () => {
 	it("mirrors Astro Picture's ['webp'] default for every input format", () => {
 		expect(DEFAULT_FORMATS_RULES).toEqual({
+			apng: ['webp'],
 			avif: ['webp'],
 			gif: ['webp'],
 			jpeg: ['webp'],
