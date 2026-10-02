@@ -213,13 +213,11 @@ const currentPath = trimmedPath === '' ? '/' : trimmedPath
 	</head>
 	<body>
 		<nav>
-			{
-				pages.map((page) => (
-					<a aria-current={currentPath === page.href ? 'page' : undefined} href={page.href}>
-						{page.title}
-					</a>
-				))
-			}
+			{pages.map((page) => (
+				<a aria-current={currentPath === page.href ? 'page' : undefined} href={page.href}>
+					{page.title}
+				</a>
+			))}
 		</nav>
 		<main>
 			<slot />

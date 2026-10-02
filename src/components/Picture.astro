@@ -17,7 +17,7 @@
 // dark-mode pairs) are skipped for remote sources — dev warnings surface when
 // those props are set.
 
-import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
@@ -304,6 +304,9 @@ if (scopedStyleClass !== undefined && scopedStyleClass !== '') {
 			: scopedStyleClass
 }
 
+// Astro 7.3.3+ types `widths`/`densities`/`layout` as a discriminated union. Our `Omit<>`-derived
+// Props flatten that union, so we cast at the `getImage()` boundary like Astro's own `<Image>` does.
+
 // Handle responsive layout (same as Astro's Picture)
 const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
@@ -327,7 +330,7 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 			format,
 			src: originalSrc,
 			widths: imageProps.widths,
-		}),
+		} as UnresolvedImageTransform),
 	),
 )
 
@@ -358,7 +361,7 @@ if (needsDarkVariant) {
 				format,
 				src: originalSrcDark,
 				widths: imageProps.widths,
-			}),
+			} as UnresolvedImageTransform),
 		),
 	)
 }
@@ -379,7 +382,7 @@ const fallbackImage = await getImage({
 	format: resultFallbackFormat,
 	src: originalSrc,
 	widths: imageProps.widths,
-})
+} as UnresolvedImageTransform)
 
 const hasDarkMode = optimizedImagesDark !== undefined
 
@@ -399,7 +402,7 @@ if (isSelector && hasDarkMode) {
 		format: resultFallbackFormat,
 		src: originalSrcDark,
 		widths: imageProps.widths,
-	})
+	} as UnresolvedImageTransform)
 }
 
 const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
@@ -498,57 +501,28 @@ if (isSelector && hasDarkMode) {
 {selectorStyle !== undefined && selectorStyle !== '' && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
 	<Zoomer {...zoomerProps} slot="media-component">
-		{
-			isSelector && hasDarkMode ? (
-				<div {...pictureAttributes}>
-					<picture class="amk-dark">
-						{optimizedImagesDark!.map((image) => (
-							<source
-								srcset={srcsetFor(image)}
-								type={getMimeType(image)}
-								{...sourceAdditionalAttributes}
-							/>
-						))}
-						<img
-							alt=""
-							aria-hidden="true"
-							src={fallbackImageDark!.src}
-							{...imgAttributesDark}
-							class:list={[className, imgClassNameDark, 'amk']}
-							style={backgroundStyleDark}
+		{isSelector && hasDarkMode ? (
+			<div {...pictureAttributes}>
+				<picture class="amk-dark">
+					{optimizedImagesDark!.map((image) => (
+						<source
+							srcset={srcsetFor(image)}
+							type={getMimeType(image)}
+							{...sourceAdditionalAttributes}
 						/>
-					</picture>
-					<picture class="amk-light">
-						{optimizedImages.map((image) => (
-							<source
-								srcset={srcsetFor(image)}
-								type={getMimeType(image)}
-								{...sourceAdditionalAttributes}
-							/>
-						))}
-						<img
-							alt={alt}
-							src={fallbackImage.src}
-							{...imgAttributes}
-							class:list={[className, imgClassName, 'amk']}
-							style={backgroundStyle}
-						/>
-					</picture>
-				</div>
-			) : (
-				<picture {...pictureAttributes}>
-					{hasDarkMode &&
-						optimizedImagesDark!.map((image) => (
-							<source
-								media="(prefers-color-scheme: dark)"
-								srcset={srcsetFor(image)}
-								type={getMimeType(image)}
-								{...sourceAdditionalAttributes}
-							/>
-						))}
+					))}
+					<img
+						alt=""
+						aria-hidden="true"
+						src={fallbackImageDark!.src}
+						{...imgAttributesDark}
+						class:list={[className, imgClassNameDark, 'amk']}
+						style={backgroundStyleDark}
+					/>
+				</picture>
+				<picture class="amk-light">
 					{optimizedImages.map((image) => (
 						<source
-							media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
 							srcset={srcsetFor(image)}
 							type={getMimeType(image)}
 							{...sourceAdditionalAttributes}
@@ -562,8 +536,35 @@ if (isSelector && hasDarkMode) {
 						style={backgroundStyle}
 					/>
 				</picture>
-			)
-		}
+			</div>
+		) : (
+			<picture {...pictureAttributes}>
+				{hasDarkMode &&
+					optimizedImagesDark!.map((image) => (
+						<source
+							media="(prefers-color-scheme: dark)"
+							srcset={srcsetFor(image)}
+							type={getMimeType(image)}
+							{...sourceAdditionalAttributes}
+						/>
+					))}
+				{optimizedImages.map((image) => (
+					<source
+						media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}
+						srcset={srcsetFor(image)}
+						type={getMimeType(image)}
+						{...sourceAdditionalAttributes}
+					/>
+				))}
+				<img
+					alt={alt}
+					src={fallbackImage.src}
+					{...imgAttributes}
+					class:list={[className, imgClassName, 'amk']}
+					style={backgroundStyle}
+				/>
+			</picture>
+		)}
 	</Zoomer>
 	<slot />
 </Caption>

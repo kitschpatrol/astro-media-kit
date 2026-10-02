@@ -42,15 +42,7 @@ export function hasOriginalImageShape(file: string): boolean {
 	}
 
 	const tail = name.slice(dot + 1)
-	if (tail.length !== 8) {
-		return false
-	}
-
-	if (!ORIGINAL_HASH_CHARS.test(tail)) {
-		return false
-	}
-
-	return true
+	return tail.length === 8 && ORIGINAL_HASH_CHARS.test(tail)
 }
 
 /**

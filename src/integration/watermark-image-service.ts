@@ -1,7 +1,6 @@
 import type { SharpImageServiceConfig } from 'astro/assets/services/sharp'
 import baseSharpService, { resolveSharpEncoderOptions } from 'astro/assets/services/sharp'
 import prettyBytes from 'pretty-bytes'
-// eslint-disable-next-line import/no-named-as-default -- sharp 0.35 types declare a named 'sharp' export, but the runtime ESM wrapper only provides a default export
 import sharp from 'sharp'
 
 /**
@@ -89,8 +88,8 @@ function encoderOptions(
 
 const service: typeof baseSharpService = {
 	...baseSharpService,
-	async transform(inputBuffer, transform, imageConfig) {
-		const base = await baseSharpService.transform(inputBuffer, transform, imageConfig)
+	async transform(inputBuffer, transform, imageConfig, logger) {
+		const base = await baseSharpService.transform(inputBuffer, transform, imageConfig, logger)
 		const config = (imageConfig.service.config as WatermarkServiceConfig).mediaKitWatermark
 
 		if (!config) {

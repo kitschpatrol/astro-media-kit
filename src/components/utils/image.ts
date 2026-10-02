@@ -97,11 +97,13 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
 
 	// Astro wraps SVG imports in createSvgComponent in production builds,
 	// placing ImageMetadata under .meta instead of at the top level.
-	if ('meta' in src && typeof src.meta === 'object' && src.meta !== null) {
-		return 'src' in src.meta && typeof src.meta.src === 'string'
-	}
-
-	return false
+	return (
+		'meta' in src &&
+		typeof src.meta === 'object' &&
+		src.meta !== null &&
+		'src' in src.meta &&
+		typeof src.meta.src === 'string'
+	)
 }
 
 /**

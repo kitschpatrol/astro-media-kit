@@ -18,27 +18,33 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>1. Dark mode (JPEG)</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>No dark</td>
-				<td><Picture alt="no dark" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="no dark" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">Same in light &amp; dark</td>
 			</tr>
 			<tr>
 				<td>Explicit srcDark (auto-import)</td>
-				<td
-					><Picture
-						alt="dark ai"
-						src="../assets/test.jpeg"
-						srcDark="../assets/test-dark.jpeg"
-					/></td
-				>
+				<td>
+					<Picture alt="dark ai" src="../assets/test.jpeg" srcDark="../assets/test-dark.jpeg" />
+				</td>
 				<td class="check">Different image in dark</td>
 			</tr>
 			<tr>
 				<td>Explicit srcDark (imported)</td>
-				<td><Picture alt="dark imp" src={test} srcDark={testDark} /></td>
+				<td>
+					<Picture alt="dark imp" src={test} srcDark={testDark} />
+				</td>
 				<td class="check">Same as above</td>
 			</tr>
 		</tbody>
@@ -46,113 +52,116 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>2. Background compositing</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>SVG → webp, no bg</td>
-				<td class="cb"><Picture alt="svg no bg" formats={['svg']} src="../assets/tiger.svg" /></td>
+				<td class="cb">
+					<Picture alt="svg no bg" formats={['svg']} src="../assets/tiger.svg" />
+				</td>
 				<td class="check">Transparent both modes</td>
 			</tr>
 			<tr>
 				<td>SVG → webp, bg only</td>
-				<td
-					><Picture
-						alt="svg bg"
-						background="#e8e4d0"
-						formats={['svg']}
-						src="../assets/tiger.svg"
-					/></td
-				>
+				<td>
+					<Picture alt="svg bg" background="#e8e4d0" formats={['svg']} src="../assets/tiger.svg" />
+				</td>
 				<td class="check">CSS bg both modes</td>
 			</tr>
 			<tr>
 				<td>SVG → webp, bg + bgDark</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg bgdark webp"
 						background="#e8e4d0"
 						backgroundDark="#2a2520"
 						formats={['svg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">CSS light-dark() (no variant)</td>
 			</tr>
 			<tr>
 				<td>SVG → jpg, bg only</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg bg jpg"
 						background="#e8e4d0"
 						formats={['jpg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Composited beige, same both</td>
 			</tr>
 			<tr>
 				<td>SVG → jpg, bg + bgDark</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg bgdark jpg"
 						background="#e8e4d0"
 						backgroundDark="#2a2520"
 						formats={['jpg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Beige (light), brown (dark)</td>
 			</tr>
 			<tr>
 				<td>SVG → jpg, bgDark only</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg bgdark only"
 						backgroundDark="#2a2520"
 						formats={['jpg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Default (light), brown (dark)</td>
 			</tr>
 			<tr>
 				<td>SVG → jpg, same bg &amp; bgDark</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg same"
 						background="#e8e4d0"
 						backgroundDark="#e8e4d0"
 						formats={['jpg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Same beige (no variant)</td>
 			</tr>
 			<tr>
 				<td>SVG → jpg, bg+bgDark, srcDark={'{false}'}</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg disabled"
 						background="#e8e4d0"
 						backgroundDark="#2a2520"
 						formats={['jpg']}
 						src="../assets/tiger.svg"
 						srcDark={false}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Beige only (disabled)</td>
 			</tr>
 			<tr>
 				<td>SVG → [webp, jpg], bg+bgDark</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="svg mixed"
 						background="#e8e4d0"
 						backgroundDark="#2a2520"
 						formats={['webp', 'jpg']}
 						src="../assets/tiger.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Dark img for jpg, CSS for webp</td>
 			</tr>
 		</tbody>
@@ -160,25 +169,31 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>3. SVG + explicit srcDark</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>SVG srcDark (auto-import)</td>
-				<td class="cb"
-					><Picture
+				<td class="cb">
+					<Picture
 						alt="svg dark ai"
 						formats={['webp']}
 						src="../assets/tiger.svg"
 						srcDark="../assets/tiger-dark.svg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Tiger swaps to dark-stroke variant</td>
 			</tr>
 			<tr>
 				<td>SVG srcDark (imported)</td>
-				<td class="cb"
-					><Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={tigerDark} /></td
-				>
+				<td class="cb">
+					<Picture alt="svg dark imp" formats={['webp']} src={tiger} srcDark={tigerDark} />
+				</td>
 				<td class="check">Same as above</td>
 			</tr>
 		</tbody>
@@ -190,57 +205,47 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		cap is lifted here).
 	</p>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>Implicit (config sets constrained)</td>
-				<td class="layout-demo"
-					><Picture alt="constrained default" src="../assets/test.jpeg" width={320} /></td
-				>
+				<td class="layout-demo">
+					<Picture alt="constrained default" src="../assets/test.jpeg" width={320} />
+				</td>
 				<td class="check">320px wide, scales down with cell</td>
 			</tr>
 			<tr>
 				<td>layout="constrained"</td>
-				<td class="layout-demo"
-					><Picture
-						alt="constrained"
-						layout="constrained"
-						src="../assets/test.jpeg"
-						width={320}
-					/></td
-				>
+				<td class="layout-demo">
+					<Picture alt="constrained" layout="constrained" src="../assets/test.jpeg" width={320} />
+				</td>
 				<td class="check">Same as above</td>
 			</tr>
 			<tr>
 				<td>layout="fixed"</td>
-				<td class="layout-demo"
-					><Picture
-						alt="fixed"
-						height={148}
-						layout="fixed"
-						src="../assets/test.jpeg"
-						width={200}
-					/></td
-				>
+				<td class="layout-demo">
+					<Picture alt="fixed" height={148} layout="fixed" src="../assets/test.jpeg" width={200} />
+				</td>
 				<td class="check">200×148, never scales</td>
 			</tr>
 			<tr>
 				<td>layout="full-width"</td>
-				<td class="layout-demo"
-					><Picture
-						alt="full-width"
-						layout="full-width"
-						src="../assets/test.jpeg"
-						width={320}
-					/></td
-				>
+				<td class="layout-demo">
+					<Picture alt="full-width" layout="full-width" src="../assets/test.jpeg" width={320} />
+				</td>
 				<td class="check">Fills 400px cell regardless of width prop</td>
 			</tr>
 			<tr>
 				<td>layout="none"</td>
-				<td class="layout-demo"
-					><Picture alt="none" layout="none" src="../assets/test.jpeg" width={120} /></td
-				>
+				<td class="layout-demo">
+					<Picture alt="none" layout="none" src="../assets/test.jpeg" width={120} />
+				</td>
 				<td class="check">No responsive styles, renders at 120px</td>
 			</tr>
 		</tbody>
@@ -252,40 +257,46 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		{'position="top"'} / {'"bottom"'} controls.
 	</p>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>fit="cover"</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="cover"
 						fit="cover"
 						height={80}
 						layout="constrained"
 						src="../assets/test.jpeg"
 						width={320}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Center band of photo</td>
 			</tr>
 			<tr>
 				<td>fit="contain"</td>
-				<td class="cb"
-					><Picture
+				<td class="cb">
+					<Picture
 						alt="contain"
 						fit="contain"
 						height={80}
 						layout="constrained"
 						src="../assets/test.jpeg"
 						width={320}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Letterboxed (transparent bars left/right)</td>
 			</tr>
 			<tr>
 				<td>fit="cover" position="top"</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="cover top"
 						fit="cover"
 						height={80}
@@ -293,14 +304,14 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 						position="top"
 						src="../assets/test.jpeg"
 						width={320}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Top band of photo</td>
 			</tr>
 			<tr>
 				<td>fit="cover" position="bottom"</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="cover bottom"
 						fit="cover"
 						height={80}
@@ -308,8 +319,8 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 						position="bottom"
 						src="../assets/test.jpeg"
 						width={320}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Bottom band of photo</td>
 			</tr>
 		</tbody>
@@ -317,26 +328,40 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>6. Loading &amp; decoding</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>loading="eager"</td>
-				<td><Picture alt="eager" loading="eager" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="eager" loading="eager" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">No lazy attr in HTML</td>
 			</tr>
 			<tr>
 				<td>loading="lazy" (default)</td>
-				<td><Picture alt="lazy" loading="lazy" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="lazy" loading="lazy" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">lazy attr in HTML</td>
 			</tr>
 			<tr>
 				<td>decoding="async" (default)</td>
-				<td><Picture alt="async" decoding="async" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="async" decoding="async" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">async attr in HTML</td>
 			</tr>
 			<tr>
 				<td>decoding="sync"</td>
-				<td><Picture alt="sync" decoding="sync" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="sync" decoding="sync" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">sync attr in HTML</td>
 			</tr>
 		</tbody>
@@ -344,28 +369,38 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>7. Densities &amp; widths</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>densities={'{[1, 2]}'}</td>
-				<td><Picture alt="densities" densities={[1, 2]} src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="densities" densities={[1, 2]} src="../assets/test.jpeg" />
+				</td>
 				<td class="check">1x and 2x srcset</td>
 			</tr>
 			<tr>
 				<td>widths={'{[100, 200, 400]}'}</td>
-				<td><Picture alt="widths" src="../assets/test.jpeg" widths={[100, 200, 400]} /></td>
+				<td>
+					<Picture alt="widths" src="../assets/test.jpeg" widths={[100, 200, 400]} />
+				</td>
 				<td class="check">3 widths in srcset</td>
 			</tr>
 			<tr>
 				<td>widths + sizes</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="widths sizes"
 						sizes="(max-width: 400px) 100px, 200px"
 						src="../assets/test.jpeg"
 						widths={[100, 200]}
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Responsive sizes attr</td>
 			</tr>
 		</tbody>
@@ -373,53 +408,65 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>8. Caption &amp; credit</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>credit creator</td>
-				<td><Picture alt="credit creator" credit="Test Creator" src="../assets/test.jpeg" /></td>
+				<td>
+					<Picture alt="credit creator" credit="Test Creator" src="../assets/test.jpeg" />
+				</td>
 				<td class="check">Credit line with creator</td>
 			</tr>
 			<tr>
 				<td>credit organization</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="credit org"
 						credit={true}
 						creditOrganization="Test Org"
 						src="../assets/test.jpeg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Credit line with org</td>
 			</tr>
 			<tr>
 				<td>credit + org + mediaType</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="credit full"
 						credit="Creator"
 						creditMediaType="photo"
 						creditOrganization="Org"
 						src="../assets/test.jpeg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Full credit with type</td>
 			</tr>
 			<tr>
 				<td>mediaTypeFallback</td>
-				<td
-					><Picture
+				<td>
+					<Picture
 						alt="type fallback"
 						credit={true}
 						creditMediaTypeFallback="illustration"
 						src="../assets/test.jpeg"
-					/></td
-				>
+					/>
+				</td>
 				<td class="check">Fallback type in credit</td>
 			</tr>
 			<tr>
 				<td>Slot caption</td>
-				<td><Picture alt="caption" src="../assets/test.jpeg">Caption text</Picture></td>
+				<td>
+					<Picture alt="caption" src="../assets/test.jpeg">
+						Caption text
+					</Picture>
+				</td>
 				<td class="check">Caption below picture</td>
 			</tr>
 		</tbody>
@@ -427,28 +474,33 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 
 	<h2>9. Zoom</h2>
 	<table>
-		<thead><tr><th>Scenario</th><th>Result</th><th>Expected</th></tr></thead>
+		<thead>
+			<tr>
+				<th>Scenario</th>
+				<th>Result</th>
+				<th>Expected</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>Standalone zoom</td>
-				<td><Picture alt="zoom standalone" src="../assets/test.jpeg" zoom={true} /></td>
+				<td>
+					<Picture alt="zoom standalone" src="../assets/test.jpeg" zoom={true} />
+				</td>
 				<td class="check">Click opens lightbox</td>
 			</tr>
 			<tr>
 				<td>Gallery zoom (1 of 2)</td>
-				<td><Picture alt="gallery 1" src="../assets/test.jpeg" zoom="gallery" /></td>
+				<td>
+					<Picture alt="gallery 1" src="../assets/test.jpeg" zoom="gallery" />
+				</td>
 				<td class="check">Click opens gallery</td>
 			</tr>
 			<tr>
 				<td>Gallery zoom (2 of 2)</td>
-				<td
-					><Picture
-						alt="gallery 2"
-						formats={['svg']}
-						src="../assets/tiger.svg"
-						zoom="gallery"
-					/></td
-				>
+				<td>
+					<Picture alt="gallery 2" formats={['svg']} src="../assets/tiger.svg" zoom="gallery" />
+				</td>
 				<td class="check">Swipe to other picture</td>
 			</tr>
 		</tbody>

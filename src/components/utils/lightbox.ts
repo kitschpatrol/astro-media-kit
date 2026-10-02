@@ -177,11 +177,7 @@ function findPictureSubtree(container: HTMLElement): HTMLElement | undefined {
 	}
 
 	const picture = container.querySelector('picture')
-	if (picture instanceof HTMLElement) {
-		return picture
-	}
-
-	return undefined
+	return picture instanceof HTMLElement ? picture : undefined
 }
 
 /**
@@ -361,10 +357,12 @@ function createLightbox(
 			boundController = undefined
 		}
 
-		if (autohideTimerId !== undefined) {
-			clearTimeout(autohideTimerId)
-			autohideTimerId = undefined
+		if (autohideTimerId === undefined) {
+			return
 		}
+
+		clearTimeout(autohideTimerId)
+		autohideTimerId = undefined
 	}
 
 	/**
@@ -492,11 +490,7 @@ function createLightbox(
 			}
 		}
 
-		if (isSelfThumb) {
-			return { ...itemData, selfThumbElement: element }
-		}
-
-		return itemData
+		return isSelfThumb ? { ...itemData, selfThumbElement: element } : itemData
 	})
 
 	// Enable placeholder for video and picture — required for the zoom
@@ -506,11 +500,7 @@ function createLightbox(
 		'useContentPlaceholder',
 		(usePlaceholder: boolean, content: { data: Record<string, unknown> }) => {
 			const { type } = content.data
-			if (type === 'video' || type === 'picture') {
-				return true
-			}
-
-			return usePlaceholder
+			return type === 'video' || type === 'picture' || usePlaceholder
 		},
 	)
 
@@ -552,13 +542,8 @@ function createLightbox(
 
 	lightbox.addFilter(
 		'isKeepingPlaceholder',
-		(isKeeping: boolean, content: { data: Record<string, unknown> }) => {
-			if (placeholderBackgrounds.has(content)) {
-				return true
-			}
-
-			return isKeeping
-		},
+		(isKeeping: boolean, content: { data: Record<string, unknown> }) =>
+			placeholderBackgrounds.has(content) || isKeeping,
 	)
 
 	// Mark video as zoomable so tap/double-tap triggers PhotoSwipe's secondary
@@ -568,11 +553,7 @@ function createLightbox(
 		'isContentZoomable',
 		(isZoomable: boolean, content: { data: Record<string, unknown> }) => {
 			const { type } = content.data
-			if (type === 'video' || type === 'picture') {
-				return true
-			}
-
-			return isZoomable
+			return type === 'video' || type === 'picture' || isZoomable
 		},
 	)
 
@@ -599,11 +580,9 @@ function createLightbox(
 				}
 			}
 
-			if (itemData.selfThumbElement instanceof HTMLElement) {
-				return itemData.selfThumbElement
-			}
-
-			return thumbElement ?? document.createElement('div')
+			return itemData.selfThumbElement instanceof HTMLElement
+				? itemData.selfThumbElement
+				: (thumbElement ?? document.createElement('div'))
 		},
 	)
 
@@ -928,19 +907,21 @@ function createLightbox(
 		// eager set races the element's internal `#currentTime` initialization.
 		const inlineVideo = queryVideoElement(videoContainer)
 		const inlineCurrentTime = inlineVideo?.currentTime ?? 0
-		if (inlineCurrentTime > 0) {
-			const proxiedVideo = videoElement as unknown as HTMLMediaElement
-			proxiedVideo.currentTime = inlineCurrentTime
-			const applySeek = (): void => {
-				proxiedVideo.currentTime = inlineCurrentTime
-			}
-
-			// `loadcomplete` is dispatched by vimeo-video-element /
-			// youtube-video-element once the iframe API is ready.
-			// `loadedmetadata` covers the native-video path (hls-video).
-			videoElement.addEventListener('loadcomplete', applySeek, { once: true })
-			videoElement.addEventListener('loadedmetadata', applySeek, { once: true })
+		if (inlineCurrentTime <= 0) {
+			return
 		}
+
+		const proxiedVideo = videoElement as unknown as HTMLMediaElement
+		proxiedVideo.currentTime = inlineCurrentTime
+		const applySeek = (): void => {
+			proxiedVideo.currentTime = inlineCurrentTime
+		}
+
+		// `loadcomplete` is dispatched by vimeo-video-element /
+		// youtube-video-element once the iframe API is ready.
+		// `loadedmetadata` covers the native-video path (hls-video).
+		videoElement.addEventListener('loadcomplete', applySeek, { once: true })
+		videoElement.addEventListener('loadedmetadata', applySeek, { once: true })
 	})
 
 	// Single source of truth: read `pswp.currSlide` and bind/hide the floating

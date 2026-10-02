@@ -81,20 +81,18 @@ const hasCaption = Boolean(
 const hasCredit = showCredit && creditLine !== undefined
 ---
 
-{
-	hasCaption || hasCredit ? (
-		<figure>
-			<slot name="media-component" />
-			<figcaption>
-				{hasCaption && (
-					<span class="caption">
-						<slot />
-					</span>
-				)}
-				{hasCredit && <span class="credit">{creditLine}</span>}
-			</figcaption>
-		</figure>
-	) : (
+{hasCaption || hasCredit ? (
+	<figure>
 		<slot name="media-component" />
-	)
-}
+		<figcaption>
+			{hasCaption && (
+				<span class="caption">
+					<slot />
+				</span>
+			)}
+			{hasCredit && <span class="credit">{creditLine}</span>}
+		</figcaption>
+	</figure>
+) : (
+	<slot name="media-component" />
+)}

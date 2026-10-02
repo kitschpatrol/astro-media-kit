@@ -76,11 +76,7 @@ function getPlainPath(path: PathLikeInput): string {
 		// protocol isn't file:, since URL parsing treats Windows drive letters
 		// (e.g. D:/foo) as a custom scheme and would silently drop the drive.
 		const url = new URL(pathString, 'file://')
-		if (url.protocol === 'file:') {
-			return url.pathname
-		}
-
-		return pathString
+		return url.protocol === 'file:' ? url.pathname : pathString
 	} catch {
 		// Fall back to treating as file path
 		return pathString
@@ -116,9 +112,7 @@ export function stripCwd(path: string): string {
  * astro.config.ts, tsconfig.json, and path.ts
  */
 export function resolveAliases(path: string): string {
-	if (!path.startsWith('~/')) {
-		return path
-	}
-
-	return toPosix(nodePath.resolve(process.cwd(), 'src', path.slice(2)))
+	return path.startsWith('~/')
+		? toPosix(nodePath.resolve(process.cwd(), 'src', path.slice(2)))
+		: path
 }

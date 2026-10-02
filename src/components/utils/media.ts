@@ -16,11 +16,7 @@ const DIRECT_MEDIA_EXTENSIONS = new Set([
 /** Returns true if the URL pathname ends with a known media file extension. */
 export function isDirectMediaUrl(url: URL): boolean {
 	const dot = url.pathname.lastIndexOf('.')
-	if (dot === -1) {
-		return false
-	}
-
-	return DIRECT_MEDIA_EXTENSIONS.has(url.pathname.slice(dot).toLowerCase())
+	return dot !== -1 && DIRECT_MEDIA_EXTENSIONS.has(url.pathname.slice(dot).toLowerCase())
 }
 
 /**
@@ -33,11 +29,7 @@ export function isLocalPath(src: string): boolean {
 	}
 
 	const dot = src.lastIndexOf('.')
-	if (dot === -1) {
-		return false
-	}
-
-	return DIRECT_MEDIA_EXTENSIONS.has(src.slice(dot).toLowerCase())
+	return dot !== -1 && DIRECT_MEDIA_EXTENSIONS.has(src.slice(dot).toLowerCase())
 }
 
 /** Try to parse a string as an HTTP(S) URL. Returns undefined for non-URLs. */

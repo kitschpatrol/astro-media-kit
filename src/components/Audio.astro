@@ -90,62 +90,57 @@ const oembedAspectRatio =
 		: undefined
 ---
 
-{
-	resolvedService === 'local' &&
-		<script>
-			import 'media-chrome'
-		</script>
-}
+{resolvedService === 'local' && <script>
+	import 'media-chrome'
+</script>}
 
-{
-	fetchError !== undefined && fetchError !== '' ? (
-		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
-	) : (
-		<Caption {...captionProps}>
-			{resolvedService === 'oembed' ? (
-				oembedInfo && (
-					<InternalOembed
-						aspectRatio={oembedAspectRatio}
-						html={oembedInfo.html}
-						resolvedLabel={resolvedLabel}
-						slot="media-component"
+{fetchError !== undefined && fetchError !== '' ? (
+	import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
+) : (
+	<Caption {...captionProps}>
+		{resolvedService === 'oembed' ? (
+			oembedInfo && (
+				<InternalOembed
+					aspectRatio={oembedAspectRatio}
+					html={oembedInfo.html}
+					resolvedLabel={resolvedLabel}
+					slot="media-component"
+				/>
+			)
+		) : resolvedService === 'local' ? (
+			<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
+				<media-controller audio>
+					{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
+					<audio
+						autoplay={autoPlay || undefined}
+						crossorigin="anonymous"
+						loop={loop || undefined}
+						muted={muted || undefined}
+						preload={preload}
+						slot="media"
+						src={identifier}
 					/>
-				)
-			) : resolvedService === 'local' ? (
-				<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
-					<media-controller audio>
-						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
-						<audio
-							autoplay={autoPlay || undefined}
-							crossorigin="anonymous"
-							loop={loop || undefined}
-							muted={muted || undefined}
-							preload={preload}
-							slot="media"
-							src={identifier}
-						/>
-						{/* eslint-enable astro/jsx-a11y/media-has-caption */}
-						<media-control-bar>
-							<media-play-button />
-							<media-mute-button />
-							<media-volume-range />
-							<media-time-range />
-							<media-time-display />
-						</media-control-bar>
-					</media-controller>
-				</div>
-			) : (
-				<div class="amk not-content" slot="media-component">
-					<iframe
-						allow="autoplay"
-						height="166"
-						src={embedUrl}
-						style="width: 100%"
-						title={resolvedLabel}
-					/>
-				</div>
-			)}
-			<slot />
-		</Caption>
-	)
-}
+					{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+					<media-control-bar>
+						<media-play-button />
+						<media-mute-button />
+						<media-volume-range />
+						<media-time-range />
+						<media-time-display />
+					</media-control-bar>
+				</media-controller>
+			</div>
+		) : (
+			<div class="amk not-content" slot="media-component">
+				<iframe
+					allow="autoplay"
+					height="166"
+					src={embedUrl}
+					style="width: 100%"
+					title={resolvedLabel}
+				/>
+			</div>
+		)}
+		<slot />
+	</Caption>
+)}

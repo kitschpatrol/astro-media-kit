@@ -483,11 +483,7 @@ export function resolveSizesAttribute(
 		return undefined
 	}
 
-	if (userSizes !== undefined) {
-		return sizes
-	}
-
-	return `auto, ${sizes}`
+	return userSizes === undefined ? `auto, ${sizes}` : sizes
 }
 
 /** Resolve the MIME `type` attribute for a `<source>` element. */
@@ -510,11 +506,7 @@ export function warnWidthsWithoutSizes(
 	useResponsive: boolean,
 	componentName: string,
 ): void {
-	if (!import.meta.env.DEV) {
-		return
-	}
-
-	if (!props.widths || props.widths.length === 0) {
+	if (!import.meta.env.DEV || !props.widths || props.widths.length === 0) {
 		return
 	}
 

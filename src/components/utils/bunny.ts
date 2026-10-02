@@ -217,13 +217,10 @@ export async function bunnyGetVideoInfo(
 
 	const resolutions = matches.map(Number)
 	// eslint-disable-next-line unicorn/no-array-reduce
-	const fallbackResolution = resolutions.reduce((max, current) => {
-		if (current <= 720 && current > max) {
-			return current
-		}
-
-		return max
-	}, -Infinity)
+	const fallbackResolution = resolutions.reduce(
+		(max, current) => (current <= 720 && current > max ? current : max),
+		-Infinity,
+	)
 
 	// Find captions, if available
 	const captionsWithUrls = captions.map((caption) => ({

@@ -95,43 +95,34 @@ const hlsConfigJson =
 	}
 </script>
 
-{
-	isHls &&
-		<script>
-			import 'hls-video-element'
-			import type { HlsVideoElement } from 'hls-video-element'
+{isHls && <script>
+	import 'hls-video-element'
+	import type { HlsVideoElement } from 'hls-video-element'
 
-			// Apply hls.js config before source loading.
-			// Config must be set before src so hls.js uses it during initialization.
-			// Elements render with data-src instead of src, then we set config + src here.
-			for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
-				const configAttribute = element.dataset.hlsConfig
-				if (configAttribute) {
-					try {
-						element.config = JSON.parse(configAttribute)
-					} catch {
-						console.warn('[astro-media-kit] Failed to parse HLS config:', configAttribute)
-					}
-				}
-
-				element.setAttribute('src', element.dataset.src!)
+	// Apply hls.js config before source loading.
+	// Config must be set before src so hls.js uses it during initialization.
+	// Elements render with data-src instead of src, then we set config + src here.
+	for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
+		const configAttribute = element.dataset.hlsConfig
+		if (configAttribute) {
+			try {
+				element.config = JSON.parse(configAttribute)
+			} catch {
+				console.warn('[astro-media-kit] Failed to parse HLS config:', configAttribute)
 			}
-		</script>
-}
+		}
 
-{
-	element === 'vimeo-video' &&
-		<script>
-			import 'vimeo-video-element'
-		</script>
-}
+		element.setAttribute('src', element.dataset.src!)
+	}
+</script>}
 
-{
-	element === 'youtube-video' &&
-		<script>
-			import 'youtube-video-element'
-		</script>
-}
+{element === 'vimeo-video' && <script>
+	import 'vimeo-video-element'
+</script>}
+
+{element === 'youtube-video' && <script>
+	import 'youtube-video-element'
+</script>}
 
 <div
 	aria-label={resolvedLabel}
@@ -168,82 +159,78 @@ const hlsConfigJson =
 				<youtube-video {...videoAttributes} controls="" src={videoSrc} style={controllerStyle} />
 			))
 	}
-	{
-		!isNative && (
-			<media-controller
-				autohide="1"
-				class:list={[controls, { autoplay: autoPlay }]}
-				gesturesdisabled={controls === 'lightbox' || controls === 'none' || zoom ? '' : undefined}
-				inert={controls === 'none' ? 'true' : undefined}
-				style={controllerStyle}
-			>
-				{isHls ? (
-					<hls-video
-						{...videoAttributes}
-						data-hls-config={hlsConfigJson}
-						data-src={videoSrc}
-						slot="media"
-					>
-						{captions.map((caption) => (
-							<track kind="captions" {...caption} />
-						))}
-					</hls-video>
-				) : element === 'video' ? (
-					/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
-					<video {...videoAttributes} slot="media" src={videoSrc} />
-				) : element === 'vimeo-video' ? (
-					<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
-				) : (
-					<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
-				)}
+	{!isNative && (
+		<media-controller
+			autohide="1"
+			class:list={[controls, { autoplay: autoPlay }]}
+			gesturesdisabled={controls === 'lightbox' || controls === 'none' || zoom ? '' : undefined}
+			inert={controls === 'none' ? 'true' : undefined}
+			style={controllerStyle}
+		>
+			{isHls ? (
+				<hls-video
+					{...videoAttributes}
+					data-hls-config={hlsConfigJson}
+					data-src={videoSrc}
+					slot="media"
+				>
+					{captions.map((caption) => (
+						<track kind="captions" {...caption} />
+					))}
+				</hls-video>
+			) : element === 'video' ? (
+				/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
+				<video {...videoAttributes} slot="media" src={videoSrc} />
+			) : element === 'vimeo-video' ? (
+				<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
+			) : (
+				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
+			)}
 
-				{controls === 'full' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{captions.length > 0 && <media-captions-button />}
+			{controls === 'full' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{captions.length > 0 && <media-captions-button />}
+					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
+						{zoom && <span slot="tooltip-enter">Zoom</span>}
+					</media-fullscreen-button>
+				</media-control-bar>
+			)}
+
+			{controls === 'lightbox' && (
+				<media-control-bar>
+					<media-play-button />
+					<media-mute-button />
+					<media-volume-range />
+					<media-time-range />
+					<media-time-display />
+					{captions.length > 0 && <media-captions-button />}
+				</media-control-bar>
+			)}
+			{controls === 'minimal' && (
+				<>
+					<media-control-bar style="justify-content: flex-end">
 						<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
 							{zoom && <span slot="tooltip-enter">Zoom</span>}
 						</media-fullscreen-button>
 					</media-control-bar>
-				)}
-
-				{controls === 'lightbox' && (
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-						{captions.length > 0 && <media-captions-button />}
-					</media-control-bar>
-				)}
-				{controls === 'minimal' && (
-					<>
-						<media-control-bar style="justify-content: flex-end">
-							<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-								{zoom && <span slot="tooltip-enter">Zoom</span>}
-							</media-fullscreen-button>
-						</media-control-bar>
-						<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-					</>
-				)}
-			</media-controller>
-		)
-	}
-	{
-		isHls && hlsUrl !== undefined && hlsUrl !== '' && (
-			<noscript>
-				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
-				<video {...videoAttributes}>
-					<source src={hlsUrl} type="application/x-mpegURL" />
-					{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
-					Your browser does not support HTML5 video.
-				</video>
-			</noscript>
-		)
-	}
+					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
+				</>
+			)}
+		</media-controller>
+	)}
+	{isHls && hlsUrl !== undefined && hlsUrl !== '' && (
+		<noscript>
+			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+			<video {...videoAttributes}>
+				<source src={hlsUrl} type="application/x-mpegURL" />
+				{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
+				Your browser does not support HTML5 video.
+			</video>
+		</noscript>
+	)}
 </div>

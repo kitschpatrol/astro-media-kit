@@ -354,39 +354,37 @@ const sharedProps = {
 	}
 </style>
 
-{
-	fetchError !== undefined && fetchError !== '' ? (
-		import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
-	) : resolvedService === 'oembed' ? (
-		oembedInfo && (
-			<Caption {...captionProps}>
-				<InternalOembed
-					aspectRatio={oembedAspectRatio}
-					html={oembedInfo.html}
-					resolvedLabel={resolvedLabel}
-					slot="media-component"
-				/>
-				<slot />
-			</Caption>
-		)
-	) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
+{fetchError !== undefined && fetchError !== '' ? (
+	import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
+) : resolvedService === 'oembed' ? (
+	oembedInfo && (
 		<Caption {...captionProps}>
-			<Zoomer
-				{...zoomerProps}
-				height={videoInfo.height}
+			<InternalOembed
+				aspectRatio={oembedAspectRatio}
+				html={oembedInfo.html}
+				resolvedLabel={resolvedLabel}
 				slot="media-component"
-				width={videoInfo.width}
-			>
-				<VideoPlayer
-					{...sharedProps}
-					captions={videoInfo.captions}
-					element={videoElementMap[resolvedService]}
-					hlsConfig={hlsConfig}
-					hlsUrl={videoInfo.hlsUrl}
-					mp4Url={videoInfo.mp4Url}
-				/>
-			</Zoomer>
+			/>
 			<slot />
 		</Caption>
-	) : undefined
-}
+	)
+) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
+	<Caption {...captionProps}>
+		<Zoomer
+			{...zoomerProps}
+			height={videoInfo.height}
+			slot="media-component"
+			width={videoInfo.width}
+		>
+			<VideoPlayer
+				{...sharedProps}
+				captions={videoInfo.captions}
+				element={videoElementMap[resolvedService]}
+				hlsConfig={hlsConfig}
+				hlsUrl={videoInfo.hlsUrl}
+				mp4Url={videoInfo.mp4Url}
+			/>
+		</Zoomer>
+		<slot />
+	</Caption>
+) : undefined}

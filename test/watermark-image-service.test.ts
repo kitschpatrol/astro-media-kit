@@ -1,11 +1,12 @@
-// eslint-disable-next-line import/no-named-as-default -- sharp 0.35 types declare a named 'sharp' export, but the runtime ESM wrapper only provides a default export
 import sharp from 'sharp'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import watermarkService from '../src/integration/watermark-image-service'
 
 type WatermarkFlags = { angle: number; minDimension: number; opacity: number }
 
 const defaultWatermarkConfig: WatermarkFlags = { angle: -30, minDimension: 96, opacity: 0.6 }
+
+const silentLogger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
 
 function makeImageConfig(mediaKitWatermark: undefined | WatermarkFlags) {
 	return {
@@ -38,8 +39,8 @@ async function runTransform(
 	return watermarkService.transform(
 		input,
 		{ format: 'png', src: '/test.png' },
-
 		imageConfig as Parameters<typeof watermarkService.transform>[2],
+		silentLogger,
 	)
 }
 

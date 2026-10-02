@@ -228,11 +228,13 @@ export async function transformAstroSource(
 			frontmatterNode = node
 		}
 
-		if (is.component(node)) {
-			const entries = componentConfigs[node.name]
-			if (entries && processComponent(node, entries, imports)) {
-				modified = true
-			}
+		if (!is.component(node)) {
+			return
+		}
+
+		const entries = componentConfigs[node.name]
+		if (entries && processComponent(node, entries, imports)) {
+			modified = true
 		}
 	})
 

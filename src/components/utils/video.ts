@@ -348,11 +348,7 @@ function inferServiceFromId(mediaId: string): Service | undefined {
 		return 'youtube'
 	}
 
-	if (vimeoIsValidMediaId(mediaId)) {
-		return 'vimeo'
-	}
-
-	return undefined
+	return vimeoIsValidMediaId(mediaId) ? 'vimeo' : undefined
 }
 
 /** Resolve a URL into a service type and identifier. */
@@ -367,11 +363,7 @@ function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
 		return { identifier: vimeoId, service: 'vimeo' }
 	}
 
-	if (isDirectMediaUrl(url)) {
-		return { identifier: src, service: 'local' }
-	}
-
-	return { identifier: src, service: 'oembed' }
+	return { identifier: src, service: isDirectMediaUrl(url) ? 'local' : 'oembed' }
 }
 
 /**

@@ -16,7 +16,7 @@
 // background compositing) are skipped for remote sources — dev warnings surface
 // when those props are set.
 
-import type { ImageMetadata, ImageOutputFormat } from 'astro'
+import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig } from 'astro:assets'
@@ -189,6 +189,9 @@ if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(src)) {
 	)
 }
 
+// Astro 7.3.3+ types `widths`/`densities`/`layout` as a discriminated union. Our `Omit<>`-derived
+// Props flatten that union, so we cast at the `getImage()` boundary like Astro's own `<Image>` does.
+
 // Handle responsive layout (same as Astro's Image) — shared by both branches.
 const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
@@ -213,7 +216,7 @@ if (isRemote) {
 		...getImageProps,
 		...(remoteFormat !== undefined && remoteFormat !== '' && { format: remoteFormat }),
 		src,
-	})
+	} as UnresolvedImageTransform)
 	imageMetadataSrc = src
 	captionSrc = undefined
 } else {
@@ -236,7 +239,7 @@ if (isRemote) {
 		...compositingBackground(outputFormat, background),
 		format: outputFormat,
 		src: clonedSrc,
-	})
+	} as UnresolvedImageTransform)
 	imageMetadataSrc = imageMetadata.src
 	captionSrc = imageMetadata
 }

@@ -4,7 +4,14 @@ packages:
   - playground-starlight
   - test/parity/fixtures/core-image
   - test/parity/fixtures/picture-darkmode
+allowBuilds:
+  esbuild: true
+  puppeteer: true
+  unrs-resolver: true
 ignoreWorkspaceRootCheck: true
+minimumReleaseAgeExclude:
+  - '@mux/mux-node@15.5.0'
+  - node-gyp@13.1.0
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'
@@ -16,24 +23,3 @@ publicHoistPattern:
   - '*prettier*'
   - '*remark*'
   - '*stylelint*'
-allowBuilds:
-  esbuild: true
-  puppeteer: true
-  sharp: true
-  unrs-resolver: true
-  ws: true
-minimumReleaseAgeExclude:
-  - '@astrojs/*'
-  - '@cspell/*'
-  - '@kitschpatrol/*'
-  - astro
-  - astro-mdx-kit
-  - cspell
-  - cspell-config-lib
-  - cspell-dictionary
-  - cspell-gitignore
-  - cspell-glob
-  - cspell-grammar
-  - cspell-io
-  - cspell-lib
-  - cspell-trie-lib

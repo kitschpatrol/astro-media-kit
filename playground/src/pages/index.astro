@@ -8,13 +8,11 @@ import { pages } from '../pages'
 <Layout title="astro-media-kit playground">
 	<h1>astro-media-kit playground</h1>
 	<ul>
-		{
-			pages.map((page) => (
-				<li>
-					<a href={page.href}>{page.title}</a>
-				</li>
-			))
-		}
+		{pages.map((page) => (
+			<li>
+				<a href={page.href}>{page.title}</a>
+			</li>
+		))}
 	</ul>
 	<hr />
 	<Image alt="test" credit="Eric" src="../assets/test.jpeg" zoom="true" zoomLevel="native" />

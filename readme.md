@@ -135,7 +135,9 @@ import photo from '../assets/photo.jpg'
 Caption text is passed as a slot child:
 
 ```astro
-<Image src={photo} alt="A sunset">A beautiful sunset over the mountains.</Image>
+<Image src={photo} alt="A sunset">
+  A beautiful sunset over the mountains.
+</Image>
 ```
 
 #### Image Props

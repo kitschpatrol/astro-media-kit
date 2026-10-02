@@ -73,10 +73,10 @@ export async function stripExifFromImages(
 		await exiftool.end()
 	}
 
-	if (strippedCount > 0 || failedCount > 0) {
-		const suffix = failedCount > 0 ? ` (${failedCount} failed)` : '.'
-		logger.info(
-			`Stripped EXIF from ${strippedCount} image${strippedCount === 1 ? '' : 's'}${suffix}`,
-		)
+	if (strippedCount === 0 && failedCount === 0) {
+		return
 	}
+
+	const suffix = failedCount > 0 ? ` (${failedCount} failed)` : '.'
+	logger.info(`Stripped EXIF from ${strippedCount} image${strippedCount === 1 ? '' : 's'}${suffix}`)
 }

@@ -178,11 +178,7 @@ function isToggleEnabled(
 		return defaultEnabled
 	}
 
-	if (typeof value === 'boolean') {
-		return value
-	}
-
-	return value.enabled !== false
+	return typeof value === 'boolean' ? value : value.enabled !== false
 }
 
 /**
@@ -339,22 +335,24 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					})
 				}
 
-				if (watermarkEnabled) {
-					if (command !== 'dev') {
-						logger.warn(
-							`watermark enabled outside dev (command: ${command}) — image variants will be stamped in the build output`,
-						)
-					}
-
-					updateConfig({
-						image: {
-							service: {
-								config: { mediaKitWatermark: watermarkResolved },
-								entrypoint: fileURLToPath(new URL('watermark-image-service.ts', import.meta.url)),
-							},
-						},
-					})
+				if (!watermarkEnabled) {
+					return
 				}
+
+				if (command !== 'dev') {
+					logger.warn(
+						`watermark enabled outside dev (command: ${command}) — image variants will be stamped in the build output`,
+					)
+				}
+
+				updateConfig({
+					image: {
+						service: {
+							config: { mediaKitWatermark: watermarkResolved },
+							entrypoint: fileURLToPath(new URL('watermark-image-service.ts', import.meta.url)),
+						},
+					},
+				})
 			},
 		},
 		name: 'astro-media-kit',

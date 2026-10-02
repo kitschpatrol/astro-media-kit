@@ -230,46 +230,44 @@ if (enabled !== false && enabled !== '') {
 	}
 </style>
 
-{
-	enabled !== false && enabled !== '' ? (
-		<>
-			<script>
-				import './utils/lightbox'
-			</script>
-			{videoTarget ? (
-				<div
-					class="pswp-zoom"
-					data-pswp-gallery={galleryName}
-					data-pswp-height={resolvedHeight}
-					data-pswp-level={level === 'fit' ? undefined : level}
-					data-pswp-poster={videoTarget.poster ?? ''}
-					data-pswp-scope={scope}
-					data-pswp-type="video"
-					data-pswp-video-config={videoTarget.config}
-					data-pswp-video-element={videoTarget.element}
-					data-pswp-video-src={videoTarget.src}
-					data-pswp-width={resolvedWidth}
-				>
-					<Fragment set:html={slotHtml} />
-				</div>
-			) : (
-				<a
-					class="pswp-zoom"
-					data-pswp-gallery={galleryName}
-					data-pswp-height={resolvedHeight}
-					data-pswp-level={level === 'fit' ? undefined : level}
-					data-pswp-scope={scope}
-					data-pswp-self-thumb={selfThumb ? '' : undefined}
-					data-pswp-srcset={resolvedSrcset}
-					data-pswp-type={isPicture ? 'picture' : undefined}
-					data-pswp-width={resolvedWidth}
-					href={resolvedUrl}
-				>
-					<Fragment set:html={slotHtml} />
-				</a>
-			)}
-		</>
-	) : (
-		<slot />
-	)
-}
+{enabled !== false && enabled !== '' ? (
+	<>
+		<script>
+			import './utils/lightbox'
+		</script>
+		{videoTarget ? (
+			<div
+				class="pswp-zoom"
+				data-pswp-gallery={galleryName}
+				data-pswp-height={resolvedHeight}
+				data-pswp-level={level === 'fit' ? undefined : level}
+				data-pswp-poster={videoTarget.poster ?? ''}
+				data-pswp-scope={scope}
+				data-pswp-type="video"
+				data-pswp-video-config={videoTarget.config}
+				data-pswp-video-element={videoTarget.element}
+				data-pswp-video-src={videoTarget.src}
+				data-pswp-width={resolvedWidth}
+			>
+				<Fragment set:html={slotHtml} />
+			</div>
+		) : (
+			<a
+				class="pswp-zoom"
+				data-pswp-gallery={galleryName}
+				data-pswp-height={resolvedHeight}
+				data-pswp-level={level === 'fit' ? undefined : level}
+				data-pswp-scope={scope}
+				data-pswp-self-thumb={selfThumb ? '' : undefined}
+				data-pswp-srcset={resolvedSrcset}
+				data-pswp-type={isPicture ? 'picture' : undefined}
+				data-pswp-width={resolvedWidth}
+				href={resolvedUrl}
+			>
+				<Fragment set:html={slotHtml} />
+			</a>
+		)}
+	</>
+) : (
+	<slot />
+)}

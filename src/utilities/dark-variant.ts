@@ -25,21 +25,10 @@ export function needsBackgroundDarkVariant(
 	darkDisabled: boolean,
 	isSelector: boolean,
 ): boolean {
-	if (darkDisabled) {
-		return false
-	}
-
-	if (backgroundDark === undefined || backgroundDark === '') {
-		return false
-	}
-
-	if (backgroundDark === background) {
-		return false
-	}
-
-	if (isSelector) {
-		return true
-	}
-
-	return formats.some((f) => opaqueFormats.has(f))
+	const hasDistinctDarkBackground =
+		!darkDisabled &&
+		backgroundDark !== undefined &&
+		backgroundDark !== '' &&
+		backgroundDark !== background
+	return hasDistinctDarkBackground && (isSelector || formats.some((f) => opaqueFormats.has(f)))
 }
