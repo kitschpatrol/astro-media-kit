@@ -64,6 +64,7 @@
 		"@mux/ts": "^15.6.1",
 		"@oscnord/get-video-resolution": "^2.5.0",
 		"@sindresorhus/is": "^8.1.0",
+		"@videojs/html": "^10.0.0",
 		"exiftool-vendored": "^39.0.1",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.13",
