@@ -8,6 +8,7 @@ import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
 import InternalOembed from './internal/OEmbed.astro'
+import { isHlsSource } from './internal/video-source'
 import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
 import { getVideoInfo, resolveVideoSource } from './utils/video'
@@ -222,7 +223,7 @@ const posterUrl =
 const videoElementMap = {
 	bunny: 'hlsjs-video',
 	cloudflare: 'hlsjs-video',
-	local: 'video',
+	local: isHlsSource(videoSrc ?? '') ? 'hlsjs-video' : 'video',
 	mux: 'hlsjs-video',
 	vimeo: 'vimeo-video',
 	youtube: 'youtube-video',
@@ -270,7 +271,7 @@ const sharedProps = {
 				captions={videoInfo.captions}
 				element={videoElementMap[resolvedService]}
 				hlsOptions={hlsOptions}
-				hlsUrl={videoInfo.hlsUrl}
+				hlsUrl={isHlsSource(videoSrc) ? videoSrc : videoInfo.hlsUrl}
 				mp4Url={videoInfo.mp4Url}
 			/>
 		</Zoomer>

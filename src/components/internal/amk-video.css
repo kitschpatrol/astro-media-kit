@@ -55,6 +55,7 @@
    from the server. In fullscreen the browser forces it to the viewport. */
 .amk media-container {
 	position: relative;
+	container: amk-player / inline-size;
 	overflow: hidden;
 	display: block;
 	max-width: 100%;
@@ -191,6 +192,7 @@
 	color: var(--amk-control-color);
 	background: var(--amk-control-background);
 }
+
 
 .amk-button,
 .amk-time,
@@ -470,6 +472,7 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	pointer-events: auto;
 	position: fixed;
 	inset: auto 0 0;
+	container: amk-player / inline-size;
 	overflow: visible;
 	width: auto;
 	height: auto;
@@ -485,7 +488,7 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 		overlay var(--amk-duration) allow-discrete;
 }
 
-.pswp__floating-controls:not(:popover-open) {
+.pswp__floating-controls[popover]:not(:popover-open) {
 	opacity: 0;
 }
 
@@ -495,7 +498,7 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	}
 }
 
-.pswp__floating-controls[data-user-inactive] {
+.pswp__floating-controls[data-user-inactive]:not(:focus-within) {
 	pointer-events: none;
 	opacity: 0;
 }
@@ -512,6 +515,91 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .pswp__item--video .pswp__dynamic-caption--below,
 .pswp__item--video .pswp__dynamic-caption--mobile {
 	padding-bottom: calc(15px + var(--amk-lightbox-bar-height, 44px));
+}
+
+@media (width < 320px) {
+	.pswp {
+		--amk-lightbox-bar-height: 76px;
+	}
+}
+
+/* Error surfaces remain usable inside the pointer-transparent lightbox slide. */
+.amk-error-backdrop {
+	pointer-events: auto;
+	position: absolute;
+	z-index: 2;
+	inset: 0;
+	background: rgb(0 0 0 / 90%);
+}
+
+.amk-error {
+	pointer-events: auto;
+	position: absolute;
+	z-index: 3;
+	inset: 0;
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	align-items: center;
+	justify-content: safe center;
+	padding: 16px;
+	font: 14px / 1.4 sans-serif;
+	color: #fff;
+	text-align: center;
+}
+
+.amk-error-title {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.amk-error a {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.amk-error-close {
+	cursor: pointer;
+	padding: 10px 16px;
+	border: 1px solid currentcolor;
+	border-radius: 4px;
+}
+
+.amk-error-backdrop:not([data-open]),
+.amk-error:not([data-open]) {
+	display: none;
+}
+
+/* Size controls to their player, including players inside narrow columns. */
+@container amk-player (width < 440px) {
+	.amk-volume-slider,
+	.amk-time media-time[type='duration'],
+	.amk-time media-time-separator {
+		display: none;
+	}
+
+	.amk-time {
+		padding-inline: 4px;
+	}
+}
+
+@container amk-player (width < 320px) {
+	.amk-bar {
+		flex-wrap: wrap;
+	}
+
+	.amk-time-slider {
+		flex-basis: calc(100% - 20px);
+		order: 1;
+		height: 32px;
+	}
+}
+
+@container amk-player (width < 240px) {
+	.amk-time {
+		display: none;
+	}
 }
 
 /* --- Last --- */

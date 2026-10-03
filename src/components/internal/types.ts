@@ -1,4 +1,5 @@
-import type { HlsSource } from '@videojs/html/media/hlsjs-video'
+import type { HlsSourceOptions } from './video-source'
+export type { HlsSourceOptions, VideoElementTag } from './video-source'
 
 /**
  * Builds the inline style string for the player container from video
@@ -19,15 +20,6 @@ export function getControllerStyle(
 
 	return parts.length > 0 ? parts.join('; ') : undefined
 }
-
-/**
- * Playback options merged into the `<hlsjs-video>` structured source. The URL
- * itself is supplied separately.
- */
-export type HlsSourceOptions = Pick<HlsSource, 'capRenditionToPlayerSize' | 'engine'>
-
-/** Media element tag name per video service. */
-export type VideoElementTag = 'hlsjs-video' | 'video' | 'vimeo-video' | 'youtube-video'
 
 /**
  * Shared props passed from Video.astro to internal sub-components. All service

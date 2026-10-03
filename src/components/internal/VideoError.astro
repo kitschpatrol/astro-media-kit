@@ -1,0 +1,16 @@
+---
+export type Props = { fallbackUrl: string }
+const { fallbackUrl } = Astro.props
+---
+
+<media-error-dialog>
+	<media-dialog-backdrop class="amk-error-backdrop" />
+	<media-dialog-popup class="amk-error">
+		<media-dialog-title class="amk-error-title" />
+		<media-dialog-description />
+		<a href={fallbackUrl} rel="noreferrer" target="_blank">
+			Open video directly
+		</a>
+		<media-dialog-close class="amk-error-close" />
+	</media-dialog-popup>
+</media-error-dialog>

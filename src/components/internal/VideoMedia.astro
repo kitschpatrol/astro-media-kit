@@ -29,37 +29,13 @@ const controls = native || undefined
 const hlsOptionsJson = Object.keys(hlsOptions).length > 0 ? JSON.stringify(hlsOptions) : undefined
 ---
 
+<script>
+	import './videojs-media'
+</script>
+
 {element === 'hlsjs-video' && <script>
-	import type { HlsJsVideoElement, HlsSource } from '@videojs/html/media/hlsjs-video'
 	import './videojs-player'
 	import '@videojs/html/media/hlsjs-video'
-
-	type HlsSourceOptions = Omit<HlsSource, 'src'>
-
-	function parseHlsOptions(json: string | undefined): HlsSourceOptions {
-		if (json === undefined || json === '') {
-			return {}
-		}
-
-		try {
-			const parsed: unknown = JSON.parse(json)
-			return typeof parsed === 'object' && parsed !== null ? parsed : {}
-		} catch {
-			console.warn('[astro-media-kit] Failed to parse HLS options:', json)
-			return {}
-		}
-	}
-
-	// Elements render with data-src instead of src so hls.js is created once,
-	// with the configured options, when the structured source is assigned.
-	// Re-assigning an equal source later (e.g. after a view transition) is a
-	// documented no-op.
-	for (const element of document.querySelectorAll<HlsJsVideoElement>('hlsjs-video[data-src]')) {
-		element.source = {
-			src: element.dataset.src ?? '',
-			...parseHlsOptions(element.dataset.hlsOptions),
-		}
-	}
 </script>}
 
 {element === 'vimeo-video' && <script>
@@ -86,9 +62,15 @@ const hlsOptionsJson = Object.keys(hlsOptions).length > 0 ? JSON.stringify(hlsOp
 	</hlsjs-video>
 ) : element === 'video' ? (
 	/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
-	<video {...attributes} controls={controls} src={src} style={style} />
+	<video
+		{...attributes}
+		controls={controls}
+		data-src={native ? undefined : src}
+		src={native ? src : undefined}
+		style={style}
+	/>
 ) : element === 'vimeo-video' ? (
-	<vimeo-video {...attributes} controls={controls} src={src} style={style} />
+	<vimeo-video {...attributes} controls={controls} data-src={src} style={style} />
 ) : (
-	<youtube-video {...attributes} controls={controls} src={src} style={style} />
+	<youtube-video {...attributes} controls={controls} data-src={src} style={style} />
 )}

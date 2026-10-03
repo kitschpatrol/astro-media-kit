@@ -1,6 +1,8 @@
 ---
 import type { InternalVideoProps, VideoElementTag } from './types'
 import { getControllerStyle } from './types'
+import VideoControls from './VideoControls.astro'
+import VideoError from './VideoError.astro'
 import VideoMedia from './VideoMedia.astro'
 import './amk-video.css'
 
@@ -32,10 +34,10 @@ const {
 	zoom,
 } = Astro.props
 
+const fallbackUrl = mp4Url !== undefined && mp4Url !== '' ? mp4Url : videoSrc
 const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative
-const hasBar = controls === 'full' || controls === 'lightbox'
 const hasFullscreen = controls === 'full' || controls === 'minimal'
 // Click-to-play stays off where a click must do something else: open the
 // lightbox (zoom), or nothing at all ('lightbox' mode mirrors the player
@@ -60,10 +62,6 @@ const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 }
 
 const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions, src: videoSrc }
-
-// Tooltips are linked to their buttons by id, and each tooltip's own id names
-// its CSS anchor, so both must be unique per player on the page.
-const uid = `amk-${crypto.randomUUID().slice(0, 8)}`
 ---
 
 {!isNative && <script>
@@ -85,127 +83,16 @@ const uid = `amk-${crypto.randomUUID().slice(0, 8)}`
 			<media-container
 				aria-label={resolvedLabel}
 				class="amk-container"
-				inert={controls === 'none' || undefined}
 				style={containerStyle}
+				tabindex={controls === 'none' ? '-1' : undefined}
 			>
 				<VideoMedia {...mediaProps} native={false} />
+				<VideoError fallbackUrl={fallbackUrl} />
 				{hasPoster && <media-poster class="amk-poster" />}
 				<media-buffering-indicator class="amk-buffering">
 					<media-icon name="spinner" />
 				</media-buffering-indicator>
-				{hasControls && (
-					<media-controls>
-						<media-controls-content class="amk-controls">
-							{controls === 'minimal' && (
-								<media-play-button class="amk-button amk-center-play">
-									<media-icon class="amk-icon-play" name="play" />
-									<media-icon class="amk-icon-pause" name="pause" />
-									<media-icon class="amk-icon-restart" name="restart" />
-								</media-play-button>
-							)}
-							<media-tooltip-group>
-								<media-controls-group aria-label="Playback controls" class="amk-bar">
-									{hasBar && (
-										<>
-											<media-play-button class="amk-button" id={`${uid}-play`}>
-												<media-icon class="amk-icon-play" name="play" />
-												<media-icon class="amk-icon-pause" name="pause" />
-												<media-icon class="amk-icon-restart" name="restart" />
-											</media-play-button>
-											<media-tooltip
-												class="amk-tooltip"
-												id={`${uid}-play-tooltip`}
-												trigger={`${uid}-play`}
-											>
-												<media-tooltip-label />
-												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-											</media-tooltip>
-											<media-mute-button class="amk-button" id={`${uid}-mute`}>
-												<media-icon class="amk-icon-volume-off" name="volume-off" />
-												<media-icon class="amk-icon-volume-low" name="volume-low" />
-												<media-icon class="amk-icon-volume-high" name="volume-high" />
-											</media-mute-button>
-											<media-tooltip
-												class="amk-tooltip"
-												id={`${uid}-mute-tooltip`}
-												trigger={`${uid}-mute`}
-											>
-												<media-tooltip-label />
-												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-											</media-tooltip>
-											<media-volume-slider class="amk-slider amk-volume-slider">
-												<media-slider-track class="amk-slider-track">
-													<media-slider-fill class="amk-slider-fill" />
-												</media-slider-track>
-												<media-slider-thumb class="amk-slider-thumb" />
-											</media-volume-slider>
-											<media-time-slider class="amk-slider amk-time-slider">
-												<media-slider-track class="amk-slider-track">
-													<media-slider-buffer class="amk-slider-buffer" />
-													<media-slider-fill class="amk-slider-fill" />
-												</media-slider-track>
-												<media-slider-thumb class="amk-slider-thumb" />
-												<media-slider-value class="amk-slider-value" type="pointer" />
-											</media-time-slider>
-											<media-time-group class="amk-time">
-												<media-time type="current" />
-												<media-time-separator />
-												<media-time type="duration" />
-											</media-time-group>
-											<media-captions-button class="amk-button" id={`${uid}-captions`}>
-												<media-icon class="amk-icon-captions-off" name="captions-off" />
-												<media-icon class="amk-icon-captions-on" name="captions-on" />
-											</media-captions-button>
-											<media-tooltip
-												class="amk-tooltip"
-												id={`${uid}-captions-tooltip`}
-												trigger={`${uid}-captions`}
-											>
-												<media-tooltip-label />
-												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-											</media-tooltip>
-										</>
-									)}
-									{hasFullscreen &&
-										(zoom ? (
-											<>
-												<button
-													aria-label="Zoom"
-													class="amk-button amk-zoom-button pswp-video-trigger"
-													id={`${uid}-zoom`}
-													type="button"
-												>
-													<media-icon name="fullscreen-enter" />
-												</button>
-												<media-tooltip
-													class="amk-tooltip"
-													id={`${uid}-zoom-tooltip`}
-													trigger={`${uid}-zoom`}
-												>
-													Zoom
-												</media-tooltip>
-											</>
-										) : (
-											<>
-												<media-fullscreen-button class="amk-button" id={`${uid}-fullscreen`}>
-													<media-icon class="amk-icon-fullscreen-enter" name="fullscreen-enter" />
-													<media-icon class="amk-icon-fullscreen-exit" name="fullscreen-exit" />
-												</media-fullscreen-button>
-												<media-tooltip
-													class="amk-tooltip"
-													id={`${uid}-fullscreen-tooltip`}
-													trigger={`${uid}-fullscreen`}
-												>
-													<media-tooltip-label />
-													<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-												</media-tooltip>
-											</>
-										))}
-								</media-controls-group>
-							</media-tooltip-group>
-						</media-controls-content>
-					</media-controls>
-				)}
+				{hasControls && <VideoControls controls={controls} zoom={zoom} />}
 				{hasControls && (
 					<>
 						{hasClickToPlay && (
@@ -223,7 +110,6 @@ const uid = `amk-${crypto.randomUUID().slice(0, 8)}`
 						<media-hotkey action="volumeStep" keys="ArrowDown" />
 						<media-hotkey action="toggleSubtitles" keys="c" />
 						{hasFullscreen && !zoom && <media-hotkey action="toggleFullscreen" keys="f" />}
-						<media-status-announcer class="amk-announcer" />
 					</>
 				)}
 			</media-container>
@@ -239,4 +125,17 @@ const uid = `amk-${crypto.randomUUID().slice(0, 8)}`
 			</noscript>
 		)}
 	</div>
+)}
+
+{zoom && (
+	<template data-amk-lightbox-player>
+		<video-player>
+			<media-container class="pswp__video-container">
+				<VideoError fallbackUrl={fallbackUrl} />
+			</media-container>
+			<div class="pswp__floating-controls" popover="manual">
+				<VideoControls controls="lightbox" floating />
+			</div>
+		</video-player>
+	</template>
 )}

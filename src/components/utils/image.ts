@@ -4,6 +4,7 @@ import { parseHTML } from 'linkedom'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import { probeImageMetadata } from '../../utilities/image-probe'
 import { getAbsoluteFilePath } from '../../utilities/path'
+import { VIDEO_ELEMENT_TAGS } from '../internal/video-source'
 import { tryParseUrl } from './media'
 
 /**
@@ -216,7 +217,6 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 }
 
 /** Media element tags recognized as video players. */
-const VIDEO_ELEMENT_TAGS = ['hlsjs-video', 'video', 'vimeo-video', 'youtube-video'] as const
 
 /** Image zoom target — extracted from `<picture>` or `<img>`. */
 export type ImageZoomTarget = {

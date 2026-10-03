@@ -9,6 +9,9 @@
  *
  * Must run before gallery collection in lightbox initialization.
  */
+const originalGalleryNames = new WeakMap<HTMLElement, string | undefined>()
+
+/** Resolve each page from the original names, including persisted elements. */
 export function resolveScopedGalleries(root: ParentNode = document): void {
 	const scopeAncestorIds = new Map<Element, number>()
 	let nextScopeId = 0
@@ -28,7 +31,11 @@ export function resolveScopedGalleries(root: ParentNode = document): void {
 		}
 
 		const ancestorId = scopeAncestorIds.get(ancestor)!
-		const baseName = element.dataset.pswpGallery ?? '__scoped'
+		if (!originalGalleryNames.has(element)) {
+			originalGalleryNames.set(element, element.dataset.pswpGallery)
+		}
+
+		const baseName = originalGalleryNames.get(element) ?? '__scoped'
 		element.dataset.pswpGallery = `${baseName}__scope_${String(ancestorId)}`
 	}
 }
