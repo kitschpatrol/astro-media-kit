@@ -317,7 +317,7 @@ import { Video } from 'astro-media-kit/components'
 <!-- Bunny CDN (title search requires explicit service) -->
 <Video src="My Video Title" service="bunny" />
 
-<!-- Local file -->
+<!-- Local file (served from public/) -->
 <Video src="/videos/intro.mp4" />
 
 <!-- Minimal controls for background-style video -->
@@ -349,7 +349,7 @@ import { Video } from 'astro-media-kit/components'
 
 `service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` only apply to HLS services (Bunny, Cloudflare, Mux). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
 
-`controls` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'native'` skips media-chrome entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without any controls and marks it inert.
+`controls` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'native'` skips the Video.js UI entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without any controls and marks it inert.
 
 URL formats recognized automatically:
 
@@ -360,7 +360,9 @@ URL formats recognized automatically:
 | Local   | Direct file URLs (detected by extension)                                 |
 | oEmbed  | Any other URL (falls back to oEmbed discovery)                           |
 
-Bunny, Cloudflare, and Mux use HLS streaming via `media-chrome` and `hls-video-element`. YouTube and Vimeo use their respective web component elements (`youtube-video-element`, `vimeo-video-element`).
+Local files are probed for their dimensions at render time (site-root paths such as `/videos/intro.mp4` resolve to `public/`), so the player reserves the right aspect ratio before the video loads.
+
+Playback is built on [Video.js 10](https://videojs.org). Bunny, Cloudflare, and Mux stream HLS through `@videojs/hlsjs-video`, YouTube and Vimeo play through `@videojs/youtube-video` and `@videojs/vimeo-video`, and local files use the native `<video>` element. The control bar is composed from Video.js UI components, with a poster, a buffering indicator, tooltips, touch-to-reveal controls, and the usual keyboard shortcuts when the player is focused (Space or K to play, M to mute, arrow keys to seek and change volume, C for captions, F for fullscreen). Set `--media-accent-color` on a wrapping element to tint the slider fills.
 
 ### Audio
 
@@ -635,7 +637,7 @@ Component prop types are exported from `astro-media-kit/components`: **`AudioPro
 
 The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/454).
 
-This means that the `Zoomer.astro` and `VideoPlayer.astro` crash Prettier and cannot be automatically formatted.
+This means that `Zoomer.astro`, `VideoPlayer.astro`, and `VideoMedia.astro` crash Prettier and cannot be automatically formatted.
 
 I have released [a fork of the Astro Prettier plugin](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags) incorporating fixes for these issues.
 
@@ -647,7 +649,7 @@ This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com
 
 ## Acknowledgments
 
-Video playback is built on [media-chrome](https://github.com/muxinc/media-chrome), [hls-video-element](https://github.com/muxinc/media-elements/tree/main/packages/hls-video-element), [youtube-video-element](https://github.com/muxinc/media-elements/tree/main/packages/youtube-video-element), and [vimeo-video-element](https://github.com/muxinc/media-elements/tree/main/packages/vimeo-video-element). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
+Video and audio playback are built on [Video.js 10](https://videojs.org) (`@videojs/html` with the `@videojs/hlsjs-video`, `@videojs/youtube-video`, and `@videojs/vimeo-video` media elements). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
 
 <!-- contributing -->
 

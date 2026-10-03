@@ -1,0 +1,94 @@
+---
+/**
+ * Renders the media element for a video service and registers its Video.js
+ * media module on the client. Used by VideoPlayer.astro both inside the
+ * composed player and on its own in native-controls mode.
+ */
+import type { HlsSourceOptions, VideoElementTag } from './types'
+
+export type Props = {
+	/** Attributes forwarded to the media element. */
+	attributes: astroHTML.JSX.VideoHTMLAttributes
+	captions: Array<{
+		label: string
+		src: string
+		srclang: string
+	}>
+	element: VideoElementTag
+	hlsOptions: HlsSourceOptions
+	/** Show the element's own controls instead of the Video.js UI. */
+	native: boolean
+	src: string
+	/** Inline style, used in native mode where the element is the layout box. */
+	style?: string | undefined
+}
+
+const { attributes, captions, element, hlsOptions, native, src, style } = Astro.props
+
+const controls = native || undefined
+const hlsOptionsJson = Object.keys(hlsOptions).length > 0 ? JSON.stringify(hlsOptions) : undefined
+---
+
+{element === 'hlsjs-video' && <script>
+	import type { HlsJsVideoElement, HlsSource } from '@videojs/html/media/hlsjs-video'
+	import './videojs-player'
+	import '@videojs/html/media/hlsjs-video'
+
+	type HlsSourceOptions = Omit<HlsSource, 'src'>
+
+	function parseHlsOptions(json: string | undefined): HlsSourceOptions {
+		if (json === undefined || json === '') {
+			return {}
+		}
+
+		try {
+			const parsed: unknown = JSON.parse(json)
+			return typeof parsed === 'object' && parsed !== null ? parsed : {}
+		} catch {
+			console.warn('[astro-media-kit] Failed to parse HLS options:', json)
+			return {}
+		}
+	}
+
+	// Elements render with data-src instead of src so hls.js is created once,
+	// with the configured options, when the structured source is assigned.
+	// Re-assigning an equal source later (e.g. after a view transition) is a
+	// documented no-op.
+	for (const element of document.querySelectorAll<HlsJsVideoElement>('hlsjs-video[data-src]')) {
+		element.source = {
+			src: element.dataset.src ?? '',
+			...parseHlsOptions(element.dataset.hlsOptions),
+		}
+	}
+</script>}
+
+{element === 'vimeo-video' && <script>
+	import './videojs-player'
+	import '@videojs/html/media/vimeo-video'
+</script>}
+
+{element === 'youtube-video' && <script>
+	import './videojs-player'
+	import '@videojs/html/media/youtube-video'
+</script>}
+
+{element === 'hlsjs-video' ? (
+	<hlsjs-video
+		{...attributes}
+		controls={controls}
+		data-hls-options={hlsOptionsJson}
+		data-src={src}
+		style={style}
+	>
+		{captions.map((caption) => (
+			<track kind="captions" {...caption} />
+		))}
+	</hlsjs-video>
+) : element === 'video' ? (
+	/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
+	<video {...attributes} controls={controls} src={src} style={style} />
+) : element === 'vimeo-video' ? (
+	<vimeo-video {...attributes} controls={controls} src={src} style={style} />
+) : (
+	<youtube-video {...attributes} controls={controls} src={src} style={style} />
+)}

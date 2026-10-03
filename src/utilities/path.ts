@@ -99,6 +99,20 @@ export function getAbsoluteFilePath(path: PathLikeInput, shouldAddDistribution =
 }
 
 /**
+ * Gets the absolute path of a file in Astro's `public/` directory from its
+ * site-root-relative URL path (e.g. `/videos/intro.mp4`). Assumes the default
+ * `publicDir`, resolved against the current working directory like
+ * `getAbsoluteFilePath`.
+ *
+ * @param path - The site-root-relative path of the public file.
+ *
+ * @returns The absolute file path.
+ */
+export function getPublicFilePath(path: string): string {
+	return nodePath.posix.join(posixCwd(), 'public', toPosix(path))
+}
+
+/**
  * Strips the current working directory from the path if it is present.
  */
 export function stripCwd(path: string): string {

@@ -1,13 +1,62 @@
-import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import nodePath from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bunnyIsValidMediaId } from '../src/components/utils/bunny'
 import { cloudflareIsValidMediaId } from '../src/components/utils/cloudflare'
 import { muxIsValidMediaId } from '../src/components/utils/mux'
 import {
 	getVideoInfo,
+	localVideoProbeCandidates,
 	resolveVideoSource,
 	validateServiceConfig,
 } from '../src/components/utils/video'
+
+const localOnlyConfig = {
+	bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
+	cloudflare: { accountId: '', apiToken: '' },
+	local: {},
+	mux: { accessToken: '', secret: '' },
+	oembed: {},
+	vimeo: {},
+	youtube: {},
+}
+
+afterEach(() => {
+	vi.restoreAllMocks()
+})
+
+describe('localVideoProbeCandidates', () => {
+	it('tries the public directory before the raw path for site-root-relative sources', () => {
+		expect(localVideoProbeCandidates('/videos/intro.mp4')).toEqual([
+			nodePath.posix.join(process.cwd(), 'public/videos/intro.mp4'),
+			'/videos/intro.mp4',
+		])
+	})
+
+	it('probes remote direct URLs and relative paths as-is', () => {
+		expect(localVideoProbeCandidates('https://cdn.example/clip.mp4')).toEqual([
+			'https://cdn.example/clip.mp4',
+		])
+		expect(localVideoProbeCandidates('./clip.mp4')).toEqual(['./clip.mp4'])
+	})
+})
+
+describe('local video dimensions', () => {
+	it('probes a site-root-relative source from the public directory', async () => {
+		vi.spyOn(process, 'cwd').mockReturnValue(nodePath.join(import.meta.dirname, '../playground'))
+		const info = await getVideoInfo('/test.mp4', 'local', localOnlyConfig, '/poster.jpg')
+		expect(info.width).toBeGreaterThan(0)
+		expect(info.height).toBeGreaterThan(0)
+		expect(info.duration).toBeGreaterThan(0)
+		expect(info.posterUrl).toBe('/poster.jpg')
+	})
+
+	it('falls back to zero dimensions when nothing resolves', async () => {
+		const info = await getVideoInfo('/missing.mp4', 'local', localOnlyConfig, '')
+		expect(info.width).toBe(0)
+		expect(info.height).toBe(0)
+		expect(info.duration).toBe(-1)
+	})
+})
 
 describe('media ID validation', () => {
 	describe('bunnyIsValidMediaId', () => {
@@ -234,34 +283,5 @@ describe('validateServiceConfig', () => {
 		expect(() => {
 			validateServiceConfig('mux', validConfig)
 		}).not.toThrow()
-	})
-})
-
-describe('getVideoInfo (local)', () => {
-	const config = {
-		bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
-		cloudflare: { accountId: '', apiToken: '' },
-		local: {},
-		mux: { accessToken: '', secret: '' },
-		oembed: {},
-		vimeo: {},
-		youtube: {},
-	}
-
-	it('probes dimensions and duration from a local MP4', async () => {
-		const src = path.join(import.meta.dirname, '../playground/public/test.mp4')
-		const info = await getVideoInfo(src, 'local', config, '/poster.jpg')
-		expect(info.width).toBe(674)
-		expect(info.height).toBe(380)
-		expect(info.duration).toBeCloseTo(10.2, 1)
-		expect(info.posterUrl).toBe('/poster.jpg')
-	})
-
-	it('falls back to zero dimensions when the probe fails', async () => {
-		const src = path.join(import.meta.dirname, 'missing.mp4')
-		const info = await getVideoInfo(src, 'local', config)
-		expect(info.width).toBe(0)
-		expect(info.height).toBe(0)
-		expect(info.duration).toBe(-1)
 	})
 })

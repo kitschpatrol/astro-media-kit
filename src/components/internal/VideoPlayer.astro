@@ -1,13 +1,11 @@
 ---
-import type { InternalVideoProps } from './types'
+import type { InternalVideoProps, VideoElementTag } from './types'
 import { getControllerStyle } from './types'
+import VideoMedia from './VideoMedia.astro'
 import './amk-video.css'
 
-type VideoElementTag = 'hls-video' | 'video' | 'vimeo-video' | 'youtube-video'
-type VideoAttributes = astroHTML.JSX.VideoHTMLAttributes
-
 export type Props = InternalVideoProps & {
-	/** Which custom element to render. */
+	/** Which media element to render. */
 	element: VideoElementTag
 	/** HLS URL for noscript fallback. */
 	hlsUrl?: string | undefined
@@ -21,7 +19,7 @@ const {
 	captions,
 	controls,
 	element,
-	hlsConfig,
+	hlsOptions,
 	hlsUrl,
 	intrinsicWidth,
 	loop,
@@ -34,16 +32,26 @@ const {
 	zoom,
 } = Astro.props
 
-const isHls = element === 'hls-video'
-const isEmbed = element === 'vimeo-video' || element === 'youtube-video'
+const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
+const hasControls = controls !== 'none' && !isNative
+const hasBar = controls === 'full' || controls === 'lightbox'
+const hasFullscreen = controls === 'full' || controls === 'minimal'
+// Click-to-play stays off where a click must do something else: open the
+// lightbox (zoom), or nothing at all ('lightbox' mode mirrors the player
+// inside PhotoSwipe, where clicks zoom the slide).
+const hasClickToPlay = hasFullscreen && !zoom
+const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
-const controllerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
+const containerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 
-const videoAttributes: VideoAttributes = {
+const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 	autoplay: autoPlay || undefined,
+	class: 'amk-media',
 	crossorigin: 'anonymous',
-	...(isHls && { disablepictureinpicture: 'true' }),
+	// No picture-in-picture control is offered, so keep the browser's own
+	// affordance off the HLS element as before.
+	disablepictureinpicture: isHls || undefined,
 	loop: loop || undefined,
 	muted: muted || undefined,
 	playsinline: 'true',
@@ -51,186 +59,184 @@ const videoAttributes: VideoAttributes = {
 	preload,
 }
 
-const hlsConfigJson =
-	isHls && Object.keys(hlsConfig).length > 0 ? JSON.stringify(hlsConfig) : undefined
+const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions, src: videoSrc }
+
+// Tooltips are linked to their buttons by id, and each tooltip's own id names
+// its CSS anchor, so both must be unique per player on the page.
+const uid = `amk-${crypto.randomUUID().slice(0, 8)}`
 ---
 
-<script>
-	import 'media-chrome'
-	// Prevent fullscreen buttons used as zoom triggers from entering native
-	// fullscreen. The lightbox click handler on .pswp-video-trigger opens
-	// PhotoSwipe instead.
-	for (const button of document.querySelectorAll<HTMLElement>(
-		'media-fullscreen-button.pswp-video-trigger',
-	)) {
-		button.addEventListener('mediaenterfullscreenrequest', (event) => {
-			event.stopPropagation()
-			event.preventDefault()
-		})
-	}
-
-	// Lightbox mode: hide controls when inactive, even while paused/ended.
-	// Media-chrome's shadow DOM CSS keeps controls visible when mediapaused
-	// is set. Shadow DOM ::slotted() rules can't be overridden from light DOM,
-	// so we toggle inline styles via the userinactivechange event.
-	for (const controller of document.querySelectorAll<HTMLElement>('media-controller.lightbox')) {
-		const controlBar = controller.querySelector<HTMLElement>('media-control-bar')
-		if (!controlBar) {
-			continue
-		}
-
-		const { style } = controlBar
-		const update = () => {
-			if (controller.hasAttribute('userinactive')) {
-				style.opacity = '0'
-				style.pointerEvents = 'none'
-			} else {
-				style.opacity = ''
-				style.pointerEvents = ''
-			}
-		}
-
-		controller.addEventListener('userinactivechange', update)
-		update()
-	}
-</script>
-
-{isHls && <script>
-	import 'hls-video-element'
-	import type { HlsVideoElement } from 'hls-video-element'
-
-	// Apply hls.js config before source loading.
-	// Config must be set before src so hls.js uses it during initialization.
-	// Elements render with data-src instead of src, then we set config + src here.
-	for (const element of document.querySelectorAll<HlsVideoElement>('hls-video[data-src]')) {
-		const configAttribute = element.dataset.hlsConfig
-		if (configAttribute) {
-			try {
-				element.config = JSON.parse(configAttribute)
-			} catch {
-				console.warn('[astro-media-kit] Failed to parse HLS config:', configAttribute)
-			}
-		}
-
-		element.setAttribute('src', element.dataset.src!)
-	}
+{!isNative && <script>
+	import './videojs-ui'
 </script>}
 
-{element === 'vimeo-video' && <script>
-	import 'vimeo-video-element'
-</script>}
-
-{element === 'youtube-video' && <script>
-	import 'youtube-video-element'
-</script>}
-
-<div
-	aria-label={resolvedLabel}
-	class:list={['amk', 'not-content', { 'amk-embed': isEmbed }]}
-	role="group"
->
-	{
-		/* Native mode: skip <media-controller> and use the underlying element's
-		   native chrome. The `controls` attribute differs by element: native
-		   <video>/<hls-video> use the boolean form (`controls`), while the
-		   custom embed elements need a literal `controls=""` to satisfy the
-		   `attrs.controls === ""` check inside vimeo-video-element /
-		   youtube-video-element (anything else, including `controls="true"`,
-		   gets coerced to `?controls=0` and disables the iframe chrome). */
-		isNative &&
-			(isHls ? (
-				<hls-video
-					{...videoAttributes}
-					controls
-					data-hls-config={hlsConfigJson}
-					data-src={videoSrc}
-					style={controllerStyle}
-				>
-					{captions.map((caption) => (
-						<track kind="captions" {...caption} />
-					))}
-				</hls-video>
-			) : element === 'video' ? (
-				/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
-				<video {...videoAttributes} controls src={videoSrc} style={controllerStyle} />
-			) : element === 'vimeo-video' ? (
-				<vimeo-video {...videoAttributes} controls="" src={videoSrc} style={controllerStyle} />
-			) : (
-				<youtube-video {...videoAttributes} controls="" src={videoSrc} style={controllerStyle} />
-			))
-	}
-	{!isNative && (
-		<media-controller
-			autohide="1"
-			class:list={[controls, { autoplay: autoPlay }]}
-			gesturesdisabled={controls === 'lightbox' || controls === 'none' || zoom ? '' : undefined}
-			inert={controls === 'none' ? 'true' : undefined}
-			style={controllerStyle}
+{isNative ? (
+	<div aria-label={resolvedLabel} class="amk not-content" role="group">
+		<VideoMedia {...mediaProps} native={true} style={containerStyle} />
+	</div>
+) : (
+	<div class="amk not-content">
+		<video-player
+			class="amk-player"
+			data-autoplay={autoPlay ? '' : undefined}
+			data-controls={controls}
+			poster={posterUrl}
 		>
-			{isHls ? (
-				<hls-video
-					{...videoAttributes}
-					data-hls-config={hlsConfigJson}
-					data-src={videoSrc}
-					slot="media"
-				>
-					{captions.map((caption) => (
-						<track kind="captions" {...caption} />
-					))}
-				</hls-video>
-			) : element === 'video' ? (
-				/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- captions not available for local files */
-				<video {...videoAttributes} slot="media" src={videoSrc} />
-			) : element === 'vimeo-video' ? (
-				<vimeo-video {...videoAttributes} slot="media" src={videoSrc} />
-			) : (
-				<youtube-video {...videoAttributes} slot="media" src={videoSrc} />
-			)}
-
-			{controls === 'full' && (
-				<media-control-bar>
-					<media-play-button />
-					<media-mute-button />
-					<media-volume-range />
-					<media-time-range />
-					<media-time-display />
-					{captions.length > 0 && <media-captions-button />}
-					<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-						{zoom && <span slot="tooltip-enter">Zoom</span>}
-					</media-fullscreen-button>
-				</media-control-bar>
-			)}
-
-			{controls === 'lightbox' && (
-				<media-control-bar>
-					<media-play-button />
-					<media-mute-button />
-					<media-volume-range />
-					<media-time-range />
-					<media-time-display />
-					{captions.length > 0 && <media-captions-button />}
-				</media-control-bar>
-			)}
-			{controls === 'minimal' && (
-				<>
-					<media-control-bar style="justify-content: flex-end">
-						<media-fullscreen-button class:list={[{ 'pswp-video-trigger': zoom }]}>
-							{zoom && <span slot="tooltip-enter">Zoom</span>}
-						</media-fullscreen-button>
-					</media-control-bar>
-					<media-play-button slot="centered-chrome" style="border-radius: 50%" />
-				</>
-			)}
-		</media-controller>
-	)}
-	{isHls && hlsUrl !== undefined && hlsUrl !== '' && (
-		<noscript>
-			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
-			<video {...videoAttributes}>
-				<source src={hlsUrl} type="application/x-mpegURL" />
-				{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
-				Your browser does not support HTML5 video.
-			</video>
-		</noscript>
-	)}
-</div>
+			<media-container
+				aria-label={resolvedLabel}
+				class="amk-container"
+				inert={controls === 'none' || undefined}
+				style={containerStyle}
+			>
+				<VideoMedia {...mediaProps} native={false} />
+				{hasPoster && <media-poster class="amk-poster" />}
+				<media-buffering-indicator class="amk-buffering">
+					<media-icon name="spinner" />
+				</media-buffering-indicator>
+				{hasControls && (
+					<media-controls>
+						<media-controls-content class="amk-controls">
+							{controls === 'minimal' && (
+								<media-play-button class="amk-button amk-center-play">
+									<media-icon class="amk-icon-play" name="play" />
+									<media-icon class="amk-icon-pause" name="pause" />
+									<media-icon class="amk-icon-restart" name="restart" />
+								</media-play-button>
+							)}
+							<media-tooltip-group>
+								<media-controls-group aria-label="Playback controls" class="amk-bar">
+									{hasBar && (
+										<>
+											<media-play-button class="amk-button" id={`${uid}-play`}>
+												<media-icon class="amk-icon-play" name="play" />
+												<media-icon class="amk-icon-pause" name="pause" />
+												<media-icon class="amk-icon-restart" name="restart" />
+											</media-play-button>
+											<media-tooltip
+												class="amk-tooltip"
+												id={`${uid}-play-tooltip`}
+												trigger={`${uid}-play`}
+											>
+												<media-tooltip-label />
+												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+											</media-tooltip>
+											<media-mute-button class="amk-button" id={`${uid}-mute`}>
+												<media-icon class="amk-icon-volume-off" name="volume-off" />
+												<media-icon class="amk-icon-volume-low" name="volume-low" />
+												<media-icon class="amk-icon-volume-high" name="volume-high" />
+											</media-mute-button>
+											<media-tooltip
+												class="amk-tooltip"
+												id={`${uid}-mute-tooltip`}
+												trigger={`${uid}-mute`}
+											>
+												<media-tooltip-label />
+												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+											</media-tooltip>
+											<media-volume-slider class="amk-slider amk-volume-slider">
+												<media-slider-track class="amk-slider-track">
+													<media-slider-fill class="amk-slider-fill" />
+												</media-slider-track>
+												<media-slider-thumb class="amk-slider-thumb" />
+											</media-volume-slider>
+											<media-time-slider class="amk-slider amk-time-slider">
+												<media-slider-track class="amk-slider-track">
+													<media-slider-buffer class="amk-slider-buffer" />
+													<media-slider-fill class="amk-slider-fill" />
+												</media-slider-track>
+												<media-slider-thumb class="amk-slider-thumb" />
+												<media-slider-value class="amk-slider-value" type="pointer" />
+											</media-time-slider>
+											<media-time-group class="amk-time">
+												<media-time type="current" />
+												<media-time-separator />
+												<media-time type="duration" />
+											</media-time-group>
+											<media-captions-button class="amk-button" id={`${uid}-captions`}>
+												<media-icon class="amk-icon-captions-off" name="captions-off" />
+												<media-icon class="amk-icon-captions-on" name="captions-on" />
+											</media-captions-button>
+											<media-tooltip
+												class="amk-tooltip"
+												id={`${uid}-captions-tooltip`}
+												trigger={`${uid}-captions`}
+											>
+												<media-tooltip-label />
+												<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+											</media-tooltip>
+										</>
+									)}
+									{hasFullscreen &&
+										(zoom ? (
+											<>
+												<button
+													aria-label="Zoom"
+													class="amk-button amk-zoom-button pswp-video-trigger"
+													id={`${uid}-zoom`}
+													type="button"
+												>
+													<media-icon name="fullscreen-enter" />
+												</button>
+												<media-tooltip
+													class="amk-tooltip"
+													id={`${uid}-zoom-tooltip`}
+													trigger={`${uid}-zoom`}
+												>
+													Zoom
+												</media-tooltip>
+											</>
+										) : (
+											<>
+												<media-fullscreen-button class="amk-button" id={`${uid}-fullscreen`}>
+													<media-icon class="amk-icon-fullscreen-enter" name="fullscreen-enter" />
+													<media-icon class="amk-icon-fullscreen-exit" name="fullscreen-exit" />
+												</media-fullscreen-button>
+												<media-tooltip
+													class="amk-tooltip"
+													id={`${uid}-fullscreen-tooltip`}
+													trigger={`${uid}-fullscreen`}
+												>
+													<media-tooltip-label />
+													<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+												</media-tooltip>
+											</>
+										))}
+								</media-controls-group>
+							</media-tooltip-group>
+						</media-controls-content>
+					</media-controls>
+				)}
+				{hasControls && (
+					<>
+						{hasClickToPlay && (
+							<media-gesture action="togglePaused" pointer="mouse" region="center" type="tap" />
+						)}
+						<media-gesture action="toggleControls" pointer="touch" type="tap" />
+						<media-hotkey action="togglePaused" keys="Space" />
+						<media-hotkey action="togglePaused" keys="k" />
+						<media-hotkey action="toggleMuted" keys="m" />
+						<media-hotkey action="seekStep" keys="ArrowLeft" />
+						<media-hotkey action="seekStep" keys="ArrowRight" />
+						<media-hotkey action="seekStep" keys="j" />
+						<media-hotkey action="seekStep" keys="l" />
+						<media-hotkey action="volumeStep" keys="ArrowUp" />
+						<media-hotkey action="volumeStep" keys="ArrowDown" />
+						<media-hotkey action="toggleSubtitles" keys="c" />
+						{hasFullscreen && !zoom && <media-hotkey action="toggleFullscreen" keys="f" />}
+						<media-status-announcer class="amk-announcer" />
+					</>
+				)}
+			</media-container>
+		</video-player>
+		{isHls && hlsUrl !== undefined && hlsUrl !== '' && (
+			<noscript>
+				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+				<video {...mediaAttributes} controls>
+					<source src={hlsUrl} type="application/x-mpegURL" />
+					{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
+					Your browser does not support HTML5 video.
+				</video>
+			</noscript>
+		)}
+	</div>
+)}

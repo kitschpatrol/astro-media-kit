@@ -34,7 +34,7 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 
 	<h2>Native controls</h2>
 	<p>
-		<code>controls="native"</code> skips media-chrome and uses the underlying element's native
+		<code>controls="native"</code> skips the Video.js UI and uses the underlying element's native
 		controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for
 		local files and HLS.
 	</p>
@@ -49,6 +49,32 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 
 	<h2>Local file</h2>
 	<Video src="/test.mp4" />
+
+	<h2>Control styles (local)</h2>
+	<p>The same modes as above, without service credentials.</p>
+	<h3>None (autoplay, loop)</h3>
+	<Video autoPlay={true} controls="none" loop={true} src="/test.mp4" />
+	<h3>Minimal</h3>
+	<Video controls="minimal" poster="/test-poster.jpeg" src="/test.mp4" />
+	<h3>Lightbox</h3>
+	<Video controls="lightbox" src="/test.mp4" />
+	<h3>Autoplay with full controls</h3>
+	<Video autoPlay={true} controls="full" loop={true} src="/test.mp4" />
+
+	<h2>Zoom (local)</h2>
+	<h3>Standalone</h3>
+	<Video poster="/test-poster.jpeg" src="/test.mp4" zoom={true} />
+	<h3>Minimal with zoom</h3>
+	<Video controls="minimal" src="/test.mp4" zoom={true} />
+	<h3>Mixed gallery</h3>
+	<div style="display: flex; gap: 1rem; align-items: start;">
+		<div style="flex: 1;">
+			<Video src="/test.mp4" zoom="local-mixed" zoomLevel="fill" />
+		</div>
+		<div style="flex: 1;">
+			<Image alt="test image" src="../assets/test.jpeg" zoom="local-mixed" zoomLevel="fill" />
+		</div>
+	</div>
 
 	<h2>Local file (with poster)</h2>
 	<Video poster="/test-poster.jpeg" src="/test.mp4" />

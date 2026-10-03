@@ -215,8 +215,8 @@ function parseSrcset(srcset: string): SrcsetEntry[] {
 	return entries
 }
 
-/** Custom element tags recognized as video players. */
-const VIDEO_ELEMENT_TAGS = ['hls-video', 'video', 'vimeo-video', 'youtube-video'] as const
+/** Media element tags recognized as video players. */
+const VIDEO_ELEMENT_TAGS = ['hlsjs-video', 'video', 'vimeo-video', 'youtube-video'] as const
 
 /** Image zoom target — extracted from `<picture>` or `<img>`. */
 export type ImageZoomTarget = {
@@ -242,10 +242,10 @@ export type ImageZoomTarget = {
 
 /** Video zoom target — extracted from a rendered video player element. */
 export type VideoZoomTarget = {
-	/** HLS config JSON string from `data-hls-config`, if present. */
-	config: string | undefined
-	/** Custom element tag name (e.g. `hls-video`, `video`). */
+	/** Media element tag name (e.g. `hlsjs-video`, `video`). */
 	element: string
+	/** HLS structured-source options JSON from `data-hls-options`, if present. */
+	hlsOptions: string | undefined
 	/** Poster image URL from the `poster` attribute, if present. */
 	poster: string | undefined
 	/** Video source URL from `src` or `data-src`. */
@@ -271,8 +271,8 @@ function findVideoTarget(document: Document): undefined | VideoZoomTarget {
 		}
 
 		return {
-			config: element.dataset.hlsConfig ?? undefined,
 			element: tag,
+			hlsOptions: element.dataset.hlsOptions ?? undefined,
 			poster: element.getAttribute('poster') ?? undefined,
 			src,
 			type: 'video',
@@ -367,7 +367,7 @@ function findImageTarget(document: Document): ImageZoomTarget | undefined {
 /**
  * Extracts zoom target info from rendered slot HTML.
  *
- * Single pass — checks for video player elements first (`<hls-video>`,
+ * Single pass — checks for video player elements first (`<hlsjs-video>`,
  * `<video>`, `<vimeo-video>`, `<youtube-video>`), then falls back to image
  * extraction (`<picture>` / `<img>` with srcset). Returns `undefined` when
  * neither is present.

@@ -92,7 +92,8 @@ const oembedAspectRatio =
 ---
 
 {resolvedService === 'local' && <script>
-	import 'media-chrome'
+	import '@videojs/html/audio/player'
+	import '@videojs/html/audio/skin'
 </script>}
 
 {fetchError !== undefined && fetchError !== '' ? (
@@ -110,26 +111,20 @@ const oembedAspectRatio =
 			)
 		) : resolvedService === 'local' ? (
 			<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
-				<media-controller audio>
-					{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
-					<audio
-						autoplay={autoPlay || undefined}
-						crossorigin="anonymous"
-						loop={loop || undefined}
-						muted={muted || undefined}
-						preload={preload}
-						slot="media"
-						src={identifier}
-					/>
-					{/* eslint-enable astro/jsx-a11y/media-has-caption */}
-					<media-control-bar>
-						<media-play-button />
-						<media-mute-button />
-						<media-volume-range />
-						<media-time-range />
-						<media-time-display />
-					</media-control-bar>
-				</media-controller>
+				<audio-player>
+					<audio-skin>
+						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
+						<audio
+							autoplay={autoPlay || undefined}
+							crossorigin="anonymous"
+							loop={loop || undefined}
+							muted={muted || undefined}
+							preload={preload}
+							src={identifier}
+						/>
+						{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+					</audio-skin>
+				</audio-player>
 			</div>
 		) : (
 			<div class="amk not-content" slot="media-component">

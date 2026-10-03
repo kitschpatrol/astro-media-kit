@@ -1,6 +1,7 @@
 ---
 import { getSecret } from 'astro:env/server'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
+import type { HlsSourceOptions } from './internal/types'
 import type { OembedInfo } from './utils/oembed'
 import type { Service, ServiceConfig, VideoInfo } from './utils/video'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
@@ -35,8 +36,8 @@ export type Props = PrefixedCaptionProps &
 		 */
 		capQualityToSize?: boolean | undefined
 		/**
-		 * Player chrome level. `'none'` hides all controls. `'native'` skips
-		 * media-chrome entirely and uses the underlying element's native controls —
+		 * Player chrome level. `'none'` hides all controls. `'native'` skips the
+		 * Video.js UI entirely and uses the underlying element's native controls —
 		 * the service's iframe chrome for YouTube/Vimeo, the browser's built-in
 		 * controls for local files and HLS. `zoom` is ignored when `'native'`.
 		 *
@@ -199,13 +200,15 @@ const oembedAspectRatio =
 		? `${oembedInfo.width} / ${oembedInfo.height}`
 		: undefined
 
-const hlsConfig: Record<string, boolean | number> = {}
+// Playback options for the HLS element's structured source. The size cap is
+// a first-class Video.js option; the bandwidth estimate is hls.js config.
+const hlsOptions: HlsSourceOptions = {}
 if (initialBandwidth !== undefined) {
-	hlsConfig.abrEwmaDefaultEstimate = initialBandwidth
+	hlsOptions.engine = { hlsJs: { abrEwmaDefaultEstimate: initialBandwidth } }
 }
 
 if (capQualityToSize !== undefined) {
-	hlsConfig.capLevelToPlayerSize = capQualityToSize
+	hlsOptions.capRenditionToPlayerSize = capQualityToSize
 }
 
 const posterUrl =
@@ -215,12 +218,12 @@ const posterUrl =
 			? oembedInfo?.thumbnailUrl
 			: videoInfo?.posterUrl
 
-// Map service to the custom element tag name used in the lightbox.
+// Map service to the media element rendered by the player.
 const videoElementMap = {
-	bunny: 'hls-video',
-	cloudflare: 'hls-video',
+	bunny: 'hlsjs-video',
+	cloudflare: 'hlsjs-video',
 	local: 'video',
-	mux: 'hls-video',
+	mux: 'hlsjs-video',
 	vimeo: 'vimeo-video',
 	youtube: 'youtube-video',
 } as const
@@ -239,120 +242,6 @@ const sharedProps = {
 	zoom: Boolean(zoom),
 } as const
 ---
-
-<style is:global>
-	/* PhotoSwipe lightbox video wrapper. Global because it renders inside
-	   PhotoSwipe's DOM, outside Astro's scoped style boundary. */
-	.pswp__video-wrapper media-controller {
-		width: 100%;
-		height: 100%;
-	}
-
-	/* Let clicks fall through to the wrapper (which carries `pswp__img`)
-	   so PhotoSwipe's built-in click handler treats the slide like an
-	   image — single click runs `imageClickAction` (zoom-or-close).
-	   Controls live outside the slide via the floating control bar. */
-	.pswp__video-wrapper > * {
-		pointer-events: none;
-	}
-
-	/* Floating control bar, mounted inside `pswp.scrollWrap` so it rides
-	   along with PhotoSwipe's open/close transition. Stays anchored to the
-	   viewport bottom while the video is zoomed/panned, bound to the active
-	   slide's <media-controller> via its `mediacontroller` attribute (see
-	   utils/lightbox.ts). `data-unbound` is set whenever the bar is not
-	   attached to a video slide's controller; `data-user-inactive` drives
-	   the autohide fade. Opacity transition is inherited from
-	   `pswp__hide-on-close` so the fade timing/easing matches the native
-	   close/arrow buttons on open, close, and autohide. */
-	.pswp__floating-controls {
-		will-change: opacity;
-		/* Force the subtree onto its own GPU composite layer so opacity
-		   fades the final rendered result uniformly, instead of fading
-		   each semi-transparent child independently (which caused the
-		   dark rectangle around the bar mid-transition). `isolation`
-		   alone creates a stacking context but doesn't always promote
-		   to a layer in Chromium; `will-change: opacity` does. */
-		isolation: isolate;
-		position: absolute;
-		z-index: 10;
-		inset: auto 0 0;
-		/* Match the bar's default background using media-chrome's own
-		   CSS custom property, so user overrides of the variable (or the
-		   library's own future changes) propagate here too. The bg lives
-		   on the wrapper (light DOM) rather than on the individual
-		   shadow-DOM media-chrome elements, because nested shadow-root
-		   translucency caused the black-rect artifact during opacity
-		   transitions. */
-		background: var(--media-control-background, rgb(20 20 30 / 70%));
-	}
-
-	/* Strip media-chrome's default semi-transparent dark backgrounds from
-	   the bar and its buttons/ranges. Each media-chrome element has its
-	   own shadow DOM that composites independently, so nested translucent
-	   layers cause a black rectangle artifact during the opacity fade.
-	   Flattening all descendants to transparent via the CSS var leaves
-	   only the icons / progress bar to fade, eliminating the rect. On the
-	   bar itself we also set `background: transparent` in light DOM to
-	   belt-and-braces the composite layer. Children use only the var so
-	   their shadow-DOM `:host(:hover)` rule — which depends on the
-	   background being set from inside the shadow root — can still paint
-	   the hover highlight.
-
-	   `--media-control-bar-display: flex` stretches the bar to fill the
-	   wrapper's width so the time-range expands across the full viewport
-	   (media-chrome defaults the :host display to `inline-flex`). */
-	.pswp__floating-controls media-control-bar {
-		--media-control-background: transparent;
-		--media-control-hover-background: rgb(255 255 255 / 10%);
-		--media-control-bar-display: flex;
-		background: transparent;
-	}
-
-	.pswp__floating-controls media-control-bar > * {
-		--media-control-background: transparent;
-		--media-control-hover-background: rgb(255 255 255 / 10%);
-	}
-
-	/* Specificity (0,3,0) via repeated class so this beats PhotoSwipe core's
-	   `.pswp--ui-visible .pswp__hide-on-close { opacity: 1 }` (0,2,0)
-	   regardless of stylesheet source order. Consumer builds can merge the
-	   global block before the photoswipe vendor CSS, which would let the
-	   inherited opacity:1 win and leak the bar onto non-video slides. */
-	.pswp__floating-controls.pswp__floating-controls[data-unbound],
-	.pswp__floating-controls.pswp__floating-controls[data-user-inactive] {
-		pointer-events: none;
-		opacity: 0;
-	}
-
-	/* Suppress the hover-background while the lightbox is mid-zoom. Each
-	   media-chrome control composites its own translucent shadow-DOM layer;
-	   stacking those while the wrapper's opacity is animating produces a
-	   black-rect artifact. `data-transitioning` is set by lightbox.ts during
-	   opening/closing animations (see `openingAnimationStart` listener). */
-	.pswp__floating-controls[data-transitioning] media-control-bar > * {
-		--media-control-hover-background: transparent;
-	}
-
-	/* Reserve space beneath the caption for the floating control bar on
-	   video slides. The dynamic-caption plugin measures the caption with
-	   getBoundingClientRect() (which includes padding) and subtracts its
-	   height from the slide's pan area, so `padding-bottom` here propagates
-	   into fit-mode zoom: the video shrinks to leave room, and the empty
-	   padding space is where the absolute-positioned bar lands. Scoped to
-	   `--below` only — in `--aside` layouts the caption is sideways and the
-	   bar overlays the video rather than the caption. `--amk-lightbox-bar-height`
-	   can be overridden if you customize media-chrome button sizing. */
-	/* Video slides: stack the floating control bar height on top of the
-	   plugin's own top padding (15px for --below, 10px for --mobile) so the
-	   caption text keeps that same breathing room above the bar. The plugin
-	   measures caption height via getBoundingClientRect() which includes
-	   padding, so fit-mode zoom shrinks the video to make room automatically. */
-	.pswp__item--video .pswp__dynamic-caption--below,
-	.pswp__item--video .pswp__dynamic-caption--mobile {
-		padding-bottom: calc(15px + var(--amk-lightbox-bar-height, 44px));
-	}
-</style>
 
 {fetchError !== undefined && fetchError !== '' ? (
 	import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
@@ -380,7 +269,7 @@ const sharedProps = {
 				{...sharedProps}
 				captions={videoInfo.captions}
 				element={videoElementMap[resolvedService]}
-				hlsConfig={hlsConfig}
+				hlsOptions={hlsOptions}
 				hlsUrl={videoInfo.hlsUrl}
 				mp4Url={videoInfo.mp4Url}
 			/>

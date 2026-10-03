@@ -1,5 +1,7 @@
+import type { HlsSource } from '@videojs/html/media/hlsjs-video'
+
 /**
- * Builds the inline style string for `<media-controller>` from video
+ * Builds the inline style string for the player container from video
  * dimensions.
  */
 export function getControllerStyle(
@@ -19,6 +21,15 @@ export function getControllerStyle(
 }
 
 /**
+ * Playback options merged into the `<hlsjs-video>` structured source. The URL
+ * itself is supplied separately.
+ */
+export type HlsSourceOptions = Pick<HlsSource, 'capRenditionToPlayerSize' | 'engine'>
+
+/** Media element tag name per video service. */
+export type VideoElementTag = 'hlsjs-video' | 'video' | 'vimeo-video' | 'youtube-video'
+
+/**
  * Shared props passed from Video.astro to internal sub-components. All service
  * resolution and metadata fetching is done by Video.astro; sub-components only
  * handle rendering.
@@ -32,7 +43,7 @@ export type InternalVideoProps = {
 		srclang: string
 	}>
 	controls: 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
-	hlsConfig: Record<string, boolean | number>
+	hlsOptions: HlsSourceOptions
 	/** Intrinsic video width in pixels, used for native-like sizing. */
 	intrinsicWidth: number | undefined
 	loop: boolean

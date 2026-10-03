@@ -1,48 +1,526 @@
-/* Shared media-controller styles for all video sub-components.
-   Imported in each internal component's frontmatter.
-   Prefixed with .amk for scope protection — each sub-component
-   adds this class to its root wrapper element. */
+/* Styles for the Video.js 10 player composed in VideoPlayer.astro and for the
+   lightbox player built in utils/lightbox.ts. Video.js UI elements ship no
+   styles of their own, so everything visual lives here. Rules are prefixed
+   with `.amk` (the wrapper class) or `.amk-` (component classes) for scope
+   protection, and the lightbox bar reuses the `.amk-` component classes.
 
-/* Shrink-wrap the zoom wrapper to match the media-controller's intrinsic size,
-   so PhotoSwipe's zoom animation origin matches the visible content. */
+   Dropped from the media-chrome version, deliberately: the rule that hid
+   mute/volume when the audio-track list was "unavailable" (which meant the
+   track-selection API was missing or there was a single track, not that the
+   media was silent) and the iOS volume rule. Video.js hides its mute button
+   and volume slider itself, from `mutedAvailability` / `volumeAvailability`,
+   via the native `hidden` attribute (see the last rule in this file). */
+
+.amk,
+.pswp__floating-controls {
+	--amk-control-size: 44px;
+	--amk-control-background: rgb(20 20 30 / 70%);
+	--amk-control-hover-background: rgb(50 50 70 / 70%);
+	--amk-control-color: #fff;
+	--amk-icon-size: 24px;
+	--amk-font-size: 14px;
+	--amk-slider-track-height: 4px;
+	--amk-slider-track: rgb(255 255 255 / 30%);
+	--amk-slider-buffer: rgb(255 255 255 / 40%);
+	--amk-slider-fill: var(--media-accent-color, #fff);
+	--amk-duration: 0.2s;
+}
+
+/* Shrink-wrap the zoom wrapper to match the player's intrinsic size, so
+   PhotoSwipe's zoom animation origin matches the visible content. */
 .pswp-zoom:has(> .amk) {
 	width: fit-content;
 	max-width: 100%;
 }
 
-.amk > * {
+/* --- Layout --- */
+
+/* These Video.js wrappers hold state or context, not layout. The packaged
+   skins ship this as a global stylesheet; without a skin it has to be here. */
+.amk video-player,
+.amk media-controls,
+.amk media-tooltip-group,
+.pswp__video-wrapper video-player,
+.pswp__floating-controls media-controls,
+.pswp__floating-controls media-tooltip-group {
+	display: contents;
+}
+
+.amk media-hotkey,
+.amk media-gesture {
+	display: none;
+}
+
+/* The container is the layout box, sized by an inline width + aspect-ratio
+   from the server. In fullscreen the browser forces it to the viewport. */
+.amk media-container {
+	position: relative;
+	overflow: hidden;
+	display: block;
 	max-width: 100%;
+	color: var(--amk-control-color);
+	background: #000;
 }
 
-.amk media-controller {
-	--media-time-range-hover-bottom: 0;
+/* Media elements fill their box. `hlsjs-video` makes its host `display:
+   contents` and the embed hosts carry a shadow `min-width` / `min-height`;
+   both are overridden so the box set here (or, in native mode, the inline
+   width + aspect-ratio on the element itself) is what renders. The media
+   stays in flow: when a service reports no dimensions (local files), the
+   container has no aspect ratio and a native video's intrinsic height sizes
+   the box instead. */
+.amk-media {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	height: 100%;
+	min-height: 0;
 }
 
-/* Lightbox mode: transition for JS-driven visibility toggle. */
-.amk media-controller.lightbox media-control-bar {
-	transition: opacity 0.25s;
+.pswp__video-container > .amk-media {
+	position: absolute;
+	inset: 0;
 }
 
-/* Never show the control bar when auto-playing, unless the video has played. */
-.amk media-controller.autoplay:not([mediahasplayed]) media-control-bar,
-.amk media-controller.autoplay:not([mediahasplayed]) media-play-button {
+/* --- Poster and buffering --- */
+
+.amk-poster {
+	pointer-events: none;
+	position: absolute;
+	inset: 0;
+	transition: opacity var(--amk-duration);
+}
+
+.amk-poster:not([data-visible]) {
+	opacity: 0;
+}
+
+.amk-poster::part(image) {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.amk-buffering {
+	pointer-events: none;
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-content: center;
+	opacity: 0;
+	transition: opacity var(--amk-duration);
+}
+
+.amk-buffering[data-visible] {
+	opacity: 1;
+}
+
+.amk-buffering media-icon {
+	display: block;
+	width: 48px;
+	height: 48px;
+}
+
+/* --- Controls visibility --- */
+
+/* Screen-reader announcements of state changes; visually hidden, never
+   `display: none`, so the live region keeps working. */
+.amk-announcer {
+	position: absolute;
+	overflow: hidden;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	white-space: nowrap;
+	clip-path: inset(50%);
+}
+
+/* The controls surface marks itself interactive, which would swallow
+   gestures and the lightbox's open-on-click, so it never takes pointer
+   events itself; only the bar and the centered play button do. */
+.amk-controls {
+	pointer-events: none;
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: flex-end;
+	transition: opacity var(--amk-duration);
+}
+
+/* In the lightbox the controls surface is the popover's content, not an
+   overlay on the media. */
+.pswp__floating-controls .amk-controls {
+	pointer-events: auto;
+	position: static;
+	display: block;
+}
+
+/* Hidden controls fade out and stop taking pointer events, but stay in the
+   tab order: keyboard focus landing inside reveals them again. Hidden when
+   Video.js reports them hidden; in lightbox mode also whenever the user is
+   idle, even while paused; and with autoplay, until playback has started
+   (no flash of controls at load; user activity still reveals them if
+   autoplay is blocked). */
+.amk-controls:not([data-visible], :has(:focus-visible)),
+.amk-player[data-controls='lightbox'] .amk-controls:not([data-user-active], :has(:focus-visible)),
+.amk-player[data-autoplay]
+	.amk-controls:not(
+		[data-user-active],
+		:has(media-play-button[data-started]),
+		:has(:focus-visible)
+	) {
+	--amk-controls-pointer: none;
+
+	opacity: 0;
+}
+
+/* --- Control bar --- */
+
+.amk-bar {
+	pointer-events: var(--amk-controls-pointer, auto);
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	width: 100%;
+	font-size: var(--amk-font-size);
+	line-height: 1;
+	color: var(--amk-control-color);
+	background: var(--amk-control-background);
+}
+
+.amk-button,
+.amk-time,
+.amk-slider {
+	flex-shrink: 0;
+	box-sizing: border-box;
+	height: var(--amk-control-size);
+}
+
+.amk-button {
+	cursor: pointer;
+	display: inline-grid;
+	place-items: center;
+	width: var(--amk-control-size);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	font: inherit;
+	color: inherit;
+	appearance: none;
+	background: transparent;
+}
+
+.amk-button:focus-visible {
+	outline: 2px solid var(--amk-control-color);
+	outline-offset: -2px;
+}
+
+@media (hover: hover) {
+	.amk-button:hover {
+		background: var(--amk-control-hover-background);
+	}
+}
+
+.amk-button media-icon {
+	display: none;
+	width: var(--amk-icon-size);
+	height: var(--amk-icon-size);
+}
+
+.amk-button media-icon svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Icon switching from Video.js state attributes. */
+media-play-button[data-paused]:not([data-ended]) .amk-icon-play,
+media-play-button:not([data-paused]) .amk-icon-pause,
+media-play-button[data-ended] .amk-icon-restart,
+media-mute-button[data-volume-level='off'] .amk-icon-volume-off,
+media-mute-button:is([data-volume-level='low'], [data-volume-level='medium']) .amk-icon-volume-low,
+media-mute-button:is([data-volume-level='high'], :not([data-volume-level])) .amk-icon-volume-high,
+media-captions-button[data-active] .amk-icon-captions-on,
+media-captions-button:not([data-active]) .amk-icon-captions-off,
+media-fullscreen-button[data-fullscreen] .amk-icon-fullscreen-exit,
+media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
+.amk-zoom-button media-icon {
+	display: block;
+}
+
+/* Minimal mode: a large centered play button, and only the fullscreen (or
+   zoom) button in the corner, each on its own backdrop. */
+.amk-center-play {
+	pointer-events: var(--amk-controls-pointer, auto);
+	position: absolute;
+	inset: 0;
+	width: 64px;
+	height: 64px;
+	margin: auto;
+	border-radius: 50%;
+	background: var(--amk-control-background);
+}
+
+.amk-center-play media-icon {
+	width: 32px;
+	height: 32px;
+}
+
+.amk-player[data-controls='minimal'] .amk-bar {
+	justify-content: flex-end;
+	background: transparent;
+}
+
+.amk-player[data-controls='minimal'] .amk-button {
+	background: var(--amk-control-background);
+}
+
+@media (hover: hover) {
+	.amk-player[data-controls='minimal'] .amk-button:hover {
+		background: var(--amk-control-hover-background);
+	}
+}
+
+/* --- Time --- */
+
+.amk-time {
+	display: inline-flex;
+	flex-flow: row nowrap;
+	gap: 0.3em;
+	align-items: center;
+	padding: 0 10px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.amk-time media-time,
+.amk-time media-time-separator {
+	display: inline;
+}
+
+/* --- Sliders --- */
+
+/* The slider element is the measured pointer surface, so spacing is margin,
+   never padding; the thumb may overhang into the margin at the ends. */
+.amk-slider {
+	cursor: pointer;
+	position: relative;
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	margin: 0 10px;
+}
+
+.amk-time-slider {
+	flex: 1 1 auto;
+	min-width: 40px;
+}
+
+.amk-volume-slider {
+	width: 70px;
+}
+
+.amk-slider-track {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: var(--amk-slider-track-height);
+	border-radius: 9999px;
+	background: var(--amk-slider-track);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.amk-slider-track {
+		transition: height 0.15s;
+	}
+}
+
+.amk-slider[data-interactive] .amk-slider-track {
+	height: 6px;
+}
+
+.amk-slider-buffer,
+.amk-slider-fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	border-radius: inherit;
+}
+
+.amk-slider-buffer {
+	width: var(--media-slider-buffer);
+	background: var(--amk-slider-buffer);
+}
+
+.amk-slider-fill {
+	width: var(--media-slider-fill);
+	background: var(--amk-slider-fill);
+}
+
+.amk-slider[data-dragging] .amk-slider-fill {
+	width: var(--media-slider-pointer);
+}
+
+.amk-slider-thumb {
+	position: absolute;
+	top: 50%;
+	left: var(--media-slider-fill);
+	translate: -50% -50%;
+	scale: 0;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--amk-control-color);
+	box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.amk-slider-thumb {
+		transition: scale 0.15s;
+	}
+}
+
+.amk-slider[data-interactive] .amk-slider-thumb {
+	scale: 1;
+}
+
+.amk-slider[data-dragging] .amk-slider-thumb {
+	left: var(--media-slider-pointer);
+}
+
+.amk-slider-value {
+	pointer-events: none;
+	position: absolute;
+	bottom: 100%;
+	left: var(--media-slider-pointer);
+	translate: -50%;
+	margin-bottom: 8px;
+	padding: 3px 6px;
+	border-radius: 4px;
+	font-size: 12px;
+	white-space: nowrap;
+	opacity: 0;
+	background: rgb(0 0 0 / 85%);
+	transition: opacity 0.15s;
+}
+
+.amk-slider[data-pointing] .amk-slider-value {
+	opacity: 1;
+}
+
+/* --- Tooltips --- */
+
+/* Tooltips are popovers Video.js positions against their trigger. */
+.amk-tooltip {
+	--media-tooltip-side-offset: 6px;
+	pointer-events: none;
+	margin: 0;
+	padding: 4px 8px;
+	border: 0;
+	border-radius: 4px;
+	font-size: 12px;
+	color: var(--amk-control-color);
+	white-space: nowrap;
+	background: rgb(0 0 0 / 85%);
+}
+
+.amk-tooltip:not([data-open], [data-ending-style]) {
 	display: none;
 }
 
-/* Hide volume slider on platforms that don't support programmatic volume (e.g. iOS). */
-.amk media-controller[mediavolumeunavailable] media-volume-range {
-	display: none;
+.amk-tooltip-shortcut:not(:empty) {
+	margin-left: 0.5em;
+	opacity: 0.6;
 }
 
-/* Hide mute and volume controls when the video has no audio track.
-   Excluded for embed services (.amk-embed) — YouTube/Vimeo always have
-   audio but the audioTracks API isn't available cross-origin. */
-.amk:not(.amk-embed) media-controller[mediaaudiotrackunavailable] media-mute-button,
-.amk:not(.amk-embed) media-controller[mediaaudiotrackunavailable] media-volume-range {
-	display: none;
+/* --- Fullscreen --- */
+
+/* Hide the cursor only while fullscreen with the controls hidden. */
+.amk media-container:fullscreen:not([data-controls-visible]) {
+	cursor: none;
 }
 
-/* Don't hide the cursor when inactive, unless fullscreen. */
-.amk media-controller[userinactive]:not([mediaisfullscreen]) * {
-	cursor: auto !important;
+/* --- PhotoSwipe lightbox player --- */
+
+/* The slide's player: clicks fall through the container to the wrapper
+   (which carries `pswp__img`) so PhotoSwipe's own click handler treats the
+   slide like an image: single click runs `imageClickAction`. Controls live
+   outside the container in the floating bar. */
+.pswp__video-container {
+	pointer-events: none;
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Floating control bar. It sits inside the slide's <video-player> for state
+   access but renders in the top layer through the Popover API, so it stays
+   anchored to the viewport bottom while the slide is zoomed, panned, or
+   animated. The declarations below reset the popover UA stylesheet.
+   `data-user-inactive` drives the autohide fade (see lightbox.ts). Browsers
+   without the Popover API render it in place, inside the slide. */
+.pswp__floating-controls {
+	pointer-events: auto;
+	position: fixed;
+	inset: auto 0 0;
+	overflow: visible;
+	width: auto;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: var(--amk-control-color);
+	opacity: 1;
+	background: transparent;
+	transition:
+		opacity var(--amk-duration),
+		display var(--amk-duration) allow-discrete,
+		overlay var(--amk-duration) allow-discrete;
+}
+
+.pswp__floating-controls:not(:popover-open) {
+	opacity: 0;
+}
+
+@starting-style {
+	.pswp__floating-controls:popover-open {
+		opacity: 0;
+	}
+}
+
+.pswp__floating-controls[data-user-inactive] {
+	pointer-events: none;
+	opacity: 0;
+}
+
+/* Reserve space beneath the caption for the floating control bar on video
+   slides. The dynamic-caption plugin measures the caption with
+   getBoundingClientRect() (which includes padding) and subtracts its height
+   from the slide's pan area, so this padding propagates into fit-mode zoom:
+   the video shrinks to leave room, and the empty padding space is where the
+   bottom-anchored bar lands. Stacked on top of the plugin's own 15px top
+   padding so the caption keeps the same breathing room above the bar.
+   `--amk-lightbox-bar-height` can be overridden when `--amk-control-size` is
+   customized. */
+.pswp__item--video .pswp__dynamic-caption--below,
+.pswp__item--video .pswp__dynamic-caption--mobile {
+	padding-bottom: calc(15px + var(--amk-lightbox-bar-height, 44px));
+}
+
+/* --- Last --- */
+
+/* Video.js hides unavailable controls (captions with no tracks, the volume
+   slider where volume can't be set, mute and fullscreen where unsupported)
+   with the native `hidden` attribute. Author `display` rules above would
+   beat the UA rule for it, so restore it here, last. */
+.amk [hidden],
+.pswp__floating-controls [hidden] {
+	display: none;
 }

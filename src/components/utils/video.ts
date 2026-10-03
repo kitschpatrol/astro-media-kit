@@ -4,6 +4,7 @@ import { getVideoResolution } from '@oscnord/get-video-resolution'
 import type { BunnyConfig } from './bunny'
 import type { CloudflareConfig } from './cloudflare'
 import type { MuxConfig } from './mux'
+import { getPublicFilePath } from '../../utilities/path'
 import { bunnyGetVideoInfo, bunnyIsValidMediaId } from './bunny'
 import { cloudflareGetVideoInfo, cloudflareIsValidMediaId } from './cloudflare'
 import { isDirectMediaUrl, isLocalPath, tryParseUrl } from './media'
@@ -97,20 +98,40 @@ export function validateServiceConfig(service: Service, config: ServiceConfig): 
 
 // --- Local file / remote MP4 ---
 
+/**
+ * Filesystem paths and URLs to try, in order, when probing a local source's
+ * dimensions. Site-root-relative sources (`/clip.mp4`) live in Astro's
+ * `public/` directory, which a build copies but never moves, so that location
+ * is tried before the raw value (which may itself be an absolute filesystem
+ * path). Remote direct URLs and relative paths are probed as-is.
+ */
+export function localVideoProbeCandidates(src: string): string[] {
+	if (tryParseUrl(src) !== undefined) {
+		return [src]
+	}
+
+	return src.startsWith('/') ? [getPublicFilePath(src), src] : [src]
+}
+
 async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo> {
 	let width = 0
 	let height = 0
 	let duration = -1
 
-	try {
-		const info = await getVideoResolution(src)
-		width = info.width
-		height = info.height
-		if (info.duration !== undefined) {
-			duration = info.duration
+	for (const candidate of localVideoProbeCandidates(src)) {
+		try {
+			const info = await getVideoResolution(candidate)
+			width = info.width
+			height = info.height
+			if (info.duration !== undefined) {
+				duration = info.duration
+			}
+
+			break
+		} catch {
+			// Try the next candidate. If none resolves, the dimensions stay zero
+			// (no aspect ratio) and the player sizes itself from the media.
 		}
-	} catch {
-		// Probe failed — fall back to zero dimensions (no aspect ratio).
 	}
 
 	return {

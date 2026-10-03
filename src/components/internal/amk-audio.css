@@ -1,7 +1,12 @@
-/* Shared media-controller styles for audio sub-components.
-   Imported in each internal component's frontmatter.
-   Prefixed with .amk for scope protection. */
+/* Styles for the Audio component's local-file player. The packaged Video.js
+   audio skin draws its own controls and follows the page's `color-scheme`;
+   this only sizes its host. Prefixed with .amk for scope protection. */
 
-.amk media-controller[audio] {
+.amk audio-player {
+	display: contents;
+}
+
+.amk audio-skin {
+	display: block;
 	max-width: 100%;
 }
