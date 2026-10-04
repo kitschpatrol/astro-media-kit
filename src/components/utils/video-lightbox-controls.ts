@@ -19,8 +19,10 @@ export function cloneLightboxPlayer(template: HTMLTemplateElement): DocumentFrag
 	return fragment
 }
 
-/** Activity covers the viewport, but focus and dragging keep the controls
-visible. */
+/**
+ * Activity covers the viewport, but focus and dragging keep the controls
+ * visible.
+ */
 export function createControlsActivity(root: HTMLElement): {
 	destroy: () => void
 	markActive: () => void

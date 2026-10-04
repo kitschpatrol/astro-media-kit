@@ -1,6 +1,7 @@
 ---
 import type { ImageMetadata } from 'astro'
 import type { VideoZoomTarget } from './utils/image'
+import VideoLightbox from './internal/VideoLightbox.astro'
 // Load PhotoSwipe's own CSS first so our overrides in amk-zoomer.css win the cascade
 import 'photoswipe/style.css'
 import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
@@ -250,6 +251,7 @@ if (enabled !== false && enabled !== '') {
 				data-pswp-width={resolvedWidth}
 			>
 				<Fragment set:html={slotHtml} />
+				<VideoLightbox src={videoTarget.src} />
 			</div>
 		) : (
 			<a

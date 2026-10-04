@@ -1,0 +1,19 @@
+---
+import VideoControls from './VideoControls.astro'
+import VideoError from './VideoError.astro'
+import './amk-video.css'
+
+export type Props = { src: string }
+const { src } = Astro.props
+---
+
+<template data-amk-lightbox-player>
+	<video-player>
+		<media-container class="pswp__video-container">
+			<VideoError fallbackUrl={src} />
+		</media-container>
+		<div class="pswp__floating-controls" popover="manual">
+			<VideoControls controls="lightbox" floating />
+		</div>
+	</video-player>
+</template>

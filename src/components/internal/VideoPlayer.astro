@@ -126,16 +126,3 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 		)}
 	</div>
 )}
-
-{zoom && (
-	<template data-amk-lightbox-player>
-		<video-player>
-			<media-container class="pswp__video-container">
-				<VideoError fallbackUrl={fallbackUrl} />
-			</media-container>
-			<div class="pswp__floating-controls" popover="manual">
-				<VideoControls controls="lightbox" floating />
-			</div>
-		</video-player>
-	</template>
-)}

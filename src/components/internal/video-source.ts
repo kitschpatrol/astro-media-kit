@@ -51,7 +51,7 @@ export function setVideoSourceWhenReady(
 ): () => void {
 	const player = element.closest<
 		HTMLElement & {
-			store: { target: unknown; subscribe: (listener: () => void) => () => void }
+			store: { subscribe: (listener: () => void) => () => void; target: unknown }
 		}
 	>('video-player')
 	if (!player || Boolean(player.store.target)) {
@@ -62,7 +62,7 @@ export function setVideoSourceWhenReady(
 	}
 
 	const unsubscribe = player.store.subscribe(() => {
-		if (!Boolean(player.store.target)) {
+		if (player.store.target === undefined || player.store.target === null) {
 			return
 		}
 

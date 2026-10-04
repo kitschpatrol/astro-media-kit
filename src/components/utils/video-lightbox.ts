@@ -312,11 +312,7 @@ export function registerVideoLightbox(lightbox: PhotoSwipeLightbox): void {
 		wrapper.className = 'pswp__video-wrapper pswp__img'
 		wrapper.append(fragment)
 		const selection =
-			content.data.lightboxCaptions === undefined
-				? inlineVideo
-					? readCaptionSelection(inlineVideo)
-					: 'off')
-				: content.data.lightboxCaptions
+			content.data.lightboxCaptions ?? (inlineVideo ? readCaptionSelection(inlineVideo) : 'off')
 		captionCleanup.set(
 			wrapper,
 			restoreCaptionSelection(videoElement as unknown as HTMLMediaElement, selection),
@@ -393,7 +389,10 @@ export function registerVideoLightbox(lightbox: PhotoSwipeLightbox): void {
 
 		const video = queryVideoElement(content.element)
 		if (video) {
-			tryPlay(video)
+			video.autoplay = true
+			if (video.readyState > 0) {
+				tryPlay(video)
+			}
 		}
 
 		// Pause the inline player.
@@ -415,7 +414,12 @@ export function registerVideoLightbox(lightbox: PhotoSwipeLightbox): void {
 		}
 
 		const video = queryVideoElement(content.element)
-		if (video?.paused) {
+		if (!video || !slide.isActive) {
+			return
+		}
+
+		video.autoplay = true
+		if (video.paused && video.readyState > 0) {
 			tryPlay(video)
 		}
 	})
@@ -435,6 +439,7 @@ export function registerVideoLightbox(lightbox: PhotoSwipeLightbox): void {
 		// changes in multi-item galleries — harmless, the entry is cleared the
 		// next time the slide activates, and it's only read from the close
 		// path.
+		video.autoplay = false
 		const wasPlaying = !video.paused
 		wasPlayingMap.set(content.data.videoContainer, wasPlaying)
 		if (wasPlaying) {

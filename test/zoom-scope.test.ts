@@ -30,6 +30,16 @@ afterEach(() => {
 })
 
 describe('resolveScopedGalleries', () => {
+	it('does not append another scope suffix when a persisted element is initialized again', () => {
+		document.body.innerHTML = '<section class="hero"></section>'
+		const element = zoomElement({ gallery: 'album', scope: '.hero' })
+		document.querySelector('.hero')!.append(element)
+		resolveScopedGalleries()
+		const name = element.dataset.pswpGallery
+		resolveScopedGalleries()
+		expect(element.dataset.pswpGallery).toBe(name)
+	})
+
 	it('groups items under the same ancestor with matching suffixes', () => {
 		document.body.innerHTML = `<section class="hero"></section>`
 		const section = document.querySelector('.hero')!
