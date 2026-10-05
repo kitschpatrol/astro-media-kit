@@ -31,11 +31,11 @@ This is a small collection of Astro components to help you write minimalist, pla
 It includes:
 
 - **Image**\
-  Superset of Astro's `<Image>` with captions, XMP credit extraction, PhotoSwipe zoom, background compositing, and a per-input-format `format` override.
+  Superset of Astro's `<Image>` with captions, XMP credit extraction, Liftbox zoom, background compositing, and a per-input-format `format` override.
 - **Picture**\
   Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `formats` and `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
-  Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus integration with PhotoSwipe zoom.
+  Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus integration with Liftbox zoom.
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
 - **Astro Integration**\
@@ -120,7 +120,7 @@ import hero from '../assets/hero.jpg'
 
 ### Image
 
-A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates PhotoSwipe zoom, and handles CSS/pixel-level background compositing.
+A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates Liftbox zoom, and handles CSS/pixel-level background compositing.
 
 Accepts `ImageMetadata`, a `{ dark, light }` pair, a local file path string, or a remote `http(s)` URL.
 
@@ -349,7 +349,7 @@ import { Video } from 'astro-media-kit/components'
 
 `service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` apply to HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
 
-`controls` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (used inside the PhotoSwipe lightbox where fullscreen is provided by the lightbox itself); `'native'` skips the Video.js UI entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without playback controls; playback errors remain dismissible.
+`controls` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute, volume, time range, time display, fullscreen, captions when present); `'minimal'` shows only a fullscreen button (suited to background or hero video); `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (for players that should omit their fullscreen control); `'native'` skips the Video.js UI entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without playback controls; playback errors remain dismissible.
 
 URL formats recognized automatically:
 
@@ -397,7 +397,13 @@ import { Audio } from 'astro-media-kit/components'
 
 **Caption** wraps content in `<figure>`/`<figcaption>` and handles XMP credit extraction from image metadata via `exiftool-vendored`. Used internally by Image, Picture, Video, and Audio — you generally don't need to use it directly.
 
-**Zoomer** provides PhotoSwipe-based lightbox/zoom functionality. Also used internally — enable it via the `zoom` prop on any of the main components.
+**Zoomer** enhances ordinary HTML with Liftbox. Enable it through `zoom` on Image, Picture, or Video; existing `zoomLevel` and `zoomScope` props are unchanged. `zoomPlaceholder="auto"` (default) leaves a decorative page preview; `"none"` reserves space only. Captions always remain on the page.
+
+Image and Picture generate a real link to the largest generated candidate in their fallback format. That link works without JavaScript, and modified clicks retain browser behavior. The full responsive media element is lifted when JavaScript is available. A single fallback URL uses the light variant; the viewer retains the actual picture's theme selection.
+
+Standalone Zoomer accepts `enabled`, `level`, `scope`, `placeholder`, and an optional `href` for native fallback navigation. Its child is the actual content to enlarge. The old PhotoSwipe `src`, `srcset`, `width`, and `height` overrides have been removed. Video players move with their existing controls and media; no second lightbox player is created. Native video can leave a live canvas preview; opaque custom media and iframe players reserve space. Providers backed by iframes can reload on browsers without state-preserving DOM moves.
+
+For local development this checkout uses `liftbox: link:../liftbox`. Run `pnpm build` in the sibling Liftbox checkout after changing its sources, then restart the Astro dev server if its dependency cache is stale. Replace the local link with a published version before publishing astro-media-kit.
 
 ### Scoped galleries
 
@@ -637,7 +643,7 @@ Component prop types are exported from `astro-media-kit/components`: **`AudioPro
 
 The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/454).
 
-This means that `Zoomer.astro`, `VideoPlayer.astro`, and `VideoMedia.astro` crash Prettier and cannot be automatically formatted.
+This means that `VideoPlayer.astro` and `VideoMedia.astro` cannot be automatically formatted.
 
 I have released [a fork of the Astro Prettier plugin](https://github.com/kitschpatrol/prettier-plugin-astro/tree/fix-nested-script-tags) incorporating fixes for these issues.
 
@@ -649,7 +655,7 @@ This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com
 
 ## Acknowledgments
 
-Video and audio playback are built on [Video.js 10](https://videojs.org) (`@videojs/html` with the `@videojs/hlsjs-video`, `@videojs/youtube-video`, and `@videojs/vimeo-video` media elements). Image zoom uses [PhotoSwipe](https://photoswipe.com/). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
+Video and audio playback are built on [Video.js 10](https://videojs.org) (`@videojs/html` with the `@videojs/hlsjs-video`, `@videojs/youtube-video`, and `@videojs/vimeo-video` media elements). Image zoom uses [Liftbox](https://github.com/kitschpatrol/liftbox). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
 
 <!-- contributing -->
 

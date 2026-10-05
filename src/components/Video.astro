@@ -102,10 +102,11 @@ const {
 	src,
 	zoom = false,
 	zoomLevel,
+	zoomPlaceholder,
 	zoomScope,
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
+const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope })
 
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 
@@ -260,12 +261,7 @@ const sharedProps = {
 	)
 ) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
 	<Caption {...captionProps}>
-		<Zoomer
-			{...zoomerProps}
-			height={videoInfo.height}
-			slot="media-component"
-			width={videoInfo.width}
-		>
+		<Zoomer {...zoomerProps} slot="media-component">
 			<VideoPlayer
 				{...sharedProps}
 				captions={videoInfo.captions}

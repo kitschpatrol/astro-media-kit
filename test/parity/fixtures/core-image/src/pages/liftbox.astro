@@ -1,0 +1,110 @@
+---
+import { Image, Picture, Zoomer } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+import { ClientRouter } from 'astro:transitions'
+import photo from '../assets/penguin1.jpg'
+const videoProps = {
+	aspectRatio: '16 / 9',
+	autoPlay: false,
+	captions: [],
+	controls: 'full' as const,
+	element: 'video' as const,
+	hlsOptions: {},
+	intrinsicWidth: 640,
+	loop: true,
+	muted: true,
+	posterUrl: undefined,
+	preload: 'auto' as const,
+	resolvedLabel: 'Test video',
+	videoSrc: '/clip.mp4',
+	zoom: true,
+}
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Liftbox integration</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<a href="/liftbox-next/" id="navigate">
+			Next page
+		</a>
+		<article id="first">
+			<Picture
+				alt="Penguin picture"
+				sizes="240px"
+				src={photo}
+				widths={[120, 480, 960]}
+				zoom="trip"
+				zoomLevel="native"
+				zoomScope="article"
+			>
+				Picture caption stays on the page.
+			</Picture>
+			<Image
+				alt="Penguin image"
+				sizes="240px"
+				src={photo}
+				widths={[120, 480, 960]}
+				zoom="trip"
+				zoomScope="article"
+			/>
+		</article>
+		<article id="second">
+			<Picture
+				alt="Themed picture"
+				darkMode=".dark"
+				sizes="240px"
+				src={photo}
+				srcDark={photo}
+				widths={[120, 480, 960]}
+				zoom="trip"
+				zoomLevel="native"
+				zoomScope="article"
+			/>
+		</article>
+		<section id="video">
+			<Zoomer enabled={true}>
+				<VideoPlayer {...videoProps} />
+			</Zoomer>
+		</section>
+		<section id="content">
+			<Zoomer enabled={true}>
+				<div style="aspect-ratio: 3 / 2; background: teal">Original HTML</div>
+			</Zoomer>
+		</section>
+		<section id="disabled">
+			<Image alt="Disabled" src={photo} zoom={false} />
+		</section>
+	</body>
+</html>
+<style is:global>
+	body {
+		margin: 20px;
+	}
+
+	article,
+	#video,
+	#content,
+	#disabled {
+		width: 240px;
+		margin-block: 20px;
+	}
+
+	figure {
+		margin: 0;
+	}
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.liftbox {
+		--liftbox-duration: 60ms;
+	}
+</style>

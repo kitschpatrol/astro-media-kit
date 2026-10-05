@@ -1,0 +1,41 @@
+---
+import { Zoomer } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>HLS lifting</title>
+	</head>
+	<body>
+		<Zoomer enabled level="fill">
+			<VideoPlayer
+				aspectRatio="16 / 9"
+				autoPlay={false}
+				captions={[]}
+				controls="full"
+				element="hlsjs-video"
+				hlsOptions={{}}
+				intrinsicWidth={640}
+				loop
+				muted
+				posterUrl={undefined}
+				preload="auto"
+				resolvedLabel="HLS test"
+				videoSrc="/hls/stream.m3u8"
+				zoom
+			/>
+		</Zoomer>
+	</body>
+</html>
+<style is:global>
+	.amk-zoom {
+		width: 240px;
+	}
+
+	.liftbox {
+		--liftbox-duration: 60ms;
+	}
+</style>

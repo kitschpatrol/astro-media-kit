@@ -41,6 +41,7 @@ import {
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
+import { imageFallback } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -160,11 +161,12 @@ const {
 	src,
 	zoom,
 	zoomLevel,
+	zoomPlaceholder,
 	zoomScope,
 	...imageProps
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
+const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope })
 
 // Merge class from both Astro-style `class` and JSX-style `className` props
 // (MDX may pass both; getImage() passes through `className` unfiltered)
@@ -296,7 +298,7 @@ const captionProps = toCaptionProps(
 ---
 
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} slot="media-component">
+	<Zoomer {...zoomerProps} href={imageFallback(image)} slot="media-component">
 		<img
 			alt={alt}
 			src={image.src}

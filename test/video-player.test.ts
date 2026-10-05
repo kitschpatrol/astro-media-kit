@@ -2,15 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isHlsSource, setVideoSourceWhenReady } from '../src/components/internal/video-source'
-import {
-	readCaptionSelection,
-	restoreCaptionSelection,
-} from '../src/components/utils/video-captions'
-import {
-	cloneLightboxPlayer,
-	createControlsActivity,
-} from '../src/components/utils/video-lightbox-controls'
-
+import { createControlsActivity } from '../src/components/utils/controls-activity'
 afterEach(() => {
 	vi.useRealTimers()
 	document.body.replaceChildren()
@@ -88,52 +80,7 @@ describe('video sources', () => {
 	})
 })
 
-describe('lightbox captions', () => {
-	it('restores the selected language after loading without overriding later user choices', () => {
-		const inline = document.createElement('video')
-		const english = inline.addTextTrack('captions', 'English', 'en')
-		english.mode = 'showing'
-		const video = document.createElement('video')
-		const selected = video.addTextTrack('captions', 'English', 'en')
-		const french = video.addTextTrack('captions', 'French', 'fr')
-		french.mode = 'showing'
-		restoreCaptionSelection(video, readCaptionSelection(inline))
-		video.dispatchEvent(new Event('loadedmetadata'))
-		expect(selected.mode).toBe('showing')
-		expect(french.mode).toBe('disabled')
-		selected.mode = 'disabled'
-		french.mode = 'showing'
-		video.dispatchEvent(new Event('loadedmetadata'))
-		expect(french.mode).toBe('showing')
-	})
-
-	it('preserves captions off and removes pending restoration on disposal', () => {
-		const video = document.createElement('video')
-		const track = video.addTextTrack('captions', 'English', 'en')
-		track.mode = 'showing'
-		const cancel = restoreCaptionSelection(video, 'off')
-		cancel()
-		video.dispatchEvent(new Event('loadedmetadata'))
-		expect(track.mode).toBe('showing')
-		restoreCaptionSelection(video, 'off')
-		video.dispatchEvent(new Event('loadedmetadata'))
-		expect(track.mode).toBe('disabled')
-	})
-})
-
-describe('lightbox controls', () => {
-	it('gives every cloned tooltip a unique, correctly linked trigger', () => {
-		const template = document.createElement('template')
-		template.innerHTML =
-			'<media-play-button id="play"></media-play-button><media-tooltip id="tip" trigger="play"></media-tooltip>'
-		const first = cloneLightboxPlayer(template)
-		const second = cloneLightboxPlayer(template)
-		const button = first.querySelector('media-play-button')!
-		expect(first.querySelector('media-tooltip')?.getAttribute('trigger')).toBe(button.id)
-		expect(second.querySelector('media-play-button')?.id).not.toBe(button.id)
-		expect(template.content.querySelector('media-play-button')?.id).toBe('play')
-	})
-
+describe('lifted player controls', () => {
 	it('keeps focused controls visible, resumes hiding after blur, and cancels on disposal', () => {
 		vi.useFakeTimers()
 		const root = document.createElement('div')

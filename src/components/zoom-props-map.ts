@@ -3,25 +3,32 @@ import type { Props } from './Zoomer.astro'
 /**
  * Translate the `zoom`-prefixed props used on embedding components into the
  * subset of `<Zoomer>` props they control. The remaining `<Zoomer>` props
- * (dimensions, source, srcset) are supplied by the embedding component.
+ * (fallback URL) are supplied by the embedding component.
  */
-export function toZoomerProps(props: PrefixedProps): Pick<Props, 'enabled' | 'level' | 'scope'> {
-	return { enabled: props.zoom, level: props.zoomLevel, scope: props.zoomScope }
+export function toZoomerProps(
+	props: PrefixedProps,
+): Pick<Props, 'enabled' | 'level' | 'placeholder' | 'scope'> {
+	return {
+		enabled: props.zoom,
+		level: props.zoomLevel,
+		placeholder: props.zoomPlaceholder,
+		scope: props.zoomScope,
+	}
 }
 
 /**
  * Zoom-related props for components that embed a `<Zoomer>` (e.g. `<Image>`,
  * `<Picture>`). Renames `enabled` → `zoom` and `scope` → `zoomScope`; the
- * remaining `<Zoomer>` props (dimensions, source, srcset) are inferred from the
- * wrapped child.
+ * remaining `<Zoomer>` props (fallback URL) are supplied by the embedding
+ * component.
  *
  * Lives in a standalone `.ts` module because `astro-eslint-parser` fails to
  * resolve mapped types imported across `.astro` → `.astro` file boundaries.
  */
 export type PrefixedProps = {
 	/**
-	 * Enable PhotoSwipe zoom. `true` uses the default gallery, a string groups
-	 * items into a named gallery.
+	 * Enable Liftbox zoom. `true` uses the default gallery, a string groups items
+	 * into a named gallery.
 	 *
 	 * @default false
 	 */
@@ -35,6 +42,8 @@ export type PrefixedProps = {
 	 * @default 'fit'
 	 */
 	zoomLevel?: Props['level']
+	/** Preview left on the page while the original is lifted. */
+	zoomPlaceholder?: Props['placeholder']
 	/**
 	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
 	 * form across matching ancestors — items under separate ancestors matching

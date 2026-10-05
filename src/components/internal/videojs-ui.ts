@@ -1,6 +1,6 @@
 /**
  * Registers the Video.js custom elements and icons composed by
- * VideoPlayer.astro and by the lightbox player in utils/lightbox.ts. Every
+ * VideoPlayer.astro, whose original player also travels into Liftbox. Every
  * import is side-effect only and defines exactly one element, so this list is
  * the single place that decides which parts of Video.js ship to the client.
  */

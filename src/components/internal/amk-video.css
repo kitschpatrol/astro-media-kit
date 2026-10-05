@@ -1,5 +1,5 @@
-/* Styles for the Video.js 10 player composed in VideoPlayer.astro and for the
-   lightbox player built in utils/lightbox.ts. Video.js UI elements ship no
+/* Styles for the Video.js 10 player composed in VideoPlayer.astro, including
+   the same player while lifted into the viewer. Video.js UI elements ship no
    styles of their own, so everything visual lives here. Rules are prefixed
    with `.amk` (the wrapper class) or `.amk-` (component classes) for scope
    protection, and the lightbox bar reuses the `.amk-` component classes.
@@ -11,8 +11,7 @@
    and volume slider itself, from `mutedAvailability` / `volumeAvailability`,
    via the native `hidden` attribute (see the last rule in this file). */
 
-.amk,
-.pswp__floating-controls {
+.amk {
 	--amk-control-size: 44px;
 	--amk-control-background: rgb(20 20 30 / 70%);
 	--amk-control-hover-background: rgb(50 50 70 / 70%);
@@ -27,8 +26,8 @@
 }
 
 /* Shrink-wrap the zoom wrapper to match the player's intrinsic size, so
-   PhotoSwipe's zoom animation origin matches the visible content. */
-.pswp-zoom:has(> .amk) {
+   Liftbox's zoom animation origin matches the visible content. */
+.amk-zoom:has(> .amk) {
 	width: fit-content;
 	max-width: 100%;
 }
@@ -39,10 +38,7 @@
    skins ship this as a global stylesheet; without a skin it has to be here. */
 .amk video-player,
 .amk media-controls,
-.amk media-tooltip-group,
-.pswp__video-wrapper video-player,
-.pswp__floating-controls media-controls,
-.pswp__floating-controls media-tooltip-group {
+.amk media-tooltip-group {
 	display: contents;
 }
 
@@ -81,9 +77,15 @@
 	min-height: 0;
 }
 
-.pswp__video-container > .amk-media {
-	position: absolute;
-	inset: 0;
+/* The original player fills the fitted viewer frame. */
+.liftbox-layer > .amk media-container {
+	width: 100% !important;
+	max-width: none;
+	height: 100%;
+}
+
+.liftbox-layer .amk-zoom-button {
+	display: none;
 }
 
 /* --- Poster and buffering --- */
@@ -154,24 +156,18 @@
 	transition: opacity var(--amk-duration);
 }
 
-/* In the lightbox the controls surface is the popover's content, not an
-   overlay on the media. */
-.pswp__floating-controls .amk-controls {
-	pointer-events: auto;
-	position: static;
-	display: block;
-}
-
 /* Hidden controls fade out and stop taking pointer events, but stay in the
    tab order: keyboard focus landing inside reveals them again. Hidden when
    Video.js reports them hidden; in lightbox mode also whenever the user is
    idle, even while paused; and with autoplay, until playback has started
    (no flash of controls at load; user activity still reveals them if
    autoplay is blocked). */
-.amk-controls:not([data-visible], :has(:focus-visible)),
-.amk-player[data-controls='lightbox'] .amk-controls:not([data-user-active], :has(:focus-visible)),
+.amk-controls:not([popover], [data-visible], :has(:focus-visible)),
+.amk-player[data-controls='lightbox']
+	.amk-controls:not([popover], [data-user-active], :has(:focus-visible)),
 .amk-player[data-autoplay]
 	.amk-controls:not(
+		[popover],
 		[data-user-active],
 		:has(media-play-button[data-started]),
 		:has(:focus-visible)
@@ -449,81 +445,6 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	cursor: none;
 }
 
-/* --- PhotoSwipe lightbox player --- */
-
-/* The slide's player: clicks fall through the container to the wrapper
-   (which carries `pswp__img`) so PhotoSwipe's own click handler treats the
-   slide like an image: single click runs `imageClickAction`. Controls live
-   outside the container in the floating bar. */
-.pswp__video-container {
-	pointer-events: none;
-	position: relative;
-	display: block;
-	width: 100%;
-	height: 100%;
-}
-
-/* Floating control bar. It sits inside the slide's <video-player> for state
-   access but renders in the top layer through the Popover API, so it stays
-   anchored to the viewport bottom while the slide is zoomed, panned, or
-   animated. The declarations below reset the popover UA stylesheet.
-   `data-user-inactive` drives the autohide fade (see lightbox.ts). Browsers
-   without the Popover API render it in place, inside the slide. */
-.pswp__floating-controls {
-	pointer-events: auto;
-	position: fixed;
-	inset: auto 0 0;
-	container: amk-player / inline-size;
-	overflow: visible;
-	width: auto;
-	height: auto;
-	margin: 0;
-	padding: 0;
-	border: 0;
-	color: var(--amk-control-color);
-	opacity: 1;
-	background: transparent;
-	transition:
-		opacity var(--amk-duration),
-		display var(--amk-duration) allow-discrete,
-		overlay var(--amk-duration) allow-discrete;
-}
-
-.pswp__floating-controls[popover]:not(:popover-open) {
-	opacity: 0;
-}
-
-@starting-style {
-	.pswp__floating-controls:popover-open {
-		opacity: 0;
-	}
-}
-
-.pswp__floating-controls[data-user-inactive]:not(:focus-within) {
-	pointer-events: none;
-	opacity: 0;
-}
-
-/* Reserve space beneath the caption for the floating control bar on video
-   slides. The dynamic-caption plugin measures the caption with
-   getBoundingClientRect() (which includes padding) and subtracts its height
-   from the slide's pan area, so this padding propagates into fit-mode zoom:
-   the video shrinks to leave room, and the empty padding space is where the
-   bottom-anchored bar lands. Stacked on top of the plugin's own 15px top
-   padding so the caption keeps the same breathing room above the bar.
-   `--amk-lightbox-bar-height` can be overridden when `--amk-control-size` is
-   customized. */
-.pswp__item--video .pswp__dynamic-caption--below,
-.pswp__item--video .pswp__dynamic-caption--mobile {
-	padding-bottom: calc(15px + var(--amk-lightbox-bar-height, 44px));
-}
-
-@media (width < 320px) {
-	.pswp {
-		--amk-lightbox-bar-height: 76px;
-	}
-}
-
 /* Error surfaces remain usable inside the pointer-transparent lightbox slide. */
 .amk-error-backdrop {
 	pointer-events: auto;
@@ -609,7 +530,42 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
    slider where volume can't be set, mute and fullscreen where unsupported)
    with the native `hidden` attribute. Author `display` rules above would
    beat the UA rule for it, so restore it here, last. */
-.amk [hidden],
-.pswp__floating-controls [hidden] {
+.amk [hidden] {
 	display: none;
+}
+
+/* The original controls keep their player context while shown above zoomed media. */
+.amk-controls[popover] {
+	--amk-controls-pointer: auto;
+	pointer-events: auto;
+	position: fixed;
+	inset: auto 0 0;
+	container: amk-player / inline-size;
+	overflow: visible;
+	width: auto;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: var(--amk-control-color);
+	opacity: 1;
+	background: transparent;
+}
+
+.amk-controls[popover]:not(:popover-open) {
+	display: none;
+}
+
+.amk-controls[popover][data-user-inactive]:not(:focus-within) {
+	--amk-controls-pointer: none;
+	pointer-events: none;
+	opacity: 0;
+}
+
+.amk-zoom:not([data-liftbox-ready]) .amk-zoom-button {
+	display: none;
+}
+
+.liftbox-slide:has(.amk-player) {
+	padding-bottom: calc(var(--liftbox-gutter) + 44px);
 }

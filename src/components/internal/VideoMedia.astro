@@ -23,7 +23,16 @@ export type Props = {
 	style?: string | undefined
 }
 
-const { attributes, captions, element, hlsOptions, native, src, style } = Astro.props
+const {
+	attributes: originalAttributes,
+	captions,
+	element,
+	hlsOptions,
+	native,
+	src,
+	style,
+} = Astro.props
+const attributes = { ...originalAttributes, 'data-liftbox-media': '' }
 
 const controls = native || undefined
 const hlsOptionsJson = Object.keys(hlsOptions).length > 0 ? JSON.stringify(hlsOptions) : undefined

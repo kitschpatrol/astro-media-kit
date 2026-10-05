@@ -13,7 +13,7 @@ const hasFullscreen = controls === 'full' || controls === 'minimal'
 const uid = `amk-${crypto.randomUUID()}`
 ---
 
-<media-controls visibility={floating ? 'always' : undefined}>
+<media-controls data-liftbox-interactive visibility={floating ? 'always' : undefined}>
 	<media-controls-content class="amk-controls">
 		{controls === 'minimal' && (
 			<media-play-button class="amk-button amk-center-play">
@@ -81,8 +81,9 @@ const uid = `amk-${crypto.randomUUID()}`
 					(zoom ? (
 						<>
 							<button
-								aria-label="Zoom"
-								class="amk-button amk-zoom-button pswp-video-trigger"
+								aria-label="Expand video"
+								class="amk-button amk-zoom-button"
+								data-liftbox-open=""
 								id={`${uid}-zoom`}
 								type="button"
 							>

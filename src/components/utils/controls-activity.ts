@@ -1,24 +1,3 @@
-/** Clone the server-rendered player without sharing tooltip IDs between slides. */
-export function cloneLightboxPlayer(template: HTMLTemplateElement): DocumentFragment {
-	const fragment = template.content.cloneNode(true) as DocumentFragment
-	const ids = new Map<string, string>()
-	const prefix = `amk-${crypto.randomUUID()}`
-	for (const element of fragment.querySelectorAll('[id]')) {
-		const id = `${prefix}-${element.id}`
-		ids.set(element.id, id)
-		element.id = id
-	}
-
-	for (const element of fragment.querySelectorAll('[trigger]')) {
-		const trigger = element.getAttribute('trigger') ?? ''
-		if (ids.has(trigger)) {
-			element.setAttribute('trigger', ids.get(trigger)!)
-		}
-	}
-
-	return fragment
-}
-
 /**
  * Activity covers the viewport, but focus and dragging keep the controls
  * visible.

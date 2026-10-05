@@ -48,6 +48,7 @@ import {
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
+import { imageFallback } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -228,11 +229,13 @@ const {
 	srcDark: srcDarkProp,
 	zoom,
 	zoomLevel,
+	zoomPlaceholder,
 	zoomScope,
 	...imageProps
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomScope })
+const isZoomEnabled = zoom !== false && zoom !== '' && zoom !== undefined
+const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope })
 
 // Merge class from both Astro-style `class` and JSX-style `className` props
 // (MDX may pass both; getImage() passes through `className` unfiltered)
@@ -500,9 +503,9 @@ if (isSelector && hasDarkMode) {
 
 {selectorStyle !== undefined && selectorStyle !== '' && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} slot="media-component">
+	<Zoomer {...zoomerProps} href={imageFallback(fallbackImage)} slot="media-component">
 		{isSelector && hasDarkMode ? (
-			<div {...pictureAttributes}>
+			<div {...pictureAttributes} class:list={[pictureAttributes.class, 'amk-picture']}>
 				<picture class="amk-dark">
 					{optimizedImagesDark!.map((image) => (
 						<source
@@ -512,8 +515,8 @@ if (isSelector && hasDarkMode) {
 						/>
 					))}
 					<img
-						alt=""
-						aria-hidden="true"
+						alt={alt}
+						data-liftbox-media={isZoomEnabled ? '' : undefined}
 						src={fallbackImageDark!.src}
 						{...imgAttributesDark}
 						class:list={[className, imgClassNameDark, 'amk']}
@@ -530,6 +533,7 @@ if (isSelector && hasDarkMode) {
 					))}
 					<img
 						alt={alt}
+						data-liftbox-media={isZoomEnabled ? '' : undefined}
 						src={fallbackImage.src}
 						{...imgAttributes}
 						class:list={[className, imgClassName, 'amk']}
@@ -558,6 +562,7 @@ if (isSelector && hasDarkMode) {
 				))}
 				<img
 					alt={alt}
+					data-liftbox-media={isZoomEnabled ? '' : undefined}
 					src={fallbackImage.src}
 					{...imgAttributes}
 					class:list={[className, imgClassName, 'amk']}

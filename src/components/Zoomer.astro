@@ -1,275 +1,59 @@
 ---
-import type { ImageMetadata } from 'astro'
-import type { VideoZoomTarget } from './utils/image'
-import VideoLightbox from './internal/VideoLightbox.astro'
-// Load PhotoSwipe's own CSS first so our overrides in amk-zoomer.css win the cascade
-import 'photoswipe/style.css'
-import 'photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.css'
-import { extractZoomTarget, isImageMetadataObject, unwrapImageMetadata } from './utils/image'
+import 'liftbox/page.css'
 
-/** Props for the `<Zoomer>` component — PhotoSwipe-based zoom wrapper. */
+/**
+ * Ordinary HTML enhanced by Liftbox; media stays owned by the slotted
+ * component.
+ */
 export type Props = {
-	/**
-	 * Enable zoom. `true` uses default gallery, a string groups items into a
-	 * named gallery. If false, Zoomer is just a no-op passthrough.
-	 *
-	 * @default false
-	 */
+	/** Enable lifting, optionally grouping items into a named gallery. */
 	enabled?: boolean | string | undefined
 	/**
-	 * Explicit height of the zoom target in pixels. Usually inferred from child
-	 * component. Required for video when not extractable.
+	 * Native fallback destination, supplied by the component generating the
+	 * assets.
 	 */
-	height?: number | undefined
-	/**
-	 * Secondary zoom level — the zoom applied when the user taps/clicks the
-	 * opened lightbox image. `'fit'` keeps the image fitted to the viewport,
-	 * `'fill'` zooms to cover the viewport (cropping the overflowing axis), and
-	 * `'native'` zooms to 100% (1:1 pixels).
-	 *
-	 * @default 'fit'
-	 */
+	href?: string | undefined
+	/** Secondary zoom level. */
 	level?: 'fill' | 'fit' | 'native' | undefined
-	/**
-	 * CSS selector defining a gallery scope boundary. When set, galleries cannot
-	 * form across matching ancestors — items under separate ancestors matching
-	 * the selector become separate galleries, even if they share the same gallery
-	 * name. Ignored when `enabled` is `false`.
-	 */
+	/** Page preview policy. */
+	placeholder?: 'auto' | 'none' | undefined
+	/** Nearest ancestor that bounds the gallery. */
 	scope?: string | undefined
-	/**
-	 * Image source for the zoom target. Accepts an `ImageMetadata` object (which
-	 * fills URL + dimensions) or a URL string (URL only). Explicit
-	 * `width`/`height`/`srcset` props still override. Usually inferred from child
-	 * component.
-	 */
-	src?: ImageMetadata | string | undefined
-	/**
-	 * Explicit srcset for the zoom target (image only). Usually inferred from
-	 * child component. Overrides extracted value.
-	 */
-	srcset?: string | undefined
-	/**
-	 * Explicit width of the zoom target in pixels. Usually inferred from child
-	 * component. Required for video when not extractable.
-	 */
-	width?: number | undefined
 }
 
-const {
-	enabled = false,
-	height: heightProp,
-	level = 'fit',
-	scope,
-	src,
-	srcset: srcsetProp,
-	width: widthProp,
-} = Astro.props
-
-// Resolve src into URL + dimensions
-let srcUrl: string | undefined
-let srcWidth: number | undefined
-let srcHeight: number | undefined
-
-if (typeof src === 'string') {
-	srcUrl = src
-} else if (isImageMetadataObject(src)) {
-	const metadata = unwrapImageMetadata(src)
-	srcUrl = metadata.src
-	srcWidth = metadata.width
-	srcHeight = metadata.height
-}
-
-let slotHtml = ''
-let resolvedUrl = srcUrl ?? ''
-let resolvedWidth = widthProp ?? srcWidth ?? 0
-let resolvedHeight = heightProp ?? srcHeight ?? 0
-let resolvedSrcset = srcsetProp ?? ''
-let videoTarget: undefined | VideoZoomTarget
-let galleryName: string | undefined
-// No media element in slot — PhotoSwipe has nothing to animate back to,
-// so mark for self-thumb (use the anchor itself as the close-animation origin).
-let selfThumb = false
-// Signals the lightbox to use the `picture` custom content type — clones the
-// original <picture> subtree so the browser resolves the active dark/light
-// variant natively. Only set for images that actually carry a dark variant.
-let isPicture = false
-
-if (enabled !== false && enabled !== '') {
-	if (typeof enabled === 'string') {
-		galleryName = enabled
-	}
-
-	slotHtml = await Astro.slots.render('default')
-	const target = extractZoomTarget(slotHtml)
-
-	if (target?.type === 'video') {
-		videoTarget = target
-		// Videos need explicit dimensions (not in rendered HTML)
-		resolvedWidth = widthProp ?? srcWidth ?? 1920
-		resolvedHeight = heightProp ?? srcHeight ?? 1080
-	} else if (target?.type === 'image') {
-		resolvedUrl = srcUrl ?? target.url
-		resolvedWidth = widthProp ?? srcWidth ?? target.width
-		resolvedHeight = heightProp ?? srcHeight ?? target.height
-		resolvedSrcset = srcsetProp ?? target.srcset
-		// Only flip into picture mode when no explicit src override was passed —
-		// an explicit `src` prop short-circuits to a single URL, defeating the
-		// point of cloning the multi-variant subtree.
-		isPicture = target.hasDark && srcUrl === undefined
-	} else {
-		selfThumb = true
-	}
-}
+const { enabled = false, href, level = 'fit', placeholder = 'auto', scope } = Astro.props
+const TAG = href !== undefined && href !== '' ? 'a' : 'div'
+const gallery = typeof enabled === 'string' ? enabled : ''
 ---
 
-<style is:global>
-	/* Lock the page scroll while the lightbox is open without causing a layout
-	   shift. Both `amk-lock-scroll` and `--amk-scrollbar-width` are toggled
-	   from utils/lightbox.ts and gated by the `LOCK_PAGE_SCROLL` flag there.
-	   The padding compensates for the scrollbar's disappearance; the
-	   (position: fixed) lightbox still spans full viewport width. */
-	html.amk-lock-scroll {
-		overflow: hidden;
-		padding-right: var(--amk-scrollbar-width, 0);
-	}
-
-	div.pswp-zoom,
-	a.pswp-zoom {
-		cursor: zoom-in;
-	}
-
-	.pswp {
-		--pswp-button-opacity: 0.5;
-		--pswp-placeholder-bg: transparent;
-		cursor: zoom-out;
-	}
-
-	.pswp--ui-visible .pswp__button--arrow,
-	.pswp__button--close {
-		opacity: var(--pswp-button-opacity);
-		transition: opacity 0.2s ease;
-	}
-
-	.pswp__button--arrow:disabled {
-		pointer-events: none;
-		display: unset;
-		opacity: 0;
-		transition: opacity 0.2s ease;
-	}
-
-	.pswp__button--close {
-		order: -1;
-		margin-right: auto;
-	}
-
-	@media (hover: hover) {
-		.pswp__button--arrow:hover,
-		.pswp__button--close:hover {
-			opacity: 1;
-			transition: none;
-		}
-	}
-
-	/* Fade image in alongside the backdrop for self-thumb slides */
-	@keyframes amk-pswp-img-fade-in {
-		from {
-			opacity: 0;
-		}
-
-		to {
-			opacity: 1;
-		}
-	}
-
-	/* Reduced-motion users skip the fade and see the image at full opacity
-	   immediately (the animation's final state). */
-	@media (prefers-reduced-motion: no-preference) {
-		.pswp__img.amk-fade-in {
-			animation: amk-pswp-img-fade-in 0.15s ease;
-		}
-	}
-
-	/* Custom 'picture' content type — the cloned <picture> (or, in selector
-	   mode, the wrapping <div> containing two <picture> elements) is the slide
-	   element. PhotoSwipe sizes it via inline width/height; the inner
-	   <picture>/<img> needs to fill those dimensions. pointer-events: none
-	   on the inner picture/img routes clicks to the .pswp__img wrapper so
-	   PhotoSwipe's click-to-toggle-zoom keys off the right target — without
-	   it, clicks in selector mode land on the inner <picture> (which has no
-	   pswp__img class) and the zoom-out tap is lost. The display/visibility
-	   of the inner <picture> elements in selector mode is still controlled
-	   by the global \3c style> block injected by Picture.astro; this rule only
-	   touches sizing and pointer routing, leaving the display toggle alone. */
-	.pswp__img.amk-pswp-picture {
-		display: block;
-	}
-
-	.pswp__img.amk-pswp-picture > picture {
-		pointer-events: none;
-		width: 100%;
-		height: 100%;
-	}
-
-	.pswp__img.amk-pswp-picture img {
-		pointer-events: none;
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
-
-	/* Balance caption spacing above/below the text. The dynamic-caption plugin
-	   defaults `--below` to `padding: 15px 0 0` (symmetric top, flush bottom);
-	   mirror the 15px on the bottom so the caption feels visually centered.
-	   `.pswp` prefix raises specificity above the plugin's single-class
-	   shorthand (which would otherwise reset padding-bottom to 0 depending on
-	   stylesheet order). `--mobile` and `--aside` already have symmetric
-	   padding in the plugin, so no rule needed for them here. */
-	.pswp .pswp__dynamic-caption--below,
-	.pswp .pswp__dynamic-caption--mobile {
-		padding-bottom: 15px;
-	}
-</style>
-
 {enabled !== false && enabled !== '' ? (
-	<>
-		<script>
-			import './utils/lightbox'
-		</script>
-		{videoTarget ? (
-			<div
-				class="pswp-zoom"
-				data-pswp-gallery={galleryName}
-				data-pswp-height={resolvedHeight}
-				data-pswp-level={level === 'fit' ? undefined : level}
-				data-pswp-poster={videoTarget.poster ?? ''}
-				data-pswp-scope={scope}
-				data-pswp-type="video"
-				data-pswp-video-element={videoTarget.element}
-				data-pswp-video-hls-options={videoTarget.hlsOptions}
-				data-pswp-video-src={videoTarget.src}
-				data-pswp-width={resolvedWidth}
-			>
-				<Fragment set:html={slotHtml} />
-				<VideoLightbox src={videoTarget.src} />
-			</div>
-		) : (
-			<a
-				class="pswp-zoom"
-				data-pswp-gallery={galleryName}
-				data-pswp-height={resolvedHeight}
-				data-pswp-level={level === 'fit' ? undefined : level}
-				data-pswp-scope={scope}
-				data-pswp-self-thumb={selfThumb ? '' : undefined}
-				data-pswp-srcset={resolvedSrcset}
-				data-pswp-type={isPicture ? 'picture' : undefined}
-				data-pswp-width={resolvedWidth}
-				href={resolvedUrl}
-			>
-				<Fragment set:html={slotHtml} />
-			</a>
-		)}
-	</>
+	<TAG
+		class="amk-zoom"
+		data-liftbox={gallery}
+		data-liftbox-level={level}
+		data-liftbox-placeholder={placeholder}
+		data-liftbox-scope={scope}
+		href={href}
+	>
+		<slot />
+	</TAG>
 ) : (
 	<slot />
 )}
+
+<script>
+	import './utils/lightbox'
+</script>
+
+<style is:global>
+	.amk-zoom {
+		display: block;
+	}
+
+	.liftbox-layer > .amk-picture > picture,
+	.liftbox-layer > .amk-picture img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+</style>

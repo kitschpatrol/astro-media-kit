@@ -1,0 +1,23 @@
+---
+import { Image } from 'astro-media-kit/components'
+import { ClientRouter } from 'astro:transitions'
+import photo from '../assets/penguin1.jpg'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Next gallery</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<a href="/liftbox/">Back</a>
+		<Image alt="Next page image" sizes="240px" src={photo} widths={[120, 480]} zoom />
+	</body>
+</html>
+<style is:global>
+	img {
+		width: 240px;
+		height: auto;
+	}
+</style>
