@@ -53,8 +53,8 @@
 		"fix": "ksc fix",
 		"init": "pnpm -C playground run init",
 		"lint": "ksc lint",
-		"prepare": "skills experimental_sync -y -f",
-		"release": "bumpp --commit 'Release: %s' && pnpm build && npm publish --otp $(op item get npm --otp)",
+		"prepare": "pnpm build && skills experimental_sync -y -f",
+		"release": "bumpp --commit 'Release: %s' && pnpm build && pnpm publish --otp $(op item get npm --otp)",
 		"test": "vitest run"
 	},
 	"dependencies": {
@@ -77,7 +77,7 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.10",
-		"@kitschpatrol/shared-config": "^8.12.1",
+		"@kitschpatrol/shared-config": "^8.13.1",
 		"@types/node": "~24.13.6",
 		"astro": "^7.3.6",
 		"bumpp": "^12.3.0",

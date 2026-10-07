@@ -1,36 +1,41 @@
-packages:
-  - .
-  - playground
-  - playground-starlight
-  - test/parity/fixtures/core-image
-  - test/parity/fixtures/picture-darkmode
 allowBuilds:
   esbuild: true
   puppeteer: true
   unrs-resolver: true
 ignoreWorkspaceRootCheck: true
 minimumReleaseAgeExclude:
-  - '@kitschpatrol/cspell-config@8.12.1'
-  - '@kitschpatrol/eslint-config@8.12.1'
-  - '@kitschpatrol/knip-config@8.12.1'
-  - '@kitschpatrol/mdat-config@8.12.1'
-  - '@kitschpatrol/prettier-config@8.12.1'
-  - '@kitschpatrol/remark-config@8.12.1'
-  - '@kitschpatrol/repo-config@8.12.1'
-  - '@kitschpatrol/shared-config@8.12.1'
-  - '@kitschpatrol/stylelint-config@8.12.1'
-  - '@kitschpatrol/typescript-config@8.12.1'
-  - '@kitschpatrol/tldraw-cli@6.1.0'
-  - '@kitschpatrol/unplugin-tldraw@1.1.4'
-  - poptab@1.2.2
   - '@kitschpatrol/aphex@0.1.5'
+  - '@kitschpatrol/cspell-config@8.13.1'
+  - '@kitschpatrol/eslint-config@8.13.1'
+  - '@kitschpatrol/knip-config@8.13.1'
+  - '@kitschpatrol/mdat-config@8.13.1'
+  - '@kitschpatrol/prettier-config@8.13.1'
+  - '@kitschpatrol/remark-config@8.13.1'
+  - '@kitschpatrol/repo-config@8.13.1'
   - '@kitschpatrol/safe-stable-stringify@2.5.0-fork.2'
+  - '@kitschpatrol/shared-config@8.13.1'
+  - '@kitschpatrol/stylelint-config@8.13.1'
+  - '@kitschpatrol/tldraw-cli@6.1.0'
+  - '@kitschpatrol/typescript-config@8.13.1'
   - '@kitschpatrol/unplugin-aphex@0.2.4'
+  - '@kitschpatrol/unplugin-tldraw@1.1.4'
   - lognow@0.8.5
+  - poptab@1.2.2
+packages:
+  - .
+  - playground
+  - playground-starlight
+  - test/parity/fixtures/core-image
+  - test/parity/fixtures/picture-darkmode
+peerDependencyRules:
+  allowedVersions:
+    # Remove once the installed version declares ESLint 10 support.
+    # https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/issues/1075
+    # https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/pull/1081
+    eslint-plugin-jsx-a11y@6>eslint: ^10.0.0
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'
-  - 'case-police'
   - '*cspell*'
   - '*eslint*'
   - '*knip*'
@@ -38,3 +43,4 @@ publicHoistPattern:
   - '*prettier*'
   - '*remark*'
   - '*stylelint*'
+  - 'case-police'
