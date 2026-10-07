@@ -16,6 +16,7 @@ export default cspellConfig({
 		'unassociate',
 		'userinactive',
 		'userinactivechange',
+		'xmpmeta',
 		'youtu',
 	],
 })

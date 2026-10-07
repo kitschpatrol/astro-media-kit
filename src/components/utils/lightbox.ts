@@ -215,11 +215,7 @@ function queryVideoElement(root: Element | null | undefined): HTMLMediaElement |
 
 	// Custom video elements extend HTMLElement with play/pause/currentTime via
 	// CustomVideoElement proxy — safe to treat as HTMLMediaElement.
-	if (!element) {
-		return null // eslint-disable-line unicorn/no-null -- matching DOM API return type
-	}
-
-	return element as unknown as HTMLMediaElement
+	return (element ?? null) as HTMLMediaElement | null // eslint-disable-line unicorn/no-null -- matching DOM API return type
 }
 
 /**

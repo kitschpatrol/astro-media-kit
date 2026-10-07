@@ -47,9 +47,14 @@ This library pairs well with [astro-mdx-kit](https://github.com/kitschpatrol/ast
 
 ## Getting started
 
+<!-- dependencies({ heading: 'Prerequisites' }) -->
+
 ### Prerequisites
 
-An [Astro](https://astro.build/) 7+ project.
+- [Node.js](https://nodejs.org/) 24.16.0 or newer (specifically `^24.16.0 || >=26.3.0`)
+- [astro](https://www.npmjs.com/package/astro) `^7.3.3` _(peer dependency)_
+
+<!-- /dependencies -->
 
 ### Installation
 

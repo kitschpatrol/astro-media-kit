@@ -38,19 +38,4 @@ export default eslintConfig(
 			],
 		},
 	},
-	{
-		// Unpublished workspace packages...
-		files: [
-			'playground/package.json',
-			'playground-starlight/package.json',
-			'test/parity/fixtures/core-image/package.json',
-			'test/parity/fixtures/picture-darkmode/package.json',
-		],
-		rules: {
-			'json-package/require-keywords': 'off',
-			'json-package/require-version': 'off',
-			'json-package/valid-devDependencies': 'off',
-			'json-package/valid-package-definition': 'off',
-		},
-	},
 )

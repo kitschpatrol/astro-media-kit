@@ -1,8 +1,13 @@
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { bunnyIsValidMediaId } from '../src/components/utils/bunny'
 import { cloudflareIsValidMediaId } from '../src/components/utils/cloudflare'
 import { muxIsValidMediaId } from '../src/components/utils/mux'
-import { resolveVideoSource, validateServiceConfig } from '../src/components/utils/video'
+import {
+	getVideoInfo,
+	resolveVideoSource,
+	validateServiceConfig,
+} from '../src/components/utils/video'
 
 describe('media ID validation', () => {
 	describe('bunnyIsValidMediaId', () => {
@@ -229,5 +234,34 @@ describe('validateServiceConfig', () => {
 		expect(() => {
 			validateServiceConfig('mux', validConfig)
 		}).not.toThrow()
+	})
+})
+
+describe('getVideoInfo (local)', () => {
+	const config = {
+		bunny: { apiAccessKey: '', hostname: '', libraryId: '' },
+		cloudflare: { accountId: '', apiToken: '' },
+		local: {},
+		mux: { accessToken: '', secret: '' },
+		oembed: {},
+		vimeo: {},
+		youtube: {},
+	}
+
+	it('probes dimensions and duration from a local MP4', async () => {
+		const src = path.join(import.meta.dirname, '../playground/public/test.mp4')
+		const info = await getVideoInfo(src, 'local', config, '/poster.jpg')
+		expect(info.width).toBe(674)
+		expect(info.height).toBe(380)
+		expect(info.duration).toBeCloseTo(10.2, 1)
+		expect(info.posterUrl).toBe('/poster.jpg')
+	})
+
+	it('falls back to zero dimensions when the probe fails', async () => {
+		const src = path.join(import.meta.dirname, 'missing.mp4')
+		const info = await getVideoInfo(src, 'local', config)
+		expect(info.width).toBe(0)
+		expect(info.height).toBe(0)
+		expect(info.duration).toBe(-1)
 	})
 })

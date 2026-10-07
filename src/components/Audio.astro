@@ -52,6 +52,7 @@ const {
 	creditMediaType,
 	creditMediaTypeFallback,
 	creditOrganization,
+	// eslint-disable-next-line unicorn/prefer-default-parameters -- untyped MDX callers can pass null, which a destructuring default would not replace
 	label,
 	loop = false,
 	muted = false,

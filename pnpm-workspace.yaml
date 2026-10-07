@@ -10,8 +10,23 @@ allowBuilds:
   unrs-resolver: true
 ignoreWorkspaceRootCheck: true
 minimumReleaseAgeExclude:
-  - '@mux/mux-node@15.5.0'
-  - node-gyp@13.1.0
+  - '@kitschpatrol/cspell-config@8.12.1'
+  - '@kitschpatrol/eslint-config@8.12.1'
+  - '@kitschpatrol/knip-config@8.12.1'
+  - '@kitschpatrol/mdat-config@8.12.1'
+  - '@kitschpatrol/prettier-config@8.12.1'
+  - '@kitschpatrol/remark-config@8.12.1'
+  - '@kitschpatrol/repo-config@8.12.1'
+  - '@kitschpatrol/shared-config@8.12.1'
+  - '@kitschpatrol/stylelint-config@8.12.1'
+  - '@kitschpatrol/typescript-config@8.12.1'
+  - '@kitschpatrol/tldraw-cli@6.1.0'
+  - '@kitschpatrol/unplugin-tldraw@1.1.4'
+  - poptab@1.2.2
+  - '@kitschpatrol/aphex@0.1.5'
+  - '@kitschpatrol/safe-stable-stringify@2.5.0-fork.2'
+  - '@kitschpatrol/unplugin-aphex@0.2.4'
+  - lognow@0.8.5
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'

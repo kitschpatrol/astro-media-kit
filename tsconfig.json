@@ -13,7 +13,6 @@
 	// typescript-eslint integration, and lists nested .astro/types.d.ts files
 	// explicitly since `**` doesn't match dot-directories
 	"include": [
-		"**/*",
 		"**/**.*",
 		".astro/types.d.ts",
 		"./playground-starlight/.astro/types.d.ts",

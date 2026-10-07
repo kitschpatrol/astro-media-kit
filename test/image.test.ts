@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { exiftool } from 'exiftool-vendored'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import path from 'node:path'
+import sharp from 'sharp'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+	getCreditFromXmpTags,
 	isDarkLightImageMetadata,
 	isImageMetadataObject,
 	isRemoteImageSource,
@@ -79,5 +84,69 @@ describe('isDarkLightImageMetadata', () => {
 		expect(isDarkLightImageMetadata({ dark: 'not-metadata', light: valid })).toBe(false)
 		expect(isDarkLightImageMetadata({ dark: valid, light: 42 })).toBe(false)
 		/* eslint-enable unicorn/no-null */
+	})
+})
+
+describe('getCreditFromXmpTags', () => {
+	let root: string
+	let taggedPath: string
+	let untaggedPath: string
+
+	beforeAll(async () => {
+		// Inside the cwd because getCreditFromXmpTags resolves paths against it
+		const cacheDirectory = path.join(process.cwd(), 'node_modules', '.cache')
+		await mkdir(cacheDirectory, { recursive: true })
+		root = await mkdtemp(path.join(cacheDirectory, 'astro-media-kit-xmp-'))
+
+		const xmp = [
+			'<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+			'<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+			'<rdf:Description rdf:about=""',
+			' xmlns:dc="http://purl.org/dc/elements/1.1/"',
+			' xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"',
+			' xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
+			' photoshop:Credit="Zoë Agency" xmp:Label="Archive">',
+			'<dc:creator><rdf:Seq><rdf:li>Zoë Doe</rdf:li><rdf:li>Second Author</rdf:li></rdf:Seq></dc:creator>',
+			'</rdf:Description>',
+			'</rdf:RDF>',
+			'</x:xmpmeta>',
+		].join('')
+
+		const blank = sharp({
+			create: { background: { r: 0, g: 0, b: 0 }, channels: 3, height: 8, width: 8 },
+		})
+		taggedPath = path.join(root, 'tagged.jpg')
+		await blank.clone().withXmp(xmp).jpeg().toFile(taggedPath)
+		untaggedPath = path.join(root, 'untagged.jpg')
+		await blank.clone().jpeg().toFile(untaggedPath)
+	})
+
+	afterAll(async () => {
+		await exiftool.end()
+		await rm(root, { force: true, recursive: true })
+	})
+
+	it('reads the first creator, credit, and label from XMP', async () => {
+		expect(await getCreditFromXmpTags(taggedPath)).toEqual({
+			creator: 'Zoë Doe',
+			credit: 'Zoë Agency',
+			label: 'Archive',
+		})
+	})
+
+	it('returns undefined fields for an image without XMP', async () => {
+		expect(await getCreditFromXmpTags(untaggedPath)).toEqual({
+			creator: undefined,
+			credit: undefined,
+			label: undefined,
+		})
+	})
+
+	it('returns undefined fields for a missing file', async () => {
+		expect(await getCreditFromXmpTags(path.join(root, 'missing.jpg'))).toEqual({
+			creator: undefined,
+			credit: undefined,
+			label: undefined,
+		})
 	})
 })
