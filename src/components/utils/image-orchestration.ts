@@ -127,9 +127,9 @@ export const DEFAULT_IMAGE_OUTPUT_FORMAT_RULES: Record<FallbackKey, ImageOutputF
  * object to `formats`; supplied entries are merged on top of these defaults.
  *
  * SVG defaults to `['webp']` to preserve Astro parity, but Sharp refuses to
- * rasterize SVGs without `image.experimentalSvg.dangerouslyProcessSVG`. Pass
- * `formats={{ svg: ['svg'] }}` (per call site or as a wrapper default) to
- * preserve SVGs as vectors.
+ * rasterize SVGs without `image.dangerouslyProcessSVG`. Pass `formats={{ svg:
+ * ['svg'] }}` (per call site or as a wrapper default) to preserve SVGs as
+ * vectors.
  */
 export const DEFAULT_FORMATS_RULES: Record<FallbackKey, ImageOutputFormat[]> = {
 	apng: ['webp'],

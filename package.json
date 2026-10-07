@@ -53,18 +53,18 @@
 		"fix": "ksc fix",
 		"init": "pnpm -C playground run init",
 		"lint": "ksc lint",
-		"prepare": "skills experimental_sync -y -f",
-		"release": "bumpp --commit 'Release: %s' && pnpm build && npm publish --otp $(op item get npm --otp)",
+		"prepare": "pnpm build && skills experimental_sync -y -f",
+		"release": "bumpp --commit 'Release: %s' && pnpm build && pnpm publish --otp $(op item get npm --otp)",
 		"test": "vitest run"
 	},
 	"dependencies": {
 		"@astrojs/compiler": "4.0.0",
 		"@kitschpatrol/unplugin-aphex": "^0.2.4",
 		"@kitschpatrol/unplugin-tldraw": "^1.1.4",
-		"@mux/mux-node": "^15.5.0",
+		"@mux/ts": "^15.6.1",
 		"@oscnord/get-video-resolution": "^2.5.0",
 		"@sindresorhus/is": "^8.1.0",
-		"exiftool-vendored": "^39.0.0",
+		"exiftool-vendored": "^39.0.1",
 		"hls-video-element": "^1.5.11",
 		"linkedom": "^0.18.13",
 		"media-chrome": "^4.19.3",
@@ -72,29 +72,29 @@
 		"photoswipe": "^5.4.4",
 		"photoswipe-dynamic-caption-plugin": "^1.2.7",
 		"pretty-bytes": "^7.2.0",
-		"vimeo-video-element": "^1.7.3",
+		"vimeo-video-element": "^1.7.4",
 		"youtube-video-element": "^1.9.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.10",
-		"@kitschpatrol/shared-config": "^8.12.1",
+		"@kitschpatrol/shared-config": "^8.13.1",
 		"@types/node": "~24.13.6",
-		"astro": "^7.3.6",
+		"astro": "^7.3.8",
 		"bumpp": "^12.3.0",
 		"cheerio": "^1.2.0",
-		"happy-dom": "^20.14.5",
+		"happy-dom": "^20.14.6",
 		"node-addon-api": "^8.9.2",
 		"node-gyp": "^13.1.0",
 		"sharp": "^0.35.5",
 		"shx": "^0.4.0",
-		"skills": "^1.7.0",
+		"skills": "^1.7.2",
 		"typescript": "~6.0.3",
 		"vitest": "^5.0.3"
 	},
 	"peerDependencies": {
 		"astro": "^7.3.3"
 	},
-	"packageManager": "pnpm@12.9.1",
+	"packageManager": "pnpm@12.11.2",
 	"engines": {
 		"node": "^24.16.0 || >=26.3.0"
 	}
