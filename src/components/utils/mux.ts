@@ -1,4 +1,4 @@
-import Mux from '@mux/mux-node'
+import Mux from '@mux/ts'
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
