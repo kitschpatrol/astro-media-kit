@@ -668,6 +668,8 @@ Component prop types are exported from `astro-media-kit/components`: **`AudioPro
 
 ## Development notes
 
+`pnpm test` runs the Node tests, then the lightbox's behavior tests in Chromium, Firefox, and WebKit through Playwright; first run `pnpm exec playwright install` to download the browsers. The browser tests load the pages the `core-image` fixture builds, so they exercise the markup the components render. Run one browser with `pnpm vitest run --project browser --browser.name=chromium`.
+
 The [Astro Prettier plugin](https://github.com/withastro/prettier-plugin-astro) has issues parsing nested script tags in Astro templates, see [#452](https://github.com/withastro/prettier-plugin-astro/issues/452) and [#454](https://github.com/withastro/prettier-plugin-astro/issues/454).
 
 This means that `VideoPlayer.astro` and `VideoMedia.astro` cannot be automatically formatted.
