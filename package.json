@@ -34,7 +34,10 @@
 	"sideEffects": [
 		"**/*.astro",
 		"**/*.css",
-		"./src/components/internal/lightbox/index.ts"
+		"./src/components/internal/lightbox/index.ts",
+		"./src/components/internal/videojs-media.ts",
+		"./src/components/internal/videojs-player.ts",
+		"./src/components/internal/videojs-ui.ts"
 	],
 	"type": "module",
 	"exports": {
