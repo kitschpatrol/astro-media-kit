@@ -6,11 +6,8 @@ import { fileURLToPath } from 'node:url'
 /** Image formats that may be emitted as originals by Astro's image pipeline. */
 const ORIGINAL_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'svg'] as const
 
-/**
- * Valid characters in Astro's 8-char hash (base64url minus `_`, which is
- * reserved as the variant separator).
- */
-const ORIGINAL_HASH_CHARS = /^[a-z0-9\-]+$/iv
+/** Valid characters in Astro's 8-char hash (base64url, including `_`). */
+const ORIGINAL_HASH_CHARS = /^[\w\-]+$/iv
 
 /**
  * Whether `file` has the structural shape of an Astro image-pipeline original.
@@ -21,9 +18,9 @@ const ORIGINAL_HASH_CHARS = /^[a-z0-9\-]+$/iv
  * - Variant: `{base}.{HASH8}_{transform}.{ext}`
  *
  * Identified positionally: the penultimate `.`-separated segment must be
- * exactly 8 chars from `[A-Za-z0-9-]`. Variants are rejected by length (always
- * longer, due to the `_{transform}` suffix) and by charset (the `_`
- * separator).
+ * exactly 8 chars from `[A-Za-z0-9_-]`. Variants are rejected by length (always
+ * longer, due to the `_{transform}` suffix). Underscores can occur in the hash
+ * itself as well as in the separator.
  *
  * Shape alone does not mean the file is unused; use `findUnusedOriginals` to
  * select only those originals that have at least one variant sibling.

@@ -11,6 +11,9 @@ describe('hasOriginalImageShape', () => {
 		'tree-31_3960433676_o.DXRj2UbG.jpg',
 		'tree-32_3959664913_o.CE-qICGi.jpg',
 		'plexi-box-building-9.e8sCk-Uh.jpg',
+		'building-7a3a761f.Cj8_WxVc.png',
+		'disruptors-1-e7bd18ac.DC_Jx_ss.png',
+		'overview-8debfb8f.H_vWOpLr.png',
 	]
 
 	const notOriginals = [
@@ -18,6 +21,9 @@ describe('hasOriginalImageShape', () => {
 		'tree-31_3960433676_o.DXRj2UbG_E7yWS.jpg',
 		'tree-32_3959664913_o.CE-qICGi_107KdY.jpg',
 		'tree-32_3960435040_o.B9379L8L_9Y8O8.jpg',
+		'building-7a3a761f.Cj8_WxVc_Fs2U5.webp',
+		'disruptors-1-e7bd18ac.DC_Jx_ss_ZH0uzO.webp',
+		'overview-8debfb8f.H_vWOpLr_qyrxT.webp',
 	]
 
 	it.each(originals)('matches original shape %s', (file) => {
@@ -42,8 +48,15 @@ describe('hasOriginalImageShape', () => {
 		expect(hasOriginalImageShape('photo.ABCDEFGHI.jpg')).toBe(false)
 	})
 
-	it('rejects penultimate segments containing an underscore', () => {
-		expect(hasOriginalImageShape('photo.AB_DEFGH.jpg')).toBe(false)
+	it.each(['AB_DEFGH', '_BCDEFGH', 'ABCDEFG_'])(
+		'accepts underscores anywhere in the hash %s',
+		(hash) => {
+			expect(hasOriginalImageShape(`photo.${hash}.jpg`)).toBe(true)
+		},
+	)
+
+	it('rejects characters outside the base64url alphabet', () => {
+		expect(hasOriginalImageShape('photo.AB+DEFGH.jpg')).toBe(false)
 	})
 
 	it('accepts uppercase extensions', () => {
@@ -92,6 +105,23 @@ describe('findUnusedOriginals', () => {
 		expect(findUnusedOriginals(files).toSorted()).toEqual(
 			['tree-31_3960433676_o.DXRj2UbG.jpg', 'tree-32_3959664913_o.CE-qICGi.jpg'].toSorted(),
 		)
+	})
+
+	it('discards originals with underscores in their hashes only when variants exist', () => {
+		const originals = [
+			'building-7a3a761f.Cj8_WxVc.png',
+			'disruptors-1-e7bd18ac.DC_Jx_ss.png',
+			'overview-8debfb8f.H_vWOpLr.png',
+		]
+		const files = [
+			...originals,
+			'building-7a3a761f.Cj8_WxVc_Fs2U5.webp',
+			'disruptors-1-e7bd18ac.DC_Jx_ss_ZH0uzO.webp',
+			'overview-8debfb8f.H_vWOpLr_qyrxT.webp',
+			'lone.AB_DEFGH.png',
+		]
+
+		expect(findUnusedOriginals(files)).toEqual(originals)
 	})
 
 	it('treats variants of different extensions as valid siblings', () => {
