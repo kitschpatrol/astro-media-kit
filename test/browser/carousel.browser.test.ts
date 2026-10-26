@@ -109,6 +109,21 @@ it('drags with the mouse without opening the lightbox, and opens it on a click',
 	expect(activeSlideLabel()).toBe('2 of 3')
 })
 
+it('clips the slides at its edges as the track is pulled past an end', async () => {
+	const { carousel, track } = await mountCarousel()
+	const box = query(carousel, '.amk-carousel-viewport').getBoundingClientRect()
+	const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+
+	await commands.mouseDown(middle.x, middle.y)
+	await commands.mouseMove(middle.x + 20, middle.y)
+	await commands.mouseMove(middle.x + 150, middle.y)
+
+	await expect.poll(() => track.getBoundingClientRect().x).toBeGreaterThan(box.x + 20)
+	const beside = document.elementFromPoint(box.right + 20, middle.y)
+	expect(beside !== null && carousel.contains(beside)).toBe(false)
+	await commands.mouseUp()
+})
+
 it('hides captions unless asked, leaving them to the lightbox', async () => {
 	const { track } = await mountCarousel('quiet')
 	const caption = query(track, 'figcaption')

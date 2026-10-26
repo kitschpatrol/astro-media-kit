@@ -13,8 +13,10 @@
 	}
 }
 
+/* The track is pulled past either end as a whole, so the viewport clips it */
 .amk-carousel-viewport {
 	position: relative;
+	overflow: clip;
 }
 
 .amk-carousel-track {
