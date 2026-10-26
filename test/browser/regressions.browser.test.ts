@@ -806,3 +806,25 @@ it('closes immediately before a page swap, and reopens on the next page', async 
 	await openLightbox(box)
 	expect(viewer().open).toBe(true)
 })
+
+it('stands a poster in for an embedded player with nothing to draw, started or not', async () => {
+	const fixture = mount(
+		playerItem(
+			`<div class="amk" style="width: 240px">
+				<video-player poster="/media/loop-poster.jpg">
+					<media-container data-media="" style="display: block; width: 240px; aspect-ratio: 16 / 9; background: #000">
+						<vimeo-video class="amk-media"></vimeo-video>
+						<media-poster class="amk-poster"></media-poster>
+					</media-container>
+				</video-player>
+			</div>`,
+		),
+	)
+	const box = boxes(fixture)[0]!
+	const container = query(box, 'media-container').getBoundingClientRect()
+	await openLightbox(box)
+	const preview = query(box, '[data-preview]', HTMLImageElement)
+	expect(preview.src).toContain('/media/loop-poster.jpg')
+	expect(preview.getBoundingClientRect().width).toBeCloseTo(container.width, 0)
+	expect(preview.getBoundingClientRect().height).toBeCloseTo(container.height, 0)
+})

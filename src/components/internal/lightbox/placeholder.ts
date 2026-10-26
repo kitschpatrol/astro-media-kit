@@ -131,14 +131,22 @@ export function placePlaceholder(
 }
 
 /**
- * A preview of the kit's player: its poster while that is showing, or else its
- * video's frames. The video lives in the media element's shadow root for
- * streaming services, and in the light DOM for local files. Embedded players
- * without a poster reserve space only.
+ * A preview of the kit's player: its video's frames, or its poster while that
+ * is showing and whenever there are no frames to draw, as for an embedded
+ * player or a video that has no data yet. The video lives in the media
+ * element's shadow root for streaming services, and in the light DOM for local
+ * files. An embedded player without a poster reserves space only.
  */
 function playerPlaceholder(container: Element, frame: VideoPreviewFrame): HTMLElement | undefined {
 	const poster = container.closest('video-player')?.getAttribute('poster') ?? ''
-	if (poster !== '' && container.querySelector('media-poster[data-visible]') !== null) {
+	const media = container.querySelector('.amk-media')
+	const video =
+		media instanceof HTMLVideoElement ? media : media?.shadowRoot?.querySelector('video')
+	const hasFrames = video instanceof HTMLVideoElement && video.readyState >= 2
+	if (
+		poster !== '' &&
+		(!hasFrames || container.querySelector('media-poster[data-visible]') !== null)
+	) {
 		const image = document.createElement('img')
 		image.alt = ''
 		image.decoding = 'sync'
@@ -146,9 +154,6 @@ function playerPlaceholder(container: Element, frame: VideoPreviewFrame): HTMLEl
 		return image
 	}
 
-	const media = container.querySelector('.amk-media')
-	const video =
-		media instanceof HTMLVideoElement ? media : media?.shadowRoot?.querySelector('video')
 	if (!(video instanceof HTMLVideoElement)) {
 		return undefined
 	}
