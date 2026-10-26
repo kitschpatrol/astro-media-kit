@@ -8,7 +8,9 @@ export type Props = {
 }
 
 const { controls, floating = false, zoom = false } = Astro.props
-const hasBar = controls === 'full' || controls === 'lightbox'
+// A minimal player that can zoom gets the full bar as well, hidden on the page
+// and shown by the lightbox, which gives the player its own control level
+const hasBar = controls === 'full' || controls === 'lightbox' || (controls === 'minimal' && zoom)
 const hasFullscreen = controls === 'full' || controls === 'minimal'
 const uid = `amk-${crypto.randomUUID()}`
 ---
@@ -25,7 +27,7 @@ const uid = `amk-${crypto.randomUUID()}`
 		<media-tooltip-group>
 			<media-controls-group aria-label="Playback controls" class="amk-bar">
 				{hasBar && (
-					<>
+					<div class="amk-playback">
 						<media-play-button class="amk-button" id={`${uid}-play`}>
 							<media-icon class="amk-icon-play" name="play" />
 							<media-icon class="amk-icon-pause" name="pause" />
@@ -35,21 +37,26 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-tooltip-label />
 							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 						</media-tooltip>
-						<media-mute-button class="amk-button" id={`${uid}-mute`}>
+						<media-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
 							<media-icon class="amk-icon-volume-off" name="volume-off" />
 							<media-icon class="amk-icon-volume-low" name="volume-low" />
 							<media-icon class="amk-icon-volume-high" name="volume-high" />
 						</media-mute-button>
-						<media-tooltip class="amk-tooltip" id={`${uid}-mute-tooltip`} trigger={`${uid}-mute`}>
-							<media-tooltip-label />
-							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-						</media-tooltip>
-						<media-volume-slider class="amk-slider amk-volume-slider">
-							<media-slider-track class="amk-slider-track">
-								<media-slider-fill class="amk-slider-fill" />
-							</media-slider-track>
-							<media-slider-thumb class="amk-slider-thumb" />
-						</media-volume-slider>
+						<media-volume-popover
+							class="amk-volume-popover"
+							close-delay="100"
+							delay="200"
+							id={`${uid}-volume`}
+							open-on-hover
+							side="top"
+						>
+							<media-volume-slider class="amk-slider amk-volume-slider" orientation="vertical">
+								<media-slider-track class="amk-slider-track">
+									<media-slider-fill class="amk-slider-fill" />
+								</media-slider-track>
+								<media-slider-thumb class="amk-slider-thumb" />
+							</media-volume-slider>
+						</media-volume-popover>
 						<media-time-slider class="amk-slider amk-time-slider">
 							<media-slider-track class="amk-slider-track">
 								<media-slider-buffer class="amk-slider-buffer" />
@@ -75,7 +82,7 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-tooltip-label />
 							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 						</media-tooltip>
-					</>
+					</div>
 				)}
 				{hasFullscreen &&
 					(zoom ? (

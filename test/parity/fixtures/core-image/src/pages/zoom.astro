@@ -72,6 +72,19 @@ const videoProps = {
 				<VideoPlayer {...videoProps} />
 			</Zoomer>
 		</section>
+		<section id="video-minimal">
+			<Zoomer enabled={true} href="/media/loop.mp4" interactive>
+				<VideoPlayer {...videoProps} controls="minimal" resolvedLabel="Minimal video" />
+			</Zoomer>
+		</section>
+		<section id="video-background">
+			<VideoPlayer
+				{...videoProps}
+				controls="minimal"
+				resolvedLabel="Background video"
+				zoom={false}
+			/>
+		</section>
 		<section id="content">
 			<Zoomer enabled={true}>
 				<div style="aspect-ratio: 3 / 2; background: teal">Original HTML</div>
@@ -89,6 +102,8 @@ const videoProps = {
 
 	article,
 	#video,
+	#video-minimal,
+	#video-background,
 	#content,
 	#disabled {
 		width: 240px;

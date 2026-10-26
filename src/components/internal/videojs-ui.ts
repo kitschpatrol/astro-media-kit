@@ -51,6 +51,7 @@ import '@videojs/html/ui/tooltip'
 import '@videojs/html/ui/tooltip-group'
 import '@videojs/html/ui/tooltip-label'
 import '@videojs/html/ui/tooltip-shortcut'
+import '@videojs/html/ui/volume-popover'
 import '@videojs/html/ui/volume-slider'
 
 // Register the icons the bars use into the `default` family explicitly.

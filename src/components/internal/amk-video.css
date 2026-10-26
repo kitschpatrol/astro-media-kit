@@ -299,6 +299,20 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	height: 32px;
 }
 
+/* The bar's playback controls take no layout of their own. A minimal player
+   renders them for the lightbox only, which raises its control level. */
+.amk-playback {
+	display: contents;
+}
+
+.amk-player[data-controls='minimal'] .amk-playback {
+	display: none;
+}
+
+.amk-player:not([data-controls='minimal']) .amk-center-play {
+	display: none;
+}
+
 .amk-player[data-controls='minimal'] .amk-bar {
 	justify-content: flex-end;
 	background: transparent;
@@ -349,8 +363,13 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	min-width: 40px;
 }
 
+/* The volume slider stands up, in its popover */
 .amk-volume-slider {
-	width: 70px;
+	flex-direction: column;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	margin: 0;
 }
 
 .amk-slider-track {
@@ -362,6 +381,11 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	background: var(--amk-slider-track);
 }
 
+.amk-volume-slider .amk-slider-track {
+	width: var(--amk-slider-track-height);
+	height: 100%;
+}
+
 @media (prefers-reduced-motion: no-preference) {
 	.amk-slider-track {
 		transition: height 0.15s;
@@ -370,6 +394,11 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 .amk-slider[data-interactive] .amk-slider-track {
 	height: 6px;
+}
+
+.amk-volume-slider[data-interactive] .amk-slider-track {
+	width: 6px;
+	height: 100%;
 }
 
 .amk-slider-buffer,
@@ -391,8 +420,20 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	background: var(--amk-slider-fill);
 }
 
+.amk-volume-slider .amk-slider-fill {
+	top: auto;
+	bottom: 0;
+	width: 100%;
+	height: var(--media-slider-fill);
+}
+
 .amk-slider[data-dragging] .amk-slider-fill {
 	width: var(--media-slider-pointer);
+}
+
+.amk-volume-slider[data-dragging] .amk-slider-fill {
+	width: 100%;
+	height: var(--media-slider-pointer);
 }
 
 .amk-slider-thumb {
@@ -408,6 +449,13 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
 }
 
+.amk-volume-slider .amk-slider-thumb {
+	top: auto;
+	bottom: var(--media-slider-fill);
+	left: 50%;
+	translate: -50% 50%;
+}
+
 @media (prefers-reduced-motion: no-preference) {
 	.amk-slider-thumb {
 		transition: scale 0.15s;
@@ -420,6 +468,11 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 .amk-slider[data-dragging] .amk-slider-thumb {
 	left: var(--media-slider-pointer);
+}
+
+.amk-volume-slider[data-dragging] .amk-slider-thumb {
+	bottom: var(--media-slider-pointer);
+	left: 50%;
 }
 
 .amk-slider-value {
@@ -440,6 +493,38 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 .amk-slider[data-pointing] .amk-slider-value {
 	opacity: 1;
+}
+
+/* --- Volume --- */
+
+/* The volume slider stands in a popover over the mute button, which opens it
+   on hover and focus, so that the bar holds one timeline-like slider only.
+   Video.js positions the popover against the button. */
+.amk-volume-popover {
+	--media-popover-side-offset: 4px;
+
+	box-sizing: border-box;
+	width: var(--amk-control-size);
+	height: 120px;
+	margin: 0;
+	padding: 12px 0;
+	border: 0;
+	border-radius: 4px;
+	color: var(--amk-control-color);
+	background: rgb(0 0 0 / 85%);
+}
+
+.amk-volume-popover:not([data-open], [data-ending-style]) {
+	display: none;
+}
+
+/* Bridges the gap to the button, so the pointer can cross it */
+.amk-volume-popover::before {
+	content: '';
+	position: absolute;
+	inset-inline: 0;
+	top: 100%;
+	height: var(--media-popover-side-offset);
 }
 
 /* --- Tooltips --- */
@@ -524,7 +609,6 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 /* Size controls to their player, including players inside narrow columns. */
 @container amk-player (width < 440px) {
-	.amk-volume-slider,
 	.amk-time media-time[type='duration'],
 	.amk-time media-time-separator {
 		display: none;

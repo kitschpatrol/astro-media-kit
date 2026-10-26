@@ -4,7 +4,7 @@ import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { ratioOf } from './media'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
-import { releaseControls } from './player-controls'
+import { adoptControls, releaseControls } from './player-controls'
 import { releasePreparation } from './prepare'
 import { useWarmup } from './warm-image'
 
@@ -109,6 +109,7 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	const hold = isLink ? '' : holdOf(item, subject, measurement.wrapper)
 	item.dataset.lifted = hold
 	move(slide.layer, subject)
+	adoptControls(subject)
 	if (isLink) {
 		// The kit's media script sets up the media that is in the page as it
 		// loads; this media has only just arrived

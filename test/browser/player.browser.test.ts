@@ -3,7 +3,7 @@
 // the viewer again, and its poster stands in for it on the page.
 
 import { afterEach, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
 import '../../src/components/internal/amk-video.css'
@@ -144,6 +144,69 @@ it('slides its control bar up as it lifts, and away again as it lands', async ()
 	} finally {
 		slow.remove()
 	}
+})
+
+it('raises a minimal player to the full bar while lifted, and lowers it again after', async () => {
+	const fixture = await mountPage('/zoom/')
+	document.dispatchEvent(new Event('astro:page-load'))
+	const player = query(fixture, '#video-minimal video-player')
+	await customElements.whenDefined('video-player')
+	const playback = query(player, '.amk-playback')
+	const centerPlay = query(player, '.amk-center-play')
+	expect(getComputedStyle(playback).display).toBe('none')
+	expect(getComputedStyle(centerPlay).display).not.toBe('none')
+
+	await userEvent.click(query(player, '[data-zoom-open]'))
+
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	expect(player.dataset.controls).toBe('lightbox')
+	expect(getComputedStyle(playback).display).toBe('contents')
+	expect(getComputedStyle(query(playback, 'media-play-button')).display).not.toBe('none')
+	expect(getComputedStyle(centerPlay).display).toBe('none')
+	await liftDone()
+
+	await userEvent.click(query(player, '[data-zoom-open]'))
+
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(player.dataset.controls).toBe('minimal')
+	expect(getComputedStyle(playback).display).toBe('none')
+	expect(getComputedStyle(centerPlay).display).not.toBe('none')
+})
+
+it('stands the volume slider up in a popover over the mute button, on hover', async () => {
+	const { player } = await mountPlayer()
+	const popover = query(player, 'media-volume-popover')
+	const mute = query(player, 'media-mute-button')
+	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
+
+	await userEvent.hover(mute)
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	const slider = query(popover, 'media-volume-slider').getBoundingClientRect()
+	expect(slider.height).toBeGreaterThan(slider.width)
+	const button = mute.getBoundingClientRect()
+	expect(popover.getBoundingClientRect().bottom).toBeLessThanOrEqual(button.top)
+	expect(Math.abs(slider.x + slider.width / 2 - (button.x + button.width / 2))).toBeLessThan(2)
+
+	await commands.mouseMove(5, 5)
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(false)
+})
+
+it('opens the volume popover from the floated bar too', async () => {
+	const { player } = await mountPlayer()
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	const popover = query(player, 'media-volume-popover')
+	const mute = query(player, 'media-mute-button')
+
+	await userEvent.hover(mute)
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	expect(popover.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+		mute.getBoundingClientRect().top,
+	)
 })
 
 it('only fades its bar in the page as the controls hide and show', async () => {

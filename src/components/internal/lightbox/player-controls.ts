@@ -14,6 +14,24 @@ type Bar = {
 /** The bars that are floated or on their way out, by their player's subject. */
 const bars = new Map<Element, Bar>()
 
+/** The control levels of lifted players that took the viewer's, by subject. */
+const levels = new Map<Element, string>()
+
+/**
+ * Give a lifted player the viewer's control level: a minimal player's full bar,
+ * which the component renders hidden on the page, comes out, while a player
+ * without controls stays without.
+ */
+export function adoptControls(subject: Element) {
+	const player = subject.querySelector<HTMLElement>(':scope video-player')
+	if (player?.dataset.controls !== 'minimal') {
+		return
+	}
+
+	levels.set(subject, player.dataset.controls)
+	player.dataset.controls = 'lightbox'
+}
+
 /**
  * Track whether the viewer is in use, so the floated controls can hide.
  * Activity covers the whole viewer, but focus and dragging keep the controls
@@ -130,10 +148,24 @@ export function hideControls() {
 }
 
 /**
- * Put a bar back in its player, where it rises into place: the one in
- * `subject`, or every bar when no subject is given.
+ * Put a bar back in its player, at the player's own control level, where it
+ * rises into place: the one in `subject`, or every bar when no subject is
+ * given.
  */
 export function releaseControls(subject?: Element) {
+	for (const [each, level] of levels) {
+		if (subject !== undefined && each !== subject) {
+			continue
+		}
+
+		const player = each.querySelector<HTMLElement>(':scope video-player')
+		if (player !== null) {
+			player.dataset.controls = level
+		}
+
+		levels.delete(each)
+	}
+
 	for (const [each, bar] of bars) {
 		if (subject !== undefined && each !== subject) {
 			continue

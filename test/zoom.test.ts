@@ -62,6 +62,21 @@ describe('zoom server markup', () => {
 		expect($('#video button[data-zoom-open] media-icon')).toHaveLength(2)
 	})
 
+	it('renders the full bar for a minimal player the lightbox can raise, and the volume in a popover', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		expect($('#video-minimal .amk-player').attr('data-controls')).toBe('minimal')
+		expect($('#video-minimal .amk-center-play')).toHaveLength(1)
+		expect($('#video-minimal .amk-playback media-play-button')).toHaveLength(1)
+		expect($('#video-background .amk-center-play')).toHaveLength(1)
+		expect($('#video-background .amk-playback')).toHaveLength(0)
+		expect($('#video .amk-center-play')).toHaveLength(0)
+		const popover = $('#video media-volume-popover')
+		expect(popover.attr('open-on-hover')).toBeDefined()
+		expect($('#video media-mute-button').attr('commandfor')).toBe(popover.attr('id'))
+		expect(popover.find('media-volume-slider').attr('orientation')).toBe('vertical')
+		expect($('#video .amk-bar > media-volume-slider')).toHaveLength(0)
+	})
+
 	it('marks both themed pictures as media, and skips the wrapper when zoom is off', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		expect($('#second .amk-zoom > .amk-picture > picture')).toHaveLength(2)
