@@ -6,7 +6,7 @@ import Image from './Image.astro'
 import ZoomLinkAnchor from './internal/ZoomLinkAnchor.astro'
 import Picture from './Picture.astro'
 import { isDarkLightImageMetadata } from './utils/image'
-import { isImageSource } from './utils/zoom-image'
+import { isVideoSource } from './utils/video'
 import Video from './Video.astro'
 
 /**
@@ -31,9 +31,11 @@ export type Props = Omit<PrefixedZoomProps, 'zoomPlaceholder'> & {
 	 */
 	className?: string | undefined
 	/**
-	 * The media to open: an image, as `ImageMetadata`, a `{ dark, light }` pair,
-	 * or a path or URL with an image extension, or else a video source, as
-	 * `<Video>` takes it.
+	 * The media to open: an image, as `ImageMetadata` or a `{ dark, light }`
+	 * pair, or a string. A string is a video source, as `<Video>` takes it, when
+	 * it is a service URL or ID, a page to embed, or a media file, and an image
+	 * path or URL otherwise. With the `mediaKit()` integration, a relative image
+	 * path is imported like one on `<Image>`.
 	 */
 	src: ImageProps['src']
 }
@@ -48,7 +50,7 @@ const {
 	zoomScope,
 } = Astro.props
 
-const isImage = typeof src !== 'string' || isImageSource(src)
+const isImage = typeof src !== 'string' || !isVideoSource(src)
 const className = classFromAstro ?? classFromJsx
 const zoomProps = { zoom, zoomLevel, zoomScope }
 // The link's text names an image unless told otherwise

@@ -2,6 +2,7 @@ import type { AttributeNode, ComponentNode, FrontmatterNode, Node } from '@astro
 import { parse } from '@astrojs/compiler'
 import { is, serialize } from '@astrojs/compiler/utils'
 import { readFile } from 'node:fs/promises'
+import { isVideoSource } from '../components/utils/video'
 
 /**
  * A single auto-import entry describing how a prop value should be imported as
@@ -12,11 +13,18 @@ import { readFile } from 'node:fs/promises'
  * - `{ from, to }` — Read from `from` prop, import it, set on `to` prop.
  * - `{ from, to, transform }` — Like above, but transform the path first. Return
  *   `undefined` from `transform` to skip the derived import.
+ * - `{ from, to, shouldImport }` — Like `{ from, to }`, but leave values that
+ *   `shouldImport` declines as they are.
  */
 export type AutoImportEntry =
 	| string
 	| {
 			from: string
+			/**
+			 * Whether a string value should be imported at all. Every importable path
+			 * is, by default.
+			 */
+			shouldImport?: (path: string) => boolean
 			to: string
 			/**
 			 * Transform the import path before generating the import. Return
@@ -35,6 +43,7 @@ export type AutoImportConfig = AutoImportEntry | AutoImportEntry[]
  */
 type ResolvedEntry = {
 	fromProp: string
+	shouldImport?: (path: string) => boolean
 	toProp: string
 	transform?: (path: string) => string | undefined
 }
@@ -85,9 +94,33 @@ export const tldrawDarkImport: AutoImportEntry = {
 	},
 }
 
+/**
+ * Auto-import entry for `<ZoomLink>`'s `src`: imported as an image unless it is
+ * a video source, which the component takes as it is.
+ *
+ * @example
+ * 	mediaKit({
+ * 		autoImport: {
+ * 			components: {
+ * 				ZoomLink: imageOnlyImport,
+ * 			},
+ * 		},
+ * 	})
+ */
+export const imageOnlyImport: AutoImportEntry = {
+	from: 'src',
+	shouldImport: (path) => !isVideoSource(path),
+	to: 'src',
+}
+
 type ImportEntry = {
 	name: string
 	path: string
+}
+
+/** Whether `entry` imports a quoted `path`: not a URL, and not one it declines. */
+function isImportable(entry: ResolvedEntry, path: string): boolean {
+	return isImportablePath(path) && entry.shouldImport?.(path) !== false
 }
 
 function isImportablePath(path: string): boolean {
@@ -139,7 +172,7 @@ function processComponent(
 	// Use the first primary entry's value as the anchor path for derived entries
 	const anchorEntry = primaryEntries[0]!
 	const anchorAttribute = findQuotedAttribute(node.attributes, anchorEntry.fromProp)
-	if (!anchorAttribute || !isImportablePath(anchorAttribute.value)) {
+	if (!anchorAttribute || !isImportable(anchorEntry, anchorAttribute.value)) {
 		return false
 	}
 
@@ -149,7 +182,7 @@ function processComponent(
 	// Process primary entries — replace quoted string attrs with expression imports
 	for (const entry of primaryEntries) {
 		const attribute = findQuotedAttribute(node.attributes, entry.fromProp)
-		if (!attribute || !isImportablePath(attribute.value)) {
+		if (!attribute || !isImportable(entry, attribute.value)) {
 			continue
 		}
 

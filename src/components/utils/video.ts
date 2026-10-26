@@ -7,7 +7,13 @@ import type { MuxConfig } from './mux'
 import { getPublicFilePath } from '../../utilities/path'
 import { bunnyGetVideoInfo, bunnyIsValidMediaId } from './bunny'
 import { cloudflareGetVideoInfo, cloudflareIsValidMediaId } from './cloudflare'
-import { isDirectMediaUrl, isLocalPath, tryParseUrl } from './media'
+import {
+	hasImageExtension,
+	hasMediaExtension,
+	isDirectMediaUrl,
+	isLocalPath,
+	tryParseUrl,
+} from './media'
 import { muxGetVideoInfo, muxIsValidMediaId } from './mux'
 
 /** Normalized video metadata returned by all service adapters. */
@@ -385,6 +391,20 @@ function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
 	}
 
 	return { identifier: src, service: isDirectMediaUrl(url) ? 'local' : 'oembed' }
+}
+
+/**
+ * Whether a source string is for a video rather than an image: any URL that
+ * isn't an image file (a service, a media file, or a page to embed), a service
+ * ID, or a path to a media file. Anything else is for the image pipeline.
+ */
+export function isVideoSource(src: string): boolean {
+	return (
+		!hasImageExtension(src) &&
+		(tryParseUrl(src) !== undefined ||
+			inferServiceFromId(src) !== undefined ||
+			hasMediaExtension(src))
+	)
 }
 
 /**

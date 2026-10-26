@@ -5,6 +5,7 @@ import { cloudflareIsValidMediaId } from '../src/components/utils/cloudflare'
 import { muxIsValidMediaId } from '../src/components/utils/mux'
 import {
 	getVideoInfo,
+	isVideoSource,
 	localVideoProbeCandidates,
 	resolveVideoSource,
 	validateServiceConfig,
@@ -92,6 +93,35 @@ describe('media ID validation', () => {
 			expect(muxIsValidMediaId('a'.repeat(43))).toBe(false)
 			expect(muxIsValidMediaId('a'.repeat(45))).toBe(false)
 		})
+	})
+})
+
+describe('isVideoSource', () => {
+	it('takes service URLs and IDs, pages to embed, and media files for videos', () => {
+		const missed = [
+			'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+			'https://vimeo.com/123456789',
+			'https://example.com/talk',
+			'https://example.com/clip.mp4',
+			'f24d7806-2cf5-4df9-a340-840d68eef8c9',
+			'dQw4w9WgXcQ',
+			'/media/loop.mp4',
+			'../assets/clip.webm',
+			'clip.m3u8',
+		].filter((src) => !isVideoSource(src))
+		expect(missed).toEqual([])
+	})
+
+	it('leaves image files, wherever they are, and other paths to the image pipeline', () => {
+		const taken = [
+			'../assets/photo.jpg',
+			'/images/photo.webp?width=400',
+			'https://example.com/photo.png#top',
+			'../assets/drawing.tldr',
+			'~aphex/Album/Photo',
+			'./photo',
+		].filter((src) => isVideoSource(src))
+		expect(taken).toEqual([])
 	})
 })
 

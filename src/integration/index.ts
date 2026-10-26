@@ -11,14 +11,14 @@ import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from '
 import type { TldrawConfig } from './tldraw'
 import type { ResolvedWatermarkConfig } from './watermark-image-service'
 import { vitePluginMediaKitAphex } from './aphex'
-import { vitePluginMediaKitAutoImport } from './auto-import'
+import { imageOnlyImport, vitePluginMediaKitAutoImport } from './auto-import'
 import { removeOriginalImages } from './remove-originals'
 import { stripExifFromImages } from './strip-exif'
 import { vitePluginMediaKitTldraw } from './tldraw'
 
 export type { AphexConfig } from './aphex'
 export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
-export { tldrawDarkImport, transformAstroSource } from './auto-import'
+export { imageOnlyImport, tldrawDarkImport, transformAstroSource } from './auto-import'
 export type { TldrawConfig } from './tldraw'
 export type { TldrawImageOptions } from './tldraw'
 
@@ -61,8 +61,8 @@ export type MediaKitConfig = {
 	/**
 	 * Configure auto-importing of image assets in `.astro` files.
 	 *
-	 * - `true` — enable with default component config (`Image: ['src'], Picture:
-	 *   ['src']`)
+	 * - `true` — enable with default component config (`Image: 'src', Picture:
+	 *   'src', ZoomLink: imageOnlyImport`)
 	 * - `false` — disable
 	 * - `AutoImportPluginConfig` — full config with component-to-entries mapping
 	 *
@@ -142,10 +142,12 @@ const DEFAULT_AUTO_IMPORT_ENTRIES: AutoImportConfig = 'src'
 const DEFAULT_COMPONENT_CONFIGS: Record<string, AutoImportConfig> = {
 	Image: DEFAULT_AUTO_IMPORT_ENTRIES,
 	Picture: DEFAULT_AUTO_IMPORT_ENTRIES,
+	ZoomLink: imageOnlyImport,
 }
 
 function resolveAutoImportEntry(entry: AutoImportEntry): {
 	fromProp: string
+	shouldImport?: (path: string) => boolean
 	toProp: string
 	transform?: (path: string) => string | undefined
 } {
@@ -156,6 +158,7 @@ function resolveAutoImportEntry(entry: AutoImportEntry): {
 	return {
 		fromProp: entry.from,
 		toProp: entry.to,
+		...(entry.shouldImport && { shouldImport: entry.shouldImport }),
 		...(entry.transform && { transform: entry.transform }),
 	}
 }

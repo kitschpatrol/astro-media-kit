@@ -413,7 +413,7 @@ import photo from '../assets/photo.jpg'
 </p>
 ```
 
-`src` takes what `<Image>` takes for an image, including a `{ dark, light }` pair, which renders through `<Picture>`, or a string with an image extension; any other string is a video source, as `<Video>` takes it. An image's `alt` defaults to the link's text. `zoom` is on by default, and takes a gallery name to open the link's media alongside other items; `zoomLevel` and `zoomScope` work as on the other components.
+`src` takes what `<Image>` takes for an image, including a `{ dark, light }` pair, which renders through `<Picture>`, or a string. A string is a video source, as `<Video>` takes it, when it is a service URL or ID, a page to embed, or a media file, and an image path or URL otherwise; with the integration, a relative image path is auto-imported as it is on `<Image>`. An image's `alt` defaults to the link's text. `zoom` is on by default, and takes a gallery name to open the link's media alongside other items; `zoomLevel` and `zoomScope` work as on the other components.
 
 ### Supporting components
 
@@ -544,7 +544,7 @@ The `mediaKit()` integration registers Vite plugins in `astro:config:setup`. All
 Enabled by default. Parses `.astro` files at build time and replaces string `src` attribute values on configured components with ESM import expressions, so Astro's image pipeline can process them.
 
 ```ts
-// Default behavior — Image and Picture src props are auto-imported
+// Default behavior — Image, Picture, and ZoomLink src props are auto-imported
 mediaKit()
 
 // Custom configuration
@@ -554,10 +554,13 @@ mediaKit({
       Image: 'src',
       MyImage: 'src',
       Picture: ['src', tldrawDarkImport],
+      ZoomLink: imageOnlyImport,
     },
   },
 })
 ```
+
+A custom `components` map replaces the default one, so list every component that takes string paths. `imageOnlyImport` imports a `src` unless it is a video source, which `ZoomLink` takes as it is.
 
 Without auto-import, you must import images manually:
 
@@ -673,6 +676,7 @@ Exported from `astro-media-kit`:
 - **`isImageMetadataObject(src)`** — Type guard that checks whether a value is an `ImageMetadata` object (including Astro's SVG-component wrapper form).
 - **`transformAstroSource(source, options)`** — Auto-import transform used by the integration. Exported for custom tooling.
 - **`tldrawDarkImport`** — An `AutoImportEntry` that generates a `srcDark` import for `.tldr` files.
+- **`imageOnlyImport`** — An `AutoImportEntry` that imports `src` unless it is a video source, for `ZoomLink`.
 
 ## Types
 

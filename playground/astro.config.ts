@@ -2,7 +2,7 @@
 import { unified } from '@astrojs/markdown-remark'
 import mdx from '@astrojs/mdx'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
-import mediaKit from 'astro-media-kit'
+import mediaKit, { imageOnlyImport } from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
 export default defineConfig({
@@ -19,6 +19,7 @@ export default defineConfig({
 					Image: 'src',
 					Picture: ['src', tldrawDarkImport],
 					Zoomer: ['src', tldrawDarkImport],
+					ZoomLink: imageOnlyImport,
 				},
 			},
 			tldraw: true,

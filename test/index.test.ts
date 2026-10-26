@@ -27,6 +27,27 @@ const configWithTldrawDark = {
 }
 
 describe('transformAstroSource', () => {
+	it('leaves values an entry declines as they are', async () => {
+		const config = {
+			ZoomLink: [
+				{
+					fromProp: 'src',
+					shouldImport: (path: string) => !path.endsWith('.mp4'),
+					toProp: 'src',
+				},
+			],
+		}
+		const source = `---
+---
+<ZoomLink src="../assets/a.jpg">a</ZoomLink>
+<ZoomLink src="/media/clip.mp4">b</ZoomLink>`
+		const result = await transformAstroSource(source, config)
+		expect(result).toContain('import __ami_0 from "../assets/a.jpg"')
+		expect(result).toContain('<ZoomLink src={__ami_0}>')
+		expect(result).toContain('<ZoomLink src="/media/clip.mp4">')
+		expect(result).not.toContain('clip.mp4"\n')
+	})
+
 	it('injects import and rewrites src for Image', async () => {
 		const source = `---
 import { Image } from 'astro-media-kit'

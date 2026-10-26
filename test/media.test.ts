@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isDirectMediaUrl, isLocalPath, tryParseUrl } from '../src/components/utils/media'
+import {
+	hasImageExtension,
+	hasMediaExtension,
+	isDirectMediaUrl,
+	isLocalPath,
+	tryParseUrl,
+} from '../src/components/utils/media'
 
 const url = (s: string) => new URL(s)
 
@@ -19,6 +25,24 @@ describe('tryParseUrl', () => {
 	it('returns undefined for non-HTTP protocols', () => {
 		expect(tryParseUrl('ftp://example.com')).toBeUndefined()
 		expect(tryParseUrl('file:///local/file')).toBeUndefined()
+	})
+})
+
+describe('hasImageExtension', () => {
+	it('recognizes image files by extension, in any case, before a query or fragment', () => {
+		expect(hasImageExtension('../assets/photo.JPG')).toBe(true)
+		expect(hasImageExtension('https://example.com/a.webp?w=1#top')).toBe(true)
+		expect(hasImageExtension('/media/loop.mp4')).toBe(false)
+		expect(hasImageExtension('https://example.com/photo')).toBe(false)
+		expect(hasImageExtension('')).toBe(false)
+	})
+})
+
+describe('hasMediaExtension', () => {
+	it('recognizes media files by extension', () => {
+		expect(hasMediaExtension('/media/loop.mp4')).toBe(true)
+		expect(hasMediaExtension('stream.M3U8?token=1')).toBe(true)
+		expect(hasMediaExtension('../assets/photo.jpg')).toBe(false)
 	})
 })
 

@@ -13,10 +13,37 @@ const DIRECT_MEDIA_EXTENSIONS = new Set([
 	'.webm',
 ])
 
+/** Image file extensions the image pipeline takes. */
+const IMAGE_EXTENSIONS = new Set([
+	'.avif',
+	'.gif',
+	'.heic',
+	'.heif',
+	'.jpeg',
+	'.jpg',
+	'.png',
+	'.svg',
+	'.tif',
+	'.tiff',
+	'.webp',
+])
+
+/** Where a path or URL's query or fragment starts. */
+const QUERY_PATTERN = /[#?]/v
+
+/** Returns true if the path or URL names a file with an image extension. */
+export function hasImageExtension(src: string): boolean {
+	return IMAGE_EXTENSIONS.has(extensionOf(src))
+}
+
+/** Returns true if the path or URL names a file with a media extension. */
+export function hasMediaExtension(src: string): boolean {
+	return DIRECT_MEDIA_EXTENSIONS.has(extensionOf(src))
+}
+
 /** Returns true if the URL pathname ends with a known media file extension. */
 export function isDirectMediaUrl(url: URL): boolean {
-	const dot = url.pathname.lastIndexOf('.')
-	return dot !== -1 && DIRECT_MEDIA_EXTENSIONS.has(url.pathname.slice(dot).toLowerCase())
+	return hasMediaExtension(url.pathname)
 }
 
 /**
@@ -24,12 +51,16 @@ export function isDirectMediaUrl(url: URL): boolean {
  * `./`, `../`, or has a media extension).
  */
 export function isLocalPath(src: string): boolean {
-	if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) {
-		return true
-	}
+	return (
+		src.startsWith('/') || src.startsWith('./') || src.startsWith('../') || hasMediaExtension(src)
+	)
+}
 
-	const dot = src.lastIndexOf('.')
-	return dot !== -1 && DIRECT_MEDIA_EXTENSIONS.has(src.slice(dot).toLowerCase())
+/** The lowercased extension of a path or URL, dot included, or an empty string. */
+function extensionOf(src: string): string {
+	const path = src.split(QUERY_PATTERN, 1)[0] ?? ''
+	const dot = path.lastIndexOf('.')
+	return dot === -1 ? '' : path.slice(dot).toLowerCase()
 }
 
 /** Try to parse a string as an HTTP(S) URL. Returns undefined for non-URLs. */
