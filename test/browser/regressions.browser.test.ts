@@ -43,8 +43,8 @@ function videoFixture(): HTMLElement {
 	return mount(
 		item(
 			`<video muted loop playsinline width="1280" height="720" style="width: 100%; height: auto" aria-label="Test clip">
-				<source src="/media/loop.webm" type="video/webm" />
 				<source src="/media/loop.mp4" type="video/mp4" />
+				<source src="/media/loop.webm" type="video/webm" />
 			</video>`,
 			'style="width: 640px"',
 		),
