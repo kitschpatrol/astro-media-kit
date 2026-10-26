@@ -1,6 +1,15 @@
 /** The wrapper `<Zoomer>` renders around content that can be lifted. */
 export const itemSelector = '.amk-zoom'
 
+/**
+ * A text link `<ZoomLink>` renders, whose media is in a `<template>` inside it,
+ * for the viewer alone.
+ */
+export const linkSelector = '.amk-zoom-link'
+
+/** The media of each link item that is in use, from a warm-up to a lift. */
+const instances = new WeakMap<HTMLElement, Element>()
+
 /** The viewer's dialog, which handles clicks on anything that travels into it. */
 export const viewerSelector = '.amk-lightbox'
 
@@ -63,6 +72,36 @@ export const textEntrySelector = [
 ].join(',')
 
 /**
+ * The caption to copy beside an item's content: its figure's, or, for a link,
+ * the one rendered into its template.
+ */
+export function captionOf(item: HTMLElement): Element | undefined {
+	return isLinkItem(item)
+		? (templateOf(item)?.content.querySelector('figcaption') ?? undefined)
+		: (item.closest('figure')?.querySelector(':scope > figcaption') ?? undefined)
+}
+
+/**
+ * The media a link item opens, instantiated from its template on first use, and
+ * kept from a hover that warms it to the lift that shows it. Released once it
+ * has gone, for a fresh one next time.
+ */
+export function instanceOf(item: HTMLElement): Element | undefined {
+	let instance = instances.get(item)
+	if (instance === undefined) {
+		const content = templateOf(item)?.content.firstElementChild
+		if (content === null || content === undefined) {
+			return undefined
+		}
+
+		instance = document.importNode(content, true)
+		instances.set(item, instance)
+	}
+
+	return instance
+}
+
+/**
  * Whether `event` happened inside a player, between its target and `boundary`:
  * the kit's Video.js player, a native media element, or an interactive region
  * holding one.
@@ -96,6 +135,11 @@ export function isItem(node: EventTarget | undefined): node is HTMLElement {
 		node.matches(itemSelector) &&
 		node.parentElement?.closest(`[data-preview], ${viewerSelector}`) === null
 	)
+}
+
+/** Whether `item` is a text link, whose media isn't in the page. */
+export function isLinkItem(item: Element): boolean {
+	return item.matches(linkSelector)
 }
 
 /**
@@ -146,25 +190,41 @@ export function move(parent: Element, node: Element, reference?: ChildNode) {
 	}
 }
 
+/** Forget a link item's media, so that its next use starts afresh. */
+export function releaseInstance(item: HTMLElement) {
+	instances.delete(item)
+}
+
 /**
  * The element whose box shows a subject: the visible one of the elements the
  * components mark `data-media` (a themed picture's `<img>`, a player's
- * container), or else a `<picture>`'s `<img>`, or the subject itself.
+ * container), or the first of them while the subject isn't in the document yet,
+ * as a link's media isn't, or else a `<picture>`'s `<img>`, or the subject
+ * itself.
  */
 export function rendered(subject: Element): Element {
-	const marked = [...subject.querySelectorAll('[data-media]')].find((element) =>
-		element.checkVisibility(),
-	)
+	const marked = [...subject.querySelectorAll('[data-media]')]
+	const shown =
+		marked.find((element) => element.checkVisibility()) ??
+		(subject.isConnected ? undefined : marked[0])
 	return (
-		marked ??
+		shown ??
 		(subject instanceof HTMLPictureElement ? (subject.querySelector('img') ?? subject) : subject)
 	)
 }
 
 /**
- * The original subject, the item's first child, never its temporary page
- * preview.
+ * The original subject: the item's first child, never its temporary page
+ * preview, or a link's instantiated media.
  */
 export function subjectOf(item: HTMLElement): Element | undefined {
-	return Object.hasOwn(item.dataset, 'lifted') ? undefined : (item.firstElementChild ?? undefined)
+	if (Object.hasOwn(item.dataset, 'lifted')) {
+		return undefined
+	}
+
+	return isLinkItem(item) ? instanceOf(item) : (item.firstElementChild ?? undefined)
+}
+
+function templateOf(item: HTMLElement): HTMLTemplateElement | undefined {
+	return item.querySelector<HTMLTemplateElement>(':scope > template') ?? undefined
 }

@@ -1,0 +1,56 @@
+---
+import { Image, ZoomLink } from 'astro-media-kit/components'
+import photo from '../assets/penguin1.jpg'
+import other from '../assets/penguin2.png'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Zoom links</title>
+	</head>
+	<body>
+		<article id="gallery">
+			<Image alt="Penguin image" sizes="240px" src={photo} widths={[120, 480, 960]} zoom="trip" />
+		</article>
+		<p id="prose">
+			A paragraph with{' '}
+			<ZoomLink src={photo} zoom="trip">
+				a photo
+			</ZoomLink>{' '}
+			and
+			<ZoomLink src="/media/loop.mp4" zoom="trip">
+				a video
+			</ZoomLink>{' '}
+			in it, and
+			<ZoomLink alt="A tile" src={photo} zoomLevel="native">
+				another photo
+			</ZoomLink>{' '}
+			on its own, and <ZoomLink src={other}>a second photo</ZoomLink> nobody opens.
+		</p>
+	</body>
+</html>
+<style is:global>
+	body {
+		margin: 20px;
+	}
+
+	article {
+		width: 240px;
+	}
+
+	figure {
+		margin: 0;
+	}
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.amk-lightbox {
+		--amk-lightbox-duration: 60ms;
+	}
+</style>

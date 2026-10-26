@@ -3,6 +3,7 @@ import Image from 'astro-media-kit/components/Image.astro'
 import Picture from 'astro-media-kit/components/Picture.astro'
 import Video from 'astro-media-kit/components/Video.astro'
 import Zoomer from 'astro-media-kit/components/Zoomer.astro'
+import ZoomLink from 'astro-media-kit/components/ZoomLink.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
@@ -121,7 +122,24 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		</Zoomer>
 	</div>
 
-	<h2>7. Background transitions</h2>
+	<h2>7. Text links</h2>
+	<p class="note">
+		A link in prose opens media the page doesn't show: see{' '}
+		<ZoomLink src="../assets/test.jpeg" zoom="links">
+			this photo
+		</ZoomLink>
+		, in a gallery with{' '}
+		<ZoomLink src={bunnyId} zoom="links">
+			this video
+		</ZoomLink>
+		, or{' '}
+		<ZoomLink src="../assets/tiger.svg" zoomLevel="native">
+			the tiger
+		</ZoomLink>{' '}
+		on its own. Without JavaScript each link goes to the file.
+	</p>
+
+	<h2>8. Background transitions</h2>
 	<p class="note">TK</p>
 
 	<div class="grid">

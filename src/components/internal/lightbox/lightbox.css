@@ -28,6 +28,12 @@
 		cursor: zoom-in;
 	}
 
+	/* A text link to media keeps its place in the line, as the link it is */
+	.amk-zoom.amk-zoom-link {
+		cursor: pointer;
+		display: inline;
+	}
+
 	/* Holds the subject's place in the page while it is lifted. A wrapper that
 	   gets its width from its container keeps the subject's aspect ratio, so the
 	   space follows a resize; one sized by its content keeps its measured size */

@@ -40,6 +40,8 @@ It includes:
   Player for SoundCloud, local files, and generic oEmbed.
 - **Carousel**\
   Embedded carousel of any of the above, with buttons, swiping, dots, and captions, that opens into the lightbox.
+- **ZoomLink**\
+  Text link that opens an image or a video in the lightbox, and goes to the file itself without JavaScript.
 - **Astro Integration**\
   Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 
@@ -395,6 +397,24 @@ import { Audio } from 'astro-media-kit/components'
 | `creditMediaTypeFallback` | `MediaType`                           | `'audio'`    |
 | `creditOrganization`      | `string`                              | —            |
 
+### ZoomLink
+
+A text link that opens an image or a video in the lightbox, for media the page doesn't show on its own. The media is rendered into an inert `<template>` inside the link, so nothing loads until the link is used; without JavaScript, the link goes to the image, or to the video's fallback file.
+
+```astro
+---
+import { ZoomLink } from 'astro-media-kit/components'
+import photo from '../assets/photo.jpg'
+---
+
+<p>
+  See <ZoomLink src={photo}>the photo</ZoomLink>, or watch
+  <ZoomLink src="https://vimeo.com/123456789">the talk</ZoomLink>.
+</p>
+```
+
+`src` takes what `<Image>` takes for an image, including a `{ dark, light }` pair, which renders through `<Picture>`, or a string with an image extension; any other string is a video source, as `<Video>` takes it. An image's `alt` defaults to the link's text. `zoom` is on by default, and takes a gallery name to open the link's media alongside other items; `zoomLevel` and `zoomScope` work as on the other components.
+
 ### Supporting components
 
 **Caption** wraps content in `<figure>`/`<figcaption>` and handles XMP credit extraction from image metadata via `exiftool-vendored`. Used internally by Image, Picture, Video, and Audio — you generally don't need to use it directly.
@@ -408,6 +428,8 @@ The lightbox moves the real element into a full-screen `<dialog>`, animates it u
 Everything the client needs is rendered on the server. Image and Picture emit a real link to the largest generated candidate in their fallback format, which works without JavaScript and keeps browser behavior for modified clicks, along with that candidate's width for the `native` zoom level. Video emits its source dimensions. Wrappers around plain content are buttons, with `role`, `tabindex`, and `aria-haspopup` in the HTML; wrappers around a player are marked interactive, so the player's own controls keep their clicks. The stylesheet is bundled with the page's CSS, and the script loads only on pages with a zoom-enabled component. There are no runtime observers: a handful of listeners on the document cover every item, including the ones Astro's client router swaps in.
 
 While the original is lifted, its wrapper holds its place in the page and a decorative preview stands in: a copy of an image that follows the candidate the lifted original loads, so the two crossfade and land on the same pixels; a player's poster, or its live frames on a canvas, for video; a copy of ordinary HTML. `zoomPlaceholder="none"` reserves the space without a preview. Hovering an item for a moment, or focusing it, warms the candidate the viewer will need, without changing the visible thumbnail.
+
+A ZoomLink's media isn't in the page: it is instantiated from the link's template as the link is used, hovered as well as clicked, grows out of the link once it can show, shrinks back into it as the viewer closes, and is discarded then. It joins a gallery like any other item.
 
 In the viewer:
 

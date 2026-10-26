@@ -1,0 +1,71 @@
+---
+import { parseHTML } from 'linkedom'
+import type { Props as ImageProps } from './Image.astro'
+import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
+import Image from './Image.astro'
+import ZoomLinkAnchor from './internal/ZoomLinkAnchor.astro'
+import Picture from './Picture.astro'
+import { isDarkLightImageMetadata } from './utils/image'
+import { isImageSource } from './utils/zoom-image'
+import Video from './Video.astro'
+
+/**
+ * A text link that opens an image or a video in the lightbox. The media is
+ * rendered into an inert `<template>` inside the link, so the page loads none
+ * of it until the link is used, and the link itself goes to the image, or to
+ * the video's fallback file, without JavaScript.
+ */
+export type Props = Omit<PrefixedZoomProps, 'zoomPlaceholder'> & {
+	/**
+	 * Alt text for an image.
+	 *
+	 * @default The link's text.
+	 */
+	alt?: string | undefined
+	/** Astro `class` attribute, merged with `className`. */
+	class?: string | undefined
+	/**
+	 * JSX-style class name (passed by MDX, which uses `className` instead of
+	 * `class`). Merged with Astro's `class` prop (`class` wins when both are
+	 * present).
+	 */
+	className?: string | undefined
+	/**
+	 * The media to open: an image, as `ImageMetadata`, a `{ dark, light }` pair,
+	 * or a path or URL with an image extension, or else a video source, as
+	 * `<Video>` takes it.
+	 */
+	src: ImageProps['src']
+}
+
+const {
+	alt,
+	class: classFromAstro,
+	className: classFromJsx,
+	src,
+	zoom = true,
+	zoomLevel,
+	zoomScope,
+} = Astro.props
+
+const isImage = typeof src !== 'string' || isImageSource(src)
+const className = classFromAstro ?? classFromJsx
+const zoomProps = { zoom, zoomLevel, zoomScope }
+// The link's text names an image unless told otherwise
+const text = parseHTML(`<html><body>${await Astro.slots.render('default')}</body></html>`)
+	.document.body.textContent.replaceAll(/\s+/gv, ' ')
+	.trim()
+---
+
+<ZoomLinkAnchor class={className} href={typeof src === 'string' ? src : undefined}>
+	<slot slot="text" />
+	{isImage ? (
+		isDarkLightImageMetadata(src) ? (
+			<Picture alt={alt ?? text} src={src} {...zoomProps} />
+		) : (
+			<Image alt={alt ?? text} src={src} {...zoomProps} />
+		)
+	) : (
+		<Video src={src} {...zoomProps} />
+	)}
+</ZoomLinkAnchor>

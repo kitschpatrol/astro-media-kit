@@ -1,12 +1,13 @@
 import { setVideoSourceWhenReady, VIDEO_ELEMENT_SELECTOR } from './video-source'
 
 let pageController = new AbortController()
-const pending = new Set<HTMLElement>()
+let pending = new WeakSet<HTMLElement>()
 
-async function initializeMedia(): Promise<void> {
+/** Assign the sources of the media in `root` that is still waiting for one. */
+async function initializeMedia(root: ParentNode = document): Promise<void> {
 	const { signal } = pageController
 	await Promise.all(
-		Array.from(document.querySelectorAll<HTMLElement>(VIDEO_ELEMENT_SELECTOR), async (element) => {
+		Array.from(root.querySelectorAll<HTMLElement>(VIDEO_ELEMENT_SELECTOR), async (element) => {
 			if (!Object.hasOwn(element.dataset, 'src') || pending.has(element)) {
 				return
 			}
@@ -38,8 +39,15 @@ void initializeMedia()
 document.addEventListener('astro:page-load', () => {
 	void initializeMedia()
 })
+// The lightbox announces media it adds to the page after load, from a text
+// link's template
+document.addEventListener('amk-media-connected', (event) => {
+	if (event.target instanceof Element) {
+		void initializeMedia(event.target)
+	}
+})
 document.addEventListener('astro:before-swap', () => {
 	pageController.abort()
 	pageController = new AbortController()
-	pending.clear()
+	pending = new WeakSet()
 })

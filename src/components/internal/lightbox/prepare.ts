@@ -1,4 +1,5 @@
 import { rendered } from './dom'
+import { ratioOf } from './media'
 
 type SavedAttribute = {
 	element: Element
@@ -113,14 +114,10 @@ function restoreAttributes(attributes: SavedAttribute[]) {
 /** Estimate a fitted image's display width without creating or lifting a viewer. */
 export function fittedWidth(subject: Element): number {
 	const element = rendered(subject)
-	const box = element.getBoundingClientRect()
-	const ratio =
-		element instanceof HTMLImageElement && element.naturalHeight > 0
-			? element.naturalWidth / element.naturalHeight
-			: box.height > 0
-				? box.width / box.height
-				: 1
-	return Math.min(window.innerWidth, window.innerHeight * ratio)
+	return Math.min(
+		window.innerWidth,
+		window.innerHeight * ratioOf(element, element.getBoundingClientRect()),
+	)
 }
 
 function setAttribute(preparation: Preparation, element: Element, name: string, written: string) {

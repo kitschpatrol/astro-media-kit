@@ -1,3 +1,4 @@
+import type { Box } from './geometry'
 import type { Slide } from './types'
 import { rendered } from './dom'
 
@@ -26,6 +27,39 @@ function nativeWidth(item: HTMLElement, subject: Element): number | undefined {
 	}
 
 	return undefined
+}
+
+/**
+ * The natural aspect ratio of an element's content: an image's or a video's own
+ * once it has one, else its width and height attributes, which a loading image
+ * carries, or its `aspect-ratio` style, which a player's container carries, or
+ * else that of `box`, where it is laid out. 1 without any of those.
+ */
+export function ratioOf(element: Element, box: Box): number {
+	if (element instanceof HTMLImageElement && element.complete && element.naturalHeight > 0) {
+		return element.naturalWidth / element.naturalHeight
+	}
+
+	if (element instanceof HTMLVideoElement && element.videoHeight > 0) {
+		return element.videoWidth / element.videoHeight
+	}
+
+	const width = Number(element.getAttribute('width'))
+	const height = Number(element.getAttribute('height'))
+	if (width > 0 && height > 0) {
+		return width / height
+	}
+
+	if (element instanceof HTMLElement) {
+		const [ratioWidth, ratioHeight = 1] = element.style.aspectRatio
+			.split('/')
+			.map((part) => Number(part.trim()))
+		if (ratioWidth !== undefined && ratioWidth > 0 && ratioHeight > 0) {
+			return ratioWidth / ratioHeight
+		}
+	}
+
+	return box.width > 0 && box.height > 0 ? box.width / box.height : 1
 }
 
 /** Whether a click on an item's opened subject zooms it, rather than closing. */

@@ -1,12 +1,14 @@
 import {
 	interactiveSelector,
 	isItem,
+	isLinkItem,
 	isWithin,
 	itemSelector,
 	rendered,
 	subjectOf,
 	viewerSelector,
 } from './dom'
+import { warmLink } from './link'
 import { isClickFromDrag } from './motion'
 import { fittedWidth } from './prepare'
 import { closeViewer, openViewer } from './viewer'
@@ -41,7 +43,12 @@ export function prepareLightbox(item: HTMLElement) {
 		}
 	}
 
-	warmImage(subject, fittedWidth(subject))
+	if (isLinkItem(item)) {
+		warmLink(subject)
+	} else {
+		warmImage(subject, fittedWidth(subject))
+	}
+
 	intents.set(item, { subject, timer: setTimeout(releaseIntent, intentTimeout, item) })
 }
 
@@ -293,11 +300,10 @@ function galleryOf(item: HTMLElement): HTMLElement[] {
 
 	const container = scopeRoot ?? document
 	return [...container.querySelectorAll<HTMLElement>(itemSelector)].filter((candidate) => {
-		const subject = subjectOf(candidate)
 		// A lifted subject is on its way home from the viewer, and will be back
 		const isShowing =
 			Object.hasOwn(candidate.dataset, 'lifted') ||
-			(subject !== undefined && rendered(subject).checkVisibility())
+			(isLinkItem(candidate) ? candidate.checkVisibility() : isSubjectShowing(candidate))
 		return (
 			candidate === item ||
 			((candidate.dataset.gallery ?? '') === name &&
@@ -306,6 +312,11 @@ function galleryOf(item: HTMLElement): HTMLElement[] {
 				(scope === undefined || candidate.parentElement?.closest(scope) === scopeRoot))
 		)
 	})
+}
+
+function isSubjectShowing(item: HTMLElement): boolean {
+	const subject = subjectOf(item)
+	return subject !== undefined && rendered(subject).checkVisibility()
 }
 
 /** The nearest ancestor of `item` that matches its scope selector. */

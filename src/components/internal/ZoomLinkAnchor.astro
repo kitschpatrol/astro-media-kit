@@ -1,0 +1,68 @@
+---
+import { parseHTML } from 'linkedom'
+
+/**
+ * The link `<ZoomLink>` renders: the `text` slot, then the media rendered into
+ * the default slot, moved into an inert `<template>`, with the media's zoomable
+ * wrapper reduced to attributes on the link itself. The viewer instantiates the
+ * template; without JavaScript the link goes where the wrapper's link did.
+ */
+export type Props = {
+	class?: string | undefined
+	/** Where the link goes when its media has no wrapper to take that from. */
+	href?: string | undefined
+}
+
+const { class: className, href: fallbackHref } = Astro.props
+
+const html = await Astro.slots.render('default')
+const { document } = parseHTML(`<html><body>${html}</body></html>`)
+// Scripts and styles the components emit alongside their markup stay in the
+// page, outside the template, where the browser would not run them
+const extras: string[] = []
+for (const node of document.querySelectorAll('link, script, style')) {
+	extras.push(node.outerHTML)
+	node.remove()
+}
+
+const wrapper = document.querySelector('.amk-zoom')
+// eslint-disable-next-line unicorn/dom-node-dataset -- linkedom types `dataset` as `any`
+const href = wrapper?.getAttribute('href') ?? wrapper?.getAttribute('data-href') ?? fallbackHref
+const attributes = Object.fromEntries(
+	['data-gallery', 'data-level', 'data-native-width', 'data-scope'].map((name) => [
+		name,
+		wrapper?.getAttribute(name) ?? undefined,
+	]),
+)
+// A caption the media rendered, such as a credit line, goes along for the viewer
+const content =
+	wrapper === null
+		? ''
+		: wrapper.innerHTML + (document.querySelector('figcaption')?.outerHTML ?? '')
+
+if (wrapper === null && import.meta.env.DEV) {
+	console.warn(
+		'[astro-media-kit] ZoomLink has nothing to open: its media is not zoomable, as an oEmbed video or one that failed to load is not, so it renders a plain link.',
+	)
+}
+---
+
+{wrapper === null ? (
+	href === undefined ? (
+		<slot name="text" />
+	) : (
+		<a class={className} href={href}>
+			<slot name="text" />
+		</a>
+	)
+) : (
+	<a class:list={['amk-zoom', 'amk-zoom-link', className]} href={href} {...attributes}>
+		<slot name="text" />
+		<template set:html={content} />
+	</a>
+)}
+<Fragment set:html={extras.join('')} />
+
+{wrapper !== null && <script>
+	import './lightbox'
+</script>}

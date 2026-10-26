@@ -12,7 +12,9 @@ export type Props = {
 	enabled?: boolean | string | undefined
 	/**
 	 * Native fallback destination, supplied by the component generating the
-	 * assets. Rendered as a real link, which works before JavaScript.
+	 * assets. Rendered as a real link, which works before JavaScript, or, around
+	 * interactive content, which a link can't wrap, as `data-href`, for a text
+	 * link to the content to go to.
 	 */
 	href?: string | undefined
 	/**
@@ -44,7 +46,8 @@ const {
 	scope,
 } = Astro.props
 const isEnabled = enabled !== false && enabled !== ''
-const isLink = href !== undefined && href !== ''
+const hasHref = href !== undefined && href !== ''
+const isLink = hasHref && !interactive
 const TAG = isLink ? 'a' : 'div'
 const gallery = typeof enabled === 'string' ? enabled : undefined
 // A link is operable as itself; a wrapper around interactive content opens from
@@ -57,12 +60,13 @@ const isButton = !isLink && !interactive
 		aria-haspopup={isButton ? 'dialog' : undefined}
 		class="amk-zoom"
 		data-gallery={gallery}
+		data-href={hasHref && !isLink ? href : undefined}
 		data-interactive={interactive ? '' : undefined}
 		data-level={level === 'fit' ? undefined : level}
 		data-native-width={nativeWidth !== undefined && nativeWidth > 0 ? nativeWidth : undefined}
 		data-placeholder={placeholder === 'none' ? placeholder : undefined}
 		data-scope={scope}
-		href={href}
+		href={isLink ? href : undefined}
 		role={isButton ? 'button' : undefined}
 		tabindex={isButton ? '0' : undefined}
 	>

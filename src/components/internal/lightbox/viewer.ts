@@ -1,11 +1,13 @@
 import type { Box } from './geometry'
 import type { LayerStyle, Lift, Measurement, Point, Slide } from './types'
-import { identity, layerStyle, setLayerStyle, settle } from './animation'
+import { identity, layerStyle, linkStyle, setLayerStyle, settle } from './animation'
 import {
 	arrowKeySelector,
+	captionOf,
 	interactiveSelector,
 	isInPlayer,
 	isItem,
+	isLinkItem,
 	isWithin,
 	itemSelector,
 	rendered,
@@ -14,6 +16,7 @@ import {
 } from './dom'
 import { lengthOf } from './geometry'
 import { canFade, dropSlides, liftSlide, measure } from './lift'
+import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion } from './motion'
 import { floatControls, hideControls } from './player-controls'
@@ -284,8 +287,7 @@ class Viewer {
 		this.#dialog.focus({ preventScroll: true })
 		document.addEventListener('keydown', this.#handleKeydown)
 		document.addEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
-		liftSlide(this.#slides[index]!, current)
-		this.#placeCaption(this.#slides[index]!)
+		this.#lift(this.#slides[index]!, current)
 		this.#activate()
 		this.#width = this.#track.clientWidth
 		this.#height = this.#track.clientHeight
@@ -297,7 +299,11 @@ class Viewer {
 			return true
 		}
 
-		lift.from = layerStyle(slide.frame.getBoundingClientRect(), current.target, current)
+		const isLink = isLinkItem(lift.item)
+		const frame = slide.frame.getBoundingClientRect()
+		lift.from = isLink
+			? linkStyle(frame, current.target)
+			: layerStyle(frame, current.target, current)
 		const start = current.position === undefined ? identity : lift.from
 		// An image fades in over the copy left behind. Anything else cuts over,
 		// since its copy can't match it pixel for pixel
@@ -305,6 +311,16 @@ class Viewer {
 		// Commit the start values, including the backdrop's and the controls'
 		// opacity, so the changes below transition from them
 		slide.layer.getAnimations()
+		if (isLink) {
+			// A link's media has only just started loading: the backdrop and the
+			// controls come up meanwhile, and the media once it can show
+			this.#dialog.dataset.state = 'open'
+			await readyToShow(lift.subject)
+			if (generation !== this.#generation) {
+				return true
+			}
+		}
+
 		await this.#expand(slide, generation)
 		return true
 	}
@@ -768,6 +784,12 @@ class Viewer {
 	#homeStyle(slide: Slide, lift: Lift, isOpening: boolean): LayerStyle {
 		// The space held in the page may have followed a resize since
 		const home = lift.item.getBoundingClientRect()
+		if (isLinkItem(lift.item)) {
+			return isOpening && lift.from !== undefined && isSameBox(home, lift.home)
+				? lift.from
+				: linkStyle(slide.frame.getBoundingClientRect(), home)
+		}
+
 		const scaleX = lift.home.width > 0 ? home.width / lift.home.width : 1
 		const scaleY = lift.home.height > 0 ? home.height / lift.home.height : 1
 		const target: Box = {
@@ -829,6 +851,18 @@ class Viewer {
 		return found
 	}
 
+	/**
+	 * Lift a slide's subject and place its caption. A link's media is new to the
+	 * viewer, so its sound is tracked from here.
+	 */
+	#lift(slide: Slide, measurement: Measurement) {
+		liftSlide(slide, measurement)
+		this.#placeCaption(slide)
+		if (isLinkItem(measurement.item)) {
+			beginVolumes([measurement.subject], undefined)
+		}
+	}
+
 	/** Lift the slides within `reach` of `index` that are still in the page. */
 	#liftAround(index: number, reach = 1) {
 		const pending: Array<[number, Measurement]> = []
@@ -841,8 +875,7 @@ class Viewer {
 		}
 
 		for (const [position, measurement] of pending) {
-			liftSlide(this.#slides[position]!, measurement)
-			this.#placeCaption(this.#slides[position]!)
+			this.#lift(this.#slides[position]!, measurement)
 		}
 
 		// Lay the new subjects out in this task, for WebKit's media pipeline
@@ -1132,9 +1165,9 @@ function createSlide(item: HTMLElement, index: number, count: number): Slide {
 	stage.append(frame)
 	element.append(stage)
 
-	const figcaption = item.closest('figure')?.querySelector(':scope > figcaption')
+	const figcaption = captionOf(item)
 	let caption: HTMLElement | undefined
-	if (figcaption) {
+	if (figcaption !== undefined) {
 		caption = document.createElement('div')
 		caption.className = 'amk-lightbox-caption'
 		for (const node of figcaption.childNodes) {

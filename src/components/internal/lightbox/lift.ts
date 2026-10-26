@@ -1,7 +1,8 @@
 import type { Box, Fit } from './geometry'
 import type { Lift, Measurement, Point, Slide } from './types'
-import { move, rendered, subjectOf } from './dom'
+import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
+import { ratioOf } from './media'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { releaseControls } from './player-controls'
 import { releasePreparation } from './prepare'
@@ -30,6 +31,17 @@ export function dropSlides(slides: Slide[]) {
 
 		slide.lift = undefined
 		const { item } = lift
+		if (isLinkItem(item)) {
+			// A link's media is for the viewer alone: it goes away, and the next
+			// use starts afresh
+			releaseControls(lift.subject)
+			releasePreparation(lift.subject)
+			lift.subject.remove()
+			releaseInstance(item)
+			delete item.dataset.lifted
+			continue
+		}
+
 		move(item, lift.subject, lift.nextSibling)
 		removePlaceholder(lift.placeholder)
 
@@ -82,7 +94,9 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		image.decoding = 'auto'
 	}
 
-	const placeholder = createPlaceholder(item, subject)
+	// A link's media was never in the page: nothing holds its place or stands in
+	const isLink = isLinkItem(item)
+	const placeholder = isLink ? undefined : createPlaceholder(item, subject)
 	slide.lift = {
 		...measurement,
 		asyncImages,
@@ -92,9 +106,15 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 	// On the slide, where both the frame and a stage beside a caption read it
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
-	const hold = holdOf(item, subject, measurement.wrapper)
+	const hold = isLink ? '' : holdOf(item, subject, measurement.wrapper)
 	item.dataset.lifted = hold
 	move(slide.layer, subject)
+	if (isLink) {
+		// The kit's media script sets up the media that is in the page as it
+		// loads; this media has only just arrived
+		subject.dispatchEvent(new Event('amk-media-connected', { bubbles: true }))
+	}
+
 	if (hold === 'size') {
 		item.style.setProperty('--amk-lightbox-placeholder-width', measurement.wrapper.width)
 		item.style.setProperty('--amk-lightbox-placeholder-height', measurement.wrapper.height)
@@ -224,6 +244,10 @@ export function measure(item: HTMLElement): Measurement | undefined {
 		return undefined
 	}
 
+	if (isLinkItem(item)) {
+		return measureLink(item, subject)
+	}
+
 	const visible = rendered(subject)
 	const home = item.getBoundingClientRect()
 	const rect = visible.getBoundingClientRect()
@@ -247,6 +271,27 @@ export function measure(item: HTMLElement): Measurement | undefined {
 }
 
 /**
+ * A link's media has no place in the page: it grows out of the link's own box,
+ * and goes back into it, at the ratio the media says it has.
+ */
+function measureLink(item: HTMLElement, subject: Element): Measurement {
+	const home = item.getBoundingClientRect()
+	const box = { height: home.height, width: home.width, x: home.x, y: home.y }
+	return {
+		fit: 'contain',
+		home: box,
+		item,
+		offset: { ...box, x: 0, y: 0 },
+		position: { x: 0.5, y: 0.5 },
+		radius: 0,
+		ratio: ratioOf(rendered(subject), { height: 0, width: 0, x: 0, y: 0 }),
+		subject,
+		target: box,
+		wrapper: { width: '', height: '' },
+	}
+}
+
+/**
  * A corner radius in px, with a percentage resolved against the box and the
  * result clamped to half its size. Elliptical radii count as square corners.
  */
@@ -258,27 +303,4 @@ function radiusOf(value: string, box: Box): number {
 			? Number(value.slice(0, -2))
 			: 0
 	return Number.isFinite(radius) ? Math.min(radius, shorter / 2) : 0
-}
-
-/**
- * The natural aspect ratio of the content. Width and height attributes are
- * preferred over the box while an image is still loading, since `sizes="auto"`
- * images report no natural size until they have one.
- */
-function ratioOf(element: Element, box: Box): number {
-	if (element instanceof HTMLImageElement && element.complete && element.naturalHeight > 0) {
-		return element.naturalWidth / element.naturalHeight
-	}
-
-	if (element instanceof HTMLVideoElement && element.videoHeight > 0) {
-		return element.videoWidth / element.videoHeight
-	}
-
-	const width = Number(element.getAttribute('width'))
-	const height = Number(element.getAttribute('height'))
-	if (width > 0 && height > 0) {
-		return width / height
-	}
-
-	return box.width > 0 && box.height > 0 ? box.width / box.height : 1
 }

@@ -9,6 +9,7 @@ const videoProps = {
 	captions: [],
 	controls: 'full' as const,
 	element: 'video' as const,
+	fallbackUrl: '/media/loop.mp4',
 	hlsOptions: {},
 	intrinsicWidth: 640,
 	loop: true,
@@ -67,7 +68,7 @@ const videoProps = {
 			/>
 		</article>
 		<section id="video">
-			<Zoomer enabled={true} interactive>
+			<Zoomer enabled={true} href="/media/loop.mp4" interactive>
 				<VideoPlayer {...videoProps} />
 			</Zoomer>
 		</section>

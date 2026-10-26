@@ -213,6 +213,11 @@ if (capQualityToSize !== undefined) {
 	hlsOptions.capRenditionToPlayerSize = capQualityToSize
 }
 
+// Where a link to the video goes without JavaScript, and what the player's
+// error dialog offers: a plain file where the service has one, else the source
+const fallbackUrl =
+	videoInfo !== undefined && videoInfo.mp4Url !== '' ? videoInfo.mp4Url : (videoSrc ?? '')
+
 const posterUrl =
 	resolvedService === 'local'
 		? (poster ?? undefined)
@@ -261,11 +266,18 @@ const sharedProps = {
 	)
 ) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
 	<Caption {...captionProps}>
-		<Zoomer {...zoomerProps} interactive nativeWidth={videoInfo.width} slot="media-component">
+		<Zoomer
+			{...zoomerProps}
+			href={fallbackUrl}
+			interactive
+			nativeWidth={videoInfo.width}
+			slot="media-component"
+		>
 			<VideoPlayer
 				{...sharedProps}
 				captions={videoInfo.captions}
 				element={videoElementMap[resolvedService]}
+				fallbackUrl={fallbackUrl}
 				hlsOptions={hlsOptions}
 				hlsUrl={isHlsSource(videoSrc) ? videoSrc : videoInfo.hlsUrl}
 				mp4Url={videoInfo.mp4Url}

@@ -9,6 +9,8 @@ import './amk-video.css'
 export type Props = InternalVideoProps & {
 	/** Which media element to render. */
 	element: VideoElementTag
+	/** Where the error dialog sends the viewer to watch the video directly. */
+	fallbackUrl: string
 	/** HLS URL for noscript fallback. */
 	hlsUrl?: string | undefined
 	/** MP4 fallback URL for noscript. */
@@ -21,6 +23,7 @@ const {
 	captions,
 	controls,
 	element,
+	fallbackUrl,
 	hlsOptions,
 	hlsUrl,
 	intrinsicWidth,
@@ -34,7 +37,6 @@ const {
 	zoom,
 } = Astro.props
 
-const fallbackUrl = mp4Url !== undefined && mp4Url !== '' ? mp4Url : videoSrc
 const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative

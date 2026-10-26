@@ -2,6 +2,9 @@ import type { Box } from './geometry'
 import type { LayerStyle, Measurement, Point } from './types'
 import { mapFrameToBox } from './geometry'
 
+/** How much smaller than its frame a link's media is at the link. */
+const linkScale = 0.5
+
 /** The untransformed layer. */
 export const identity: LayerStyle = {
 	clipPath: 'inset(0)',
@@ -37,6 +40,22 @@ export function layerStyle(
 		opacity: '1',
 		scale: isScaled ? `${transform.scaleX} ${transform.scaleY}` : identity.scale,
 		translate: isTranslated ? `${transform.x}px ${transform.y}px` : identity.translate,
+	}
+}
+
+/**
+ * The layer style that centers a frame at `frame` on a link at `target`, at
+ * half size and transparent: where the link's media grows out from, and shrinks
+ * back into.
+ */
+export function linkStyle(frame: Box, target: Box): LayerStyle {
+	const x = target.x + target.width / 2 - frame.x - (frame.width * linkScale) / 2
+	const y = target.y + target.height / 2 - frame.y - (frame.height * linkScale) / 2
+	return {
+		clipPath: identity.clipPath,
+		opacity: '0',
+		scale: String(linkScale),
+		translate: `${x}px ${y}px`,
 	}
 }
 
