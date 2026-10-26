@@ -25,8 +25,9 @@
 	--amk-duration: 0.2s;
 }
 
-/* Shrink-wrap the zoom wrapper to match the player's intrinsic size, so
-   the lightbox's lift starts from the visible content. */
+/* Shrink-wrap the zoom wrapper to its media, which carries the `amk` class:
+   the player at its intrinsic width, or an image narrower than its column. The
+   lift then starts from the visible content, and only the media opens it. */
 .amk-zoom:has(> .amk) {
 	width: fit-content;
 	max-width: 100%;

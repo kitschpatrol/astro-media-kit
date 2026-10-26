@@ -563,6 +563,53 @@ describe('lifting', () => {
 		expect(window.scrollY).toBeCloseTo(scrollY, 0)
 	})
 
+	it('keeps a page scrolled to the bottom where it is when an item at the bottom opens', async () => {
+		const fixture = mount(`<div style="height: 200vh"></div>${item(block('a'))}`)
+		const [box] = boxes(fixture)
+		window.scrollTo(0, document.documentElement.scrollHeight)
+		const { scrollY } = globalThis
+		expect(scrollY).toBeGreaterThan(0)
+
+		await openLightbox(box!)
+		expect(window.scrollY).toBeCloseTo(scrollY, 0)
+		await close()
+
+		expect(window.scrollY).toBeCloseTo(scrollY, 0)
+	})
+
+	it('leaves the page where it is when an item partly in view opens and closes', async () => {
+		const fixture = mount(
+			`<div style="height: 200vh"></div>${item(block('a', 'width: 240px; height: 1000px'))}<div style="height: 50vh"></div>`,
+		)
+		const [box] = boxes(fixture)
+		// The top half of the item is above the viewport
+		window.scrollTo(0, box!.offsetTop + 500)
+		const { scrollY } = globalThis
+		expect(box!.getBoundingClientRect().top).toBeLessThan(0)
+
+		await openLightbox(box!)
+		expect(window.scrollY).toBe(scrollY)
+		await close()
+
+		expect(window.scrollY).toBe(scrollY)
+	})
+
+	it('keeps a scroll container scrolled to the bottom where it is when its last item opens', async () => {
+		const fixture = mount(
+			`<div class="scroller" style="height: 300px; overflow: auto"><div style="height: 600px"></div>${item(block('a'))}</div>`,
+		)
+		const scroller = query(fixture, '.scroller')
+		scroller.scrollTop = scroller.scrollHeight
+		const { scrollTop } = scroller
+		expect(scrollTop).toBeGreaterThan(0)
+
+		await openLightbox(boxes(fixture)[0]!)
+		expect(scroller.scrollTop).toBe(scrollTop)
+		await close()
+
+		expect(scroller.scrollTop).toBe(scrollTop)
+	})
+
 	it('keeps the scroll position on pages whose body scrolls the viewport', async () => {
 		const style = document.createElement('style')
 		style.textContent = 'html, body { height: 100% } body { overflow-x: hidden }'
@@ -785,8 +832,8 @@ describe('content', () => {
 		const fixture = mount(
 			item(`
 				<video muted autoplay loop playsinline width="1280" height="720">
-					<source src="/media/loop.webm" type="video/webm" />
 					<source src="/media/loop.mp4" type="video/mp4" />
+					<source src="/media/loop.webm" type="video/webm" />
 				</video>`),
 		)
 		const video = query(fixture, 'video', HTMLVideoElement)

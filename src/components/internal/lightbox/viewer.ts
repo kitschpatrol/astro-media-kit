@@ -211,9 +211,14 @@ class Viewer {
 			return
 		}
 
-		// Into view, in the page and in any scroll container the item sits in,
-		// such as an embedded carousel, which then shows the slide that was on
-		lift.item.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
+		// Into view when it is out of it: scrolled away in the page, or past the
+		// edge of a scroll container it sits in, such as an embedded carousel,
+		// which then shows the slide that was on. An item partly in view stays
+		// where it is, so the page doesn't move under the viewer
+		if (!isInViewport(lift.item.getBoundingClientRect()) || isClippedOut(lift.item)) {
+			lift.item.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
+		}
+
 		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
 	}
@@ -1172,6 +1177,33 @@ function describeSlide(slide: Slide): string {
 	const name = texts.map((text) => text?.trim() ?? '').find((text) => text !== '') ?? ''
 	const label = slide.element.getAttribute('aria-label') ?? ''
 	return name === '' ? label : `${label}, ${name}`
+}
+
+/**
+ * Whether `item` lies entirely outside the box of an ancestor that clips its
+ * overflow, such as the track of an embedded carousel scrolled to another
+ * slide.
+ */
+function isClippedOut(item: Element): boolean {
+	const box = item.getBoundingClientRect()
+	for (let node = item.parentElement; node !== null; node = node.parentElement) {
+		const style = getComputedStyle(node)
+		if (style.overflowX === 'visible' && style.overflowY === 'visible') {
+			continue
+		}
+
+		const clip = node.getBoundingClientRect()
+		if (
+			box.right <= clip.left ||
+			box.left >= clip.right ||
+			box.bottom <= clip.top ||
+			box.top >= clip.bottom
+		) {
+			return true
+		}
+	}
+
+	return false
 }
 
 function isInViewport(box: Box): boolean {

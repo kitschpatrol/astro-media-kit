@@ -130,21 +130,56 @@ function holdOf(item: HTMLElement, subject: Element, wrapper: Measurement['wrapp
 		subject instanceof HTMLElement || subject instanceof SVGElement ? subject.style : undefined
 	const position = style?.getPropertyValue('position')
 	const priority = style?.getPropertyPriority('position')
-	style?.setProperty('position', 'absolute', 'important')
-	const empty = getComputedStyle(item)
-	const emptyWidth = lengthOf(empty.width)
-	const emptyHeight = lengthOf(empty.height)
-	if (position === undefined || position === '') {
-		style?.removeProperty('position')
-	} else {
-		style?.setProperty('position', position, priority)
-	}
+	const { emptyWidth, emptyHeight } = withScrollKept(item, () => {
+		style?.setProperty('position', 'absolute', 'important')
+		const empty = getComputedStyle(item)
+		const measured = { emptyWidth: lengthOf(empty.width), emptyHeight: lengthOf(empty.height) }
+		if (position === undefined || position === '') {
+			style?.removeProperty('position')
+		} else {
+			style?.setProperty('position', position, priority)
+		}
+
+		return measured
+	})
 
 	if (!(Math.abs(emptyWidth - width) < 0.5)) {
 		return 'size'
 	}
 
 	return Math.abs(emptyHeight - height) < 0.5 ? '' : 'ratio'
+}
+
+/**
+ * Run `read`, which lays the page out shorter for a moment, without letting
+ * that move the page: a scroll position at the bottom would otherwise be
+ * clamped to the shorter page, in the window and in any scroll container the
+ * item sits in, and stay there.
+ */
+function withScrollKept<T>(item: Element, read: () => T): T {
+	const ancestors: Array<[Element, number, number]> = []
+	for (let node = item.parentElement; node !== null; node = node.parentElement) {
+		ancestors.push([node, node.scrollTop, node.scrollLeft])
+	}
+
+	const { scrollX, scrollY } = globalThis
+	try {
+		return read()
+	} finally {
+		for (const [node, top, left] of ancestors) {
+			if (node.scrollTop !== top) {
+				node.scrollTop = top
+			}
+
+			if (node.scrollLeft !== left) {
+				node.scrollLeft = left
+			}
+		}
+
+		if (window.scrollX !== scrollX || window.scrollY !== scrollY) {
+			window.scrollTo({ behavior: 'instant', left: scrollX, top: scrollY })
+		}
+	}
 }
 
 function fitOf(element: Element, objectFit: string): Fit {
