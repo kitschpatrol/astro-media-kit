@@ -48,7 +48,7 @@ import {
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
-import { imageFallback } from './utils/zoom-image'
+import { zoomTarget } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -503,7 +503,7 @@ if (isSelector && hasDarkMode) {
 
 {selectorStyle !== undefined && selectorStyle !== '' && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} href={imageFallback(fallbackImage)} slot="media-component">
+	<Zoomer {...zoomerProps} {...zoomTarget(fallbackImage)} slot="media-component">
 		{isSelector && hasDarkMode ? (
 			<div {...pictureAttributes} class:list={[pictureAttributes.class, 'amk-picture']}>
 				<picture class="amk-dark">
@@ -516,7 +516,7 @@ if (isSelector && hasDarkMode) {
 					))}
 					<img
 						alt={alt}
-						data-liftbox-media={isZoomEnabled ? '' : undefined}
+						data-media={isZoomEnabled ? '' : undefined}
 						src={fallbackImageDark!.src}
 						{...imgAttributesDark}
 						class:list={[className, imgClassNameDark, 'amk']}
@@ -533,7 +533,7 @@ if (isSelector && hasDarkMode) {
 					))}
 					<img
 						alt={alt}
-						data-liftbox-media={isZoomEnabled ? '' : undefined}
+						data-media={isZoomEnabled ? '' : undefined}
 						src={fallbackImage.src}
 						{...imgAttributes}
 						class:list={[className, imgClassName, 'amk']}
@@ -562,7 +562,6 @@ if (isSelector && hasDarkMode) {
 				))}
 				<img
 					alt={alt}
-					data-liftbox-media={isZoomEnabled ? '' : undefined}
 					src={fallbackImage.src}
 					{...imgAttributes}
 					class:list={[className, imgClassName, 'amk']}

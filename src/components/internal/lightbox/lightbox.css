@@ -1,0 +1,499 @@
+/* The lightbox: the `.amk-zoom` items `<Zoomer>` renders in the page, and the
+   `.amk-lightbox` dialog their content is lifted into. Astro bundles this with
+   the page's own CSS, so it is in place before the first paint and the script
+   adds no styles of its own.
+
+   The page-facing rules are in a cascade layer, so any of the page's own
+   styles override them. The same layer holds the `!important` rules the lift
+   depends on: the held space, the viewer covering the viewport, and the lifted
+   element filling its frame. */
+@layer amk-lightbox {
+	:root {
+		--amk-lightbox-backdrop: rgb(0 0 0 / 28.7%);
+		--amk-lightbox-duration: 0.4s;
+		--amk-lightbox-open-fade-duration: 0.3s;
+		--amk-lightbox-close-fade-duration: 0.3s;
+		--amk-lightbox-carousel-duration: 0.4s;
+		--amk-lightbox-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
+		--amk-lightbox-gutter: clamp(0.75rem, 5vmin, 4rem);
+		--amk-lightbox-caption-width: min(20rem, 30vw);
+	}
+
+	/* A block, so a link around a picture has the picture's layout */
+	.amk-zoom {
+		display: block;
+	}
+
+	.amk-zoom:not([data-interactive]) {
+		cursor: zoom-in;
+	}
+
+	/* Holds the subject's place in the page while it is lifted. A wrapper that
+	   gets its width from its container keeps the subject's aspect ratio, so the
+	   space follows a resize; one sized by its content keeps its measured size */
+	.amk-zoom[data-lifted] {
+		position: relative;
+	}
+
+	.amk-zoom[data-lifted='ratio'] {
+		aspect-ratio: var(--amk-lightbox-placeholder-ratio) !important;
+	}
+
+	.amk-zoom[data-lifted='size'] {
+		width: var(--amk-lightbox-placeholder-width) !important;
+		height: var(--amk-lightbox-placeholder-height) !important;
+	}
+
+	/* Decorative copies keep their content styling, but not layout or input. */
+	[data-preview] {
+		pointer-events: none !important;
+		position: absolute !important;
+		transform: none !important;
+		translate: none !important;
+		rotate: none !important;
+		scale: none !important;
+		box-sizing: border-box !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		min-height: 0 !important;
+		max-height: none !important;
+		margin: 0 !important;
+	}
+
+	picture[data-preview] {
+		display: block !important;
+	}
+
+	/* The viewer covers the viewport, whatever the page's own dialog styles */
+	.amk-lightbox:modal {
+		position: fixed !important;
+		inset: 0 !important;
+		transform: none !important;
+		overflow: hidden !important;
+		/* Stop scroll chaining without changing the page's native scrollbar. */
+		overscroll-behavior: contain !important;
+		display: block !important;
+		width: auto !important;
+		max-width: none !important;
+		height: auto !important;
+		max-height: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		opacity: 1 !important;
+		background: transparent !important;
+		outline: none !important;
+		box-shadow: none !important;
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.amk-lightbox::backdrop {
+		background: var(--amk-lightbox-backdrop) !important;
+	}
+
+	/* The lifted subject fills its frame, whatever its page styles say */
+	.amk-lightbox-layer > *,
+	.amk-lightbox-layer > picture > img,
+	.amk-lightbox-layer > .amk-picture > picture,
+	.amk-lightbox-layer > .amk-picture img {
+		position: absolute !important;
+		inset: 0 !important;
+		transform: none !important;
+		translate: none !important;
+		rotate: none !important;
+		scale: none !important;
+		box-sizing: border-box !important;
+		width: 100% !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		height: 100% !important;
+		min-height: 0 !important;
+		max-height: none !important;
+		margin: 0 !important;
+		object-fit: contain !important;
+		transition: none !important;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.amk-lightbox {
+			--amk-lightbox-duration: 0s !important;
+			--amk-lightbox-open-fade-duration: 0s !important;
+			--amk-lightbox-close-fade-duration: 0s !important;
+			--amk-lightbox-carousel-duration: 0s !important;
+		}
+	}
+}
+
+/* Registered, so script can read it as a length and tell whether the free
+   space beside a subject holds its caption */
+@property --amk-lightbox-caption-width {
+	inherits: true;
+	initial-value: 320px;
+	syntax: '<length>';
+}
+
+/* The viewer's own parts are unlayered, so layered page resets (such as
+   Tailwind's preflight) can't strip them, while class selectors on the page
+   still override them */
+.amk-lightbox {
+	/* Lifted subjects keep the page's colors; the controls set their own */
+	color: inherit;
+}
+
+.amk-lightbox::backdrop {
+	opacity: 0;
+	transition: opacity var(--amk-lightbox-duration) var(--amk-lightbox-easing);
+}
+
+.amk-lightbox[data-state='open']::backdrop {
+	opacity: var(--amk-lightbox-drag-opacity, 1);
+}
+
+/* Follow the finger immediately; CSS takes over again on release. */
+.amk-lightbox[data-dismissing]::backdrop,
+.amk-lightbox[data-dismissing] :is(.amk-lightbox-button, .amk-lightbox-caption) {
+	transition: none;
+}
+
+.amk-lightbox-track {
+	scrollbar-width: none;
+	scroll-snap-type: x mandatory;
+	overflow: auto hidden;
+	overscroll-behavior: contain;
+	display: flex;
+	flex-wrap: nowrap;
+	height: 100%;
+	/* It only takes focus from clicks, where a ring around the viewport doesn't help */
+	outline: none;
+	/* Resolve CSS time units and calc() for the JS spring without adding a
+	   CSS transition to the track's pointer-driven translation. */
+	transition-duration: var(--amk-lightbox-carousel-duration);
+	transition-property: none;
+}
+
+/* While the lightbox moves the track itself, in a mouse drag or a glide to a
+   slide, snapping would pull every position in between back to a slide */
+.amk-lightbox-track[data-moving] {
+	scroll-snap-type: none;
+}
+
+.amk-lightbox-track[data-dragging] {
+	cursor: grabbing;
+	/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Momentum from a swipe would carry the closing subject away from home */
+.amk-lightbox[data-state='closing'] .amk-lightbox-track {
+	overflow: hidden;
+}
+
+.amk-lightbox-slide {
+	scroll-snap-align: center;
+	scroll-snap-stop: always;
+	position: relative;
+	/* A stage beside a caption is sized from the slide */
+	container-type: size;
+	display: flex;
+	flex: 0 0 100%;
+	flex-direction: column;
+	align-items: center;
+	box-sizing: border-box;
+	/* Every slide is exactly as wide as the track, whatever its caption holds */
+	min-width: 0;
+	padding: max(env(safe-area-inset-top), var(--amk-lightbox-gutter))
+		max(env(safe-area-inset-right), var(--amk-lightbox-gutter))
+		max(env(safe-area-inset-bottom), var(--amk-lightbox-gutter))
+		max(env(safe-area-inset-left), var(--amk-lightbox-gutter));
+}
+
+.amk-lightbox-stage {
+	container-type: size;
+	display: grid;
+	flex: 1;
+	place-items: center;
+	width: 100%;
+	min-height: 0;
+	/* Focused only to direct keyboard scrolling while zoomed */
+	outline: none;
+}
+
+/* Fits the subject's aspect ratio into the stage. Never transformed, so it
+   always reports where the subject is laid out */
+.amk-lightbox-frame {
+	position: relative;
+	aspect-ratio: var(--amk-lightbox-ratio);
+	width: min(100cqw, 100cqh * var(--amk-lightbox-ratio));
+}
+
+/* The caption goes beside its subject when the free space there holds it,
+   which costs the subject nothing; script decides from the fitted size, and
+   again on resize */
+.amk-lightbox-slide[data-caption='aside'] {
+	flex-direction: row;
+	justify-content: center;
+}
+
+/* Shrunk to the fitted subject, so the caption sits right beside it and the
+   pair is centered */
+.amk-lightbox-slide[data-caption='aside'] > .amk-lightbox-stage {
+	flex: none;
+	width: min(100cqw - var(--amk-lightbox-caption-width), 100cqh * var(--amk-lightbox-ratio));
+	height: 100%;
+}
+
+.amk-lightbox-slide[data-caption='below'] > .amk-lightbox-stage {
+	padding-bottom: 0.75rem;
+}
+
+/* A zoomed subject is laid out at its zoomed size, so a larger srcset candidate
+   loads by itself, in a stage that covers the whole slide and pans by native
+   scrolling. Centering stays safe: the grid's auto tracks grow with the frame,
+   so it never overflows past the start edges, where it couldn't be scrolled to */
+.amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
+	/* The scroll offset is set explicitly. WebKit otherwise shifts it to anchor
+	   on the subject when a larger srcset candidate loads mid-transition */
+	overflow-anchor: none;
+	/* Thin but visible: a way to pan without dragging, and a sense of where you are */
+	scrollbar-color: rgb(255 255 255 / 45%) transparent;
+	scrollbar-width: thin;
+	position: absolute;
+	inset: 0;
+	overflow: auto;
+	/* Panning past an edge would otherwise scroll the track to a neighbor */
+	overscroll-behavior: contain;
+	/* The whole slide again, whatever a caption beside it took */
+	width: 100%;
+	height: 100%;
+}
+
+.amk-lightbox-slide[data-zoomed] .amk-lightbox-frame {
+	width: var(--amk-lightbox-zoom-width);
+}
+
+@media (hover: hover) {
+	/* A click brings a closing subject back */
+	.amk-lightbox[data-state='closing'] .amk-lightbox-layer {
+		cursor: zoom-in;
+	}
+
+	.amk-lightbox-slide:is([data-level='fill'], [data-level='native']):not([data-zoomed])
+		.amk-lightbox-layer {
+		cursor: zoom-in;
+	}
+
+	.amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
+		cursor: zoom-out;
+	}
+
+	.amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage[data-dragging] {
+		cursor: grabbing;
+		/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */
+		-webkit-user-select: none;
+		user-select: none;
+	}
+}
+
+/* A lone slide has nowhere to scroll, so script rubber-bands its horizontal
+   drags. Captions and zoomed stages keep scrolling natively. */
+.amk-lightbox[data-lone] .amk-lightbox-slide:not([data-zoomed]) > .amk-lightbox-stage {
+	touch-action: pinch-zoom;
+}
+
+/* Momentum would carry a closing subject away from home here too */
+.amk-lightbox[data-state='closing'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
+	overflow: hidden;
+}
+
+/* Opening fades an image in over its thumbnail copy: quickly at first, so it is
+   mostly there as it leaves, then gently. Other subjects cut over */
+.amk-lightbox-layer {
+	position: absolute;
+	inset: 0;
+	transform-origin: 0 0;
+	clip-path: inset(0);
+	transition:
+		translate var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		scale var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		clip-path var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		opacity var(--amk-lightbox-open-fade-duration) cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+/* Closing mirrors it, fading the image out as it zooms home */
+.amk-lightbox[data-state='closing'] .amk-lightbox-layer {
+	transition-duration:
+		var(--amk-lightbox-duration), var(--amk-lightbox-duration), var(--amk-lightbox-duration),
+		var(--amk-lightbox-close-fade-duration);
+}
+
+/* Horizontal swipes and page pinch zoom remain native. Fitted content reserves
+   vertical gestures to dismiss; zoomed content keeps both axes. */
+.amk-lightbox-slide:not([data-zoomed]) .amk-lightbox-layer {
+	touch-action: pan-x pinch-zoom;
+}
+
+/* On a scrim of its own: the backdrop alone leaves light text unreadable on a
+   light page */
+.amk-lightbox-caption {
+	overflow-y: auto;
+	box-sizing: border-box;
+	max-width: min(100%, 70ch);
+	max-height: 35%;
+	/* Stays at the bottom when a zoomed stage leaves the flow */
+	margin-top: auto;
+	padding: 0.6rem 0.9rem;
+	border-radius: 0.75rem;
+	line-height: 1.45;
+	color: #f4f4f5;
+	text-align: center;
+	text-wrap: balance;
+	overflow-wrap: anywhere;
+	color-scheme: dark;
+	background: rgb(0 0 0 / 60%);
+}
+
+.amk-lightbox-caption :is(a, a:link, a:visited) {
+	color: inherit;
+}
+
+/* Beside its subject, where script found room for it */
+.amk-lightbox-slide[data-caption='aside'] > .amk-lightbox-caption {
+	flex: none;
+	/* The gap counts toward the width script looked for */
+	width: calc(var(--amk-lightbox-caption-width) - 1.5rem);
+	max-width: none;
+	max-height: 100%;
+	margin-top: 0;
+	margin-inline-start: 1.5rem;
+	text-align: start;
+}
+
+/* A slide handed over while its subject was still on its way finishes gliding
+   home on its own, out of the track's flow and under the slide that took over */
+.amk-lightbox-slide[data-ghost] {
+	pointer-events: none;
+	scroll-snap-align: none;
+	position: absolute;
+	inset: 0;
+}
+
+.amk-lightbox-slide[data-ghost] > .amk-lightbox-caption {
+	visibility: hidden;
+}
+
+.amk-lightbox-button {
+	cursor: pointer;
+	position: absolute;
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	color: #f4f4f5;
+	background: rgb(0 0 0 / 60%);
+}
+
+.amk-lightbox-button svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 2.25;
+}
+
+/* Drawn on the button rather than around it, where it could fall on the image */
+.amk-lightbox-button:focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: -5px;
+}
+
+.amk-lightbox-button[aria-disabled='true'] {
+	cursor: default;
+}
+
+/* The class sets display, which would otherwise outrank the hidden attribute */
+.amk-lightbox-button[hidden] {
+	display: none;
+}
+
+.amk-lightbox-zoom {
+	top: max(env(safe-area-inset-top), 0.75rem);
+	right: max(env(safe-area-inset-right), 0.75rem);
+}
+
+/* Shows the magnifier's minus while zoomed; the label stays "Zoom" */
+.amk-lightbox-zoom[aria-pressed='true'] .amk-lightbox-zoom-plus {
+	display: none;
+}
+
+.amk-lightbox-close {
+	top: max(env(safe-area-inset-top), 0.75rem);
+	left: max(env(safe-area-inset-left), 0.75rem);
+}
+
+.amk-lightbox-previous,
+.amk-lightbox-next {
+	top: 50%;
+	translate: 0 -50%;
+}
+
+.amk-lightbox-previous {
+	inset-inline-start: max(env(safe-area-inset-left), env(safe-area-inset-right), 0.75rem);
+}
+
+.amk-lightbox-next {
+	inset-inline-end: max(env(safe-area-inset-left), env(safe-area-inset-right), 0.75rem);
+}
+
+.amk-lightbox:dir(rtl) :is(.amk-lightbox-previous, .amk-lightbox-next) svg {
+	scale: -1 1;
+}
+
+.amk-lightbox[data-lone] :is(.amk-lightbox-previous, .amk-lightbox-next) {
+	visibility: hidden;
+}
+
+/* Heard, not seen */
+.amk-lightbox-status {
+	position: absolute;
+	overflow: hidden;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	white-space: nowrap;
+	clip-path: inset(50%);
+}
+
+/* Controls and captions fade with the backdrop */
+.amk-lightbox :is(.amk-lightbox-button, .amk-lightbox-caption) {
+	opacity: 0;
+	transition:
+		opacity var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		background-color 0.15s;
+}
+
+.amk-lightbox[data-state='open'] :is(.amk-lightbox-button, .amk-lightbox-caption) {
+	opacity: var(--amk-lightbox-drag-opacity, 1);
+}
+
+.amk-lightbox[data-state='open'] .amk-lightbox-button[aria-disabled='true'] {
+	opacity: calc(var(--amk-lightbox-drag-opacity, 1) * 0.3);
+}
+
+/* A zoomed subject covers its caption */
+.amk-lightbox[data-state='open'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-caption {
+	opacity: 0;
+}
+
+@media (hover: hover) {
+	.amk-lightbox-button:not([aria-disabled='true']):hover {
+		background: rgb(0 0 0 / 80%);
+	}
+}

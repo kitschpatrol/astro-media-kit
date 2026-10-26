@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createControlsActivity } from '../src/components/internal/lightbox/player-controls'
 import { isHlsSource, setVideoSourceWhenReady } from '../src/components/internal/video-source'
-import { createControlsActivity } from '../src/components/utils/controls-activity'
 afterEach(() => {
 	vi.useRealTimers()
 	document.body.replaceChildren()

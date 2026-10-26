@@ -41,7 +41,7 @@ import {
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
-import { imageFallback } from './utils/zoom-image'
+import { zoomTarget } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -298,7 +298,7 @@ const captionProps = toCaptionProps(
 ---
 
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} href={imageFallback(image)} slot="media-component">
+	<Zoomer {...zoomerProps} {...zoomTarget(image)} slot="media-component">
 		<img
 			alt={alt}
 			src={image.src}

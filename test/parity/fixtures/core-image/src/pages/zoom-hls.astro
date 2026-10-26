@@ -7,10 +7,10 @@ import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<title>HLS lifting</title>
+		<title>HLS zoom</title>
 	</head>
 	<body>
-		<Zoomer enabled level="fill">
+		<Zoomer enabled interactive level="fill">
 			<VideoPlayer
 				aspectRatio="16 / 9"
 				autoPlay={false}
@@ -35,7 +35,7 @@ import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
 		width: 240px;
 	}
 
-	.liftbox {
-		--liftbox-duration: 60ms;
+	.amk-lightbox {
+		--amk-lightbox-duration: 60ms;
 	}
 </style>

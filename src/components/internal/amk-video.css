@@ -1,8 +1,8 @@
 /* Styles for the Video.js 10 player composed in VideoPlayer.astro, including
-   the same player while lifted into the viewer. Video.js UI elements ship no
+   the same player while lifted into the lightbox. Video.js UI elements ship no
    styles of their own, so everything visual lives here. Rules are prefixed
    with `.amk` (the wrapper class) or `.amk-` (component classes) for scope
-   protection, and the lightbox bar reuses the `.amk-` component classes.
+   protection, and the floated bar reuses the `.amk-` component classes.
 
    Dropped from the media-chrome version, deliberately: the rule that hid
    mute/volume when the audio-track list was "unavailable" (which meant the
@@ -26,7 +26,7 @@
 }
 
 /* Shrink-wrap the zoom wrapper to match the player's intrinsic size, so
-   Liftbox's zoom animation origin matches the visible content. */
+   the lightbox's lift starts from the visible content. */
 .amk-zoom:has(> .amk) {
 	width: fit-content;
 	max-width: 100%;
@@ -78,14 +78,24 @@
 }
 
 /* The original player fills the fitted viewer frame. */
-.liftbox-layer > .amk media-container {
+.amk-lightbox-layer > .amk media-container {
 	width: 100% !important;
 	max-width: none;
 	height: 100%;
 }
 
-.liftbox-layer .amk-zoom-button {
+/* The player's zoom button closes the viewer while the player is lifted, and
+   says so. */
+.amk-zoom-button .amk-icon-zoom-exit,
+.amk-zoom-exit-label,
+.amk-lightbox-layer .amk-zoom-button .amk-icon-zoom-enter,
+.amk-lightbox-layer .amk-zoom-enter-label {
 	display: none;
+}
+
+.amk-lightbox-layer .amk-zoom-button .amk-icon-zoom-exit,
+.amk-lightbox-layer .amk-zoom-exit-label {
+	display: block;
 }
 
 /* --- Poster and buffering --- */
@@ -562,10 +572,6 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	opacity: 0;
 }
 
-.amk-zoom:not([data-liftbox-ready]) .amk-zoom-button {
-	display: none;
-}
-
-.liftbox-slide:has(.amk-player) {
-	padding-bottom: calc(var(--liftbox-gutter) + 44px);
+.amk-lightbox-slide:has(.amk-player) {
+	padding-bottom: calc(var(--amk-lightbox-gutter) + 44px);
 }

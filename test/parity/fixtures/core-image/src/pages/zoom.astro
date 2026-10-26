@@ -13,10 +13,10 @@ const videoProps = {
 	intrinsicWidth: 640,
 	loop: true,
 	muted: true,
-	posterUrl: undefined,
+	posterUrl: '/media/loop-poster.jpg',
 	preload: 'auto' as const,
 	resolvedLabel: 'Test video',
-	videoSrc: '/clip.mp4',
+	videoSrc: '/media/loop.mp4',
 	zoom: true,
 }
 ---
@@ -25,11 +25,11 @@ const videoProps = {
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<title>Liftbox integration</title>
+		<title>Zoom integration</title>
 		<ClientRouter />
 	</head>
 	<body>
-		<a href="/liftbox-next/" id="navigate">
+		<a href="/zoom-next/" id="navigate">
 			Next page
 		</a>
 		<article id="first">
@@ -67,7 +67,7 @@ const videoProps = {
 			/>
 		</article>
 		<section id="video">
-			<Zoomer enabled={true}>
+			<Zoomer enabled={true} interactive>
 				<VideoPlayer {...videoProps} />
 			</Zoomer>
 		</section>
@@ -104,7 +104,7 @@ const videoProps = {
 		height: auto;
 	}
 
-	.liftbox {
-		--liftbox-duration: 60ms;
+	.amk-lightbox {
+		--amk-lightbox-duration: 60ms;
 	}
 </style>

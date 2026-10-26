@@ -40,8 +40,8 @@ const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative
 const hasFullscreen = controls === 'full' || controls === 'minimal'
 // Click-to-play stays off where a click must do something else: open the
-// lightbox (zoom), or nothing at all ('lightbox' mode mirrors the player
-// inside Liftbox, where clicks zoom the slide).
+// lightbox (zoom), or nothing at all ('lightbox' mode is for a player that
+// should omit its fullscreen control).
 const hasClickToPlay = hasFullscreen && !zoom
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
@@ -83,6 +83,7 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 			<media-container
 				aria-label={resolvedLabel}
 				class="amk-container"
+				data-media=""
 				style={containerStyle}
 				tabindex={controls === 'none' ? '-1' : undefined}
 			>

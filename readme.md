@@ -31,11 +31,11 @@ This is a small collection of Astro components to help you write minimalist, pla
 It includes:
 
 - **Image**\
-  Superset of Astro's `<Image>` with captions, XMP credit extraction, Liftbox zoom, background compositing, and a per-input-format `format` override.
+  Superset of Astro's `<Image>` with captions, XMP credit extraction, lightbox zoom, background compositing, and a per-input-format `format` override.
 - **Picture**\
   Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `formats` and `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
-  Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus integration with Liftbox zoom.
+  Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus lightbox zoom.
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
 - **Astro Integration**\
@@ -120,7 +120,7 @@ import hero from '../assets/hero.jpg'
 
 ### Image
 
-A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates Liftbox zoom, and handles CSS/pixel-level background compositing.
+A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates lightbox zoom, and handles CSS/pixel-level background compositing.
 
 Accepts `ImageMetadata`, a `{ dark, light }` pair, a local file path string, or a remote `http(s)` URL.
 
@@ -397,13 +397,40 @@ import { Audio } from 'astro-media-kit/components'
 
 **Caption** wraps content in `<figure>`/`<figcaption>` and handles XMP credit extraction from image metadata via `exiftool-vendored`. Used internally by Image, Picture, Video, and Audio — you generally don't need to use it directly.
 
-**Zoomer** enhances ordinary HTML with Liftbox. Enable it through `zoom` on Image, Picture, or Video; existing `zoomLevel` and `zoomScope` props are unchanged. `zoomPlaceholder="auto"` (default) leaves a decorative page preview; `"none"` reserves space only. Captions always remain on the page.
+**Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, and `nativeWidth` for the `native` zoom level. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap.
 
-Image and Picture generate a real link to the largest generated candidate in their fallback format. That link works without JavaScript, and modified clicks retain browser behavior. The full responsive media element is lifted when JavaScript is available. A single fallback URL uses the light variant; the viewer retains the actual picture's theme selection.
+### Lightbox
 
-Standalone Zoomer accepts `enabled`, `level`, `scope`, `placeholder`, and an optional `href` for native fallback navigation. Its child is the actual content to enlarge. The old PhotoSwipe `src`, `srcset`, `width`, and `height` overrides have been removed. Video players move with their existing controls and media; no second lightbox player is created. Native video can leave a live canvas preview; opaque custom media and iframe players reserve space. Providers backed by iframes can reload on browsers without state-preserving DOM moves.
+The lightbox moves the real element into a full-screen `<dialog>`, animates it up from where it sat, and moves it back when the viewer closes. Nothing is cloned or reconstructed: a `<picture>` keeps its `srcset`, so the browser fetches a larger candidate by itself once the picture is laid out at full size, and a video keeps playing with its position, sound, captions, and controls. The player's control bar floats over the viewer, and its zoom button closes the viewer again. Items that share a `zoom` gallery name open together as a carousel you can swipe, drag, or step through with the buttons and the keyboard.
 
-For local development this checkout uses `liftbox: link:../liftbox`. Run `pnpm build` in the sibling Liftbox checkout after changing its sources, then restart the Astro dev server if its dependency cache is stale. Replace the local link with a published version before publishing astro-media-kit.
+Everything the client needs is rendered on the server. Image and Picture emit a real link to the largest generated candidate in their fallback format, which works without JavaScript and keeps browser behavior for modified clicks, along with that candidate's width for the `native` zoom level. Video emits its source dimensions. Wrappers around plain content are buttons, with `role`, `tabindex`, and `aria-haspopup` in the HTML; wrappers around a player are marked interactive, so the player's own controls keep their clicks. The stylesheet is bundled with the page's CSS, and the script loads only on pages with a zoom-enabled component. There are no runtime observers: a handful of listeners on the document cover every item, including the ones Astro's client router swaps in.
+
+While the original is lifted, its wrapper holds its place in the page and a decorative preview stands in: a copy of an image that follows the candidate the lifted original loads, so the two crossfade and land on the same pixels; a player's poster, or its live frames on a canvas, for video; a copy of ordinary HTML. `zoomPlaceholder="none"` reserves the space without a preview. Hovering an item for a moment, or focusing it, warms the candidate the viewer will need, without changing the visible thumbnail.
+
+In the viewer:
+
+- Drag the content up or down to dismiss it; a short drag springs back. Swipe, scroll horizontally, or drag with the mouse to move between items; a drag let go while still moving carries on to the next item, as paging does on iOS.
+- Use the previous and next buttons, the arrow keys, Home, and End. Close with Escape, Space, the close button, or a click outside the content. A focused player keeps its own keys, except Escape, which closes, and the left and right arrows, which move between items when there are others.
+- With `zoomLevel="fill"` or `"native"`, click the content to zoom in on that point, or use the Zoom button. Pan by scrolling, dragging, or with the arrow keys, and click again to zoom back out. `"fit"` (the default) closes on click.
+- A figure's caption is copied beside the content when there is room, and below it otherwise. The caption on the page stays where it is.
+- Transitions can be turned around partway, and a click on another item while the viewer opens or closes opens that item instead.
+
+The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. The page-facing rules sit in the `amk-lightbox` cascade layer, so any of your styles override them. Set these custom properties on `:root` or `.amk-lightbox`:
+
+| Property                             | Default                           |
+| ------------------------------------ | --------------------------------- |
+| `--amk-lightbox-backdrop`            | `rgb(0 0 0 / 28.7%)`              |
+| `--amk-lightbox-duration`            | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-open-fade-duration`  | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-close-fade-duration` | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-carousel-duration`   | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
+| `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
+| `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
+
+`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands; `--amk-lightbox-carousel-duration` times the carousel spring. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+
+The lightbox targets current browsers (Chrome or Edge 139, Firefox 144, and Safari 26.2 or newer, the first with the invoker commands it uses). Where `moveBefore()` is missing, as in Safari, elements move with a plain insertion: video keeps playing, but iframes inside a lifted element reload. Where `sizes="auto"` is missing, images keep their page-sized candidate in the viewer unless they were warmed on hover or focus first.
 
 ### Scoped galleries
 
@@ -655,7 +682,7 @@ This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com
 
 ## Acknowledgments
 
-Video and audio playback are built on [Video.js 10](https://videojs.org) (`@videojs/html` with the `@videojs/hlsjs-video`, `@videojs/youtube-video`, and `@videojs/vimeo-video` media elements). Image zoom uses [Liftbox](https://github.com/kitschpatrol/liftbox). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
+Video and audio playback are built on [Video.js 10](https://videojs.org) (`@videojs/html` with the `@videojs/hlsjs-video`, `@videojs/youtube-video`, and `@videojs/vimeo-video` media elements). XMP credit extraction relies on [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) and its underlying [exiftool](https://exiftool.org/) project.
 
 <!-- contributing -->
 

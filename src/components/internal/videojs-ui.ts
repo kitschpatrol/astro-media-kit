@@ -1,8 +1,9 @@
 /**
  * Registers the Video.js custom elements and icons composed by
- * VideoPlayer.astro, whose original player also travels into Liftbox. Every
- * import is side-effect only and defines exactly one element, so this list is
- * the single place that decides which parts of Video.js ship to the client.
+ * VideoPlayer.astro, whose original player also travels into the lightbox.
+ * Every import is side-effect only and defines exactly one element, so this
+ * list is the single place that decides which parts of Video.js ship to the
+ * client.
  */
 import {
 	captionsOffIcon,

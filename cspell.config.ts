@@ -1,5 +1,19 @@
 import { cspellConfig } from '@kitschpatrol/cspell-config'
 
 export default cspellConfig({
-	words: ['bgdark', 'hlsjs', 'librsvg', 'liftbox', 'oscnord', 'pswp', 'youtu'],
+	words: [
+		'bgdark',
+		'commandfor',
+		'contenteditable',
+		'flowto',
+		'haspopup',
+		'hlsjs',
+		'labelledby',
+		'librsvg',
+		'oscnord',
+		'roledescription',
+		'xlink',
+		'xmpmeta',
+		'youtu',
+	],
 })

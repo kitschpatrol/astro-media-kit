@@ -261,7 +261,7 @@ const sharedProps = {
 	)
 ) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
 	<Caption {...captionProps}>
-		<Zoomer {...zoomerProps} slot="media-component">
+		<Zoomer {...zoomerProps} interactive nativeWidth={videoInfo.width} slot="media-component">
 			<VideoPlayer
 				{...sharedProps}
 				captions={videoInfo.captions}

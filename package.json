@@ -34,7 +34,7 @@
 	"sideEffects": [
 		"**/*.astro",
 		"**/*.css",
-		"./src/components/utils/lightbox.ts"
+		"./src/components/internal/lightbox/index.ts"
 	],
 	"type": "module",
 	"exports": {
@@ -69,7 +69,6 @@
 		"@videojs/vimeo-video": "^10.0.0",
 		"@videojs/youtube-video": "^10.0.0",
 		"exiftool-vendored": "^38.3.0",
-		"liftbox": "link:../liftbox",
 		"linkedom": "^0.18.13",
 		"mrmime": "^2.0.1",
 		"pretty-bytes": "^7.2.0"

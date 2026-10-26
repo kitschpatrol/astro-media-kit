@@ -1,39 +1,70 @@
 ---
-import 'liftbox/page.css'
+import './internal/lightbox/lightbox.css'
 
 /**
- * Ordinary HTML enhanced by Liftbox; media stays owned by the slotted
- * component.
+ * Wraps content the lightbox can lift into a full-screen viewer. The wrapper
+ * carries everything the client needs as attributes, rendered here: the
+ * gallery, the zoom level, the scope, the media's native width, and the
+ * semantics of an opener, so the script enhances nothing on load.
  */
 export type Props = {
 	/** Enable lifting, optionally grouping items into a named gallery. */
 	enabled?: boolean | string | undefined
 	/**
 	 * Native fallback destination, supplied by the component generating the
-	 * assets.
+	 * assets. Rendered as a real link, which works before JavaScript.
 	 */
 	href?: string | undefined
+	/**
+	 * The content runs its own controls, such as a video player: the wrapper is
+	 * not a button, clicks inside it are left alone, and it opens from a
+	 * `data-zoom-open` button of its own.
+	 */
+	interactive?: boolean | undefined
 	/** Secondary zoom level. */
 	level?: 'fill' | 'fit' | 'native' | undefined
+	/**
+	 * The width at which the media shows one of its pixels per CSS pixel, which
+	 * the `native` level zooms to. Omit for content without pixels of its own.
+	 */
+	nativeWidth?: number | undefined
 	/** Page preview policy. */
 	placeholder?: 'auto' | 'none' | undefined
 	/** Nearest ancestor that bounds the gallery. */
 	scope?: string | undefined
 }
 
-const { enabled = false, href, level = 'fit', placeholder = 'auto', scope } = Astro.props
-const TAG = href !== undefined && href !== '' ? 'a' : 'div'
-const gallery = typeof enabled === 'string' ? enabled : ''
+const {
+	enabled = false,
+	href,
+	interactive = false,
+	level = 'fit',
+	nativeWidth,
+	placeholder = 'auto',
+	scope,
+} = Astro.props
+const isEnabled = enabled !== false && enabled !== ''
+const isLink = href !== undefined && href !== ''
+const TAG = isLink ? 'a' : 'div'
+const gallery = typeof enabled === 'string' ? enabled : undefined
+// A link is operable as itself; a wrapper around interactive content opens from
+// a button inside it; anything else becomes a button
+const isButton = !isLink && !interactive
 ---
 
-{enabled !== false && enabled !== '' ? (
+{isEnabled ? (
 	<TAG
+		aria-haspopup={isButton ? 'dialog' : undefined}
 		class="amk-zoom"
-		data-liftbox={gallery}
-		data-liftbox-level={level}
-		data-liftbox-placeholder={placeholder}
-		data-liftbox-scope={scope}
+		data-gallery={gallery}
+		data-interactive={interactive ? '' : undefined}
+		data-level={level === 'fit' ? undefined : level}
+		data-native-width={nativeWidth !== undefined && nativeWidth > 0 ? nativeWidth : undefined}
+		data-placeholder={placeholder === 'none' ? placeholder : undefined}
+		data-scope={scope}
 		href={href}
+		role={isButton ? 'button' : undefined}
+		tabindex={isButton ? '0' : undefined}
 	>
 		<slot />
 	</TAG>
@@ -41,19 +72,6 @@ const gallery = typeof enabled === 'string' ? enabled : ''
 	<slot />
 )}
 
-<script>
-	import './utils/lightbox'
-</script>
-
-<style is:global>
-	.amk-zoom {
-		display: block;
-	}
-
-	.liftbox-layer > .amk-picture > picture,
-	.liftbox-layer > .amk-picture img {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-	}
-</style>
+{isEnabled && <script>
+	import './internal/lightbox'
+</script>}

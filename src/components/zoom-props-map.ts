@@ -27,7 +27,7 @@ export function toZoomerProps(
  */
 export type PrefixedProps = {
 	/**
-	 * Enable Liftbox zoom. `true` uses the default gallery, a string groups items
+	 * Enable the lightbox. `true` opens the item alone, a string groups items
 	 * into a named gallery.
 	 *
 	 * @default false
