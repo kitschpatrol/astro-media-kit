@@ -1,8 +1,8 @@
 /**
- * Audio across a gallery: while the viewer shows one item, media in the others
- * fades to silence, and comes back up as the carousel reaches it, to the level
- * it had when the gallery was first opened. Everything returns to that level
- * when the viewer closes.
+ * Audio across a gallery: while the viewer shows one item, media playing in the
+ * others fades to silence, and comes back as the carousel reaches it, to the
+ * level it had when the gallery was first opened. Everything returns to that
+ * level when the viewer closes. Media that isn't playing is left alone.
  */
 
 /** A native media element, or a Video.js media element, which mirrors its API. */
@@ -38,11 +38,18 @@ export function beginVolumes(roots: Element[], active: Element | undefined) {
 	}
 }
 
-/** Bring the media in `active` back to its level, and fade everything else away. */
+/**
+ * Bring the media in `active` back to its level, and fade everything else that
+ * is playing away.
+ */
 export function focusVolumes(active: Element) {
-	const playing = new Set(mediaIn(active))
+	const heard = new Set(mediaIn(active))
 	for (const [media, entry] of tracked) {
-		fade(media, entry, playing.has(media) ? entry.level : 0)
+		if (heard.has(media)) {
+			fade(media, entry, entry.level)
+		} else if (!media.paused) {
+			fade(media, entry, 0)
+		}
 	}
 }
 
