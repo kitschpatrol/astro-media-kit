@@ -30,7 +30,6 @@ export function dropSlides(slides: Slide[]) {
 
 		slide.lift = undefined
 		const { item } = lift
-		releaseControls(lift.subject)
 		move(item, lift.subject, lift.nextSibling)
 		removePlaceholder(lift.placeholder)
 
@@ -60,6 +59,12 @@ export function dropSlides(slides: Slide[]) {
 				animation.finish()
 			}
 		}
+	}
+
+	// A player's control bar goes back last, so that its rise into the player
+	// isn't among the transitions just skipped
+	for (const subject of subjects) {
+		releaseControls(subject)
 	}
 }
 

@@ -165,12 +165,11 @@
 	display: flex;
 	flex-flow: column nowrap;
 	justify-content: flex-end;
-	transition: opacity var(--amk-duration) var(--amk-easing);
+	transition: opacity var(--amk-duration);
 }
 
-/* Hidden controls fade out as the bar drops below the player's edge, and
-   stop taking pointer events, but stay in the tab order: keyboard focus
-   landing inside reveals them again, rising and fading back in. Hidden when
+/* Hidden controls fade out and stop taking pointer events, but stay in the
+   tab order: keyboard focus landing inside reveals them again. Hidden when
    Video.js reports them hidden; in lightbox mode also whenever the user is
    idle, even while paused; and with autoplay, until playback has started
    (no flash of controls at load; user activity still reveals them if
@@ -186,18 +185,14 @@
 		:has(:focus-visible)
 	) {
 	--amk-controls-pointer: none;
-	--amk-bar-offset: 100%;
 
 	opacity: 0;
 }
 
 /* --- Control bar --- */
 
-/* Drops out under the player's clipped edge while the controls hide, by its
-   own height, the way the floated bar leaves the lightbox */
 .amk-bar {
 	pointer-events: var(--amk-controls-pointer, auto);
-	translate: 0 var(--amk-bar-offset, 0);
 	display: flex;
 	flex-flow: row nowrap;
 	align-items: center;
@@ -208,9 +203,20 @@
 	background: var(--amk-control-background);
 }
 
+/* Back from the lightbox, the bar rises into the player from under its
+   clipped edge as the controls fade in, the way the floated bar rose into
+   the viewer. Script holds the returning state for one layout. */
+.amk-controls[data-returning] {
+	opacity: 0;
+}
+
+.amk-controls[data-returning] .amk-bar {
+	translate: 0 100%;
+}
+
 @media (prefers-reduced-motion: no-preference) {
 	.amk-bar {
-		transition: translate var(--amk-duration) var(--amk-easing);
+		transition: translate var(--amk-lightbox-duration, 0.4s) var(--amk-easing);
 	}
 }
 

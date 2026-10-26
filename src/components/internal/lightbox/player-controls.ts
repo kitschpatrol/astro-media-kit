@@ -130,8 +130,8 @@ export function hideControls() {
 }
 
 /**
- * Put a bar back in its player, straight away: the one in `subject`, or every
- * bar when no subject is given.
+ * Put a bar back in its player, where it rises into place: the one in
+ * `subject`, or every bar when no subject is given.
  */
 export function releaseControls(subject?: Element) {
 	for (const [each, bar] of bars) {
@@ -140,7 +140,12 @@ export function releaseControls(subject?: Element) {
 		}
 
 		hide(bar)
-		bar.controls.removeAttribute('popover')
+		const { controls } = bar
+		// Laid out once dropped under the player's edge, so that it rises from there
+		controls.dataset.returning = ''
+		controls.removeAttribute('popover')
+		controls.getBoundingClientRect()
+		delete controls.dataset.returning
 		bars.delete(each)
 	}
 }

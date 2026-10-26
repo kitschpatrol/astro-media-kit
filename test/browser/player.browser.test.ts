@@ -146,26 +146,42 @@ it('slides its control bar up as it lifts, and away again as it lands', async ()
 	}
 })
 
-it('drops its bar below the player as the controls hide in the page, and raises it as they show', async () => {
+it('only fades its bar in the page as the controls hide and show', async () => {
 	const { player } = await mountPlayer()
 	const controls = query(player, '.amk-controls')
 	const bar = query(player, '.amk-bar')
 	const container = query(player, 'media-container')
 	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
-	expect(bar.getBoundingClientRect().bottom).toBeCloseTo(
-		container.getBoundingClientRect().bottom,
-		0,
-	)
+	const resting = bar.getBoundingClientRect()
+	expect(resting.bottom).toBeCloseTo(container.getBoundingClientRect().bottom, 0)
 
 	delete controls.dataset.visible
 	await expect.poll(() => getComputedStyle(controls).opacity).toBe('0')
-	await expect
-		.poll(() => bar.getBoundingClientRect().top)
-		.toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+	expect(bar.getBoundingClientRect().top).toBeCloseTo(resting.top, 0)
+	expect(getComputedStyle(controls).transitionDuration).toBe('0.2s')
 
 	controls.dataset.visible = ''
 	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
-	await expect
-		.poll(() => bar.getBoundingClientRect().bottom)
-		.toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+	expect(bar.getBoundingClientRect().top).toBeCloseTo(resting.top, 0)
+})
+
+it('raises its bar back into the player as the lightbox closes', async () => {
+	const { player } = await mountPlayer()
+	const controls = query(player, '.amk-controls')
+	const bar = query(player, '.amk-bar')
+	const container = query(player, 'media-container')
+	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
+
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	viewer().requestClose()
+	await expect.poll(() => viewer().open).toBe(false)
+
+	// Back in the player, on its way up from under the edge
+	expect(controls.hasAttribute('popover')).toBe(false)
+	const { bottom } = container.getBoundingClientRect()
+	expect(bar.getBoundingClientRect().bottom).toBeGreaterThan(bottom + 1)
+	await expect.poll(() => bar.getBoundingClientRect().bottom).toBeCloseTo(bottom, 0)
+	expect(getComputedStyle(controls).opacity).toBe('1')
 })
