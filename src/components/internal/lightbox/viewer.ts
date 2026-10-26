@@ -16,9 +16,10 @@ import { lengthOf } from './geometry'
 import { canFade, dropSlides, liftSlide, measure } from './lift'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion } from './motion'
-import { floatControls } from './player-controls'
+import { floatControls, hideControls } from './player-controls'
 import { prepareImage } from './prepare'
 import { containPageScroll, containScrollKey } from './scroll-boundary'
+import { beginVolumes, endVolumes, focusVolumes } from './volume'
 import { Zoom } from './zoom'
 
 type State = 'closing' | 'idle' | 'open' | 'opening'
@@ -170,6 +171,7 @@ class Viewer {
 
 		const isOpening = this.#state === 'opening'
 		const generation = ++this.#generation
+		hideControls()
 		// Escape or a close command can interrupt a held drag. Commit its
 		// backdrop opacity before enabling the closing transition.
 		this.#dialog.getAnimations()
@@ -263,6 +265,10 @@ class Viewer {
 		}
 
 		this.#track.append(...this.#slides.map((slide) => slide.element))
+		beginVolumes(
+			this.#slides.map((slide) => this.#rootOf(slide)),
+			this.#rootOf(this.#slides[index]!),
+		)
 		this.#updateControls()
 
 		// Show, lift, and lay out in one task: a video left without a layout box
@@ -307,6 +313,7 @@ class Viewer {
 	restore() {
 		const current = this.#slides[this.#index]
 		const hasNavigated = this.#index !== this.#openedIndex
+		endVolumes()
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
 
@@ -334,7 +341,10 @@ class Viewer {
 		}
 	}
 
-	/** Float the player controls of the subject that has become the active slide. */
+	/**
+	 * Give the subject that has become the active slide its player controls and
+	 * its sound, and fade the sound of every other item away.
+	 */
 	#activate() {
 		const subject = this.#slides[this.#index]?.lift?.subject
 		if (subject === undefined || subject === this.#activeSubject) {
@@ -343,6 +353,7 @@ class Viewer {
 
 		this.#activeSubject = subject
 		floatControls(subject, this.#dialog)
+		focusVolumes(subject)
 	}
 
 	/**
@@ -703,6 +714,8 @@ class Viewer {
 	#handOver() {
 		const isOpening = this.#state === 'opening'
 		const slide = this.#slides[this.#index]
+		hideControls()
+		endVolumes()
 		const others = this.#slides.filter((each) => each !== slide)
 		this.#slides = []
 		this.#activeSlide = undefined
@@ -922,6 +935,14 @@ class Viewer {
 		if (this.#state === 'open') {
 			dropSlides(this.#slides.filter((_slide, index) => Math.abs(index - this.#index) > 1))
 		}
+	}
+
+	/**
+	 * The element holding a slide's media: its subject, or its item while that is
+	 * still in the page.
+	 */
+	#rootOf(slide: Slide): Element {
+		return slide.lift?.subject ?? slide.item
 	}
 
 	/**

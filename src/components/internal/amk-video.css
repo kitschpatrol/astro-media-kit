@@ -544,12 +544,15 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	display: none;
 }
 
-/* The original controls keep their player context while shown above zoomed media. */
+/* The original controls keep their player context while shown above zoomed
+   media. The bar rises from the bottom edge as the player lifts, sinks away as
+   it lands, and fades with the backdrop when the content is dragged away. */
 .amk-controls[popover] {
 	--amk-controls-pointer: auto;
 	pointer-events: auto;
 	position: fixed;
 	inset: auto 0 0;
+	translate: 0 0;
 	container: amk-player / inline-size;
 	overflow: visible;
 	width: auto;
@@ -558,12 +561,30 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	padding: 0;
 	border: 0;
 	color: var(--amk-control-color);
-	opacity: 1;
+	opacity: var(--amk-lightbox-drag-opacity, 1);
 	background: transparent;
+	transition:
+		opacity var(--amk-duration),
+		translate var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		display var(--amk-lightbox-duration) allow-discrete,
+		overlay var(--amk-lightbox-duration) allow-discrete;
+}
+
+@starting-style {
+	.amk-controls[popover]:popover-open {
+		translate: 0 100%;
+		opacity: 0;
+	}
 }
 
 .amk-controls[popover]:not(:popover-open) {
+	translate: 0 100%;
 	display: none;
+	opacity: 0;
+}
+
+.amk-lightbox[data-dismissing] .amk-controls[popover] {
+	transition: none;
 }
 
 .amk-controls[popover][data-user-inactive]:not(:focus-within) {

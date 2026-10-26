@@ -111,3 +111,37 @@ it('keeps the floated controls visible while they are used, and hides them when 
 		.poll(() => Object.hasOwn(controls.dataset, 'userInactive'), { timeout: 4000 })
 		.toBe(true)
 })
+
+it('slides its control bar up as it lifts, and away again as it lands', async () => {
+	const { player } = await mountPlayer()
+	const controls = query(player, '.amk-controls')
+	const button = query(player, '[data-zoom-open]')
+	// Slow enough to look in on the bar while it moves
+	const slow = document.createElement('style')
+	slow.textContent = '.amk-lightbox { --amk-lightbox-duration: 1s }'
+	document.head.append(slow)
+	try {
+		await userEvent.click(button)
+		await expect.poll(() => controls.matches(':popover-open')).toBe(true)
+		const entering = controls
+			.getAnimations()
+			.filter((animation) => animation instanceof CSSTransition)
+			.map((animation) => animation.transitionProperty)
+		expect(entering).toContain('translate')
+		const rising = controls.getBoundingClientRect().top
+		await liftDone(3000)
+		await expect
+			.poll(() => controls.getBoundingClientRect().bottom)
+			.toBeCloseTo(window.innerHeight, 0)
+		expect(rising).toBeGreaterThan(controls.getBoundingClientRect().top)
+
+		viewer().requestClose()
+		await expect.poll(() => controls.matches(':popover-open')).toBe(false)
+		// Still a popover, on its way out, while the player zooms home
+		expect(controls.hasAttribute('popover')).toBe(true)
+		await expect.poll(() => viewer().open, { timeout: 3000 }).toBe(false)
+		expect(controls.hasAttribute('popover')).toBe(false)
+	} finally {
+		slow.remove()
+	}
+})

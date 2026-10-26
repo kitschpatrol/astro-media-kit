@@ -220,12 +220,14 @@ export async function transitionsDone(): Promise<void> {
  * Wait until the current subject's lift has settled, leaving any animation the
  * lifted content runs on its own, such as a player's spinner, out of it.
  */
-export async function liftDone(): Promise<void> {
+export async function liftDone(timeout = 1000): Promise<void> {
 	await expect
-		.poll(() =>
-			currentLayer()
-				.getAnimations()
-				.every((a) => a.playState !== 'running'),
+		.poll(
+			() =>
+				currentLayer()
+					.getAnimations()
+					.every((a) => a.playState !== 'running'),
+			{ timeout },
 		)
 		.toBe(true)
 }
