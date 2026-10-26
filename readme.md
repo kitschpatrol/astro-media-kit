@@ -454,7 +454,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 
 `--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands; `--amk-lightbox-carousel-duration` times the carousel spring. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
 
-The lightbox targets current browsers (Chrome or Edge 139, Firefox 144, and Safari 26.2 or newer, the first with the invoker commands it uses). Where `moveBefore()` is missing, as in Safari, elements move with a plain insertion: video keeps playing, but iframes inside a lifted element reload. Where `sizes="auto"` is missing, images keep their page-sized candidate in the viewer unless they were warmed on hover or focus first.
+The lightbox targets current browsers (Chrome or Edge 139, Firefox 144, and Safari 26.2 or newer, the first with the invoker commands it uses). Where `moveBefore()` is missing, as in Safari, elements move with a plain insertion: video keeps playing, but iframes inside a lifted element reload, and a player's popups start over. Where `sizes="auto"` is missing, images keep their page-sized candidate in the viewer unless they were warmed on hover or focus first.
 
 ### Scoped galleries
 

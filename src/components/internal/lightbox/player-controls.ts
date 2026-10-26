@@ -35,21 +35,48 @@ export function adoptControls(subject: Element) {
 	player.dataset.controls = 'lightbox'
 }
 
+/** A popup of a player's controls that is open, or on its way in or out. */
+const popupSelector = '[data-popup]:is([data-open], [data-starting-style], [data-ending-style])'
+
 /**
- * Close the popups open in a player's controls, such as the volume popover,
- * before the player moves. Video.js closes them over a few frames, and Chromium
- * crashes when a state-preserving move carries a popup still closing, so the
- * caller gets to know that one was: the player then moves by plain insertion.
+ * Close the popups open in a player's controls, tooltips included, before the
+ * player moves, and say whether any was: a popup in the top layer can't come
+ * along, and Chromium crashes when a state-preserving move carries one.
  */
 export function closePopups(subject: Element): boolean {
-	const popups = subject.querySelectorAll<Popup>(
-		'[data-popup]:is([data-open], [data-starting-style], [data-ending-style])',
-	)
+	const popups = subject.querySelectorAll<Popup>(popupSelector)
 	for (const popup of popups) {
 		popup.close?.('imperative-action')
 	}
 
 	return popups.length > 0
+}
+
+/**
+ * Replace the popups in a player's controls with fresh copies, after a move
+ * that started its custom elements over: a Video.js popup set up again on
+ * connection keeps the trigger listeners of its first life, and the two then
+ * open and close it against each other. The copies start once; the originals
+ * are destroyed, listeners and all.
+ */
+export function refreshPopups(subject: Element) {
+	for (const popup of subject.querySelectorAll('[data-popup]')) {
+		popup.replaceWith(popup.cloneNode(true))
+	}
+}
+
+/**
+ * Wait for the popups in a player's controls to finish closing and leave the
+ * top layer, which Video.js takes a few frames over, reflecting each step on
+ * the next.
+ */
+export async function settlePopups(subject: Element): Promise<void> {
+	const isUnsettled = () => subject.querySelector(`${popupSelector}, :popover-open`) !== null
+	for (let frame = 0; frame < 10 && (frame < 2 || isUnsettled()); frame++) {
+		await new Promise((resolve) => {
+			requestAnimationFrame(resolve)
+		})
+	}
 }
 
 /**
@@ -167,9 +194,10 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	bar.activity.setControls(controls)
 }
 
-/** Send every floated bar away, as the viewer closes. */
+/** Send every floated bar away, with the popups it holds, as the viewer closes. */
 export function hideControls() {
-	for (const bar of bars.values()) {
+	for (const [subject, bar] of bars) {
+		closePopups(subject)
 		hide(bar)
 	}
 }

@@ -5,5 +5,6 @@
  * control that upgrades before its player is defined dispatches its context
  * request into the void and never attaches.
  */
+import './videojs-move'
 import '@videojs/html/video/player'
 import '@videojs/html/ui/container'

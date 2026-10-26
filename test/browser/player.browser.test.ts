@@ -254,7 +254,7 @@ it('keeps the floated bar while the pointer rests on it', async () => {
 	expect(Object.hasOwn(popover.dataset, 'open')).toBe(true)
 })
 
-it('opens the volume popover from the floated bar too', async () => {
+it('opens the volume popover from the floated bar too, and keeps it open', async () => {
 	const { player } = await mountPlayer()
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
@@ -265,9 +265,30 @@ it('opens the volume popover from the floated bar too', async () => {
 	await userEvent.hover(mute)
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await settle(400)
+	expect(popover.matches(':popover-open')).toBe(true)
+	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
 	expect(popover.getBoundingClientRect().bottom).toBeLessThanOrEqual(
 		mute.getBoundingClientRect().top,
 	)
+})
+
+it('keeps the volume popover working after a trip through the lightbox', async () => {
+	const { player } = await mountPlayer()
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().open).toBe(false)
+	const popover = query(player, 'media-volume-popover')
+
+	await commands.mouseMove(5, 5)
+	await userEvent.hover(query(player, 'media-mute-button'))
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await settle(400)
+	expect(popover.matches(':popover-open')).toBe(true)
+	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
 })
 
 it('only fades its bar in the page as the controls hide and show', async () => {

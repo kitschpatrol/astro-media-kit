@@ -505,7 +505,8 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
    Video.js positions the popover against the button. */
 .amk-volume-popover {
 	--media-popover-side-offset: 8px;
-
+	/* The browser's own popover styles would scroll the bridge below */
+	overflow: visible;
 	box-sizing: border-box;
 	width: var(--amk-control-size);
 	height: 128px;

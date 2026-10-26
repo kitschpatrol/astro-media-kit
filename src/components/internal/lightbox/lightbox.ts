@@ -10,6 +10,7 @@ import {
 } from './dom'
 import { warmLink } from './link'
 import { isClickFromDrag } from './motion'
+import { closePopups, settlePopups } from './player-controls'
 import { fittedWidth } from './prepare'
 import { closeViewer, openViewer } from './viewer'
 import { releaseWarmup, warmImage } from './warm-image'
@@ -60,8 +61,17 @@ export function prepareLightbox(item: HTMLElement) {
  * @throws {SyntaxError} When the item's `data-scope` isn't a valid selector.
  */
 export async function openLightbox(item: HTMLElement): Promise<boolean> {
-	if (subjectOf(item) === undefined) {
+	const subject = subjectOf(item)
+	if (subject === undefined) {
 		return false
+	}
+
+	// A player's open popups, such as a tooltip under the pointer or the volume
+	// popover, close first, and the lift waits the few frames that takes, since
+	// moving the player meanwhile crashes Chromium. Otherwise the viewer opens
+	// in this very task, as WebKit's media pipeline needs
+	if (closePopups(subject)) {
+		await settlePopups(subject)
 	}
 
 	const items = galleryOf(item)

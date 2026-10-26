@@ -38,6 +38,7 @@
 		"./src/components/internal/lightbox/index.ts",
 		"./src/components/internal/videojs-controls.ts",
 		"./src/components/internal/videojs-media.ts",
+		"./src/components/internal/videojs-move.ts",
 		"./src/components/internal/videojs-player.ts",
 		"./src/components/internal/videojs-ui.ts"
 	],
