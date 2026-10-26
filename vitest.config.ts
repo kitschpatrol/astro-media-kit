@@ -1,15 +1,8 @@
 import type { Frame } from 'playwright'
+import type { ViteUserConfig } from 'vitest/config'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
-import { fileURLToPath } from 'node:url'
 import { configDefaults, defineConfig } from 'vitest/config'
-
-/**
- * The built Astro fixture, served at the root so its pages and assets load in
- * the browser tests.
- */
-const fixtureDistribution = fileURLToPath(
-	new URL('test/parity/fixtures/core-image/dist/', import.meta.url),
-)
+import { buildFixture } from './test/parity/helpers/build-fixture'
 
 const emulateReducedMotion = defineBrowserCommand<[isReduced: boolean]>(
 	async (context, isReduced) => {
@@ -115,47 +108,51 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 	},
 )
 
-export default defineConfig({
-	test: {
-		projects: [
-			{
-				test: {
-					exclude: [...configDefaults.exclude, 'test/**/*.browser.test.ts'],
-					fileParallelism: false,
-					hookTimeout: 120_000,
-					include: ['test/**/*.test.ts'],
-					name: 'unit',
-					testTimeout: 60_000,
-				},
-			},
-			{
-				// Found up front, so Vite never re-optimizes and reloads mid-run
-				optimizeDeps: { entries: ['test/**/*.browser.test.ts'] },
-				publicDir: fixtureDistribution,
-				test: {
-					browser: {
-						commands: {
-							emulateReducedMotion,
-							mouseDown,
-							mouseMove,
-							mouseUp,
-							mouseWheel,
-							touchSwipe,
-						},
-						enabled: true,
-						headless: true,
-						instances: [{ browser: 'chromium' }, { browser: 'firefox' }, { browser: 'webkit' }],
-						provider: playwright(),
-						viewport: { width: 1280, height: 800 },
+export default defineConfig(async (): Promise<ViteUserConfig> => {
+	// Built before any server starts: Vite lists the public directory once, on
+	// start, so the browser project serves the fixture's pages and assets from
+	// its first request
+	const { dist } = await buildFixture('core-image')
+	return {
+		test: {
+			projects: [
+				{
+					test: {
+						exclude: [...configDefaults.exclude, 'test/**/*.browser.test.ts'],
+						fileParallelism: false,
+						hookTimeout: 120_000,
+						include: ['test/**/*.test.ts'],
+						name: 'unit',
+						testTimeout: 60_000,
 					},
-					// Native input tests must not compete for browser focus across files.
-					fileParallelism: false,
-					// The page tests load the fixture's built HTML and assets.
-					globalSetup: ['test/browser/setup.ts'],
-					include: ['test/**/*.browser.test.ts'],
-					name: 'browser',
 				},
-			},
-		],
-	},
+				{
+					// Found up front, so Vite never re-optimizes and reloads mid-run
+					optimizeDeps: { entries: ['test/**/*.browser.test.ts'] },
+					publicDir: dist,
+					test: {
+						browser: {
+							commands: {
+								emulateReducedMotion,
+								mouseDown,
+								mouseMove,
+								mouseUp,
+								mouseWheel,
+								touchSwipe,
+							},
+							enabled: true,
+							headless: true,
+							instances: [{ browser: 'chromium' }, { browser: 'firefox' }, { browser: 'webkit' }],
+							provider: playwright(),
+							viewport: { width: 1280, height: 800 },
+						},
+						// Native input tests must not compete for browser focus across files.
+						fileParallelism: false,
+						include: ['test/**/*.browser.test.ts'],
+						name: 'browser',
+					},
+				},
+			],
+		},
+	}
 })

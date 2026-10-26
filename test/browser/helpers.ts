@@ -50,10 +50,21 @@ export async function mountPage(path: string): Promise<HTMLElement> {
 	}
 
 	const page = new DOMParser().parseFromString(await response.text(), 'text/html')
+	const loading: Array<Promise<unknown>> = []
 	for (const style of page.head.querySelectorAll('style, link[rel="stylesheet"]')) {
 		document.head.append(style)
 		fixtures.push(style)
+		if (style instanceof HTMLLinkElement) {
+			loading.push(
+				new Promise((resolve) => {
+					style.addEventListener('load', resolve, { once: true })
+					style.addEventListener('error', resolve, { once: true })
+				}),
+			)
+		}
 	}
+
+	await Promise.all(loading)
 
 	const fixture = document.createElement('div')
 	for (const script of page.body.querySelectorAll('script')) {
