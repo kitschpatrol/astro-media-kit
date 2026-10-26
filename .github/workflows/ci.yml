@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm ci
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+
       - name: Build
         env:
           # Prevents clean-up related crashes on Windows
