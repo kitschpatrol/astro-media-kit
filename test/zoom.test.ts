@@ -72,7 +72,7 @@ describe('zoom server markup', () => {
 		expect($('#video .amk-center-play')).toHaveLength(0)
 		const popover = $('#video media-volume-popover')
 		expect(popover.attr('open-on-hover')).toBeDefined()
-		expect($('#video media-mute-button').attr('commandfor')).toBe(popover.attr('id'))
+		expect($('#video amk-mute-button').attr('commandfor')).toBe(popover.attr('id'))
 		expect(popover.find('media-volume-slider').attr('orientation')).toBe('vertical')
 		expect($('#video .amk-bar > media-volume-slider')).toHaveLength(0)
 	})

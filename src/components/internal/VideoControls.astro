@@ -37,16 +37,16 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-tooltip-label />
 							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 						</media-tooltip>
-						<media-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
+						<amk-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
 							<media-icon class="amk-icon-volume-off" name="volume-off" />
 							<media-icon class="amk-icon-volume-low" name="volume-low" />
 							<media-icon class="amk-icon-volume-high" name="volume-high" />
-						</media-mute-button>
+						</amk-mute-button>
 						<media-volume-popover
 							boundary="viewport"
 							class="amk-volume-popover"
-							close-delay="100"
-							delay="200"
+							close-delay="40"
+							delay="0"
 							id={`${uid}-volume`}
 							open-on-hover
 							side="top"

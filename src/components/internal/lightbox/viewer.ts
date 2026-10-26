@@ -659,8 +659,9 @@ class Viewer {
 
 	/**
 	 * A focused player keeps its keys, except Escape, which closes, and the left
-	 * and right arrows, which move between items when there are others. Listens
-	 * ahead of the player's own shortcuts.
+	 * and right arrows, which move between items when there are others. Sliders
+	 * keep their arrows, and open player popups get Escape first. Listens ahead
+	 * of the player's own shortcuts.
 	 */
 	readonly #handlePlayerKeydown = (event: KeyboardEvent) => {
 		const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
@@ -671,7 +672,12 @@ class Viewer {
 			event.metaKey ||
 			!this.#isNavigable ||
 			!isInPlayer(event, this.#dialog) ||
-			isWithin(event, textEntrySelector, this.#dialog)
+			isWithin(event, textEntrySelector, this.#dialog) ||
+			(step !== 0 && isWithin(event, '[role="slider"]', this.#dialog)) ||
+			(event.key === 'Escape' &&
+				this.#dialog.querySelector(
+					':scope video-player [data-popup][data-open]:not(media-tooltip)',
+				) !== null)
 		) {
 			return
 		}

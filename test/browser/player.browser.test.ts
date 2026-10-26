@@ -4,6 +4,7 @@
 
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
+import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
 import '../../src/components/internal/amk-video.css'
@@ -187,7 +188,7 @@ it('raises a minimal player to the full bar while lifted, and lowers it again af
 it('stands the volume slider up in a popover over the mute button, on hover', async () => {
 	const { player } = await mountPlayer()
 	const popover = query(player, 'media-volume-popover')
-	const mute = query(player, 'media-mute-button')
+	const mute = query(player, 'amk-mute-button')
 	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
 
 	await userEvent.hover(mute)
@@ -210,7 +211,7 @@ it('keeps the bar, and the popover, while the pointer rests on them during playb
 	await query(player, 'video', HTMLVideoElement).play()
 	const popover = query(player, 'media-volume-popover')
 
-	await userEvent.hover(query(player, 'media-mute-button'))
+	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
 	await settle(2600)
@@ -227,7 +228,7 @@ it('closes the volume popover before the player lifts', async () => {
 	const { player } = await mountPlayer()
 	const popover = query(player, 'media-volume-popover')
 
-	await userEvent.hover(query(player, 'media-mute-button'))
+	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
 
@@ -246,7 +247,7 @@ it('keeps the floated bar while the pointer rests on it', async () => {
 	const controls = query(player, '.amk-controls')
 	const popover = query(player, 'media-volume-popover')
 
-	await userEvent.hover(query(player, 'media-mute-button'))
+	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
 	await settle(2600)
@@ -260,7 +261,7 @@ it('opens the volume popover from the floated bar too, and keeps it open', async
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	await liftDone()
 	const popover = query(player, 'media-volume-popover')
-	const mute = query(player, 'media-mute-button')
+	const mute = query(player, 'amk-mute-button')
 
 	await userEvent.hover(mute)
 
@@ -283,12 +284,113 @@ it('keeps the volume popover working after a trip through the lightbox', async (
 	const popover = query(player, 'media-volume-popover')
 
 	await commands.mouseMove(5, 5)
-	await userEvent.hover(query(player, 'media-mute-button'))
+	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
 	await settle(400)
 	expect(popover.matches(':popover-open')).toBe(true)
 	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
+})
+
+it.each(['inline', 'lifted', 'returned'])(
+	'toggles mute once per click and keeps volume open when %s',
+	async (phase) => {
+		const { item, player } = await mountPlayer()
+		const video = query(player, 'video', HTMLVideoElement)
+		const mute = query(player, 'amk-mute-button')
+
+		if (phase !== 'inline') {
+			await openLightbox(item)
+			await liftDone()
+		}
+
+		if (phase === 'returned') {
+			await closeLightbox()
+		}
+
+		const popover = query(player, 'media-volume-popover')
+		await userEvent.hover(mute)
+		await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+		for (const _ of [0, 1]) {
+			const wasMuted = video.muted
+			await userEvent.click(mute)
+			await expect.poll(() => video.muted, { message: phase }).toBe(!wasMuted)
+			await settle(200)
+			expect(popover.matches(':popover-open')).toBe(true)
+			expect(mute.getAttribute('aria-expanded')).toBe('true')
+		}
+	},
+)
+
+it('keeps keyboard mute and slider controls working, and dismisses the popup before the viewer', async () => {
+	const { item, player } = await mountPlayer()
+	await openLightbox(item)
+	await liftDone()
+	const mute = query(player, 'amk-mute-button')
+	const popover = query(player, 'media-volume-popover')
+	const video = query(player, 'video', HTMLVideoElement)
+	mute.focus()
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+	for (const key of ['{Enter}', ' ']) {
+		const wasMuted = video.muted
+		await userEvent.keyboard(key)
+		await expect.poll(() => video.muted).toBe(!wasMuted)
+		expect(popover.matches(':popover-open')).toBe(true)
+	}
+
+	await userEvent.keyboard('{Tab}')
+	expect(query(popover, 'media-volume-slider').contains(document.activeElement)).toBe(true)
+	await userEvent.keyboard('{ArrowDown}')
+	await expect.poll(() => video.volume).toBeLessThan(1)
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => popover.matches(':popover-open')).toBe(false)
+	expect(viewer().open).toBe(true)
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+})
+
+it('uses a rectangular volume popup with fast transitions and respects reduced motion', async () => {
+	const { player } = await mountPlayer()
+	const mute = query(player, 'amk-mute-button')
+	const popover = query(player, 'media-volume-popover')
+	await userEvent.hover(mute)
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+	expect(getComputedStyle(popover).borderRadius).toBe('0px')
+	expect(getComputedStyle(popover).transitionDuration).toBe('0.06s')
+	await commands.emulateReducedMotion(true)
+	try {
+		expect(getComputedStyle(popover).transitionDuration).toBe('0s')
+	} finally {
+		await commands.emulateReducedMotion(false)
+	}
+})
+
+it('leaves slider arrows to volume adjustment inside a gallery and supports dragging', async () => {
+	const { item, player } = await mountPlayer()
+	item.dataset.gallery = 'controls'
+	query(document, '#video-minimal .amk-zoom').dataset.gallery = 'controls'
+	await openLightbox(item)
+	await liftDone()
+	const video = query(player, 'video', HTMLVideoElement)
+	const popover = query(player, 'media-volume-popover')
+	await userEvent.hover(query(player, 'amk-mute-button'))
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+	const thumb = query(popover, '[role="slider"]')
+	thumb.focus()
+	await userEvent.keyboard('{ArrowLeft}')
+	await expect.poll(() => video.volume).toBe(0.95)
+	await userEvent.keyboard('{ArrowRight}')
+	await expect.poll(() => video.volume).toBe(1)
+	expect(currentLayer().contains(player)).toBe(true)
+
+	const slider = query(popover, 'media-volume-slider').getBoundingClientRect()
+	await commands.mouseDown(slider.x + slider.width / 2, slider.y + slider.height / 4)
+	await commands.mouseMove(slider.x + slider.width / 2, slider.y + slider.height * 0.75)
+	await commands.mouseUp()
+	await expect.poll(() => video.volume).toBeLessThan(0.5)
+	expect(video.muted).toBe(false)
+	expect(popover.matches(':popover-open')).toBe(true)
+	expect(currentLayer().contains(player)).toBe(true)
 })
 
 it('only fades its bar in the page as the controls hide and show', async () => {

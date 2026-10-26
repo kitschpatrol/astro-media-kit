@@ -1,10 +1,44 @@
 /**
  * Registers the Video.js custom elements and icons composed by
  * VideoPlayer.astro, whose original player also travels into the lightbox.
- * Every import is side-effect only and defines exactly one element, so this
- * list is the single place that decides which parts of Video.js ship to the
- * client.
+ * Register the UI after the player and container. Importing registration entry
+ * points lets shared Astro chunks register controls before their context
+ * providers, leaving those controls disconnected from player state.
  */
+import {
+	BufferingIndicatorElement,
+	CaptionsButtonElement,
+	ControlsContentElement,
+	ControlsElement,
+	ControlsGroupElement,
+	DialogBackdropElement,
+	DialogCloseElement,
+	DialogDescriptionElement,
+	DialogPopupElement,
+	DialogTitleElement,
+	ErrorDialogElement,
+	FullscreenButtonElement,
+	GestureElement,
+	HotkeyElement,
+	PlayButtonElement,
+	PosterElement,
+	SliderBufferElement,
+	SliderFillElement,
+	SliderThumbElement,
+	SliderTrackElement,
+	SliderValueElement,
+	StatusAnnouncerElement,
+	TimeElement,
+	TimeGroupElement,
+	TimeSeparatorElement,
+	TimeSliderElement,
+	TooltipElement,
+	TooltipGroupElement,
+	TooltipLabelElement,
+	TooltipShortcutElement,
+	VolumePopoverElement,
+	VolumeSliderElement,
+} from '@videojs/html'
 import {
 	captionsOffIcon,
 	captionsOnIcon,
@@ -20,40 +54,49 @@ import {
 	volumeOffIcon,
 } from '@videojs/html/icons'
 import './videojs-controls'
+import './videojs-mute-button'
 import './videojs-player'
-import '@videojs/html/ui/buffering-indicator'
-import '@videojs/html/ui/captions-button'
-import '@videojs/html/ui/controls'
-import '@videojs/html/ui/controls-content'
-import '@videojs/html/ui/controls-group'
-import '@videojs/html/ui/dialog-backdrop'
-import '@videojs/html/ui/dialog-close'
-import '@videojs/html/ui/dialog-description'
-import '@videojs/html/ui/dialog-popup'
-import '@videojs/html/ui/dialog-title'
-import '@videojs/html/ui/error-dialog'
-import '@videojs/html/ui/fullscreen-button'
-import '@videojs/html/ui/gesture'
-import '@videojs/html/ui/hotkey'
-import '@videojs/html/ui/mute-button'
-import '@videojs/html/ui/play-button'
-import '@videojs/html/ui/poster'
-import '@videojs/html/ui/slider-buffer'
-import '@videojs/html/ui/slider-fill'
-import '@videojs/html/ui/slider-thumb'
-import '@videojs/html/ui/slider-track'
-import '@videojs/html/ui/slider-value'
-import '@videojs/html/ui/status-announcer'
-import '@videojs/html/ui/time'
-import '@videojs/html/ui/time-group'
-import '@videojs/html/ui/time-separator'
-import '@videojs/html/ui/time-slider'
-import '@videojs/html/ui/tooltip'
-import '@videojs/html/ui/tooltip-group'
-import '@videojs/html/ui/tooltip-label'
-import '@videojs/html/ui/tooltip-shortcut'
-import '@videojs/html/ui/volume-popover'
-import '@videojs/html/ui/volume-slider'
+
+// The constructors come from the public API without registration side effects.
+// Providers precede their parts, including controls and tooltip context.
+for (const element of [
+	ControlsElement,
+	ErrorDialogElement,
+	TimeGroupElement,
+	TimeSliderElement,
+	TooltipGroupElement,
+	VolumeSliderElement,
+	BufferingIndicatorElement,
+	CaptionsButtonElement,
+	ControlsContentElement,
+	ControlsGroupElement,
+	DialogBackdropElement,
+	DialogCloseElement,
+	DialogDescriptionElement,
+	DialogPopupElement,
+	DialogTitleElement,
+	FullscreenButtonElement,
+	GestureElement,
+	HotkeyElement,
+	PlayButtonElement,
+	PosterElement,
+	SliderBufferElement,
+	SliderFillElement,
+	SliderThumbElement,
+	SliderTrackElement,
+	SliderValueElement,
+	StatusAnnouncerElement,
+	TimeElement,
+	TimeSeparatorElement,
+	TooltipElement,
+	TooltipLabelElement,
+	TooltipShortcutElement,
+	VolumePopoverElement,
+]) {
+	if (!customElements.get(element.tagName)) {
+		customElements.define(element.tagName, element)
+	}
+}
 
 // Register the icons the bars use into the `default` family explicitly.
 // Registration merges, so this combines with the packaged audio skin (which

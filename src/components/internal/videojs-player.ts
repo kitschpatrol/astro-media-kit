@@ -5,6 +5,14 @@
  * control that upgrades before its player is defined dispatches its context
  * request into the void and never attaches.
  */
+import { ContainerElement } from '@videojs/html'
+import { VideoPlayerElement } from '@videojs/html/video'
 import './videojs-move'
-import '@videojs/html/video/player'
-import '@videojs/html/ui/container'
+
+// Register explicitly: shared chunks may evaluate side-effect registration
+// imports before their importer's dependencies, including this player.
+for (const element of [VideoPlayerElement, ContainerElement]) {
+	if (!customElements.get(element.tagName)) {
+		customElements.define(element.tagName, element)
+	}
+}

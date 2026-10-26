@@ -1,5 +1,5 @@
 ---
-import { Image, Picture, Zoomer } from 'astro-media-kit/components'
+import { Audio, Image, Picture, Zoomer } from 'astro-media-kit/components'
 import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
 import { ClientRouter } from 'astro:transitions'
 import photo from '../assets/penguin1.jpg'
@@ -93,6 +93,7 @@ const videoProps = {
 		<section id="disabled">
 			<Image alt="Disabled" src={photo} zoom={false} />
 		</section>
+		<Audio label="Audio alongside the custom video UI" service="local" src="/media/loop.mp4" />
 	</body>
 </html>
 <style is:global>
