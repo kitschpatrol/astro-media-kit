@@ -44,6 +44,21 @@ it('lays slides out one per track width, with captions shown on request', async 
 	expect(getComputedStyle(query(carousel, '.amk-carousel-previous')).opacity).toBe('0.3')
 })
 
+it('gives the dots touch-sized hit zones that meet', async () => {
+	const { carousel } = await mountCarousel()
+	const boxes = Array.from(carousel.querySelectorAll('.amk-carousel-dot'), (dot) =>
+		dot.getBoundingClientRect(),
+	)
+	expect(boxes).toHaveLength(3)
+	for (const box of boxes) {
+		expect(box.width).toBeGreaterThanOrEqual(24)
+		expect(box.height).toBeGreaterThanOrEqual(24)
+	}
+
+	expect(boxes[1]!.left).toBe(boxes[0]!.right)
+	expect(boxes[2]!.left).toBe(boxes[1]!.right)
+})
+
 it('steps with the buttons and the dots, and says where it is', async () => {
 	const { carousel, track } = await mountCarousel()
 	const next = query(carousel, '.amk-carousel-next')
