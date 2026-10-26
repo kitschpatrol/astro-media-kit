@@ -23,6 +23,7 @@
 	--amk-slider-buffer: rgb(255 255 255 / 40%);
 	--amk-slider-fill: var(--media-accent-color, #fff);
 	--amk-duration: 0.2s;
+	--amk-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
 }
 
 /* Shrink-wrap the zoom wrapper to its media, which carries the `amk` class:
@@ -164,11 +165,12 @@
 	display: flex;
 	flex-flow: column nowrap;
 	justify-content: flex-end;
-	transition: opacity var(--amk-duration);
+	transition: opacity var(--amk-duration) var(--amk-easing);
 }
 
-/* Hidden controls fade out and stop taking pointer events, but stay in the
-   tab order: keyboard focus landing inside reveals them again. Hidden when
+/* Hidden controls fade out as the bar drops below the player's edge, and
+   stop taking pointer events, but stay in the tab order: keyboard focus
+   landing inside reveals them again, rising and fading back in. Hidden when
    Video.js reports them hidden; in lightbox mode also whenever the user is
    idle, even while paused; and with autoplay, until playback has started
    (no flash of controls at load; user activity still reveals them if
@@ -184,14 +186,18 @@
 		:has(:focus-visible)
 	) {
 	--amk-controls-pointer: none;
+	--amk-bar-offset: 100%;
 
 	opacity: 0;
 }
 
 /* --- Control bar --- */
 
+/* Drops out under the player's clipped edge while the controls hide, by its
+   own height, the way the floated bar leaves the lightbox */
 .amk-bar {
 	pointer-events: var(--amk-controls-pointer, auto);
+	translate: 0 var(--amk-bar-offset, 0);
 	display: flex;
 	flex-flow: row nowrap;
 	align-items: center;
@@ -200,6 +206,12 @@
 	line-height: 1;
 	color: var(--amk-control-color);
 	background: var(--amk-control-background);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.amk-bar {
+		transition: translate var(--amk-duration) var(--amk-easing);
+	}
 }
 
 .amk-button,

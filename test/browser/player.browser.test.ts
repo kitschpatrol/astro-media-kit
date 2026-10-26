@@ -145,3 +145,27 @@ it('slides its control bar up as it lifts, and away again as it lands', async ()
 		slow.remove()
 	}
 })
+
+it('drops its bar below the player as the controls hide in the page, and raises it as they show', async () => {
+	const { player } = await mountPlayer()
+	const controls = query(player, '.amk-controls')
+	const bar = query(player, '.amk-bar')
+	const container = query(player, 'media-container')
+	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
+	expect(bar.getBoundingClientRect().bottom).toBeCloseTo(
+		container.getBoundingClientRect().bottom,
+		0,
+	)
+
+	delete controls.dataset.visible
+	await expect.poll(() => getComputedStyle(controls).opacity).toBe('0')
+	await expect
+		.poll(() => bar.getBoundingClientRect().top)
+		.toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+
+	controls.dataset.visible = ''
+	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
+	await expect
+		.poll(() => bar.getBoundingClientRect().bottom)
+		.toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+})
