@@ -61,6 +61,17 @@ const flickSpeed = 0.3
 /** How hard a drag past either end of the track is held back: iOS's constant. */
 const pull = 0.55
 
+/** Whether the click being dispatched, or the next one, ends a drag. */
+let isDragClick = false
+
+/**
+ * Whether a click ends a drag of a track, for listeners elsewhere, such as the
+ * lightbox's on the document, to let it be.
+ */
+export function isClickFromDrag(): boolean {
+	return isDragClick
+}
+
 /** Owns the carousel's input, snapping, spring, and cancellation lifecycle. */
 export class CarouselMotion {
 	get direction(): number {
@@ -68,6 +79,10 @@ export class CarouselMotion {
 	}
 	get index(): number {
 		return this.#indexFromScroll()
+	}
+	/** The slide being navigated to, or else the current one. */
+	get target(): number {
+		return this.#target ?? this.#index
 	}
 	#count = 0
 	#direction = 1
@@ -93,19 +108,9 @@ export class CarouselMotion {
 	constructor(track: HTMLElement, options: MotionOptions) {
 		this.#track = track
 		this.#options = options
-		track.addEventListener(
-			'click',
-			(event) => {
-				if (!this.#shouldIgnoreClick) {
-					return
-				}
-
-				this.#shouldIgnoreClick = false
-				event.preventDefault()
-				event.stopPropagation()
-			},
-			{ capture: true },
-		)
+		// On the document, since the click that ends a drag can land on an
+		// ancestor of the track when the pointer was let go over another element
+		document.addEventListener('click', this.#handleClick, { capture: true })
 		track.addEventListener('pointerdown', this.#handlePointerdown)
 		track.addEventListener('pointermove', this.#handlePointermove)
 		track.addEventListener('pointerup', this.#handlePointerEnd)
@@ -126,6 +131,12 @@ export class CarouselMotion {
 		this.#width = this.#track.clientWidth
 		this.#direction = getComputedStyle(this.#track).direction === 'rtl' ? -1 : 1
 		this.render(index * this.#width)
+	}
+
+	/** Stop, and stop listening to the document. */
+	destroy() {
+		this.stop()
+		document.removeEventListener('click', this.#handleClick, { capture: true })
 	}
 
 	/**
@@ -247,7 +258,7 @@ export class CarouselMotion {
 			return
 		}
 
-		this.#shouldIgnoreClick = drag.origin !== undefined
+		this.#ignoreClick(drag.origin !== undefined)
 		delete (drag.stage ?? this.#track).dataset.dragging
 		if (this.#owner === 'drag') {
 			this.#owner = 'idle'
@@ -327,6 +338,21 @@ export class CarouselMotion {
 		this.#owner = 'glide'
 	}
 
+	/** The click that ends a drag is not a click on anything. */
+	readonly #handleClick = (event: MouseEvent) => {
+		if (!this.#shouldIgnoreClick) {
+			return
+		}
+
+		this.#shouldIgnoreClick = false
+		event.preventDefault()
+		event.stopPropagation()
+		// Listeners on the document still see the click; they read the flag
+		queueMicrotask(() => {
+			isDragClick = false
+		})
+	}
+
 	/**
 	 * A touch or wheel takes over from any navigation underway. A glide it
 	 * interrupts leaves the track between slides with snapping off, so the
@@ -363,7 +389,7 @@ export class CarouselMotion {
 	}
 
 	readonly #handlePointerdown = (event: PointerEvent) => {
-		this.#shouldIgnoreClick = false
+		this.#ignoreClick(false)
 		this.#isPressSeen = true
 		if (!event.isPrimary) {
 			this.#cancelDrag()
@@ -399,7 +425,7 @@ export class CarouselMotion {
 			const velocity = velocityOf(drag.samples, drag.distanceY, event.timeStamp)
 			const distance = Math.abs(drag.distanceY)
 			const threshold = Math.min(160, this.#track.clientHeight * 0.2)
-			this.#shouldIgnoreClick = true
+			this.#ignoreClick(true)
 			this.#options.onDismissEnd(
 				event.type === 'pointerup' &&
 					(distance >= threshold ||
@@ -434,7 +460,7 @@ export class CarouselMotion {
 		}
 
 		// The click that ends a drag is not a click on the content
-		this.#shouldIgnoreClick = true
+		this.#ignoreClick(true)
 	}
 
 	readonly #handlePointermove = (event: PointerEvent) => {
@@ -517,6 +543,12 @@ export class CarouselMotion {
 		this.#scheduleRealign()
 	}
 
+	/** Remember that the next click ends a drag, for everyone to let it be. */
+	#ignoreClick(value: boolean) {
+		this.#shouldIgnoreClick = value
+		isDragClick = value
+	}
+
 	#indexFromScroll(): number {
 		return this.#width === 0
 			? this.#index
@@ -576,7 +608,8 @@ export class CarouselMotion {
 			startX: event.clientX,
 			startY: event.clientY,
 		}
-		// Keep receiving the drag when it passes over the controls
+		// Keep receiving the drag when it passes over the controls, or leaves
+		// the track. The click that follows a press then lands on the track
 		if (!isTouch && !isInRegion) {
 			this.#track.setPointerCapture(event.pointerId)
 		}

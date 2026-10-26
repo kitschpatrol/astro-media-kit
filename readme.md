@@ -38,6 +38,8 @@ It includes:
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus lightbox zoom.
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
+- **Carousel**\
+  Embedded carousel of any of the above, with buttons, swiping, dots, and captions, that opens into the lightbox.
 - **Astro Integration**\
   Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 

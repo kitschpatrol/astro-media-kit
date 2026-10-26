@@ -7,6 +7,7 @@ import {
 	subjectOf,
 	viewerSelector,
 } from './dom'
+import { isClickFromDrag } from './motion'
 import { fittedWidth } from './prepare'
 import { closeViewer, openViewer } from './viewer'
 import { releaseWarmup, warmImage } from './warm-image'
@@ -103,8 +104,12 @@ function handleClick(event: MouseEvent) {
 	// The composed path reaches through shadow roots, such as a media element's
 	// own controls, where closest() stops
 	const path = event.composedPath()
-	// The viewer handles the openers that travel into it with their item
-	if (path.some((node) => node instanceof Element && node.matches(viewerSelector))) {
+	// The viewer handles the openers that travel into it with their item, and
+	// the click that ends a drag of an embedded carousel is the drag's
+	if (
+		isClickFromDrag() ||
+		path.some((node) => node instanceof Element && node.matches(viewerSelector))
+	) {
 		return
 	}
 
@@ -122,12 +127,34 @@ function handleClick(event: MouseEvent) {
 	}
 
 	const item = path.find(isItem)
-	if (item === undefined || isWithin(event, interactiveSelector, item) || isNativeLink(item)) {
+	if (item !== undefined) {
+		if (!isWithin(event, interactiveSelector, item) && !isNativeLink(item)) {
+			event.preventDefault()
+			void openLightbox(item)
+		}
+
+		return
+	}
+
+	// An embedded carousel's track captures the pointer for a possible drag, so
+	// a click there lands on the track: the item is found under the point instead
+	if (!(event.target instanceof Element) || !event.target.matches('.amk-carousel-track')) {
+		return
+	}
+
+	const stack = document.elementsFromPoint(event.clientX, event.clientY)
+	const depth = stack.findIndex((node) => isItem(node))
+	const under = stack[depth]
+	if (
+		!isItem(under) ||
+		isNativeLink(under) ||
+		stack.slice(0, depth).some((node) => node.matches(interactiveSelector))
+	) {
 		return
 	}
 
 	event.preventDefault()
-	void openLightbox(item)
+	void openLightbox(under)
 }
 
 /**

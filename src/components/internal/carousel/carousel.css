@@ -1,0 +1,159 @@
+/* The embedded carousel `<Carousel>` renders: the lightbox's track in the
+   page, with the same buttons, and dots below. Astro bundles this with the
+   page's CSS. */
+.amk-carousel {
+	--amk-carousel-duration: 0.4s;
+
+	position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.amk-carousel {
+		--amk-carousel-duration: 0s;
+	}
+}
+
+.amk-carousel-viewport {
+	position: relative;
+}
+
+.amk-carousel-track {
+	scrollbar-width: none;
+	scroll-snap-type: x mandatory;
+	overflow: auto hidden;
+	overscroll-behavior-x: contain;
+	display: flex;
+	flex-wrap: nowrap;
+	/* It only takes focus from clicks and the arrow keys */
+	outline: none;
+	/* Resolve CSS time units and calc() for the JS spring without adding a
+	   CSS transition to the track's pointer-driven translation. */
+	transition-duration: var(--amk-carousel-duration);
+	transition-property: none;
+}
+
+/* While script moves the track itself, in a mouse drag or a glide to a slide,
+   snapping would pull every position in between back to a slide */
+.amk-carousel-track[data-moving] {
+	scroll-snap-type: none;
+}
+
+.amk-carousel-track[data-dragging] {
+	cursor: grabbing;
+	/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.amk-carousel-slide {
+	scroll-snap-align: center;
+	scroll-snap-stop: always;
+	display: flex;
+	flex: 0 0 100%;
+	flex-direction: column;
+	align-items: center;
+	box-sizing: border-box;
+	/* Every slide is exactly as wide as the track, whatever its caption holds */
+	min-width: 0;
+}
+
+.amk-carousel-slide > figure {
+	margin: 0;
+}
+
+.amk-carousel-slide :is(img, picture, video) {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+/* Captions stay in the page for the lightbox to copy, shown only on request */
+.amk-carousel:not([data-captions]) .amk-carousel-slide figcaption {
+	display: none;
+}
+
+.amk-carousel-button {
+	cursor: pointer;
+	position: absolute;
+	top: 50%;
+	translate: 0 -50%;
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	color: #f4f4f5;
+	background: rgb(0 0 0 / 60%);
+	transition: background-color 0.15s;
+}
+
+.amk-carousel-button svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 2.25;
+}
+
+/* Drawn on the button rather than around it, where it could fall on the image */
+.amk-carousel-button:focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: -5px;
+}
+
+/* Not disabled, which would drop keyboard focus at either end */
+.amk-carousel-button[aria-disabled='true'] {
+	cursor: default;
+	opacity: 0.3;
+}
+
+@media (hover: hover) {
+	.amk-carousel-button:not([aria-disabled='true']):hover {
+		background: rgb(0 0 0 / 80%);
+	}
+}
+
+.amk-carousel-previous {
+	inset-inline-start: 0.75rem;
+}
+
+.amk-carousel-next {
+	inset-inline-end: 0.75rem;
+}
+
+.amk-carousel:dir(rtl) .amk-carousel-button svg {
+	scale: -1 1;
+}
+
+.amk-carousel-dots {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+	padding-block: 0.75rem;
+}
+
+.amk-carousel-dot {
+	cursor: pointer;
+	width: 0.5rem;
+	height: 0.5rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	opacity: 0.35;
+	background: currentcolor;
+	transition: opacity 0.15s;
+}
+
+.amk-carousel-dot[aria-current='true'] {
+	opacity: 1;
+}
+
+.amk-carousel-dot:focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}

@@ -1,0 +1,61 @@
+---
+import { Carousel, Image, Picture } from 'astro-media-kit/components'
+import photo from '../assets/penguin1.jpg'
+import sticker from '../assets/penguin2.png'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Carousel</title>
+	</head>
+	<body>
+		<section id="captioned">
+			<Carousel captions dots label="Penguins">
+				<Picture alt="First" sizes="400px" src={photo} widths={[240, 480]} zoom="penguins">
+					First caption
+				</Picture>
+				<Image alt="Second" src={sticker} zoom="penguins">
+					Second caption
+				</Image>
+				<Picture
+					alt="Third"
+					darkMode=".dark"
+					sizes="400px"
+					src={photo}
+					srcDark={photo}
+					widths={[240, 480]}
+					zoom="penguins"
+				/>
+			</Carousel>
+		</section>
+		<section id="quiet">
+			<Carousel>
+				<Image alt="Only one" src={photo} zoom>
+					A caption that stays hidden
+				</Image>
+				<Image alt="And another" src={sticker} zoom />
+			</Carousel>
+		</section>
+		<section id="lone">
+			<Carousel dots>
+				<Image alt="Alone" src={photo} />
+			</Carousel>
+		</section>
+	</body>
+</html>
+<style is:global>
+	body {
+		margin: 20px;
+	}
+
+	section {
+		width: 400px;
+		margin-block: 20px;
+	}
+
+	.amk-lightbox {
+		--amk-lightbox-duration: 60ms;
+	}
+</style>

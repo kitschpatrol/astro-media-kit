@@ -211,10 +211,9 @@ class Viewer {
 			return
 		}
 
-		if (!isInViewport(lift.item.getBoundingClientRect())) {
-			lift.item.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
-		}
-
+		// Into view, in the page and in any scroll container the item sits in,
+		// such as an embedded carousel, which then shows the slide that was on
+		lift.item.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
 		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
 	}
@@ -674,6 +673,7 @@ class Viewer {
 
 		this.#width = width
 		this.#height = height
+		const { target } = this.#motion
 		this.#motion.resize(width)
 		if (this.#state === 'idle') {
 			return
@@ -701,7 +701,7 @@ class Viewer {
 			}
 
 			// WebKit keeps the old pixel offset, which lands on the wrong slide
-			this.#motion.go(this.#index, 'instant')
+			this.#motion.go(target, 'instant')
 		}
 	}
 

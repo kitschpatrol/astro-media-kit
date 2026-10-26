@@ -1,0 +1,130 @@
+---
+import { parseHTML } from 'linkedom'
+import './internal/carousel/carousel.css'
+
+/**
+ * An embedded carousel of the components slotted into it: the lightbox's track,
+ * in the page. Each child is a slide, swiped, dragged, or stepped through with
+ * the buttons and the arrow keys, with optional dots and the slides' own
+ * captions below their media. Give the slides the same `zoom` gallery name to
+ * open them together in the lightbox.
+ */
+export type Props = {
+	/**
+	 * Show each slide's caption below its media. Captions are hidden otherwise,
+	 * and still shown in the lightbox.
+	 *
+	 * @default false
+	 */
+	captions?: boolean | undefined
+	/**
+	 * Astro `class` attribute, merged with `className`.
+	 */
+	class?: string | undefined
+	/**
+	 * JSX-style class name (passed by MDX, which uses `className` instead of
+	 * `class`). Merged with Astro's `class` prop (`class` wins when both are
+	 * present).
+	 */
+	className?: string | undefined
+	/**
+	 * Show a dot per slide below the carousel, which also goes to its slide.
+	 *
+	 * @default false
+	 */
+	dots?: boolean | undefined
+	/**
+	 * Accessible name of the carousel.
+	 *
+	 * @default 'Carousel'
+	 */
+	label?: string | undefined
+}
+
+const {
+	captions = false,
+	class: classFromAstro,
+	className: classFromJsx,
+	dots = false,
+	label = 'Carousel',
+} = Astro.props
+
+// Each element the slot renders is a slide. Scripts and styles the components
+// emit alongside their markup stay with the carousel, outside the track
+const html = await Astro.slots.render('default')
+const { document } = parseHTML(`<html><body>${html}</body></html>`)
+const slides: string[] = []
+const extras: string[] = []
+for (const node of document.body.childNodes) {
+	if (node.nodeType !== 1) {
+		continue
+	}
+
+	const element = node as Element
+	if (['link', 'script', 'style', 'template'].includes(element.localName)) {
+		extras.push(element.outerHTML)
+	} else {
+		slides.push(element.outerHTML)
+	}
+}
+
+const hasNavigation = slides.length > 1
+---
+
+<div
+	aria-label={label}
+	aria-roledescription="carousel"
+	class:list={['amk-carousel', classFromAstro ?? classFromJsx]}
+	data-captions={captions ? '' : undefined}
+	role="region"
+>
+	<div class="amk-carousel-viewport">
+		<div class="amk-carousel-track" tabindex="-1">
+			{slides.map((slide, index) => (
+				<div
+					aria-label={`${index + 1} of ${slides.length}`}
+					aria-roledescription="slide"
+					class="amk-carousel-slide"
+					role="group"
+					set:html={slide}
+				/>
+			))}
+		</div>
+		{hasNavigation && (
+			<>
+				<button
+					aria-disabled="true"
+					aria-label="Previous"
+					class="amk-carousel-button amk-carousel-previous"
+					type="button"
+				>
+					<svg aria-hidden="true" viewBox="0 0 24 24">
+						<path d="M15 5 8 12l7 7" />
+					</svg>
+				</button>
+				<button aria-label="Next" class="amk-carousel-button amk-carousel-next" type="button">
+					<svg aria-hidden="true" viewBox="0 0 24 24">
+						<path d="M9 5l7 7-7 7" />
+					</svg>
+				</button>
+			</>
+		)}
+	</div>
+	{dots && hasNavigation && (
+		<div class="amk-carousel-dots">
+			{slides.map((_slide, index) => (
+				<button
+					aria-current={index === 0 ? 'true' : undefined}
+					aria-label={`Slide ${index + 1}`}
+					class="amk-carousel-dot"
+					type="button"
+				/>
+			))}
+		</div>
+	)}
+	<Fragment set:html={extras.join('')} />
+</div>
+
+{hasNavigation && <script>
+	import './internal/carousel'
+</script>}

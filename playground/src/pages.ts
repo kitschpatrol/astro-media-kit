@@ -7,5 +7,6 @@ export const pages = [
 	{ href: '/video-component', title: 'Video' },
 	{ href: '/audio-component', title: 'Audio' },
 	{ href: '/zoom', title: 'Zoom' },
+	{ href: '/carousel', title: 'Carousel' },
 	{ href: '/mdx', title: 'MDX' },
 ] as const

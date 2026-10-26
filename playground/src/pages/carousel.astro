@@ -1,0 +1,74 @@
+---
+import Carousel from 'astro-media-kit/components/Carousel.astro'
+import Image from 'astro-media-kit/components/Image.astro'
+import Picture from 'astro-media-kit/components/Picture.astro'
+import Video from 'astro-media-kit/components/Video.astro'
+import Layout from '../layouts/Layout.astro'
+import { pages } from '../pages'
+
+const { title } = pages.find((p) => p.href === '/carousel')!
+---
+
+<Layout {title}>
+	<h1>{title}</h1>
+
+	<h2>1. Pictures with captions and dots</h2>
+	<p class="note">
+		Swipe, drag with the mouse, use the buttons or the arrow keys. The slides share
+		<code>zoom="album"</code>, so a click opens them together in the lightbox, which returns onto
+		the slide it was showing.
+	</p>
+	<Carousel captions dots label="Album">
+		<Picture alt="JPEG photo" src="../assets/test.jpeg" zoom="album" zoomLevel="native">
+			A photo, with its caption below.
+		</Picture>
+		<Picture alt="SVG tiger" formats={{ svg: ['svg'] }} src="../assets/tiger.svg" zoom="album">
+			A tiger, as vectors.
+		</Picture>
+		<Picture
+			alt="Dark mode JPEG"
+			src="../assets/test.jpeg"
+			srcDark="../assets/test-dark.jpeg"
+			zoom="album"
+		>
+			A photo that follows the color scheme.
+		</Picture>
+	</Carousel>
+
+	<h2>2. Mixed media, captions hidden</h2>
+	<p class="note">
+		Without <code>captions</code>, the captions stay out of the carousel and appear in the lightbox
+		only. The video keeps its controls, and its sound fades while the lightbox shows a neighbor.
+	</p>
+	<Carousel dots label="Mixed">
+		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom="mixed">
+			The first slide.
+		</Image>
+		<Video src="/test.mp4" zoom="mixed">
+			A local video.
+		</Video>
+		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" />
+	</Carousel>
+
+	<h2>3. A lone slide</h2>
+	<p class="note">No buttons, no dots, and no script.</p>
+	<Carousel>
+		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom />
+	</Carousel>
+</Layout>
+
+<style>
+	:global(.amk-carousel) {
+		margin-bottom: 2rem;
+		border: 1px solid light-dark(#ddd, #333);
+		border-radius: 0.5rem;
+	}
+
+	:global(.amk-carousel-slide) {
+		padding: 1rem;
+	}
+
+	:global(.amk-carousel img) {
+		max-width: 100%;
+	}
+</style>
