@@ -4,7 +4,7 @@ import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { ratioOf } from './media'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
-import { adoptControls, releaseControls } from './player-controls'
+import { adoptControls, closePopups, releaseControls } from './player-controls'
 import { releasePreparation } from './prepare'
 import { useWarmup } from './warm-image'
 
@@ -42,7 +42,7 @@ export function dropSlides(slides: Slide[]) {
 			continue
 		}
 
-		move(item, lift.subject, lift.nextSibling)
+		move(item, lift.subject, lift.nextSibling, { plain: closePopups(lift.subject) })
 		removePlaceholder(lift.placeholder)
 
 		item.style.removeProperty('--amk-lightbox-placeholder-width')
@@ -108,7 +108,7 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
 	const hold = isLink ? '' : holdOf(item, subject, measurement.wrapper)
 	item.dataset.lifted = hold
-	move(slide.layer, subject)
+	move(slide.layer, subject, undefined, { plain: closePopups(subject) })
 	adoptControls(subject)
 	if (isLink) {
 		// The kit's media script sets up the media that is in the page as it

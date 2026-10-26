@@ -19,6 +19,7 @@ import {
 	volumeLowIcon,
 	volumeOffIcon,
 } from '@videojs/html/icons'
+import './videojs-controls'
 import './videojs-player'
 import '@videojs/html/ui/buffering-indicator'
 import '@videojs/html/ui/captions-button'

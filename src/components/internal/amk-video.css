@@ -454,6 +454,9 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	bottom: var(--media-slider-fill);
 	left: 50%;
 	translate: -50% 50%;
+	scale: 1;
+	width: 14px;
+	height: 14px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -501,15 +504,15 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
    on hover and focus, so that the bar holds one timeline-like slider only.
    Video.js positions the popover against the button. */
 .amk-volume-popover {
-	--media-popover-side-offset: 4px;
+	--media-popover-side-offset: 8px;
 
 	box-sizing: border-box;
 	width: var(--amk-control-size);
-	height: 120px;
+	height: 128px;
 	margin: 0;
-	padding: 12px 0;
+	padding: 14px 0;
 	border: 0;
-	border-radius: 4px;
+	border-radius: 9999px;
 	color: var(--amk-control-color);
 	background: rgb(0 0 0 / 85%);
 }

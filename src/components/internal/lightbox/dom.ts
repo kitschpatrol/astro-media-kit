@@ -164,12 +164,18 @@ export function isWithin(event: Event, selector: string, boundary: Element): boo
 /**
  * Move `node` into `parent`, before `reference` or at the end. Uses
  * `moveBefore()` where available, which keeps iframes loaded, focus, and
- * running animations. Elsewhere a plain insertion still keeps media playing, as
- * long as the moved element is laid out again in the same task.
+ * running animations, unless `plain` is asked for. Elsewhere a plain insertion
+ * still keeps media playing, as long as the moved element is laid out again in
+ * the same task.
  */
-export function move(parent: Element, node: Element, reference?: ChildNode) {
+export function move(
+	parent: Element,
+	node: Element,
+	reference?: ChildNode,
+	{ plain = false }: { plain?: boolean } = {},
+) {
 	const before = reference?.parentNode === parent ? reference : undefined
-	if ('moveBefore' in parent) {
+	if (!plain && 'moveBefore' in parent) {
 		try {
 			// eslint-disable-next-line unicorn/no-null -- The DOM API takes null to mean "append"
 			parent.moveBefore(node, before ?? null)

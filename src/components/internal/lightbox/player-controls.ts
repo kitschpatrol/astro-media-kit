@@ -11,6 +11,9 @@ type Bar = {
 	controls: HTMLElement
 }
 
+/** A Video.js popup, which closes on request. */
+type Popup = Element & { close?: (reason?: string) => void }
+
 /** The bars that are floated or on their way out, by their player's subject. */
 const bars = new Map<Element, Bar>()
 
@@ -33,9 +36,26 @@ export function adoptControls(subject: Element) {
 }
 
 /**
+ * Close the popups open in a player's controls, such as the volume popover,
+ * before the player moves. Video.js closes them over a few frames, and Chromium
+ * crashes when a state-preserving move carries a popup still closing, so the
+ * caller gets to know that one was: the player then moves by plain insertion.
+ */
+export function closePopups(subject: Element): boolean {
+	const popups = subject.querySelectorAll<Popup>(
+		'[data-popup]:is([data-open], [data-starting-style], [data-ending-style])',
+	)
+	for (const popup of popups) {
+		popup.close?.('imperative-action')
+	}
+
+	return popups.length > 0
+}
+
+/**
  * Track whether the viewer is in use, so the floated controls can hide.
- * Activity covers the whole viewer, but focus and dragging keep the controls
- * visible.
+ * Activity covers the whole viewer, but the pointer over the controls or a
+ * popup of theirs, focus, and dragging keep the controls visible.
  */
 export function createControlsActivity(root: HTMLElement): {
 	destroy: () => void
@@ -60,7 +80,14 @@ export function createControlsActivity(root: HTMLElement): {
 
 		delete controls.dataset.userInactive
 		timer = setTimeout(() => {
-			if (controls && !controls.contains(document.activeElement) && pointers.size === 0) {
+			// A popup of the controls, such as the volume popover, counts as
+			// hovering them, as it is in the DOM
+			if (
+				controls &&
+				!controls.matches(':hover') &&
+				!controls.contains(document.activeElement) &&
+				pointers.size === 0
+			) {
 				controls.dataset.userInactive = ''
 			}
 		}, 2000)

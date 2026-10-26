@@ -15,6 +15,7 @@ import {
 	liftDone,
 	mountPage,
 	query,
+	settle,
 	setUpLightbox,
 	viewer,
 } from './helpers'
@@ -31,6 +32,16 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	const player = query(item, 'video-player')
 	await customElements.whenDefined('video-player')
 	await expect.poll(() => query(item, 'video').getAttribute('src')).toBe('/media/loop.mp4')
+	// The page's images load now rather than as they scroll into view, so that
+	// none of them shifts the player partway through a test
+	const images = [...fixture.querySelectorAll('img')]
+	for (const image of images) {
+		image.loading = 'eager'
+	}
+
+	await expect
+		.poll(() => images.every((image) => !image.checkVisibility() || image.complete))
+		.toBe(true)
 	return { item, player }
 }
 
@@ -193,6 +204,56 @@ it('stands the volume slider up in a popover over the mute button, on hover', as
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(false)
 })
 
+it('keeps the bar, and the popover, while the pointer rests on them during playback', async () => {
+	const { player } = await mountPlayer()
+	const controls = query(player, '.amk-controls')
+	await query(player, 'video', HTMLVideoElement).play()
+	const popover = query(player, 'media-volume-popover')
+
+	await userEvent.hover(query(player, 'media-mute-button'))
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await settle(2600)
+	expect(Object.hasOwn(controls.dataset, 'visible')).toBe(true)
+	expect(Object.hasOwn(popover.dataset, 'open')).toBe(true)
+
+	await commands.mouseMove(5, 5)
+
+	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible'), { timeout: 4000 }).toBe(false)
+	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
+})
+
+it('closes the volume popover before the player lifts', async () => {
+	const { player } = await mountPlayer()
+	const popover = query(player, 'media-volume-popover')
+
+	await userEvent.hover(query(player, 'media-mute-button'))
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+
+	await userEvent.click(query(player, '[data-zoom-open]'))
+
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
+	expect(currentLayer().contains(player)).toBe(true)
+})
+
+it('keeps the floated bar while the pointer rests on it', async () => {
+	const { player } = await mountPlayer()
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	const controls = query(player, '.amk-controls')
+	const popover = query(player, 'media-volume-popover')
+
+	await userEvent.hover(query(player, 'media-mute-button'))
+
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await settle(2600)
+	expect(Object.hasOwn(controls.dataset, 'userInactive')).toBe(false)
+	expect(Object.hasOwn(popover.dataset, 'open')).toBe(true)
+})
+
 it('opens the volume popover from the floated bar too', async () => {
 	const { player } = await mountPlayer()
 	await userEvent.click(query(player, '[data-zoom-open]'))
@@ -215,17 +276,22 @@ it('only fades its bar in the page as the controls hide and show', async () => {
 	const bar = query(player, '.amk-bar')
 	const container = query(player, 'media-container')
 	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
-	const resting = bar.getBoundingClientRect()
-	expect(resting.bottom).toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+	// Where the bar sits in its container, whatever the page does around it
+	const offset = () => bar.getBoundingClientRect().top - container.getBoundingClientRect().top
+	const resting = offset()
+	expect(bar.getBoundingClientRect().bottom).toBeCloseTo(
+		container.getBoundingClientRect().bottom,
+		0,
+	)
 
 	delete controls.dataset.visible
 	await expect.poll(() => getComputedStyle(controls).opacity).toBe('0')
-	expect(bar.getBoundingClientRect().top).toBeCloseTo(resting.top, 0)
+	expect(offset()).toBeCloseTo(resting, 0)
 	expect(getComputedStyle(controls).transitionDuration).toBe('0.2s')
 
 	controls.dataset.visible = ''
 	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
-	expect(bar.getBoundingClientRect().top).toBeCloseTo(resting.top, 0)
+	expect(offset()).toBeCloseTo(resting, 0)
 })
 
 it('raises its bar back into the player as the lightbox closes', async () => {
