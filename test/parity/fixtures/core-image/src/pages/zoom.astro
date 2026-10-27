@@ -85,6 +85,14 @@ const videoProps = {
 				zoom={false}
 			/>
 		</section>
+		<section id="video-zoom-only">
+			<Zoomer enabled={true} href="/media/loop.mp4" interactive>
+				<VideoPlayer {...videoProps} controls="none" resolvedLabel="Zoom-only video" />
+			</Zoomer>
+		</section>
+		<section id="video-no-controls">
+			<VideoPlayer {...videoProps} controls="none" zoom={false} />
+		</section>
 		<section id="content">
 			<Zoomer enabled={true}>
 				<div style="aspect-ratio: 3 / 2; background: teal">Original HTML</div>
@@ -105,6 +113,8 @@ const videoProps = {
 	#video,
 	#video-minimal,
 	#video-background,
+	#video-zoom-only,
+	#video-no-controls,
 	#content,
 	#disabled {
 		width: 240px;

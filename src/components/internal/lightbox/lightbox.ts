@@ -187,7 +187,7 @@ function handleKeydown(event: KeyboardEvent) {
 		event.metaKey ||
 		!isItem(item) ||
 		item instanceof HTMLAnchorElement ||
-		Object.hasOwn(item.dataset, 'interactive')
+		Object.hasOwn(item.dataset, 'zoomInteractive')
 	) {
 		return
 	}

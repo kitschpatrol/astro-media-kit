@@ -11,7 +11,8 @@ const { controls, floating = false, zoom = false } = Astro.props
 // A minimal player that can zoom gets the full bar as well, hidden on the page
 // and shown by the lightbox, which gives the player its own control level
 const hasBar = controls === 'full' || controls === 'lightbox' || (controls === 'minimal' && zoom)
-const hasFullscreen = controls === 'full' || controls === 'minimal'
+const hasFullscreen =
+	controls === 'full' || (zoom && (controls === 'minimal' || controls === 'none'))
 const uid = `amk-${crypto.randomUUID()}`
 ---
 
@@ -33,7 +34,12 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-icon class="amk-icon-pause" name="pause" />
 							<media-icon class="amk-icon-restart" name="restart" />
 						</media-play-button>
-						<media-tooltip class="amk-tooltip" id={`${uid}-play-tooltip`} trigger={`${uid}-play`}>
+						<media-tooltip
+							boundary="viewport"
+							class="amk-tooltip"
+							id={`${uid}-play-tooltip`}
+							trigger={`${uid}-play`}
+						>
 							<media-tooltip-label />
 							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 						</media-tooltip>
@@ -76,6 +82,7 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-icon class="amk-icon-captions-on" name="captions-on" />
 						</media-captions-button>
 						<media-tooltip
+							boundary="viewport"
 							class="amk-tooltip"
 							id={`${uid}-captions-tooltip`}
 							trigger={`${uid}-captions`}
@@ -96,11 +103,14 @@ const uid = `amk-${crypto.randomUUID()}`
 								type="button"
 							>
 								<media-icon class="amk-icon-zoom-enter" name="fullscreen-enter" />
-								<media-icon class="amk-icon-zoom-exit" name="fullscreen-exit" />
 							</button>
-							<media-tooltip class="amk-tooltip" id={`${uid}-zoom-tooltip`} trigger={`${uid}-zoom`}>
-								<span class="amk-zoom-enter-label">Expand</span>
-								<span class="amk-zoom-exit-label">Close</span>
+							<media-tooltip
+								boundary="viewport"
+								class="amk-tooltip amk-zoom-tooltip"
+								id={`${uid}-zoom-tooltip`}
+								trigger={`${uid}-zoom`}
+							>
+								Expand
 							</media-tooltip>
 						</>
 					) : (
@@ -110,6 +120,7 @@ const uid = `amk-${crypto.randomUUID()}`
 								<media-icon class="amk-icon-fullscreen-exit" name="fullscreen-exit" />
 							</media-fullscreen-button>
 							<media-tooltip
+								boundary="viewport"
 								class="amk-tooltip"
 								id={`${uid}-fullscreen-tooltip`}
 								trigger={`${uid}-fullscreen`}

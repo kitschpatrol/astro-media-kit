@@ -19,7 +19,7 @@ import { canFade, dropSlides, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion } from './motion'
-import { floatControls, hideControls } from './player-controls'
+import { closeInactiveTooltips, floatControls, hideControls } from './player-controls'
 import { prepareImage } from './prepare'
 import { containPageScroll, containScrollKey } from './scroll-boundary'
 import { beginVolumes, endVolumes, focusVolumes } from './volume'
@@ -305,8 +305,7 @@ class Viewer {
 			? linkStyle(frame, current.target)
 			: layerStyle(frame, current.target, current)
 		const start = current.position === undefined ? identity : lift.from
-		// An image fades in over the copy left behind. Anything else cuts over,
-		// since its copy can't match it pixel for pixel
+		// Images and videos fade in over the preview left behind.
 		setLayerStyle(slide.layer, canFade(lift) ? { ...start, opacity: '0' } : start, false)
 		// Commit the start values, including the backdrop's and the controls'
 		// opacity, so the changes below transition from them
@@ -336,6 +335,9 @@ class Viewer {
 		endVolumes()
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
+		if (current !== undefined) {
+			closeInactiveTooltips(current.item)
+		}
 
 		this.#generation++
 		this.#state = 'idle'
@@ -808,8 +810,7 @@ class Viewer {
 			isOpening && lift.from !== undefined && isSameBox(target, lift.target)
 				? lift.from
 				: layerStyle(slide.frame.getBoundingClientRect(), target, lift)
-		// An image fades out into the copy left behind as it lands. Anything else
-		// cuts over, since its copy can't match it pixel for pixel
+		// Images and videos fade out into their preview as they land.
 		return canFade(lift) ? { ...to, opacity: '0' } : to
 	}
 
@@ -841,7 +842,7 @@ class Viewer {
 		for (const item of document.querySelectorAll<HTMLElement>(itemSelector)) {
 			if (
 				!isItem(item) ||
-				Object.hasOwn(item.dataset, 'interactive') ||
+				Object.hasOwn(item.dataset, 'zoomInteractive') ||
 				subjectOf(item) === undefined ||
 				(item instanceof HTMLAnchorElement &&
 					(item.hasAttribute('download') || (item.target !== '' && item.target !== '_self'))) ||

@@ -17,7 +17,14 @@ export const viewerSelector = '.amk-lightbox'
  * Regions that run their own pointer UI, whose parts the lightbox can't see:
  * the player's controls, native media controls, and embedded documents.
  */
-const regions = ['[data-interactive]', 'audio[controls]', 'iframe', 'video[controls]']
+const regions = [
+	'[data-interactive]',
+	'[data-zoom-interactive]',
+	'[data-click-to-play]:not([data-in-lightbox])',
+	'audio[controls]',
+	'iframe',
+	'video[controls]',
+]
 
 /** Controls with their own click, drag, and keyboard behavior. */
 const controls = [
@@ -54,6 +61,7 @@ export const controlSelector = ['a[href]:not(.amk-zoom)', ...controls].join(',')
 /** Elements that use the arrow keys themselves. */
 export const arrowKeySelector = [
 	'[data-interactive]',
+	'[data-zoom-interactive]',
 	'[role="slider"]',
 	'audio[controls]',
 	'input',
@@ -116,7 +124,8 @@ export function isInPlayer(event: Event, boundary: Element): boolean {
 			node instanceof HTMLMediaElement ||
 			(node instanceof Element &&
 				(node.matches('video-player, audio-player') ||
-					(node.matches('[data-interactive]') && node.querySelector('audio, video') !== null)))
+					(node.matches('[data-interactive], [data-zoom-interactive]') &&
+						node.querySelector('audio, video') !== null)))
 		) {
 			return true
 		}

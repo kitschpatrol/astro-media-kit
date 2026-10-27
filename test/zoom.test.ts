@@ -45,13 +45,13 @@ describe('zoom server markup', () => {
 		expect(content.attr('role')).toBe('button')
 		expect(content.attr('tabindex')).toBe('0')
 		expect(content.attr('aria-haspopup')).toBe('dialog')
-		expect(content.attr('data-interactive')).toBeUndefined()
+		expect(content.attr('data-zoom-interactive')).toBeUndefined()
 	})
 
 	it('keeps the real player and its controls, marking the wrapper interactive', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		const player = $('#video .amk-zoom')
-		expect(player.attr('data-interactive')).toBe('')
+		expect(player.attr('data-zoom-interactive')).toBe('')
 		expect(player.attr('role')).toBeUndefined()
 		expect(player.attr('tabindex')).toBeUndefined()
 		expect($('#video video-player')).toHaveLength(1)
@@ -59,7 +59,7 @@ describe('zoom server markup', () => {
 		expect($('#video media-container').attr('data-media')).toBe('')
 		expect($('#video media-controls').attr('data-interactive')).toBe('')
 		expect($('#video button[data-zoom-open]')).toHaveLength(1)
-		expect($('#video button[data-zoom-open] media-icon')).toHaveLength(2)
+		expect($('#video button[data-zoom-open] media-icon')).toHaveLength(1)
 	})
 
 	it('renders the full bar for a minimal player the lightbox can raise, and the volume in a popover', async () => {
@@ -69,12 +69,26 @@ describe('zoom server markup', () => {
 		expect($('#video-minimal .amk-playback media-play-button')).toHaveLength(1)
 		expect($('#video-background .amk-center-play')).toHaveLength(1)
 		expect($('#video-background .amk-playback')).toHaveLength(0)
+		expect($('#video-background media-fullscreen-button')).toHaveLength(0)
+		expect($('#video-background media-hotkey[action="toggleFullscreen"]')).toHaveLength(0)
+		expect($('#video-background media-gesture[action="togglePaused"]')).toHaveLength(1)
+		expect($('#video-minimal [data-zoom-open]')).toHaveLength(1)
+		expect($('#video-minimal media-fullscreen-button')).toHaveLength(0)
 		expect($('#video .amk-center-play')).toHaveLength(0)
 		const popover = $('#video media-volume-popover')
 		expect(popover.attr('open-on-hover')).toBeDefined()
 		expect($('#video amk-mute-button').attr('commandfor')).toBe(popover.attr('id'))
 		expect(popover.find('media-volume-slider').attr('orientation')).toBe('vertical')
 		expect($('#video .amk-bar > media-volume-slider')).toHaveLength(0)
+	})
+
+	it('offers only lightbox expansion when playback controls are disabled and zoom is enabled', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		expect($('#video-zoom-only [data-zoom-open]')).toHaveLength(1)
+		expect($('#video-zoom-only media-play-button')).toHaveLength(0)
+		expect($('#video-zoom-only media-fullscreen-button')).toHaveLength(0)
+		expect($('#video-zoom-only media-hotkey')).toHaveLength(0)
+		expect($('#video-no-controls media-controls')).toHaveLength(0)
 	})
 
 	it('marks both themed pictures as media, and skips the wrapper when zoom is off', async () => {

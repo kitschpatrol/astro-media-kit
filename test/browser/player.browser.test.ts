@@ -1,6 +1,6 @@
 // The kit's Video.js player, as the components render it, lifted whole into the
-// viewer: its own control bar floats over the viewer, its zoom button closes
-// the viewer again, and its poster stands in for it on the page.
+// viewer: its own control bar floats over the viewer, the viewer handles
+// closing, and its poster stands in for it on the page.
 
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
@@ -14,6 +14,7 @@ import {
 	boxes,
 	cleanUp,
 	currentLayer,
+	fadeOf,
 	isLifted,
 	liftDone,
 	mountPage,
@@ -52,21 +53,18 @@ it('is not a button, and leaves clicks on its controls to the player', async () 
 	const { item, player } = await mountPlayer()
 	expect(item.hasAttribute('role')).toBe(false)
 	expect(item.hasAttribute('tabindex')).toBe(false)
-	expect(item.dataset.interactive).toBe('')
+	expect(item.dataset.zoomInteractive).toBe('')
 
 	await userEvent.click(query(player, 'media-play-button'))
 
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 })
 
-it('lifts the whole player from its zoom button, floats its controls, and closes from the same button', async () => {
+it('lifts the whole player, hides expand, and closes from the lightbox button', async () => {
 	const { item, player } = await mountPlayer()
 	const button = query(player, '[data-zoom-open]')
 	const controls = query(player, '.amk-controls')
-	const enter = query(button, '.amk-icon-zoom-enter')
-	const exit = query(button, '.amk-icon-zoom-exit')
-	expect(getComputedStyle(enter).display).not.toBe('none')
-	expect(getComputedStyle(exit).display).toBe('none')
+	expect(getComputedStyle(button).display).not.toBe('none')
 
 	await userEvent.click(button)
 
@@ -77,12 +75,11 @@ it('lifts the whole player from its zoom button, floats its controls, and closes
 	expect(viewer().contains(controls)).toBe(true)
 	expect(controls.getAttribute('popover')).toBe('manual')
 	expect(controls.matches(':popover-open')).toBe(true)
-	expect(getComputedStyle(enter).display).toBe('none')
-	expect(getComputedStyle(exit).display).not.toBe('none')
+	expect(getComputedStyle(button).display).toBe('none')
 	const frame = query(viewer(), '.amk-lightbox-frame').getBoundingClientRect()
 	expect(frame.width / frame.height).toBeCloseTo(16 / 9, 1)
 
-	await userEvent.click(button)
+	await userEvent.click(query(viewer(), '.amk-lightbox-close'))
 
 	await expect.poll(() => viewer().open).toBe(false)
 	expect(item.contains(player)).toBe(true)
@@ -109,6 +106,7 @@ it('stands its poster in for the player while it is lifted', async () => {
 
 it('keeps the floated controls visible while they are used, and hides them when idle', async () => {
 	const { player } = await mountPlayer()
+	await query(player, 'video', HTMLVideoElement).play()
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	const controls = query(player, '.amk-controls')
@@ -169,6 +167,7 @@ it('raises a minimal player to the full bar while lifted, and lowers it again af
 	const centerPlay = query(player, '.amk-center-play')
 	expect(getComputedStyle(playback).display).toBe('none')
 	expect(getComputedStyle(centerPlay).display).not.toBe('none')
+	await userEvent.hover(query(player, 'media-container'))
 
 	await userEvent.click(query(player, '[data-zoom-open]'))
 
@@ -179,7 +178,7 @@ it('raises a minimal player to the full bar while lifted, and lowers it again af
 	expect(getComputedStyle(centerPlay).display).toBe('none')
 	await liftDone()
 
-	await userEvent.click(query(player, '[data-zoom-open]'))
+	await userEvent.click(query(viewer(), '.amk-lightbox-close'))
 
 	await expect.poll(() => viewer().open).toBe(false)
 	expect(player.dataset.controls).toBe('minimal')
@@ -213,12 +212,30 @@ it('keeps the bar, and the popover, while the pointer rests on them during playb
 	await query(player, 'video', HTMLVideoElement).play()
 	const popover = query(player, 'media-volume-popover')
 
+	await userEvent.hover(query(player, 'media-container'))
 	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
+	const popupBox = popover.getBoundingClientRect()
+	expect(popupBox.top).toBeGreaterThanOrEqual(0)
+	expect(popupBox.bottom).toBeLessThanOrEqual(window.innerHeight)
+	expect(popupBox.bottom).toBeCloseTo(
+		query(player, 'amk-mute-button').getBoundingClientRect().top,
+		0,
+	)
+	// Move the pointer without Playwright scrolling the top-layer popup.
+	await commands.mouseMove(popupBox.x + popupBox.width / 2, popupBox.y + popupBox.height / 2)
 	await settle(2600)
 	expect(Object.hasOwn(controls.dataset, 'visible')).toBe(true)
 	expect(Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	for (let frame = 0; frame < 20; frame++) {
+		await new Promise((resolve) => {
+			requestAnimationFrame(resolve)
+		})
+		expect(getComputedStyle(controls).opacity).toBe('1')
+		expect(popover.matches(':hover')).toBe(true)
+	}
 
 	await commands.mouseMove(5, 5)
 
@@ -241,8 +258,10 @@ it('closes the volume popover before the player lifts', async () => {
 	expect(currentLayer().contains(player)).toBe(true)
 })
 
-it('keeps the floated bar while the pointer rests on it', async () => {
+it('keeps the floated bar and popup visible while hovering the playing volume slider', async () => {
 	const { player } = await mountPlayer()
+	await query(player, 'video', HTMLVideoElement).play()
+	await userEvent.hover(query(player, 'media-container'), { position: { x: 12, y: 12 } })
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	await liftDone()
@@ -252,8 +271,19 @@ it('keeps the floated bar while the pointer rests on it', async () => {
 	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
+	const popupBox = popover.getBoundingClientRect()
+	expect(popupBox.top).toBeGreaterThanOrEqual(0)
+	expect(popupBox.bottom).toBeLessThanOrEqual(window.innerHeight)
+	expect(popupBox.bottom).toBeCloseTo(
+		query(player, 'amk-mute-button').getBoundingClientRect().top,
+		0,
+	)
+	// Move the pointer without Playwright scrolling the top-layer popup.
+	await commands.mouseMove(popupBox.x + popupBox.width / 2, popupBox.y + popupBox.height / 2)
 	await settle(2600)
 	expect(Object.hasOwn(controls.dataset, 'userInactive')).toBe(false)
+	expect(getComputedStyle(controls).opacity).toBe('1')
 	expect(Object.hasOwn(popover.dataset, 'open')).toBe(true)
 })
 
@@ -281,7 +311,7 @@ it('keeps the volume popover working after a trip through the lightbox', async (
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	await liftDone()
-	await userEvent.click(query(player, '[data-zoom-open]'))
+	await userEvent.click(query(viewer(), '.amk-lightbox-close'))
 	await expect.poll(() => viewer().open).toBe(false)
 	const popover = query(player, 'media-volume-popover')
 
@@ -460,6 +490,8 @@ it('only fades its bar in the page as the controls hide and show', async () => {
 	const controls = query(player, '.amk-controls')
 	const bar = query(player, '.amk-bar')
 	const container = query(player, 'media-container')
+	await query(player, 'video', HTMLVideoElement).play()
+	await userEvent.hover(container, { position: { x: 12, y: 12 } })
 	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
 	// Where the bar sits in its container, whatever the page does around it
 	const offset = () => bar.getBoundingClientRect().top - container.getBoundingClientRect().top
@@ -479,7 +511,7 @@ it('only fades its bar in the page as the controls hide and show', async () => {
 	expect(offset()).toBeCloseTo(resting, 0)
 })
 
-it('raises its bar back into the player as the lightbox closes', async () => {
+it('fades its bar back into the player without sliding as the lightbox closes', async () => {
 	const { player } = await mountPlayer()
 	const controls = query(player, '.amk-controls')
 	const bar = query(player, '.amk-bar')
@@ -492,10 +524,184 @@ it('raises its bar back into the player as the lightbox closes', async () => {
 	viewer().requestClose()
 	await expect.poll(() => viewer().open).toBe(false)
 
-	// Back in the player, on its way up from under the edge
+	// Back in the player, already at its resting position while it fades in.
 	expect(controls.hasAttribute('popover')).toBe(false)
 	const { bottom } = container.getBoundingClientRect()
-	expect(bar.getBoundingClientRect().bottom).toBeGreaterThan(bottom + 1)
-	await expect.poll(() => bar.getBoundingClientRect().bottom).toBeCloseTo(bottom, 0)
-	expect(getComputedStyle(controls).opacity).toBe('1')
+	expect(bar.getBoundingClientRect().bottom).toBeCloseTo(bottom, 0)
+	expect(getComputedStyle(bar).translate).toBe('none')
+	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
+})
+
+it.each([false, true])('crossfades video with its page preview, playing=%s', async (playing) => {
+	const { item, player } = await mountPlayer()
+	if (playing) {
+		await query(player, 'video', HTMLVideoElement).play()
+	}
+
+	const opening = openLightbox(item)
+	const layer = currentLayer()
+	const entering = fadeOf(layer)!
+	expect(entering).toBeDefined()
+	entering.pause()
+	entering.currentTime = 0
+	expect(getComputedStyle(layer).opacity).toBe('0')
+	entering.finish()
+	await opening
+	const closing = closeLightbox()
+	const leaving = fadeOf(layer)!
+	expect(leaving).toBeDefined()
+	leaving.pause()
+	leaving.currentTime = 0
+	expect(getComputedStyle(layer).opacity).toBe('1')
+	expect(layer.style.opacity).toBe('0')
+	leaving.finish()
+	await closing
+})
+
+it.each(['video', 'video-minimal'])(
+	'uses the %s surface for playback and only its button for zoom',
+	async (id) => {
+		const fixture = await mountPage('/zoom/')
+		document.dispatchEvent(new Event('astro:page-load'))
+		const player = query(fixture, `#${id} video-player`)
+		const video = query(player, 'video', HTMLVideoElement)
+		const container = query(player, 'media-container')
+		await userEvent.click(container, { position: { x: 12, y: 12 } })
+		await expect.poll(() => video.paused).toBe(false)
+		expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
+		await userEvent.click(container, { position: { x: 12, y: 12 } })
+		await expect.poll(() => video.paused).toBe(true)
+		expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
+		await userEvent.click(query(player, '[data-zoom-open]'))
+		await expect.poll(() => viewer().open).toBe(true)
+	},
+)
+
+it.each(['video', 'video-minimal', 'video-zoom-only'])(
+	'keeps paused %s controls visible and hides idle playing controls sooner',
+	async (id) => {
+		const fixture = await mountPage('/zoom/')
+		document.dispatchEvent(new Event('astro:page-load'))
+		const player = query(fixture, `#${id} video-player`)
+		const video = query(player, 'video', HTMLVideoElement)
+		const controls = query(player, '.amk-controls')
+		await commands.mouseMove(5, 5)
+		await settle(1700)
+		expect(getComputedStyle(controls).opacity).toBe('1')
+		await userEvent.hover(query(player, 'media-container'), { position: { x: 12, y: 12 } })
+		await video.play()
+		await expect
+			.poll(() => Object.hasOwn(controls.dataset, 'visible'), { timeout: 1900 })
+			.toBe(false)
+		await expect.poll(() => getComputedStyle(controls).opacity).toBe('0')
+		video.pause()
+		await commands.mouseMove(5, 5)
+		await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
+		expect(getComputedStyle(controls).transitionDuration).toBe('0.2s')
+	},
+)
+
+it('puts the zoom-only button at the bottom right without a toolbar background', async () => {
+	const fixture = await mountPage('/zoom/')
+	const player = query(fixture, '#video-zoom-only video-player')
+	const button = query(player, '[data-zoom-open]').getBoundingClientRect()
+	const container = query(player, 'media-container').getBoundingClientRect()
+	expect(button.right).toBeCloseTo(container.right, 0)
+	expect(button.bottom).toBeCloseTo(container.bottom, 0)
+	expect(getComputedStyle(query(player, '.amk-bar')).backgroundColor).toBe('rgba(0, 0, 0, 0)')
+})
+
+it.each(['video-minimal', 'video-zoom-only'])(
+	'shows the paused %s expand button only while hovered',
+	async (id) => {
+		const fixture = await mountPage('/zoom/')
+		const player = query(fixture, `#${id} video-player`)
+		const bar = query(player, '.amk-bar')
+		await commands.mouseMove(5, 5)
+		await expect.poll(() => getComputedStyle(bar).opacity).toBe('0')
+		await userEvent.hover(query(player, 'media-container'))
+		await expect.poll(() => getComputedStyle(bar).opacity).toBe('1')
+		await commands.mouseMove(5, 5)
+		await expect.poll(() => getComputedStyle(bar).opacity).toBe('0')
+	},
+)
+
+it('never paints a stale expand tooltip during a trip through the lightbox', async () => {
+	const { player } = await mountPlayer()
+	const button = query(player, '[data-zoom-open]')
+	await userEvent.hover(button)
+	await expect.poll(() => query(player, '.amk-zoom-tooltip').matches(':popover-open')).toBe(true)
+	await userEvent.click(button)
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	expect(button.checkVisibility()).toBe(false)
+	await userEvent.click(query(viewer(), '.amk-lightbox-close'))
+	for (let frame = 0; frame < 45; frame++) {
+		await new Promise((resolve) => {
+			requestAnimationFrame(resolve)
+		})
+		const tooltip = query(player, '.amk-zoom-tooltip')
+		expect(tooltip.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })).toBe(false)
+	}
+
+	expect(viewer().open).toBe(false)
+	await userEvent.hover(query(player, 'media-container'))
+	await userEvent.hover(button)
+	await expect
+		.poll(() =>
+			query(player, '.amk-zoom-tooltip').checkVisibility({
+				checkOpacity: true,
+				checkVisibilityCSS: true,
+			}),
+		)
+		.toBe(true)
+})
+
+it.each(['video', 'video-minimal', 'video-zoom-only'])(
+	'gives the lifted %s surface to dragging and hides its expand button',
+	async (id) => {
+		const fixture = await mountPage('/zoom/')
+		document.dispatchEvent(new Event('astro:page-load'))
+		const item = boxes(query(fixture, `#${id}`))[0]!
+		const player = query(item, 'video-player')
+		const video = query(player, 'video', HTMLVideoElement)
+		await openLightbox(item)
+		await liftDone()
+		expect(query(player, '[data-zoom-open]').checkVisibility()).toBe(false)
+		expect(query(player, '.amk-controls').matches(':popover-open')).toBe(id !== 'video-zoom-only')
+
+		const box = query(player, 'media-container').getBoundingClientRect()
+		const x = box.x + box.width / 2
+		const y = box.y + box.height / 2
+		await commands.mouseDown(x, y)
+		await commands.mouseMove(x, y + 70)
+		await expect.poll(() => Object.hasOwn(viewer().dataset, 'dismissing')).toBe(true)
+		expect(video.paused).toBe(true)
+		await commands.mouseMove(x, y)
+		await commands.mouseUp()
+		await settle(150)
+		expect(video.paused).toBe(true)
+		await closeLightbox()
+		expect(query(player, '[data-zoom-open]').checkVisibility()).toBe(true)
+		if (id === 'video-zoom-only') {
+			return
+		}
+
+		await userEvent.click(query(player, 'media-container'), { position: { x: 12, y: 12 } })
+		await expect.poll(() => video.paused).toBe(false)
+	},
+)
+
+it('keeps a lifted playback tooltip beside its button after scrolling the page', async () => {
+	const { item, player } = await mountPlayer()
+	await userEvent.hover(query(player, 'media-container'))
+	await openLightbox(item)
+	await liftDone()
+	const button = query(player, '.amk-playback media-play-button')
+	await userEvent.hover(button)
+	const tooltip = query(player, `media-tooltip[trigger="${button.id}"]`)
+	await expect.poll(() => tooltip.matches(':popover-open')).toBe(true)
+	const box = tooltip.getBoundingClientRect()
+	expect(box.top).toBeGreaterThanOrEqual(0)
+	expect(box.bottom).toBeCloseTo(button.getBoundingClientRect().top - 6, 0)
 })

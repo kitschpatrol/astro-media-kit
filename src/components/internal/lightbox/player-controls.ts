@@ -20,6 +20,9 @@ const bars = new Map<Element, Bar>()
 /** The control levels of lifted players that took the viewer's, by subject. */
 const levels = new Map<Element, string>()
 
+/** Playback gestures suspended while the lightbox owns the media surface. */
+const gestures = new WeakMap<Element, Element[]>()
+
 /**
  * Give a lifted player the viewer's control level: a minimal player's full bar,
  * which the component renders hidden on the page, comes out, while a player
@@ -27,12 +30,21 @@ const levels = new Map<Element, string>()
  */
 export function adoptControls(subject: Element) {
 	const player = subject.querySelector<HTMLElement>(':scope video-player')
-	if (player?.dataset.controls !== 'minimal') {
+	if (player === null) {
 		return
 	}
 
-	levels.set(subject, player.dataset.controls)
-	player.dataset.controls = 'lightbox'
+	levels.set(subject, player.dataset.controls ?? 'none')
+	player.dataset.inLightbox = ''
+	const active = [...player.querySelectorAll('media-gesture:not([disabled])')]
+	gestures.set(subject, active)
+	for (const gesture of active) {
+		gesture.setAttribute('disabled', '')
+	}
+
+	if (player.dataset.controls === 'minimal') {
+		player.dataset.controls = 'lightbox'
+	}
 }
 
 /** A popup of a player's controls that is open, or on its way in or out. */
@@ -50,6 +62,18 @@ export function closePopups(subject: Element): boolean {
 	}
 
 	return popups.length > 0
+}
+
+/** Suppress tooltips reopened by pointer-focus restoration after a move. */
+export function closeInactiveTooltips(subject: Element) {
+	for (const tooltip of subject.querySelectorAll<Popup>('media-tooltip')) {
+		const id = tooltip.getAttribute('trigger') ?? ''
+		const trigger =
+			id === '' ? undefined : subject.ownerDocument.querySelector(`#${CSS.escape(id)}`)
+		if (trigger?.matches(':hover, :focus-visible') !== true) {
+			tooltip.close?.('imperative-action')
+		}
+	}
 }
 
 /**
@@ -111,17 +135,22 @@ export function createControlsActivity(root: HTMLElement): {
 			// hovering them, as it is in the DOM
 			if (
 				controls &&
-				!controls.matches(':hover') &&
+				controls.closest('video-player')?.hasAttribute('data-playing') !== false &&
+				!controls.matches(':hover, :has([data-popup]:hover)') &&
 				!controls.contains(document.activeElement) &&
 				pointers.size === 0
 			) {
 				controls.dataset.userInactive = ''
 			}
-		}, 2000)
+		}, 1500)
 	}
 
 	for (const event of ['pointermove', 'focusin', 'focusout', 'keydown']) {
 		root.addEventListener(event, markActive, { signal })
+	}
+
+	for (const event of ['play', 'pause', 'ended']) {
+		root.addEventListener(event, markActive, { capture: true, signal })
 	}
 
 	root.addEventListener(
@@ -173,7 +202,10 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	}
 
 	const controls = subject.querySelector<HTMLElement>(':scope video-player .amk-controls')
-	if (controls === null) {
+	if (
+		controls === null ||
+		controls.closest<HTMLElement>('video-player')?.dataset.controls === 'none'
+	) {
 		return
 	}
 
@@ -204,7 +236,7 @@ export function hideControls() {
 
 /**
  * Put a bar back in its player, at the player's own control level, where it
- * rises into place: the one in `subject`, or every bar when no subject is
+ * fades into place: the one in `subject`, or every bar when no subject is
  * given.
  */
 export function releaseControls(subject?: Element) {
@@ -216,7 +248,15 @@ export function releaseControls(subject?: Element) {
 		const player = each.querySelector<HTMLElement>(':scope video-player')
 		if (player !== null) {
 			player.dataset.controls = level
+			delete player.dataset.inLightbox
 		}
+
+		const active = gestures.get(each) ?? []
+		for (const gesture of active) {
+			gesture.removeAttribute('disabled')
+		}
+
+		gestures.delete(each)
 
 		levels.delete(each)
 	}
@@ -228,7 +268,7 @@ export function releaseControls(subject?: Element) {
 
 		hide(bar)
 		const { controls } = bar
-		// Laid out once dropped under the player's edge, so that it rises from there
+		// Start transparent in the player, then let its normal fade reveal it.
 		controls.dataset.returning = ''
 		controls.removeAttribute('popover')
 		controls.getBoundingClientRect()

@@ -158,7 +158,7 @@ it('plays a video from the link in a player of its own, with its controls floate
 	await expect.poll(() => controls.matches(':popover-open')).toBe(true)
 	await liftDone(3000)
 
-	await userEvent.click(query(player, '[data-zoom-open]'))
+	await userEvent.click(query(viewer(), '.amk-lightbox-close'))
 
 	await expect.poll(() => viewer().open).toBe(false)
 	expect(player.isConnected).toBe(false)

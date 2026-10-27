@@ -40,11 +40,10 @@ const {
 const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative
-const hasFullscreen = controls === 'full' || controls === 'minimal'
-// Click-to-play stays off where a click must do something else: open the
-// lightbox (zoom), or nothing at all ('lightbox' mode is for a player that
-// should omit its fullscreen control).
-const hasClickToPlay = hasFullscreen && !zoom
+const hasFullscreen = controls === 'full' && !zoom
+// Full and minimal players use their surface for playback. Only the dedicated
+// expand button opens the lightbox.
+const hasClickToPlay = controls === 'minimal' || controls === 'full'
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
 const containerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
@@ -79,6 +78,7 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 		<video-player
 			class="amk-player"
 			data-autoplay={autoPlay ? '' : undefined}
+			data-click-to-play={hasClickToPlay ? '' : undefined}
 			data-controls={controls}
 			poster={posterUrl}
 		>
@@ -95,12 +95,10 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 				<media-buffering-indicator class="amk-buffering">
 					<media-icon name="spinner" />
 				</media-buffering-indicator>
-				{hasControls && <VideoControls controls={controls} zoom={zoom} />}
+				{(hasControls || zoom) && <VideoControls controls={controls} zoom={zoom} />}
 				{hasControls && (
 					<>
-						{hasClickToPlay && (
-							<media-gesture action="togglePaused" pointer="mouse" region="center" type="tap" />
-						)}
+						{hasClickToPlay && <media-gesture action="togglePaused" region="center" type="tap" />}
 						<media-gesture action="toggleControls" pointer="touch" type="tap" />
 						<media-hotkey action="togglePaused" keys="Space" />
 						<media-hotkey action="togglePaused" keys="k" />
@@ -112,7 +110,7 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 						<media-hotkey action="volumeStep" keys="ArrowUp" />
 						<media-hotkey action="volumeStep" keys="ArrowDown" />
 						<media-hotkey action="toggleSubtitles" keys="c" />
-						{hasFullscreen && !zoom && <media-hotkey action="toggleFullscreen" keys="f" />}
+						{hasFullscreen && <media-hotkey action="toggleFullscreen" keys="f" />}
 					</>
 				)}
 			</media-container>

@@ -271,24 +271,19 @@ describe('lifting', () => {
 		expect(viewer().open).toBe(false)
 	})
 
-	it('cuts HTML and video over without fading, since their copies cannot match them', async () => {
-		for (const content of [
-			block('a'),
-			'<video muted playsinline width="240" height="160"></video>',
-		]) {
-			const fixture = mount(item(content))
-			const opening = openLightbox(boxes(fixture)[0]!)
-			const layer = query(document, '.amk-lightbox-layer')
-			query(fixture, '[data-preview]')
-			expect(fadeOf(layer)).toBeUndefined()
-			expect(getComputedStyle(layer).opacity).toBe('1')
-			await opening
-			const closing = closeLightbox()
-			expect(fadeOf(layer)).toBeUndefined()
-			expect(getComputedStyle(layer).opacity).toBe('1')
-			await closing
-			expect(viewer().open).toBe(false)
-		}
+	it('cuts HTML over without fading, since its layout can change', async () => {
+		const fixture = mount(item(block('a')))
+		const opening = openLightbox(boxes(fixture)[0]!)
+		const layer = query(document, '.amk-lightbox-layer')
+		query(fixture, '[data-preview]')
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
+		await opening
+		const closing = closeLightbox()
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
+		await closing
+		expect(viewer().open).toBe(false)
 	})
 
 	it('keeps an image placeholder on the candidate the lifted image loads', async () => {

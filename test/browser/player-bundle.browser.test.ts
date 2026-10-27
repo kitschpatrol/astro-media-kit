@@ -48,7 +48,7 @@ it.each(['zoom', 'zoom-hls'])(
 						() => player.querySelector(':scope media-volume-slider [role="slider"]')?.ariaValueNow,
 					)
 					.toBe('40')
-				zoom.click()
+				root.querySelector<HTMLButtonElement>('.amk-lightbox-close')!.click()
 				await expect
 					.poll(() => root.querySelector<HTMLDialogElement>('.amk-lightbox')?.open)
 					.toBe(false)

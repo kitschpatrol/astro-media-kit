@@ -61,11 +61,11 @@ const isButton = !isLink && !interactive
 		class="amk-zoom"
 		data-gallery={gallery}
 		data-href={hasHref && !isLink ? href : undefined}
-		data-interactive={interactive ? '' : undefined}
 		data-level={level === 'fit' ? undefined : level}
 		data-native-width={nativeWidth !== undefined && nativeWidth > 0 ? nativeWidth : undefined}
 		data-placeholder={placeholder === 'none' ? placeholder : undefined}
 		data-scope={scope}
+		data-zoom-interactive={interactive ? '' : undefined}
 		href={isLink ? href : undefined}
 		role={isButton ? 'button' : undefined}
 		tabindex={isButton ? '0' : undefined}

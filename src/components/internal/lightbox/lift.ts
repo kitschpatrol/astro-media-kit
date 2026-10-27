@@ -9,14 +9,16 @@ import { releasePreparation } from './prepare'
 import { useWarmup } from './warm-image'
 
 /**
- * Whether a lifted subject can crossfade with its placeholder. Only an image's
- * copy matches it pixel for pixel. A video's canvas preview, and HTML laid out
- * at the viewer's size, would ghost against the original, so those cut over.
+ * Images and videos crossfade with the preview left on the page. Ordinary HTML
+ * can reflow at the viewer's size, so it cuts over instead.
  */
 export function canFade(lift: Lift): boolean {
+	const visible = rendered(lift.subject)
 	return (
 		lift.placeholder?.checkVisibility() === true &&
-		rendered(lift.subject) instanceof HTMLImageElement
+		(visible instanceof HTMLImageElement ||
+			visible instanceof HTMLVideoElement ||
+			visible.matches('media-container'))
 	)
 }
 
@@ -77,7 +79,7 @@ export function dropSlides(slides: Slide[]) {
 		}
 	}
 
-	// A player's control bar goes back last, so that its rise into the player
+	// A player's control bar goes back last, so that its fade into the player
 	// isn't among the transitions just skipped
 	for (const subject of subjects) {
 		releaseControls(subject)

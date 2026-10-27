@@ -24,7 +24,7 @@
 		display: block;
 	}
 
-	.amk-zoom:not([data-interactive]) {
+	.amk-zoom:not([data-zoom-interactive]) {
 		cursor: zoom-in;
 	}
 
@@ -314,8 +314,8 @@
 	overflow: hidden;
 }
 
-/* Opening fades an image in over its thumbnail copy: quickly at first, so it is
-   mostly there as it leaves, then gently. Other subjects cut over */
+/* Images and videos fade in over their page preview: quickly at first, so they
+   are mostly there as they leave, then gently. Other subjects cut over. */
 .amk-lightbox-layer {
 	position: absolute;
 	inset: 0;
@@ -328,7 +328,7 @@
 		opacity var(--amk-lightbox-open-fade-duration) cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-/* Closing mirrors it, fading the image out as it zooms home */
+/* Closing mirrors it, fading the media out as it zooms home. */
 .amk-lightbox[data-state='closing'] .amk-lightbox-layer {
 	transition-duration:
 		var(--amk-lightbox-duration), var(--amk-lightbox-duration), var(--amk-lightbox-duration),

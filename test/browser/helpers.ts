@@ -165,7 +165,7 @@ export function item(content: string, attributes = ''): string {
  * interactive.
  */
 export function playerItem(content: string, attributes = ''): string {
-	return `<div class="amk-zoom" data-interactive="" ${attributes}>${content}</div>`
+	return `<div class="amk-zoom" data-zoom-interactive="" ${attributes}>${content}</div>`
 }
 
 /** The wrapper `<Zoomer>` renders with a fallback link. */
