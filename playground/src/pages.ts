@@ -1,4 +1,6 @@
 export const pages = [
+	{ href: '/', title: 'Home' },
+	{ href: '/controls', title: 'Prop controls' },
 	{ href: '/image-component', title: 'Image' },
 	{ href: '/picture-component', title: 'Picture' },
 	{ href: '/tldraw', title: 'Tldraw' },

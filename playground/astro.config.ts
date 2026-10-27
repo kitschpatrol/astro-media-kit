@@ -1,11 +1,13 @@
 /* eslint-disable ts/naming-convention */
 import { unified } from '@astrojs/markdown-remark'
 import mdx from '@astrojs/mdx'
+import node from '@astrojs/node'
 import mdxKit, { tldrawDarkImport } from 'astro-mdx-kit'
 import mediaKit, { imageOnlyImport } from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
 export default defineConfig({
+	adapter: node({ mode: 'standalone' }),
 	image: {
 		dangerouslyProcessSVG: true,
 		layout: 'constrained',

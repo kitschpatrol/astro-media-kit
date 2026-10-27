@@ -1,0 +1,288 @@
+---
+import {
+	Audio,
+	Caption,
+	Carousel,
+	Image,
+	Picture,
+	Video,
+	Zoomer,
+	ZoomLink,
+} from 'astro-media-kit/components'
+import photoDark from '../../assets/test-dark.jpeg'
+import photo from '../../assets/test.jpeg'
+import tigerDark from '../../assets/tiger-dark.svg'
+import tiger from '../../assets/tiger.svg'
+import { demos, readControls } from '../../controls'
+import Layout from '../../layouts/Layout.astro'
+
+export const prerender = false
+
+const slug = Object.keys(demos).find((key) => key === Astro.params.component) as
+	keyof typeof demos | undefined
+if (slug === undefined) {
+	// eslint-disable-next-line unicorn/prefer-module -- Astro frontmatter returns the response for unknown routes.
+	return new Response('Component not found', { status: 404 })
+}
+
+const demo = demos[slug]
+const search = Astro.url.searchParams
+const selected: Record<string, string> = readControls(demo.controls, search)
+const image = readControls(demos.image.controls, search)
+const picture = readControls(demos.picture.controls, search)
+const video = readControls(demos.video.controls, search)
+const audio = readControls(demos.audio.controls, search)
+const carousel = readControls(demos.carousel.controls, search)
+const zoomer = readControls(demos.zoomer.controls, search)
+const zoomLink = readControls(demos['zoom-link'].controls, search)
+const caption = readControls(demos.caption.controls, search)
+---
+
+<Layout title={`${demo.title} prop controls`}>
+	<h1>{demo.title} prop controls</h1>
+	<p>Change a dropdown to update the preview. The URL keeps your selections.</p>
+	<div aria-label="Component prop controls" class="component-links">
+		{Object.entries(demos).map(([key, entry]) => (
+			<a aria-current={key === slug ? 'page' : undefined} href={`/controls/${key}`}>
+				{entry.title}
+			</a>
+		))}
+	</div>
+	<form action={`/controls/${slug}`} class="prop-form" method="get">
+		<div class="fields">
+			{Object.entries<readonly string[]>(demo.controls).map(([name, options]) => (
+				<label>
+					<span>{name}</span>
+					<select name={name}>
+						{options.map((option) => (
+							<option selected={selected[name] === option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+				</label>
+			))}
+		</div>
+		<div class="actions">
+			<button type="submit">Apply props</button>
+			<a href={`/controls/${slug}`}>Reset defaults</a>
+		</div>
+	</form>
+	<h2>Preview</h2>
+	<div class="component-preview">
+		{slug === 'image' && (
+			<Image
+				alt="Sample image"
+				background={image.background === 'none' ? undefined : image.background}
+				credit={image.credit === 'true' ? 'Test Creator' : false}
+				format={image.format}
+				layout={image.layout}
+				quality={image.quality}
+				src={image.src === 'photo' ? photo : tiger}
+				width={Number(image.width)}
+				zoom={image.zoom === 'true'}
+				zoomLevel={image.zoomLevel}
+				zoomPlaceholder={image.zoomPlaceholder}
+			>
+				Sample image caption
+			</Image>
+		)}
+		{slug === 'picture' && (
+			<Picture
+				alt="Sample picture"
+				background={picture.background === 'none' ? undefined : picture.background}
+				credit={picture.credit === 'true' ? 'Test Creator' : false}
+				darkMode={picture.darkMode}
+				fallbackFormat={picture.fallbackFormat}
+				formats={picture.formats === 'webp' ? ['webp'] : ['avif', 'webp']}
+				layout={picture.layout}
+				quality={picture.quality}
+				src={picture.src === 'photo' ? photo : tiger}
+				srcDark={picture.src === 'photo' ? photoDark : tigerDark}
+				width={Number(picture.width)}
+				zoom={picture.zoom === 'true'}
+				zoomLevel={picture.zoomLevel}
+				zoomPlaceholder={picture.zoomPlaceholder}
+			>
+				Sample picture caption
+			</Picture>
+		)}
+		{slug === 'video' && (
+			<Video
+				autoPlay={video.autoPlay === 'true'}
+				controls={video.controls}
+				label="Sample video"
+				loop={video.loop === 'true'}
+				muted={video.muted === 'true'}
+				poster={video.poster === 'none' ? undefined : video.poster}
+				preload={video.preload}
+				src={video.src}
+				zoom={video.zoom === 'true'}
+				zoomLevel={video.zoomLevel}
+				zoomPlaceholder={video.zoomPlaceholder}
+			/>
+		)}
+		{slug === 'audio' && (
+			<Audio
+				autoPlay={audio.autoPlay === 'true'}
+				credit={audio.credit === 'true' ? 'Test Creator' : false}
+				label="Sample audio"
+				loop={audio.loop === 'true'}
+				muted={audio.muted === 'true'}
+				preload={audio.preload}
+				src={audio.src}
+			>
+				Sample audio caption
+			</Audio>
+		)}
+		{slug === 'carousel' && (
+			<Carousel
+				captions={carousel.captions === 'true'}
+				dots={carousel.dots === 'true'}
+				label="Sample carousel"
+			>
+				<Image
+					alt="Sample photo"
+					src={photo}
+					width={640}
+					zoom={carousel.zoom === 'true' ? 'controls-carousel' : false}
+					zoomLevel={carousel.zoomLevel}
+				>
+					Photo slide
+				</Image>
+				<Image
+					alt="Sample tiger"
+					src={tiger}
+					width={640}
+					zoom={carousel.zoom === 'true' ? 'controls-carousel' : false}
+					zoomLevel={carousel.zoomLevel}
+				>
+					Tiger slide
+				</Image>
+				<Image
+					alt="Sample dark photo"
+					src={photoDark}
+					width={640}
+					zoom={carousel.zoom === 'true' ? 'controls-carousel' : false}
+					zoomLevel={carousel.zoomLevel}
+				>
+					Dark photo slide
+				</Image>
+			</Carousel>
+		)}
+		{slug === 'zoomer' && (
+			<Zoomer
+				enabled={zoomer.enabled === 'true'}
+				href={zoomer.href === 'none' ? undefined : zoomer.href}
+				level={zoomer.level}
+				nativeWidth={photo.width}
+				placeholder={zoomer.placeholder}
+			>
+				<Image alt="Click to open the sample photo" credit={false} src={photo} width={640} />
+			</Zoomer>
+		)}
+		{slug === 'zoom-link' && (
+			<ZoomLink
+				src={zoomLink.src === 'photo' ? photo : zoomLink.src === 'tiger' ? tiger : zoomLink.src}
+				zoomLevel={zoomLink.zoomLevel}
+			>
+				Open sample media
+			</ZoomLink>
+		)}
+		{slug === 'caption' && (
+			<Caption
+				creator={caption.creator === 'none' ? undefined : caption.creator}
+				organization={caption.organization === 'none' ? undefined : caption.organization}
+				showCredit={caption.showCredit === 'true'}
+				type={caption.type}
+			>
+				<Image
+					alt="Sample photo with a caption"
+					credit={false}
+					slot="media-component"
+					src={photo}
+					width={640}
+				/>
+				A sample caption below the image.
+			</Caption>
+		)}
+	</div>
+</Layout>
+
+<script>
+	const form = document.querySelector<HTMLFormElement>('.prop-form')
+	form?.addEventListener('change', () => {
+		form.requestSubmit()
+	})
+</script>
+
+<style>
+	.component-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		margin-block: 1.5rem;
+	}
+
+	.component-links a[aria-current='page'] {
+		font-weight: 700;
+	}
+
+	.prop-form {
+		padding: 1rem;
+		border: 1px solid light-dark(#ddd, #444);
+		border-radius: 6px;
+	}
+
+	.fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: 1rem;
+	}
+
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-size: 0.85rem;
+	}
+
+	select,
+	button {
+		padding: 0.5rem;
+		border: 1px solid light-dark(#aaa, #666);
+		border-radius: 4px;
+		font: inherit;
+		color: inherit;
+		background: light-dark(#fff, #222);
+	}
+
+	select {
+		width: 100%;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: center;
+		margin-top: 1rem;
+		font-size: 0.85rem;
+	}
+
+	button {
+		cursor: pointer;
+	}
+
+	.component-preview {
+		max-width: 100%;
+	}
+
+	.component-preview :global(img) {
+		max-width: 100%;
+	}
+
+	.component-preview :global(figcaption) {
+		margin-top: 0.75rem;
+		font-size: 0.85rem;
+	}
+</style>

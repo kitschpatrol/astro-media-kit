@@ -21,6 +21,7 @@
 	"devDependencies": {
 		"@astrojs/check": "^0.9.10",
 		"@astrojs/mdx": "^8.0.3",
+		"@astrojs/node": "^11.1.9",
 		"@types/node": "~24.13.6",
 		"astro": "^7.3.8",
 		"astro-mdx-kit": "~0.6.0",

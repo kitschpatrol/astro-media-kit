@@ -1,0 +1,27 @@
+---
+import { demos } from '../../controls'
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Prop controls">
+	<h1>Prop controls</h1>
+	<p>Choose a component to adjust its props and preview the result.</p>
+	<ul>
+		{Object.entries(demos).map(([slug, demo]) => (
+			<li>
+				<a href={`/controls/${slug}`}>{demo.title}</a>
+			</li>
+		))}
+	</ul>
+</Layout>
+
+<style>
+	ul {
+		margin-top: 1.5rem;
+		padding-left: 1.25rem;
+	}
+
+	li {
+		margin-block: 0.75rem;
+	}
+</style>

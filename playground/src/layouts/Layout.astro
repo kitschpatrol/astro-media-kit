@@ -214,7 +214,15 @@ const currentPath = trimmedPath === '' ? '/' : trimmedPath
 	<body>
 		<nav>
 			{pages.map((page) => (
-				<a aria-current={currentPath === page.href ? 'page' : undefined} href={page.href}>
+				<a
+					aria-current={
+						currentPath === page.href ||
+						(page.href !== '/' && currentPath.startsWith(`${page.href}/`))
+							? 'page'
+							: undefined
+					}
+					href={page.href}
+				>
 					{page.title}
 				</a>
 			))}
