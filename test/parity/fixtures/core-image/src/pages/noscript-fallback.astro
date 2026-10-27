@@ -1,0 +1,70 @@
+---
+import { Audio } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+const videoProps = {
+	aspectRatio: '16 / 9',
+	autoPlay: false,
+	captions: [],
+	controls: 'full' as const,
+	element: 'video' as const,
+	fallbackUrl: '/media/loop.mp4',
+	hlsOptions: {},
+	intrinsicWidth: 640,
+	loop: false,
+	muted: true,
+	posterUrl: '/media/loop-poster.jpg',
+	preload: 'metadata' as const,
+	resolvedLabel: 'Test video',
+	videoSrc: '/media/loop.mp4',
+	zoom: false,
+}
+const youtubeUrl = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Fallbacks without JavaScript</title>
+	</head>
+	<body>
+		<section id="local">
+			<VideoPlayer {...videoProps} />
+		</section>
+		<section id="local-native">
+			<VideoPlayer {...videoProps} controls="native" />
+		</section>
+		<section id="hls-native">
+			<VideoPlayer
+				{...videoProps}
+				controls="native"
+				element="hlsjs-video"
+				hlsUrl="/hls/stream.m3u8"
+				mp4Url="/media/loop.mp4"
+				videoSrc="/hls/stream.m3u8"
+			/>
+		</section>
+		<section id="youtube">
+			<VideoPlayer
+				{...videoProps}
+				element="youtube-video"
+				fallbackUrl={youtubeUrl}
+				resolvedLabel="YouTube video"
+				videoSrc={youtubeUrl}
+			/>
+		</section>
+		<section id="vimeo-native">
+			<VideoPlayer
+				{...videoProps}
+				controls="native"
+				element="vimeo-video"
+				fallbackUrl="https://vimeo.com/76979871"
+				posterUrl={undefined}
+				videoSrc="https://vimeo.com/76979871"
+			/>
+		</section>
+		<section id="audio">
+			<Audio label="Test audio" loop preload="none" service="local" src="/media/loop.mp4" />
+		</section>
+	</body>
+</html>

@@ -10,3 +10,10 @@
 	display: block;
 	max-width: 100%;
 }
+
+/* Without JavaScript, the browser's own controls stand in for the skin, across
+   the same width. */
+.amk > noscript > audio {
+	display: block;
+	width: 100%;
+}

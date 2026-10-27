@@ -2,7 +2,7 @@ import type { Frame } from 'playwright'
 import type { ViteUserConfig } from 'vitest/config'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
-import { buildFixture } from './test/parity/helpers/build-fixture'
+import { buildFixture } from './test/parity/helpers/build-fixture.ts'
 
 const emulateReducedMotion = defineBrowserCommand<[isReduced: boolean]>(
 	async (context, isReduced) => {

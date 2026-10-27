@@ -36,6 +36,21 @@
 
 /* --- Layout --- */
 
+/* The player's inline width would otherwise be the least it can shrink to, so
+   a flex or grid item holding it could not get narrower, where an image would.
+   A single track with no minimum shrinks as an image does, takes the player's
+   width when there is room, and stretches to fill, as a block would, for a
+   player without a width of its own. */
+.amk-video {
+	display: grid;
+	grid-template-columns: minmax(0, auto);
+}
+
+/* The viewer sizes the lifted wrapper itself. */
+.amk-lightbox-layer > .amk-video {
+	display: block;
+}
+
 /* These Video.js wrappers hold state or context, not layout. The packaged
    skins ship this as a global stylesheet; without a skin it has to be here. */
 .amk video-player,
@@ -47,14 +62,6 @@
 .amk media-hotkey,
 .amk media-gesture {
 	display: none;
-}
-
-/* Without scripting, the noscript video stands in for the player, which would
-   otherwise hold its size as an empty box above it. */
-@media (scripting: none) {
-	.amk:has(> noscript) > video-player {
-		display: none;
-	}
 }
 
 /* The container is the layout box, sized by an inline width + aspect-ratio
@@ -633,6 +640,45 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .amk-error-backdrop:not([data-open]),
 .amk-error:not([data-open]) {
 	display: none;
+}
+
+/* --- Without JavaScript --- */
+
+/* The noscript fallback stands in for the player or scripted media element,
+   which would otherwise hold its size as an empty box above it. */
+@media (scripting: none) {
+	.amk:has(> noscript) > :not(noscript) {
+		display: none;
+	}
+}
+
+/* Service embeds can't play without their own scripts, so their fallback links
+   to the video's page: the poster, with a label stacked over its bottom edge. */
+.amk-fallback-link {
+	display: grid;
+	width: fit-content;
+	max-width: 100%;
+	color: var(--amk-control-color);
+	background: #000;
+}
+
+.amk-fallback-link > * {
+	grid-area: 1 / 1;
+	min-width: 0;
+}
+
+.amk-fallback-poster {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+.amk-fallback-label {
+	place-self: end start;
+	padding: 12px 14px;
+	font: var(--amk-font-size) / 1 sans-serif;
+	background: var(--amk-control-background);
 }
 
 /* Size controls to their player, including players inside narrow columns. */

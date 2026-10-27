@@ -64,30 +64,36 @@ const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 
 const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions, src: videoSrc }
 
-// Without JavaScript the player never starts, so a plain video element stands
-// in for it wherever the browser can play a source on its own
+// Without JavaScript the player never starts. A plain video element stands in
+// for it where the browser can play a source on its own, and a link to the
+// video's page where only the service's embed can. A native-controls file
+// already plays as it is.
 const noscriptSources = (
 	isHls
 		? [
 				{ src: hlsUrl, type: 'application/x-mpegURL' },
 				{ src: mp4Url, type: 'video/mp4' },
 			]
-		: element === 'video'
+		: element === 'video' && !isNative
 			? [{ src: videoSrc, type: undefined }]
 			: []
 ).filter((source) => source.src !== undefined && source.src !== '')
+const embedService =
+	element === 'youtube-video' ? 'YouTube' : element === 'vimeo-video' ? 'Vimeo' : undefined
 ---
 
 {!isNative && <script>
 	import './videojs-ui'
 </script>}
 
-{isNative ? (
-	<div aria-label={resolvedLabel} class="amk not-content" role="group">
+<div
+	aria-label={isNative ? resolvedLabel : undefined}
+	class="amk amk-video not-content"
+	role={isNative ? 'group' : undefined}
+>
+	{isNative ? (
 		<VideoMedia {...mediaProps} native={true} style={containerStyle} />
-	</div>
-) : (
-	<div class="amk not-content">
+	) : (
 		<video-player
 			class="amk-player"
 			data-autoplay={autoPlay ? '' : undefined}
@@ -128,16 +134,31 @@ const noscriptSources = (
 				)}
 			</media-container>
 		</video-player>
-		{noscriptSources.length > 0 && (
-			<noscript>
-				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
-				<video {...mediaAttributes} controls style={containerStyle}>
-					{noscriptSources.map((source) => (
-						<source {...source} />
-					))}
-					Your browser does not support HTML5 video.
-				</video>
-			</noscript>
-		)}
-	</div>
-)}
+	)}
+	{noscriptSources.length > 0 && (
+		<noscript>
+			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+			<video {...mediaAttributes} controls style={containerStyle}>
+				{noscriptSources.map((source) => (
+					<source {...source} />
+				))}
+				Your browser does not support HTML5 video.
+			</video>
+		</noscript>
+	)}
+	{embedService !== undefined && (
+		<noscript>
+			<a class="amk-fallback-link" href={fallbackUrl}>
+				{hasPoster && (
+					<img
+						alt={resolvedLabel}
+						class="amk-fallback-poster"
+						src={posterUrl}
+						style={containerStyle}
+					/>
+				)}
+				<span class="amk-fallback-label">Watch on {embedService}</span>
+			</a>
+		</noscript>
+	)}
+</div>

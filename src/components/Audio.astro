@@ -89,6 +89,15 @@ const oembedAspectRatio =
 	oembedInfo !== undefined && oembedInfo.width !== 0 && oembedInfo.height !== 0
 		? `${oembedInfo.width} / ${oembedInfo.height}`
 		: undefined
+
+const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
+	autoplay: autoPlay || undefined,
+	crossorigin: 'anonymous',
+	loop: loop || undefined,
+	muted: muted || undefined,
+	preload,
+	src: identifier,
+}
 ---
 
 {resolvedService === 'local' && <script>
@@ -111,20 +120,16 @@ const oembedAspectRatio =
 			)
 		) : resolvedService === 'local' ? (
 			<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
+				{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
 				<audio-player>
 					<audio-skin>
-						{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
-						<audio
-							autoplay={autoPlay || undefined}
-							crossorigin="anonymous"
-							loop={loop || undefined}
-							muted={muted || undefined}
-							preload={preload}
-							src={identifier}
-						/>
-						{/* eslint-enable astro/jsx-a11y/media-has-caption */}
+						<audio {...audioAttributes} />
 					</audio-skin>
 				</audio-player>
+				<noscript>
+					<audio {...audioAttributes} controls />
+				</noscript>
+				{/* eslint-enable astro/jsx-a11y/media-has-caption */}
 			</div>
 		) : (
 			<div class="amk not-content" slot="media-component">
