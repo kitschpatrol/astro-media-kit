@@ -1,23 +1,39 @@
+import type { ImageMetadata } from 'astro'
+import type { MediaType } from '../types'
 import type { Props } from './Caption.astro'
+import { getCreditFromXmpTags } from './utils/image'
 
 /**
  * Translate the `credit`-prefixed props used on embedding components into the
  * underlying `<Caption>` shape. Collapses `credit: boolean | string` back into
  * Caption's separate `creator` + `showCredit` fields, and renames the other
  * `credit*` siblings to their Caption counterparts.
+ *
+ * When the credit line shows and `src` is given, values the props leave unset
+ * come from the image's XMP tags: `Creator`, `Credit` (the organization), and
+ * `Label` (the media type). The media type falls back to
+ * `creditMediaTypeFallback`, then to `typeFallback`.
  */
-export function toCaptionProps(
+export async function toCaptionProps(
 	props: PrefixedProps,
-	options: { src?: Props['src']; typeFallback?: Props['typeFallback'] } = {},
-): Props {
+	options: { src?: ImageMetadata | undefined; typeFallback: MediaType },
+): Promise<Props> {
 	const { credit, creditMediaType, creditMediaTypeFallback, creditOrganization } = props
+	const creator = typeof credit === 'string' ? credit : undefined
+	const showCredit = credit === true || typeof credit === 'string'
+
+	const xmp =
+		showCredit &&
+		options.src !== undefined &&
+		(creator === undefined || creditOrganization === undefined || creditMediaType === undefined)
+			? await getCreditFromXmpTags(options.src)
+			: undefined
+
 	return {
-		creator: typeof credit === 'string' ? credit : undefined,
-		organization: creditOrganization,
-		showCredit: credit === true || typeof credit === 'string',
-		src: options.src,
-		type: creditMediaType,
-		typeFallback: creditMediaTypeFallback ?? options.typeFallback,
+		creator: creator ?? xmp?.creator,
+		organization: creditOrganization ?? xmp?.credit,
+		showCredit,
+		type: creditMediaType ?? xmp?.label ?? creditMediaTypeFallback ?? options.typeFallback,
 	}
 }
 
@@ -45,13 +61,14 @@ export type PrefixedProps = {
 	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the
 	 * credit line.
 	 */
-	creditMediaType?: Props['type']
+	creditMediaType?: MediaType | undefined
 	/**
-	 * Fallback media type when XMP Label tag is missing.
+	 * Media type when neither `creditMediaType` nor the image's XMP Label tag
+	 * sets one. `<Video>` and `<Audio>` read no XMP and omit this prop.
 	 *
 	 * @default 'image'
 	 */
-	creditMediaTypeFallback?: Props['typeFallback']
+	creditMediaTypeFallback?: MediaType | undefined
 	/**
 	 * Organization or publication to credit alongside the creator.
 	 */

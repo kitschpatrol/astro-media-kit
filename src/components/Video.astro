@@ -21,7 +21,7 @@ type Controls = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
  * Props for the `<Video>` component — unified video player supporting Bunny,
  * Cloudflare, Mux, YouTube, Vimeo, oEmbed, and local files.
  */
-export type Props = PrefixedCaptionProps &
+export type Props = Omit<PrefixedCaptionProps, 'creditMediaTypeFallback'> &
 	PrefixedZoomProps & {
 		/**
 		 * Start playback automatically (muted by default for browser autoplay
@@ -90,7 +90,6 @@ const {
 	controls = 'full',
 	credit,
 	creditMediaType,
-	creditMediaTypeFallback,
 	creditOrganization,
 	initialBandwidth,
 	label,
@@ -184,8 +183,8 @@ switch (resolvedService) {
 	// No default — ts/switch-exhaustiveness-check enforces all Service cases are handled
 }
 
-const captionProps = toCaptionProps(
-	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
+const captionProps = await toCaptionProps(
+	{ credit, creditMediaType, creditOrganization },
 	{ typeFallback: 'video' },
 )
 

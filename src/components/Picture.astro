@@ -266,7 +266,7 @@ const isRemote = isRemoteImageSource(src)
 let lightSrc: ImageMetadata | string
 let darkSrc: ImageMetadata | string | undefined
 let lightSrcLabel: string
-let captionSrc: ImageMetadata | string | undefined
+let captionSrc: ImageMetadata | undefined
 
 if (isRemote) {
 	const srcDarkIsLocal = srcDarkSource !== undefined && !isRemoteImageSource(srcDarkSource)
@@ -467,7 +467,7 @@ if (fallbackImageDark) {
 	imgAttributesDark = attributes
 }
 
-const captionProps = toCaptionProps(
+const captionProps = await toCaptionProps(
 	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
 	{ src: captionSrc, typeFallback: 'image' },
 )

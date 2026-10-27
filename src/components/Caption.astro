@@ -1,7 +1,5 @@
 ---
-import type { ImageMetadata } from 'astro'
 import type { MediaType } from '../types'
-import { getCreditFromXmpTags } from './utils/image'
 
 const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
@@ -13,10 +11,11 @@ export type { PrefixedProps } from './caption-props-map'
 
 /**
  * Props for the `<Caption>` component — wraps content in
- * `<figure>`/`<figcaption>` with optional XMP credit extraction.
+ * `<figure>`/`<figcaption>` with an optional credit line. `<Image>` and
+ * `<Picture>` fill in values they read from the image's XMP tags.
  */
 export type Props = {
-	/** Attribution name for the media creator. Overrides XMP-extracted creator. */
+	/** Attribution name for the media creator. */
 	creator?: string | undefined
 	/** Organization or publication to credit alongside the creator. */
 	organization?: string | undefined
@@ -26,47 +25,23 @@ export type Props = {
 	 * @default true
 	 */
 	showCredit?: boolean | undefined
-	/** Image source for XMP metadata extraction. Not rendered directly. */
-	src?: ImageMetadata | string | undefined
 	/**
-	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`). Shown in the
-	 * credit line.
+	 * Semantic media type label (e.g. `'photo'`, `'screenshot'`), shown
+	 * capitalized in the credit line. Any string works, so free-text XMP labels
+	 * show as written.
 	 */
-	type?: MediaType | undefined
-	/**
-	 * Fallback media type when XMP Label tag is missing.
-	 *
-	 * @default 'image'
-	 */
-	typeFallback?: MediaType | undefined
+	type?: MediaType | (string & {}) | undefined
 }
 
-const { creator, organization, showCredit = true, src, type, typeFallback } = Astro.props
-
-// Try to resolve credit components from exif if not provided
-// Note clunky rename from "credit" in the XMP tag to "organization"
-// and "label" to "type"
-const {
-	creator: exifCreator,
-	credit: exifOrganization,
-	label: exifType,
-} = src !== undefined &&
-showCredit &&
-(organization === undefined || creator === undefined || type === undefined)
-	? await getCreditFromXmpTags(src)
-	: { creator: undefined, credit: undefined, label: undefined }
-
-const resolvedOrganization = organization ?? exifOrganization
-const resolvedCreator = creator ?? exifCreator
-const resolvedType = type ?? exifType ?? typeFallback
+const { creator, organization, showCredit = true, type } = Astro.props
 
 // Render the credit nicely
 
 const creditLine =
-	resolvedCreator !== undefined || resolvedOrganization !== undefined
+	creator !== undefined || organization !== undefined
 		? [
-				resolvedType === undefined ? undefined : capitalize(resolvedType),
-				[resolvedCreator, resolvedOrganization].filter(Boolean).join(' / '),
+				type === undefined ? undefined : capitalize(type),
+				[creator, organization].filter(Boolean).join(' / '),
 			]
 				.filter(Boolean)
 				.join(': ')

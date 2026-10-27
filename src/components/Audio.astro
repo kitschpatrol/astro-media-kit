@@ -14,7 +14,7 @@ import './internal/amk-audio.css'
  * Props for the `<Audio>` component — audio player supporting SoundCloud,
  * oEmbed, and local files.
  */
-export type Props = PrefixedCaptionProps & {
+export type Props = Omit<PrefixedCaptionProps, 'creditMediaTypeFallback'> & {
 	/**
 	 * Start playback automatically.
 	 *
@@ -51,7 +51,6 @@ const {
 	autoPlay = false,
 	credit,
 	creditMediaType,
-	creditMediaTypeFallback,
 	creditOrganization,
 	// eslint-disable-next-line unicorn/prefer-default-parameters -- untyped MDX callers can pass null, which a destructuring default would not replace
 	label,
@@ -85,8 +84,8 @@ if (resolvedService === 'soundcloud') {
 	}
 }
 
-const captionProps = toCaptionProps(
-	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
+const captionProps = await toCaptionProps(
+	{ credit, creditMediaType, creditOrganization },
 	{ typeFallback: 'audio' },
 )
 

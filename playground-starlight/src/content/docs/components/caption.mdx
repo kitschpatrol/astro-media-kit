@@ -1,6 +1,6 @@
 ---
 title: Caption
-description: Figure/figcaption wrapper with XMP credit extraction.
+description: Figure/figcaption wrapper with a credit line.
 ---
 
 The Caption component wraps media in a `<figure>` element with `<figcaption>` for captions and credit lines.
@@ -12,25 +12,25 @@ A caption beneath the image.
 
 ## Credit from attributes
 
-![Credited photo](../../../assets/test.jpeg){:creator="Test Creator" organization="Test Org" showCredit="true" type="photo"}
+![Credited photo](../../../assets/test.jpeg){:credit="Test Creator" creditOrganization="Test Org" creditMediaType="photo"}
 Caption text with credit line above.
 
 ## Media type labels
 
 ### Photo
 
-![Photo](../../../assets/test.jpeg){:showCredit="true" type="photo" creator="Photographer"}
+![Photo](../../../assets/test.jpeg){:credit="Photographer" creditMediaType="photo"}
 
 ### Illustration
 
-![Illustration](../../../assets/tiger.svg){:showCredit="true" type="illustration" creator="Illustrator" background="#e8e4d0"}
+![Illustration](../../../assets/tiger.svg){:credit="Illustrator" creditMediaType="illustration" background="#e8e4d0"}
 
 ### Screenshot
 
-![Screenshot](../../../assets/test.jpeg){:showCredit="true" type="screenshot" creator="Author"}
+![Screenshot](../../../assets/test.jpeg){:credit="Author" creditMediaType="screenshot"}
 
 ## Type fallback
 
-When no explicit type is set, `typeFallback` provides a default:
+When neither `creditMediaType` nor the image's XMP Label tag sets a type, `creditMediaTypeFallback` does:
 
-![Fallback type](../../../assets/test.jpeg){:showCredit="true" typeFallback="illustration" creator="Artist"}
+![Fallback type](../../../assets/test.jpeg){:credit="Artist" creditMediaTypeFallback="illustration"}

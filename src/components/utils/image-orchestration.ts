@@ -203,13 +203,13 @@ export async function resolveSrcToMetadata(
 	let imageMetadataDark: ImageMetadata | undefined
 
 	if (isDarkLightImageMetadata(src)) {
-		imageMetadata = src.light
+		imageMetadata = unwrapImageMetadata(src.light)
 		if (srcDarkSource !== undefined && srcDarkSource !== '') {
 			imageMetadataDark = isImageMetadataObject(srcDarkSource)
 				? unwrapImageMetadata(srcDarkSource)
 				: ((await resolveImageSource(srcDarkSource)) as ImageMetadata)
 		} else if (!options.darkDisabled) {
-			imageMetadataDark = src.dark
+			imageMetadataDark = unwrapImageMetadata(src.dark)
 		}
 	} else if (isImageMetadataObject(src)) {
 		imageMetadata = unwrapImageMetadata(src)

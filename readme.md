@@ -330,26 +330,25 @@ import { Video } from 'astro-media-kit/components'
 
 #### Video Props
 
-| Prop                      | Type                                                                              | Default                     |
-| ------------------------- | --------------------------------------------------------------------------------- | --------------------------- |
-| `src`                     | `string`                                                                          | —                           |
-| `service`                 | `'bunny' \| 'cloudflare' \| 'local' \| 'mux' \| 'oembed' \| 'vimeo' \| 'youtube'` | inferred from `src`         |
-| `controls`                | `'full' \| 'minimal' \| 'lightbox' \| 'native' \| 'none'`                         | `'full'`                    |
-| `autoPlay`                | `boolean`                                                                         | `false`                     |
-| `muted`                   | `boolean`                                                                         | `true`                      |
-| `loop`                    | `boolean`                                                                         | `false`                     |
-| `preload`                 | `'auto' \| 'metadata' \| 'none'`                                                  | `'metadata'`                |
-| `poster`                  | `string`                                                                          | service-provided            |
-| `label`                   | `string`                                                                          | video title, else `'Video'` |
-| `capQualityToSize`        | `boolean`                                                                         | `true`                      |
-| `initialBandwidth`        | `number`                                                                          | —                           |
-| `credit`                  | `boolean \| string`                                                               | `false`                     |
-| `creditMediaType`         | `MediaType`                                                                       | —                           |
-| `creditMediaTypeFallback` | `MediaType`                                                                       | `'video'`                   |
-| `creditOrganization`      | `string`                                                                          | —                           |
-| `zoom`                    | `boolean \| string`                                                               | `false`                     |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                     | `'fit'`                     |
-| `zoomScope`               | `string` (CSS selector)                                                           | —                           |
+| Prop                 | Type                                                                              | Default                     |
+| -------------------- | --------------------------------------------------------------------------------- | --------------------------- |
+| `src`                | `string`                                                                          | —                           |
+| `service`            | `'bunny' \| 'cloudflare' \| 'local' \| 'mux' \| 'oembed' \| 'vimeo' \| 'youtube'` | inferred from `src`         |
+| `controls`           | `'full' \| 'minimal' \| 'lightbox' \| 'native' \| 'none'`                         | `'full'`                    |
+| `autoPlay`           | `boolean`                                                                         | `false`                     |
+| `muted`              | `boolean`                                                                         | `true`                      |
+| `loop`               | `boolean`                                                                         | `false`                     |
+| `preload`            | `'auto' \| 'metadata' \| 'none'`                                                  | `'metadata'`                |
+| `poster`             | `string`                                                                          | service-provided            |
+| `label`              | `string`                                                                          | video title, else `'Video'` |
+| `capQualityToSize`   | `boolean`                                                                         | `true`                      |
+| `initialBandwidth`   | `number`                                                                          | —                           |
+| `credit`             | `boolean \| string`                                                               | `false`                     |
+| `creditMediaType`    | `MediaType`                                                                       | `'video'`                   |
+| `creditOrganization` | `string`                                                                          | —                           |
+| `zoom`               | `boolean \| string`                                                               | `false`                     |
+| `zoomLevel`          | `'fill' \| 'fit' \| 'native'`                                                     | `'fit'`                     |
+| `zoomScope`          | `string` (CSS selector)                                                           | —                           |
 
 `service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` apply to HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
 
@@ -383,19 +382,18 @@ import { Audio } from 'astro-media-kit/components'
 
 #### Audio Props
 
-| Prop                      | Type                                  | Default      |
-| ------------------------- | ------------------------------------- | ------------ |
-| `src`                     | `string`                              | —            |
-| `service`                 | `'local' \| 'oembed' \| 'soundcloud'` | inferred     |
-| `autoPlay`                | `boolean`                             | `false`      |
-| `muted`                   | `boolean`                             | `false`      |
-| `loop`                    | `boolean`                             | `false`      |
-| `preload`                 | `'auto' \| 'metadata' \| 'none'`      | `'metadata'` |
-| `label`                   | `string`                              | `'Audio'`    |
-| `credit`                  | `boolean \| string`                   | `false`      |
-| `creditMediaType`         | `MediaType`                           | —            |
-| `creditMediaTypeFallback` | `MediaType`                           | `'audio'`    |
-| `creditOrganization`      | `string`                              | —            |
+| Prop                 | Type                                  | Default      |
+| -------------------- | ------------------------------------- | ------------ |
+| `src`                | `string`                              | —            |
+| `service`            | `'local' \| 'oembed' \| 'soundcloud'` | inferred     |
+| `autoPlay`           | `boolean`                             | `false`      |
+| `muted`              | `boolean`                             | `false`      |
+| `loop`               | `boolean`                             | `false`      |
+| `preload`            | `'auto' \| 'metadata' \| 'none'`      | `'metadata'` |
+| `label`              | `string`                              | `'Audio'`    |
+| `credit`             | `boolean \| string`                   | `false`      |
+| `creditMediaType`    | `MediaType`                           | `'audio'`    |
+| `creditOrganization` | `string`                              | —            |
 
 ### ZoomLink
 
@@ -417,7 +415,7 @@ import photo from '../assets/photo.jpg'
 
 ### Supporting components
 
-**Caption** wraps content in `<figure>`/`<figcaption>` and handles XMP credit extraction from image metadata via `exiftool-vendored`. Used internally by Image, Picture, Video, and Audio — you generally don't need to use it directly.
+**Caption** wraps content in `<figure>`/`<figcaption>`, with a credit line built from `creator`, `organization`, and `type` when `showCredit` is on. Image, Picture, Video, and Audio render it from their `credit*` props, so you generally don't need to use it directly.
 
 **Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, and `nativeWidth` for the `native` zoom level. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap.
 
@@ -511,9 +509,9 @@ The `credit` prop collapses the "show the credit line" toggle and the creator-na
 
 When present, these are rendered as a credit line in the `<figcaption>` — for example, "Photo: Jane Doe / Acme Corp". Explicit props override XMP values.
 
-If the `Label` tag is missing or extraction is not applicable, `creditMediaTypeFallback` is used (defaults to `'image'` for Image/Picture, `'video'` for Video, `'audio'` for Audio).
+If the `Label` tag is missing or extraction is not applicable, `creditMediaTypeFallback` is used (defaults to `'image'`).
 
-XMP extraction only runs on local image sources. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only. Remote `<Image>` / `<Picture>` sources also skip XMP extraction (manual values still work).
+XMP extraction only runs on local image sources. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`. Remote `<Image>` / `<Picture>` sources also skip XMP extraction (manual values still work).
 
 ## Video services
 

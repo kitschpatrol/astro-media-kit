@@ -566,6 +566,22 @@ describe('resolveSrcToMetadata', () => {
 		expect(imageMetadataDark).toBeUndefined()
 	})
 
+	it('unwraps SVG component imports in a DarkLight pair', async () => {
+		const dark = { ...svgMeta, src: '/dark.svg' }
+		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
+			{
+				// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
+				dark: Object.assign(() => {}, { ...dark, meta: dark }),
+				// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
+				light: Object.assign(() => {}, { ...svgMeta, meta: svgMeta }),
+			},
+			undefined,
+			{ componentName: 'Picture', darkDisabled: false },
+		)
+		expect(imageMetadata).toBe(svgMeta)
+		expect(imageMetadataDark).toBe(dark)
+	})
+
 	it('uses explicit srcDark ImageMetadata over the .dark member of the pair', async () => {
 		const dark = { ...pngMeta, src: '/pair-dark.png' }
 		const explicitDark = { ...pngMeta, src: '/explicit-dark.png' }

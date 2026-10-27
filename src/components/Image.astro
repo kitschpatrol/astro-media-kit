@@ -199,7 +199,7 @@ const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps,
 
 let image: GetImageResult
 let imageMetadataSrc: string
-let captionSrc: ImageMetadata | string | undefined
+let captionSrc: ImageMetadata | undefined
 
 if (isRemote) {
 	// Remote: delegate to Astro's remote pipeline via getImage(). Astro
@@ -291,7 +291,7 @@ if (resolvedSizes !== undefined) {
 	imgAttributes.sizes = resolvedSizes
 }
 
-const captionProps = toCaptionProps(
+const captionProps = await toCaptionProps(
 	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
 	{ src: captionSrc, typeFallback: 'image' },
 )

@@ -79,11 +79,8 @@ const mediaTypes = [
 const credit = {
 	credit: [undefined, true, false, 'Test Creator'],
 	creditMediaType: [undefined, ...mediaTypes],
-	creditMediaTypeFallback: [undefined, ...mediaTypes],
 	creditOrganization: [undefined, 'Test Organization'],
-} satisfies Controls<
-	Pick<ImageProps, 'credit' | 'creditMediaType' | 'creditMediaTypeFallback' | 'creditOrganization'>
->
+} satisfies Controls<Pick<VideoProps, 'credit' | 'creditMediaType' | 'creditOrganization'>>
 
 const zoom = {
 	zoom: [undefined, true, false, 'gallery'],
@@ -116,6 +113,7 @@ const image = {
 	alt: ['Sample image', ['empty', '']],
 	background: [undefined, '#ffffff', '#e8e4d0'],
 	backgroundDark: [undefined, '#222222', '#3a3550'],
+	creditMediaTypeFallback: [undefined, ...mediaTypes],
 	densities: [undefined, ['1x, 2x', [1, 2]], ['1x, 1.5x, 2x', [1, 1.5, 2]]],
 	fit: [undefined, 'cover', 'contain', 'fill', 'none', 'scale-down'],
 	height: [undefined, 240, 480],
@@ -129,6 +127,7 @@ const image = {
 		['photo', photo],
 		['tiger', tiger],
 		['photo pair', { dark: photoDark, light: photo }],
+		['tiger pair', { dark: tigerDark, light: tiger }],
 		[
 			'remote',
 			'https://raw.githubusercontent.com/kitschpatrol/astro-media-kit/main/playground/public/test.jpeg',
@@ -159,9 +158,7 @@ const definitions = {
 			creator: [undefined, 'Test Creator'],
 			organization: [undefined, 'Test Organization'],
 			showCredit: [undefined, true, false],
-			src: [undefined, ['photo', photo], ['tiger', tiger]],
 			type: [undefined, ...mediaTypes],
-			typeFallback: [undefined, ...mediaTypes],
 		},
 		title: 'Caption',
 	},
