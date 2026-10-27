@@ -5,8 +5,10 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { setVideoSource } from '../../src/components/internal/video-source'
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
+import '@videojs/html/media/vimeo-video'
 import '../../src/components/internal/amk-video.css'
 import {
 	boxes,
@@ -197,7 +199,7 @@ it('stands the volume slider up in a popover over the mute button, on hover', as
 	const slider = query(popover, 'media-volume-slider').getBoundingClientRect()
 	expect(slider.height).toBeGreaterThan(slider.width)
 	const button = mute.getBoundingClientRect()
-	expect(popover.getBoundingClientRect().bottom).toBeLessThanOrEqual(button.top)
+	expect(popover.getBoundingClientRect().bottom).toBeCloseTo(button.top, 0)
 	expect(Math.abs(slider.x + slider.width / 2 - (button.x + button.width / 2))).toBeLessThan(2)
 
 	await commands.mouseMove(5, 5)
@@ -221,7 +223,7 @@ it('keeps the bar, and the popover, while the pointer rests on them during playb
 	await commands.mouseMove(5, 5)
 
 	await expect.poll(() => Object.hasOwn(controls.dataset, 'visible'), { timeout: 4000 }).toBe(false)
-	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
+	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(false)
 })
 
 it('closes the volume popover before the player lifts', async () => {
@@ -364,6 +366,39 @@ it('uses a rectangular volume popup with fast transitions and respects reduced m
 		await commands.emulateReducedMotion(false)
 	}
 })
+
+it.each([true, false])(
+	'toggles Vimeo mute when runtime state differs from defaultMuted=%s',
+	async (defaultMuted) => {
+		const { item, player } = await mountPlayer()
+		const media = document.createElement('vimeo-video')
+		media.toggleAttribute('muted', defaultMuted)
+		query(player, 'video').replaceWith(media)
+		setVideoSource(media, '')
+		// Vimeo reports its runtime state after loading. No remote iframe or SDK
+		// response is needed to exercise the real adapter and custom-element bridge.
+		media.adapter.muted = !defaultMuted
+		media.dispatchEvent(new Event('volumechange'))
+		const mute = query(player, 'amk-mute-button')
+		await expect.poll(() => mute.getAttribute('aria-label')).toBe(defaultMuted ? 'Mute' : 'Unmute')
+		expect(media.hasAttribute('muted')).toBe(defaultMuted)
+		await userEvent.click(mute)
+		await expect.poll(() => media.muted).toBe(defaultMuted)
+		await userEvent.click(mute)
+		await expect.poll(() => media.muted).toBe(!defaultMuted)
+
+		await openLightbox(item)
+		await liftDone()
+		await userEvent.click(mute)
+		await expect.poll(() => media.muted).toBe(defaultMuted)
+		await userEvent.keyboard('m')
+		await expect.poll(() => media.muted).toBe(!defaultMuted)
+		await closeLightbox()
+		await userEvent.click(mute)
+		await expect.poll(() => media.muted).toBe(defaultMuted)
+		expect(media.adapter.defaultMuted).toBe(defaultMuted)
+	},
+)
 
 it('leaves slider arrows to volume adjustment inside a gallery and supports dragging', async () => {
 	const { item, player } = await mountPlayer()

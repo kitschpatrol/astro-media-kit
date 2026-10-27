@@ -1,4 +1,5 @@
 import type { HlsJsVideoElement, HlsSource } from '@videojs/html/media/hlsjs-video'
+import type { VimeoVideoElement } from '@videojs/html/media/vimeo-video'
 
 export type HlsSourceOptions = Pick<HlsSource, 'capRenditionToPlayerSize' | 'engine'>
 
@@ -36,11 +37,39 @@ export function parseHlsOptions(json: string | undefined): HlsSourceOptions {
 
 /** Configure the engine once, with its options included in the initial source. */
 export function setVideoSource(element: HTMLElement, src: string, options?: string): void {
+	if (element.localName === 'vimeo-video') {
+		configureVimeoMute(element as VimeoVideoElement)
+	}
+
 	if (element.localName === 'hlsjs-video') {
 		;(element as HlsJsVideoElement).source = { ...parseHlsOptions(options), src }
 	} else if (element.getAttribute('src') !== src) {
 		element.setAttribute('src', src)
 	}
+}
+
+/**
+ * Video.js 10.2 reflects Vimeo's live `muted` property through the content
+ * attribute. If Vimeo reports a different state, assigning the existing
+ * attribute value does nothing and the mute command never reaches the adapter.
+ * Forward runtime mute directly, keeping the attribute as the startup default,
+ * like native media. The adapter also needs that default before building its
+ * URL.
+ */
+function configureVimeoMute(element: VimeoVideoElement): void {
+	const { adapter } = element
+	adapter.defaultMuted = element.defaultMuted
+	if (Object.hasOwn(element, 'muted')) {
+		return
+	}
+
+	Object.defineProperty(element, 'muted', {
+		configurable: true,
+		get: () => adapter.muted,
+		set(value: boolean) {
+			adapter.muted = value
+		},
+	})
 }
 
 /** Wait for attachment so startup errors reach the player and its error dialog. */
