@@ -10,6 +10,8 @@ export default defineConfig({
 	adapter: node({ mode: 'standalone' }),
 	image: {
 		dangerouslyProcessSVG: true,
+		// For the remote source on the prop controls pages
+		domains: ['raw.githubusercontent.com'],
 		layout: 'constrained',
 		responsiveStyles: true,
 	},
