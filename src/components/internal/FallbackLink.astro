@@ -1,0 +1,28 @@
+---
+import './amk-fallback.css'
+
+/**
+ * Stands in, without JavaScript, for media that only plays in a script or an
+ * embed: a link to where it plays, inside a `<noscript>`. Render it as a direct
+ * child of the media's `.amk` wrapper, which then shows only this.
+ */
+export type Props = {
+	/** Where the media plays without this page's scripts. */
+	href: string
+	/** The link's visible text, such as "Watch on YouTube". */
+	label: string
+	/** Shown across the link's box, so pass it with a `style` that sizes one. */
+	poster?: undefined | { alt: string; src: string }
+	/** Sizes the link, as the media it stands in for. */
+	style?: string | undefined
+}
+
+const { href, label, poster, style } = Astro.props
+---
+
+<noscript>
+	<a class="amk-fallback-link" href={href} style={style}>
+		{poster && <img alt={poster.alt} class="amk-fallback-poster" src={poster.src} />}
+		<span class="amk-fallback-label">{label}</span>
+	</a>
+</noscript>

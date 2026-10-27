@@ -1,9 +1,21 @@
 ---
 import { sanitizeEmbedHtml } from '../utils/oembed'
+import FallbackLink from './FallbackLink.astro'
+import './amk-oembed.css'
 
 export type Props = {
+	/**
+	 * The embed's aspect ratio. With one, the embed scales to the column's width
+	 * at that ratio; without, it keeps the provider's size within the column.
+	 */
 	aspectRatio?: string | undefined
+	/** Where the media plays without JavaScript, which embeds need. */
+	href: string
 	html: string
+	/** The fallback link's visible text, such as "Watch on TED". */
+	linkLabel: string
+	/** The fallback link's poster, used only with an aspect ratio to size it. */
+	posterUrl?: string | undefined
 	resolvedLabel: string
 	/**
 	 * Sanitize provider HTML: adds missing `title` on iframes, removes deprecated
@@ -15,13 +27,33 @@ export type Props = {
 	sanitize?: boolean | undefined
 }
 
-const { aspectRatio, html, resolvedLabel, sanitize = true } = Astro.props
-const style =
-	aspectRatio !== undefined && aspectRatio !== '' ? `aspect-ratio: ${aspectRatio}` : undefined
+const {
+	aspectRatio,
+	href,
+	html,
+	linkLabel,
+	posterUrl,
+	resolvedLabel,
+	sanitize = true,
+} = Astro.props
+const isScaled = aspectRatio !== undefined && aspectRatio !== ''
+const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
 const resolvedHtml = sanitize ? sanitizeEmbedHtml(html, resolvedLabel) : html
 ---
 
-<div aria-label={resolvedLabel} class="amk not-content" role="group" style={style}>
+<div
+	aria-label={resolvedLabel}
+	class="amk amk-oembed not-content"
+	data-scaled={isScaled ? '' : undefined}
+	role="group"
+	style={isScaled ? `aspect-ratio: ${aspectRatio}` : undefined}
+>
 	<Fragment set:html={resolvedHtml} />
+	<FallbackLink
+		href={href}
+		label={linkLabel}
+		poster={isScaled && hasPoster ? { alt: resolvedLabel, src: posterUrl } : undefined}
+		style={isScaled ? `width: 100%; aspect-ratio: ${aspectRatio}` : undefined}
+	/>
 </div>

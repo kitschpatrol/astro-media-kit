@@ -11,6 +11,12 @@
 	max-width: 100%;
 }
 
+.amk-soundcloud {
+	display: block;
+	width: 100%;
+	border: 0;
+}
+
 /* Without JavaScript, the browser's own controls stand in for the skin, across
    the same width. */
 .amk > noscript > audio {

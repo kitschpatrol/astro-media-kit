@@ -1,0 +1,19 @@
+/* Provider embeds from oEmbed discovery, laid out in OEmbed.astro. Their
+   iframes come at a fixed size; they never get wider than the column. The
+   sanitizer drops their deprecated `frameborder`, so the border goes here. */
+.amk-oembed > iframe {
+	display: block;
+	max-width: 100%;
+	border: 0;
+}
+
+/* Given the embed's aspect ratio, the wrapper keeps it across the column's
+   width and the embed fills it, at any column width. */
+.amk-oembed[data-scaled] {
+	min-height: 0;
+}
+
+.amk-oembed[data-scaled] > iframe {
+	width: 100%;
+	height: 100%;
+}

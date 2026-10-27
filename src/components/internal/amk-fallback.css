@@ -1,0 +1,39 @@
+/* What media shows without JavaScript: the `<noscript>` fallbacks the media
+   components render beside their scripted players and embeds. */
+
+/* The fallback stands in for the player or embed, which would otherwise hold
+   its size as an empty box beside it. Important, as a provider's embed markup
+   can carry an inline `display` of its own. */
+@media (scripting: none) {
+	.amk:has(> noscript) > :not(noscript) {
+		display: none !important;
+	}
+}
+
+/* Media that only plays in a script or an embed links to where it plays. Sized,
+   the link shows the poster across its box, with the label over its bottom
+   edge; unsized, it is the label alone. */
+.amk-fallback-link {
+	position: relative;
+	display: grid;
+	place-items: end start;
+	width: fit-content;
+	max-width: 100%;
+	color: var(--amk-control-color, #fff);
+	background: #000;
+}
+
+.amk-fallback-poster {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.amk-fallback-label {
+	position: relative;
+	padding: 12px 14px;
+	font: 14px / 1 sans-serif;
+	background: var(--amk-control-background, rgb(20 20 30 / 70%));
+}

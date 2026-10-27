@@ -4,6 +4,7 @@ import type { AudioService } from './utils/audio'
 import type { OembedInfo } from './utils/oembed'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
+import FallbackLink from './internal/FallbackLink.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
 import { fetchOEmbed } from './utils/oembed'
@@ -67,10 +68,14 @@ const resolvedLabel = label ?? 'Audio'
 
 let oembedInfo: OembedInfo | undefined
 let embedUrl = ''
+// Where a SoundCloud embed links without JavaScript. A bare track ID has no
+// track page short of SoundCloud's API, so it links to the player's own page.
+let soundcloudPageUrl = ''
 let fetchError: string | undefined
 
 if (resolvedService === 'soundcloud') {
 	embedUrl = buildSoundCloudEmbedUrl(identifier, { autoPlay })
+	soundcloudPageUrl = identifier.startsWith('http') ? identifier : embedUrl
 } else if (resolvedService === 'oembed') {
 	try {
 		oembedInfo = await fetchOEmbed(identifier)
@@ -84,11 +89,6 @@ const captionProps = toCaptionProps(
 	{ credit, creditMediaType, creditMediaTypeFallback, creditOrganization },
 	{ typeFallback: 'audio' },
 )
-
-const oembedAspectRatio =
-	oembedInfo !== undefined && oembedInfo.width !== 0 && oembedInfo.height !== 0
-		? `${oembedInfo.width} / ${oembedInfo.height}`
-		: undefined
 
 const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 	autoplay: autoPlay || undefined,
@@ -112,8 +112,9 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 		{resolvedService === 'oembed' ? (
 			oembedInfo && (
 				<InternalOembed
-					aspectRatio={oembedAspectRatio}
+					href={identifier}
 					html={oembedInfo.html}
+					linkLabel={`Listen on ${oembedInfo.providerName}`}
 					resolvedLabel={resolvedLabel}
 					slot="media-component"
 				/>
@@ -135,11 +136,12 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 			<div class="amk not-content" slot="media-component">
 				<iframe
 					allow="autoplay"
+					class="amk-soundcloud"
 					height="166"
 					src={embedUrl}
-					style="width: 100%"
 					title={resolvedLabel}
 				/>
+				<FallbackLink href={soundcloudPageUrl} label="Listen on SoundCloud" />
 			</div>
 		)}
 		<slot />

@@ -642,45 +642,6 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	display: none;
 }
 
-/* --- Without JavaScript --- */
-
-/* The noscript fallback stands in for the player or scripted media element,
-   which would otherwise hold its size as an empty box above it. */
-@media (scripting: none) {
-	.amk:has(> noscript) > :not(noscript) {
-		display: none;
-	}
-}
-
-/* Service embeds can't play without their own scripts, so their fallback links
-   to the video's page: the poster, with a label stacked over its bottom edge. */
-.amk-fallback-link {
-	display: grid;
-	width: fit-content;
-	max-width: 100%;
-	color: var(--amk-control-color);
-	background: #000;
-}
-
-.amk-fallback-link > * {
-	grid-area: 1 / 1;
-	min-width: 0;
-}
-
-.amk-fallback-poster {
-	display: block;
-	max-width: 100%;
-	height: auto;
-	object-fit: cover;
-}
-
-.amk-fallback-label {
-	place-self: end start;
-	padding: 12px 14px;
-	font: var(--amk-font-size) / 1 sans-serif;
-	background: var(--amk-control-background);
-}
-
 /* Size controls to their player, including players inside narrow columns. */
 @container amk-player (width < 440px) {
 	.amk-time media-time[type='duration'],

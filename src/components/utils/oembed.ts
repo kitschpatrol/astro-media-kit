@@ -1,11 +1,15 @@
 import { parseHTML } from 'linkedom'
 
+const WWW_PREFIX_RE = /^www\./v
+
 /** Parsed oEmbed response for a page URL. */
 export type OembedInfo = {
 	/** Embed height in pixels. `0` if not provided by the oEmbed endpoint. */
 	height: number
 	/** Raw HTML embed code from the oEmbed provider. */
 	html: string
+	/** The provider's name, or the page's host name when it gives none. */
+	providerName: string
 	/** Thumbnail image URL, if the provider supplies one. */
 	thumbnailUrl: string | undefined
 	/** Media title from the oEmbed response, if available. */
@@ -58,12 +62,15 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 		)
 	}
 
+	// Some providers send dimensions as strings, and some as CSS lengths, such as
+	// SoundCloud's "100%"
 	const data = (await oembedResponse.json()) as {
-		height?: number
+		height?: number | string
 		html?: string
+		provider_name?: string // eslint-disable-line ts/naming-convention -- oEmbed API field name
 		thumbnail_url?: string // eslint-disable-line ts/naming-convention -- oEmbed API field name
 		title?: string
-		width?: number
+		width?: number | string
 	}
 
 	if (data.html === undefined || data.html === '') {
@@ -73,12 +80,22 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	}
 
 	return {
-		height: data.height ?? 0,
+		height: toPixels(data.height),
 		html: data.html,
+		providerName:
+			data.provider_name === undefined || data.provider_name === ''
+				? new URL(canonicalUrl).hostname.replace(WWW_PREFIX_RE, '')
+				: data.provider_name,
 		thumbnailUrl: data.thumbnail_url,
 		title: data.title,
-		width: data.width ?? 0,
+		width: toPixels(data.width),
 	}
+}
+
+/** A dimension in pixels, or `0` for one missing or given in other units. */
+function toPixels(value: number | string | undefined): number {
+	const pixels = Number(value)
+	return Number.isFinite(pixels) && pixels > 0 ? pixels : 0
 }
 
 /**

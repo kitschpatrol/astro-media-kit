@@ -1,5 +1,6 @@
 ---
 import { Audio } from 'astro-media-kit/components'
+import Oembed from 'astro-media-kit/components/internal/OEmbed.astro'
 import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
 const videoProps = {
 	aspectRatio: '16 / 9',
@@ -65,6 +66,31 @@ const youtubeUrl = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
 		</section>
 		<section id="audio">
 			<Audio label="Test audio" loop preload="none" service="local" src="/media/loop.mp4" />
+		</section>
+		<section id="oembed-video">
+			<Oembed
+				aspectRatio="854 / 480"
+				href="https://www.ted.com/talks/a_talk"
+				html={'<iframe src="about:blank" width="854" height="480" frameborder="0"></iframe>'}
+				linkLabel="Watch on TED"
+				posterUrl="/media/loop-poster.jpg"
+				resolvedLabel="A talk"
+			/>
+		</section>
+		<section id="oembed-audio">
+			<Oembed
+				href="https://open.spotify.com/track/a_track"
+				html={'<iframe src="about:blank" width="456" height="152"></iframe>'}
+				linkLabel="Listen on Spotify"
+				posterUrl="/media/loop-poster.jpg"
+				resolvedLabel="A track"
+			/>
+		</section>
+		<section id="soundcloud-id">
+			<Audio src="6836449" />
+		</section>
+		<section id="soundcloud-url">
+			<Audio src="https://soundcloud.com/kitschpatrol/drona" />
 		</section>
 	</body>
 </html>

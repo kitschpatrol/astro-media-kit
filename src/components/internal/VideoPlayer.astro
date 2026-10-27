@@ -1,9 +1,11 @@
 ---
 import type { InternalVideoProps, VideoElementTag } from './types'
+import FallbackLink from './FallbackLink.astro'
 import { getControllerStyle } from './types'
 import VideoControls from './VideoControls.astro'
 import VideoError from './VideoError.astro'
 import VideoMedia from './VideoMedia.astro'
+import './amk-fallback.css'
 import './amk-video.css'
 
 export type Props = InternalVideoProps & {
@@ -147,18 +149,15 @@ const embedService =
 		</noscript>
 	)}
 	{embedService !== undefined && (
-		<noscript>
-			<a class="amk-fallback-link" href={fallbackUrl}>
-				{hasPoster && (
-					<img
-						alt={resolvedLabel}
-						class="amk-fallback-poster"
-						src={posterUrl}
-						style={containerStyle}
-					/>
-				)}
-				<span class="amk-fallback-label">Watch on {embedService}</span>
-			</a>
-		</noscript>
+		<FallbackLink
+			href={fallbackUrl}
+			label={`Watch on ${embedService}`}
+			poster={
+				hasPoster && containerStyle !== undefined
+					? { alt: resolvedLabel, src: posterUrl }
+					: undefined
+			}
+			style={containerStyle}
+		/>
 	)}
 </div>
