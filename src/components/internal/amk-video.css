@@ -372,6 +372,14 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	margin: 0;
 }
 
+/* Include the popup's padding in the hit area while keeping pointer values
+   measured against the visible track. Clicks beyond either end clamp to 0/100. */
+.amk-volume-slider::before {
+	content: '';
+	position: absolute;
+	inset: calc(-1 * var(--amk-volume-padding)) 0;
+}
+
 .amk-slider-track {
 	position: relative;
 	display: block;
@@ -504,16 +512,17 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
    on hover and focus, so that the bar holds one timeline-like slider only.
    Video.js positions the popover against the button. */
 .amk-volume-popover {
+	--amk-volume-padding: 20px;
 	--media-popover-side-offset: 0px;
 	box-sizing: border-box;
 	width: var(--amk-control-size);
-	height: 128px;
+	height: 140px;
 	margin: 0;
-	padding: 14px 0;
+	padding: var(--amk-volume-padding) 0;
 	border: 0;
 	border-radius: 0;
 	color: var(--amk-control-color);
-	background: rgb(0 0 0 / 85%);
+	background: var(--amk-control-background);
 }
 
 .amk-volume-popover:is([data-starting-style], [data-ending-style]) {
@@ -522,7 +531,17 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 @media (prefers-reduced-motion: no-preference) {
 	.amk-volume-popover {
-		transition: opacity 60ms linear;
+		transition-timing-function: ease-out;
+		transition-duration: 60ms;
+		transition-property: opacity, transform;
+	}
+
+	.amk-volume-popover:is([data-starting-style], [data-ending-style]) {
+		transform: translateY(8px);
+	}
+
+	.amk-volume-popover[data-side='bottom']:is([data-starting-style], [data-ending-style]) {
+		transform: translateY(-8px);
 	}
 }
 

@@ -199,7 +199,7 @@ it('stands the volume slider up in a popover over the mute button, on hover', as
 	const slider = query(popover, 'media-volume-slider').getBoundingClientRect()
 	expect(slider.height).toBeGreaterThan(slider.width)
 	const button = mute.getBoundingClientRect()
-	expect(popover.getBoundingClientRect().bottom).toBeCloseTo(button.top, 0)
+	await expect.poll(() => popover.getBoundingClientRect().bottom).toBeCloseTo(button.top, 0)
 	expect(Math.abs(slider.x + slider.width / 2 - (button.x + button.width / 2))).toBeLessThan(2)
 
 	await commands.mouseMove(5, 5)
@@ -399,6 +399,33 @@ it.each([true, false])(
 		expect(media.adapter.defaultMuted).toBe(defaultMuted)
 	},
 )
+
+it.each([false, true])('uses the entire volume popup as a hit area, lifted=%s', async (lifted) => {
+	const { item, player } = await mountPlayer()
+	if (lifted) {
+		await openLightbox(item)
+		await liftDone()
+	}
+
+	const video = query(player, 'video', HTMLVideoElement)
+	const popover = query(player, 'media-volume-popover')
+	await userEvent.hover(query(player, 'amk-mute-button'))
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+	await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
+	const box = popover.getBoundingClientRect()
+	for (const x of [box.left + 1, box.right - 1]) {
+		for (const [y, volume] of [
+			[box.bottom - 1, 0],
+			[box.top + 1, 1],
+			[box.top + box.height / 2, 0.5],
+		] as const) {
+			await commands.mouseDown(x, y)
+			await commands.mouseUp()
+			await expect.poll(() => video.volume).toBeCloseTo(volume, 2)
+			expect(popover.matches(':popover-open')).toBe(true)
+		}
+	}
+})
 
 it('leaves slider arrows to volume adjustment inside a gallery and supports dragging', async () => {
 	const { item, player } = await mountPlayer()
