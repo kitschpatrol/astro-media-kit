@@ -1,3 +1,4 @@
+import { load } from 'cheerio'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './parity/helpers/build-fixture'
 
@@ -89,6 +90,16 @@ describe('zoom server markup', () => {
 		expect($('#video-zoom-only media-fullscreen-button')).toHaveLength(0)
 		expect($('#video-zoom-only media-hotkey')).toHaveLength(0)
 		expect($('#video-no-controls media-controls')).toHaveLength(0)
+	})
+
+	it('falls back to a native video at the player size without JavaScript', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		const noscript = $('#video .amk > noscript')
+		expect(noscript).toHaveLength(1)
+		const fallback = load(noscript.text())('video')
+		expect(fallback.is('[controls]')).toBe(true)
+		expect(fallback.attr('style')).toBe('width: 640px; aspect-ratio: 16 / 9')
+		expect(fallback.find('source').attr('src')).toBe('/media/loop.mp4')
 	})
 
 	it('marks both themed pictures as media, and skips the wrapper when zoom is off', async () => {

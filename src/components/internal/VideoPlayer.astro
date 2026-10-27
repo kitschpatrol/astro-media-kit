@@ -63,6 +63,19 @@ const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 }
 
 const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions, src: videoSrc }
+
+// Without JavaScript the player never starts, so a plain video element stands
+// in for it wherever the browser can play a source on its own
+const noscriptSources = (
+	isHls
+		? [
+				{ src: hlsUrl, type: 'application/x-mpegURL' },
+				{ src: mp4Url, type: 'video/mp4' },
+			]
+		: element === 'video'
+			? [{ src: videoSrc, type: undefined }]
+			: []
+).filter((source) => source.src !== undefined && source.src !== '')
 ---
 
 {!isNative && <script>
@@ -115,12 +128,13 @@ const mediaProps = { attributes: mediaAttributes, captions, element, hlsOptions,
 				)}
 			</media-container>
 		</video-player>
-		{isHls && hlsUrl !== undefined && hlsUrl !== '' && (
+		{noscriptSources.length > 0 && (
 			<noscript>
 				{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
-				<video {...mediaAttributes} controls>
-					<source src={hlsUrl} type="application/x-mpegURL" />
-					{mp4Url !== undefined && mp4Url !== '' && <source src={mp4Url} type="video/mp4" />}
+				<video {...mediaAttributes} controls style={containerStyle}>
+					{noscriptSources.map((source) => (
+						<source {...source} />
+					))}
 					Your browser does not support HTML5 video.
 				</video>
 			</noscript>
