@@ -84,6 +84,7 @@
 		"@astrojs/check": "^0.9.12",
 		"@kitschpatrol/shared-config": "^8.14.0",
 		"@types/node": "~24.13.6",
+		"@videojs/skills": "github:videojs/skills",
 		"@vitest/browser-playwright": "^5.0.5",
 		"astro": "^7.4.2",
 		"bumpp": "^12.3.0",

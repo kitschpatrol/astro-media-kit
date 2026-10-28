@@ -29,6 +29,8 @@ peerDependencyRules:
 permissions:
   '@kitschpatrol/shared-config':
     skills: true
+  '@videojs/skills@https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c':
+    skills: true
 publicHoistPattern:
   - '@kitschpatrol/repo-config'
   - '@kitschpatrol/typescript-config'

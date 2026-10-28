@@ -218,6 +218,9 @@ importers:
       '@types/node':
         specifier: ~24.13.6
         version: 24.13.6
+      '@videojs/skills':
+        specifier: github:videojs/skills
+        version: https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c
       '@vitest/browser-playwright':
         specifier: ^5.0.5
         version: 5.0.5(playwright@1.64.1)(vite@8.3.5(@types/node@24.13.6)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.5)
@@ -3133,6 +3136,10 @@ packages:
 
   '@videojs/native-hls-video@10.2.0':
     resolution: {integrity: sha512-+0ISYTxbPtXc530CvTqCkoKrOPzxpAqvdgw79cRTOAG/7sR4xgQqt341O+P0HesH5kYeMwkLfWcSM964FAcMTw==}
+
+  '@videojs/skills@https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c':
+    resolution: {gitHosted: true, integrity: sha512-J0mmo6i6oYlKmb/5f9+yVYxa1vbsBk9F0H1DlRSRzQp5mKiaHadL4iad1DYMynChdyh1v+y0hpc9rpGdMSLfZQ==, tarball: https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c}
+    version: 0.0.0
 
   '@videojs/spf@10.2.0':
     resolution: {integrity: sha512-ovoHDqR5td0nfeZeCu2GWbdb3SVqP9udEAZr/4/VNUKYKstOg21rlGYS/We/our17kkxcp6Dvg7H98xLzn83pQ==}
@@ -10962,6 +10969,8 @@ snapshots:
       '@videojs/media': 10.2.0
       '@videojs/spf': 10.2.0
       '@videojs/utils': 10.2.0
+
+  '@videojs/skills@https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c': {}
 
   '@videojs/spf@10.2.0':
     dependencies:
