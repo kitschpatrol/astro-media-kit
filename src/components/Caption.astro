@@ -38,14 +38,14 @@ const { creator, organization, showCredit = true, type } = Astro.props
 // Render the credit nicely
 
 const creditLine =
-	creator !== undefined || organization !== undefined
-		? [
+	creator === undefined && organization === undefined
+		? undefined
+		: [
 				type === undefined ? undefined : capitalize(type),
 				[creator, organization].filter(Boolean).join(' / '),
 			]
 				.filter(Boolean)
 				.join(': ')
-		: undefined
 
 // Can't get rid of children in markdown, so we inspect what's in the slot
 const hasCaption = Boolean(

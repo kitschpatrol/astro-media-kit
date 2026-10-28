@@ -191,9 +191,9 @@ export async function bunnyGetVideoInfo(
 	} = videoInfo
 
 	const logPrefix =
-		title !== undefined && title !== ''
-			? `Bunny video "${title}" with id "${guid}"`
-			: `Bunny video with id "${mediaIdOrTitle}"`
+		title === undefined || title === ''
+			? `Bunny video with id "${mediaIdOrTitle}"`
+			: `Bunny video "${title}" with id "${guid}"`
 
 	if (status !== 4) {
 		throw new Error(`${logPrefix} is not ready. Try again in a bit.`)

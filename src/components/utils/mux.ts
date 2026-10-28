@@ -71,22 +71,16 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 		)
 	}
 
-	if (video.static_renditions.status !== 'ready') {
-		throw new Error(`${logPrefix} fallback mp4 is not yet ready. Try again in a bit.`)
-	}
-
-	if (video.static_renditions.files === undefined) {
+	if (video.static_renditions.status !== 'ready' || video.static_renditions.files === undefined) {
 		throw new Error(`${logPrefix} fallback mp4 is not yet ready. Try again in a bit.`)
 	}
 
 	// Get highest quality fallback
 	// eslint-disable-next-line unicorn/no-array-reduce
 	const { name: mp4Name } = video.static_renditions.files.reduce((previous, current) =>
-		previous.width !== undefined && current.width !== undefined
-			? previous.width > current.width
-				? previous
-				: current
-			: previous,
+		previous.width === undefined || current.width === undefined || previous.width > current.width
+			? previous
+			: current,
 	)
 
 	// Find captions, if available

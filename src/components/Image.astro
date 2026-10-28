@@ -195,7 +195,7 @@ if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(src)) {
 // Props flatten that union, so we cast at the `getImage()` boundary like Astro's own `<Image>` does.
 
 // Handle responsive layout (same as Astro's Image) — shared by both branches.
-const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
+const { merged: mergedImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
 let image: GetImageResult
 let imageMetadataSrc: string
@@ -215,7 +215,7 @@ if (isRemote) {
 
 	const remoteFormat = typeof formatProp === 'string' ? formatProp : undefined
 	image = await getImage({
-		...getImageProps,
+		...mergedImageProps,
 		...(remoteFormat !== undefined && remoteFormat !== '' && { format: remoteFormat }),
 		src,
 	} as UnresolvedImageTransform)
@@ -237,7 +237,7 @@ if (isRemote) {
 	const outputFormat = pickImageFormat(formatProp, imageMetadata)
 
 	image = await getImage({
-		...getImageProps,
+		...mergedImageProps,
 		...compositingBackground(outputFormat, background),
 		format: outputFormat,
 		src: clonedSrc,

@@ -234,7 +234,7 @@ const {
 	...imageProps
 } = Astro.props
 
-const isZoomEnabled = zoom !== false && zoom !== '' && zoom !== undefined
+const isZoomEnabled = !['', false, undefined].includes(zoom)
 const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope })
 
 // Merge class from both Astro-style `class` and JSX-style `className` props
@@ -302,19 +302,19 @@ const scopedStyleClass = extractScopedStyleClass(className)
 if (scopedStyleClass !== undefined && scopedStyleClass !== '') {
 	const existingClass = pictureAttributes.class ?? undefined
 	pictureAttributes.class =
-		existingClass !== undefined && existingClass !== ''
-			? `${existingClass} ${scopedStyleClass}`
-			: scopedStyleClass
+		existingClass === undefined || existingClass === ''
+			? scopedStyleClass
+			: `${existingClass} ${scopedStyleClass}`
 }
 
 // Astro 7.3.3+ types `widths`/`densities`/`layout` as a discriminated union. Our `Omit<>`-derived
 // Props flatten that union, so we cast at the `getImage()` boundary like Astro's own `<Image>` does.
 
 // Handle responsive layout (same as Astro's Picture)
-const { merged: getImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
+const { merged: mergedImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
 
 // Propagate data-astro-cid-* attributes to picture element
-propagateAstroCidAttributes(getImageProps, pictureAttributes)
+propagateAstroCidAttributes(mergedImageProps, pictureAttributes)
 
 // Generate optimized images for each format (light variant)
 const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
@@ -327,7 +327,7 @@ const formats = pickFormats(formatsProp, originalSrc)
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
-			...getImageProps,
+			...mergedImageProps,
 			...(!isRemote && compositingBackground(format, background)),
 			densities: imageProps.densities,
 			format,
@@ -358,7 +358,7 @@ if (needsDarkVariant) {
 	optimizedImagesDark = await Promise.all(
 		formats.map(async (format) =>
 			getImage({
-				...getImageProps,
+				...mergedImageProps,
 				...(!isRemote && compositingBackground(format, darkBackground)),
 				densities: imageProps.densities,
 				format,
@@ -379,7 +379,7 @@ const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
-	...getImageProps,
+	...mergedImageProps,
 	...(!isRemote && compositingBackground(resultFallbackFormat, background)),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
@@ -399,7 +399,7 @@ if (isSelector && hasDarkMode) {
 			? originalSrc
 			: await resolveSrc(darkSrc)
 	fallbackImageDark = await getImage({
-		...getImageProps,
+		...mergedImageProps,
 		...(!isRemote && compositingBackground(resultFallbackFormat, darkBackground)),
 		densities: imageProps.densities,
 		format: resultFallbackFormat,

@@ -47,13 +47,11 @@ export function resolveAudioSource(src: string, service?: AudioService): Resolve
 		return { identifier: src, service: service ?? 'oembed' }
 	}
 
-	// Not a URL — try ID pattern matching
-	if (soundcloudIsValidMediaId(src)) {
-		return { identifier: src, service: service ?? 'soundcloud' }
+	// Not a URL — try ID pattern matching, otherwise assume a local file path
+	return {
+		identifier: src,
+		service: service ?? (soundcloudIsValidMediaId(src) ? 'soundcloud' : 'local'),
 	}
-
-	// Assume local file path
-	return { identifier: src, service: service ?? 'local' }
 }
 
 /**

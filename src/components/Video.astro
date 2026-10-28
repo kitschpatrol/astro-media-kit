@@ -189,17 +189,17 @@ const captionProps = await toCaptionProps(
 )
 
 const aspectRatio =
-	videoInfo !== undefined &&
-	videoInfo.width !== 0 &&
-	!Number.isNaN(videoInfo.width) &&
-	videoInfo.height !== 0 &&
-	!Number.isNaN(videoInfo.height)
-		? `${videoInfo.width} / ${videoInfo.height}`
-		: undefined
+	videoInfo === undefined ||
+	videoInfo.width === 0 ||
+	Number.isNaN(videoInfo.width) ||
+	videoInfo.height === 0 ||
+	Number.isNaN(videoInfo.height)
+		? undefined
+		: `${videoInfo.width} / ${videoInfo.height}`
 const oembedAspectRatio =
-	oembedInfo !== undefined && oembedInfo.width !== 0 && oembedInfo.height !== 0
-		? `${oembedInfo.width} / ${oembedInfo.height}`
-		: undefined
+	oembedInfo === undefined || oembedInfo.width === 0 || oembedInfo.height === 0
+		? undefined
+		: `${oembedInfo.width} / ${oembedInfo.height}`
 
 // Playback options for the HLS element's structured source. The size cap is
 // a first-class Video.js option; the bandwidth estimate is hls.js config.
@@ -215,7 +215,7 @@ if (capQualityToSize !== undefined) {
 // Where a link to the video goes without JavaScript, and what the player's
 // error dialog offers: a plain file where the service has one, else the source
 const fallbackUrl =
-	videoInfo !== undefined && videoInfo.mp4Url !== '' ? videoInfo.mp4Url : (videoSrc ?? '')
+	videoInfo === undefined || videoInfo.mp4Url === '' ? (videoSrc ?? '') : videoInfo.mp4Url
 
 const posterUrl =
 	resolvedService === 'local'
@@ -249,42 +249,44 @@ const sharedProps = {
 } as const
 ---
 
-{fetchError !== undefined && fetchError !== '' ? (
-	import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
-) : resolvedService === 'oembed' ? (
-	oembedInfo && (
+{fetchError === undefined || fetchError === '' ? (
+	resolvedService === 'oembed' ? (
+		oembedInfo && (
+			<Caption {...captionProps}>
+				<InternalOembed
+					aspectRatio={oembedAspectRatio}
+					href={identifier}
+					html={oembedInfo.html}
+					linkLabel={`Watch on ${oembedInfo.providerName}`}
+					posterUrl={oembedInfo.thumbnailUrl}
+					resolvedLabel={resolvedLabel}
+					slot="media-component"
+				/>
+				<slot />
+			</Caption>
+		)
+	) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
 		<Caption {...captionProps}>
-			<InternalOembed
-				aspectRatio={oembedAspectRatio}
-				href={identifier}
-				html={oembedInfo.html}
-				linkLabel={`Watch on ${oembedInfo.providerName}`}
-				posterUrl={oembedInfo.thumbnailUrl}
-				resolvedLabel={resolvedLabel}
+			<Zoomer
+				{...zoomerProps}
+				href={fallbackUrl}
+				interactive
+				nativeWidth={videoInfo.width}
 				slot="media-component"
-			/>
+			>
+				<VideoPlayer
+					{...sharedProps}
+					captions={videoInfo.captions}
+					element={videoElementMap[resolvedService]}
+					fallbackUrl={fallbackUrl}
+					hlsOptions={hlsOptions}
+					hlsUrl={isHlsSource(videoSrc) ? videoSrc : videoInfo.hlsUrl}
+					mp4Url={videoInfo.mp4Url}
+				/>
+			</Zoomer>
 			<slot />
 		</Caption>
-	)
-) : videoInfo && videoSrc !== undefined && videoSrc !== '' ? (
-	<Caption {...captionProps}>
-		<Zoomer
-			{...zoomerProps}
-			href={fallbackUrl}
-			interactive
-			nativeWidth={videoInfo.width}
-			slot="media-component"
-		>
-			<VideoPlayer
-				{...sharedProps}
-				captions={videoInfo.captions}
-				element={videoElementMap[resolvedService]}
-				fallbackUrl={fallbackUrl}
-				hlsOptions={hlsOptions}
-				hlsUrl={isHlsSource(videoSrc) ? videoSrc : videoInfo.hlsUrl}
-				mp4Url={videoInfo.mp4Url}
-			/>
-		</Zoomer>
-		<slot />
-	</Caption>
-) : undefined}
+	) : undefined
+) : (
+	import.meta.env.DEV && <p style="font-family: monospace; color: red;">{fetchError}</p>
+)}

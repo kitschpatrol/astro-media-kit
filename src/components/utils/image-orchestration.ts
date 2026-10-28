@@ -220,9 +220,9 @@ export async function resolveSrcToMetadata(
 		}
 	} else {
 		const resolved =
-			srcDarkSource !== undefined && srcDarkSource !== ''
-				? await resolveImageSource(src, srcDarkSource)
-				: await resolveImageSource(src)
+			srcDarkSource === undefined || srcDarkSource === ''
+				? await resolveImageSource(src)
+				: await resolveImageSource(src, srcDarkSource)
 
 		if (isDarkLightImageMetadata(resolved)) {
 			imageMetadata = resolved.light
@@ -420,9 +420,9 @@ export function buildBackgroundStyle(options: {
 	const { background, backgroundDark, isSelector } = options
 	if (isSelector) {
 		const light =
-			background !== undefined && background !== '' ? `background-color:${background}` : undefined
+			background === undefined || background === '' ? undefined : `background-color:${background}`
 		const darkBg = backgroundDark ?? background
-		const dark = darkBg !== undefined && darkBg !== '' ? `background-color:${darkBg}` : undefined
+		const dark = darkBg === undefined || darkBg === '' ? undefined : `background-color:${darkBg}`
 		return { dark, light }
 	}
 

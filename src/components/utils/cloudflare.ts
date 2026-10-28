@@ -122,9 +122,9 @@ export async function cloudflareGetVideoInfo(
 	const videoInfo = await cloudflareApiGetVideo(config.accountId, mediaId, config.apiToken)
 
 	const logPrefix =
-		videoInfo.meta.name !== undefined && videoInfo.meta.name !== ''
-			? `Cloudflare video "${videoInfo.meta.name}" with id "${mediaId}"`
-			: `Cloudflare video with id "${mediaId}"`
+		videoInfo.meta.name === undefined || videoInfo.meta.name === ''
+			? `Cloudflare video with id "${mediaId}"`
+			: `Cloudflare video "${videoInfo.meta.name}" with id "${mediaId}"`
 
 	if (!videoInfo.readyToStream || videoInfo.status.state !== 'ready') {
 		throw new Error(`${logPrefix} is not ready to stream. Try again in a bit.`)

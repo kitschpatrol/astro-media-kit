@@ -92,11 +92,7 @@ const service: typeof baseSharpService = {
 		const base = await baseSharpService.transform(inputBuffer, transform, imageConfig, logger)
 		const config = (imageConfig.service.config as WatermarkServiceConfig).mediaKitWatermark
 
-		if (!config) {
-			return base
-		}
-
-		if (SKIP_FORMATS.has(base.format)) {
+		if (!config || SKIP_FORMATS.has(base.format)) {
 			return base
 		}
 
