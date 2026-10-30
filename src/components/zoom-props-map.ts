@@ -35,9 +35,10 @@ export type PrefixedProps = {
 	zoom?: Props['enabled']
 	/**
 	 * Secondary zoom level — the zoom applied when the user taps/clicks the
-	 * opened lightbox image. `'fit'` keeps the image fitted to the viewport,
-	 * `'fill'` zooms to cover the viewport (cropping the overflowing axis), and
-	 * `'native'` zooms to 100% (1:1 pixels).
+	 * opened lightbox image or presses its Zoom button. `'fit'` adds no second
+	 * level: the lightbox shows no Zoom button, and a click closes it. `'fill'`
+	 * zooms to cover the viewport (cropping the overflowing axis), and `'native'`
+	 * zooms to 100% (1:1 pixels).
 	 *
 	 * @default 'fit'
 	 */
