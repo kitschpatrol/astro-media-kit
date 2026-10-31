@@ -45,8 +45,7 @@ export default defineConfig({
 				img: {
 					autoImport: ['src', tldrawDarkImport],
 					caption: 'figure',
-					component: 'Picture',
-					componentModule: 'astro-media-kit/components',
+					component: 'src/components/CustomPicture.astro',
 				},
 			},
 			unwrapImages: true,

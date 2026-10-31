@@ -1,0 +1,20 @@
+---
+import type { PictureProps } from 'astro-media-kit/components'
+import { Picture as MediaKitPicture } from 'astro-media-kit/components'
+
+type Props = PictureProps
+
+const {
+	fallbackFormat = {
+		avif: 'webp',
+		tiff: 'webp',
+		unknown: 'webp',
+		webp: 'webp',
+	},
+	formats = { svg: ['svg'] },
+	inferSize = true,
+	...pictureProps
+} = Astro.props
+---
+
+<MediaKitPicture {fallbackFormat} {formats} {inferSize} {...pictureProps} />

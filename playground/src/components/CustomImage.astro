@@ -1,0 +1,10 @@
+---
+import type { ImageProps } from 'astro-media-kit/components'
+import { Image as MediaKitImage } from 'astro-media-kit/components'
+
+type Props = ImageProps
+
+const { inferSize = true, ...imageProps } = Astro.props
+---
+
+<MediaKitImage {inferSize} {...imageProps} />
