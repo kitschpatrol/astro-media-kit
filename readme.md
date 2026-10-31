@@ -38,6 +38,8 @@ It includes:
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus lightbox zoom.
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
+- **MediaTheme**\
+  Optional shared icon overrides for video, local audio, carousels, and the lightbox.
 - **Carousel**\
   Embedded carousel of any of the above, with buttons, swiping, dots, and captions, that opens into the lightbox.
 - **ZoomLink**\
@@ -395,6 +397,48 @@ import { Audio } from 'astro-media-kit/components'
 | `creditMediaType`    | `MediaType`                           | `'audio'`    |
 | `creditOrganization` | `string`                              | —            |
 
+Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
+
+### MediaTheme
+
+Place one optional `<MediaTheme>` in your page layout to replace decorative icons across the kit's video controls, local audio controls, carousels, and lightbox. Supply inline SVGs or Astro components that render a single SVG through named `icon-*` slots. Every omitted icon keeps its built-in artwork; without `MediaTheme`, all components work as usual.
+
+```astro
+---
+import { MediaTheme } from 'astro-media-kit/components'
+import PlayIcon from '../icons/PlayIcon.astro'
+import PauseIcon from '../icons/PauseIcon.astro'
+import CloseIcon from '../icons/CloseIcon.astro'
+---
+
+<MediaTheme>
+  <PlayIcon slot="icon-play" />
+  <PauseIcon slot="icon-pause" />
+  <CloseIcon slot="icon-close" />
+</MediaTheme>
+
+<slot />
+```
+
+| Slots                                                    | Used by                                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                  |
+| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                 |
+| `icon-spinner`                                           | Video and local audio buffering indicators                                            |
+| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                |
+| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                      |
+| `icon-expand`                                            | Video's on-page lightbox opener; defaults to the fullscreen-enter artwork             |
+| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon |
+| `icon-check`                                             | Local audio's selected playback-speed indicator                                       |
+| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts         |
+| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                        |
+
+Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG fail at build time.
+
+Overrides apply to the current document and refresh on Astro client-side navigation. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
+
+For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `.amk-video`. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Use the lightbox properties below for overlay controls. Carousel navigation has matching `--amk-carousel-control-size`, `--amk-carousel-control-color`, `--amk-carousel-control-background`, `--amk-carousel-control-hover-background`, `--amk-carousel-control-radius`, and `--amk-carousel-icon-size` variables. Their defaults match the lightbox controls; set them on `:root` or an individual `.amk-carousel`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
+
 ### ZoomLink
 
 A text link that opens an image or a video in the lightbox, for media the page doesn't show on its own. The media is rendered into an inert `<template>` inside the link, so nothing loads until the link is used; without JavaScript, the link goes to the image, or to the video's fallback file.
@@ -439,18 +483,26 @@ In the viewer:
 
 The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. The page-facing rules sit in the `amk-lightbox` cascade layer, so any of your styles override them. Set these custom properties on `:root` or `.amk-lightbox`:
 
-| Property                             | Default                           |
-| ------------------------------------ | --------------------------------- |
-| `--amk-lightbox-backdrop`            | `rgb(0 0 0 / 28.7%)`              |
-| `--amk-lightbox-duration`            | `0.4s` (`0s` with reduced motion) |
-| `--amk-lightbox-open-fade-duration`  | `0.3s` (`0s` with reduced motion) |
-| `--amk-lightbox-close-fade-duration` | `0.3s` (`0s` with reduced motion) |
-| `--amk-lightbox-carousel-duration`   | `0.4s` (`0s` with reduced motion) |
-| `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
-| `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
-| `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
+| Property                                  | Default                           |
+| ----------------------------------------- | --------------------------------- |
+| `--amk-lightbox-backdrop`                 | `rgb(0 0 0 / 28.7%)`              |
+| `--amk-lightbox-duration`                 | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-open-fade-duration`       | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-close-fade-duration`      | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-carousel-duration`        | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-easing`                   | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
+| `--amk-lightbox-gutter`                   | `clamp(0.75rem, 5vmin, 4rem)`     |
+| `--amk-lightbox-caption-width`            | `min(20rem, 30vw)`                |
+| `--amk-lightbox-control-size`             | `2.75rem`                         |
+| `--amk-lightbox-control-color`            | `#f4f4f5`                         |
+| `--amk-lightbox-control-background`       | `rgb(0 0 0 / 60%)`                |
+| `--amk-lightbox-control-hover-background` | `rgb(0 0 0 / 80%)`                |
+| `--amk-lightbox-control-radius`           | `50%`                             |
+| `--amk-lightbox-icon-size`                | `1.25rem`                         |
 
 `--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands; `--amk-lightbox-carousel-duration` times the carousel spring. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+
+Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
 
 The lightbox targets current browsers (Chrome or Edge 139, Firefox 144, and Safari 26.2 or newer, the first with the invoker commands it uses). Where `moveBefore()` is missing, as in Safari, elements move with a plain insertion: video keeps playing, but iframes inside a lifted element reload, and a player's popups start over. Where `sizes="auto"` is missing, images keep their page-sized candidate in the viewer unless they were warmed on hover or focus first.
 

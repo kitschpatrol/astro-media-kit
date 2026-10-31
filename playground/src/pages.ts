@@ -8,6 +8,7 @@ export const pages = [
 	{ href: '/srcset', title: 'Srcset' },
 	{ href: '/video-component', title: 'Video' },
 	{ href: '/audio-component', title: 'Audio' },
+	{ href: '/media-theme', title: 'Media theme' },
 	{ href: '/zoom', title: 'Zoom' },
 	{ href: '/carousel', title: 'Carousel' },
 	{ href: '/mdx', title: 'MDX' },

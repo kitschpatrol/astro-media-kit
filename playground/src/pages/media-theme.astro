@@ -1,0 +1,65 @@
+---
+import { Audio, Carousel, Image, MediaTheme, Video } from 'astro-media-kit/components'
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Media theme">
+	<MediaTheme>
+		<svg fill="none" slot="icon-play" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			<path d="m8 4 12 8-12 8Z" />
+		</svg>
+		<svg fill="none" slot="icon-pause" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			<path d="M7 4v16M17 4v16" />
+		</svg>
+		<svg fill="none" slot="icon-close" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			<path d="m5 5 14 14M19 5 5 19" />
+		</svg>
+		<svg
+			fill="none"
+			slot="icon-previous"
+			stroke="currentColor"
+			stroke-width="2"
+			viewBox="0 0 24 24"
+		>
+			<path d="m15 5-7 7 7 7" />
+		</svg>
+		<svg fill="none" slot="icon-next" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			<path d="m9 5 7 7-7 7" />
+		</svg>
+	</MediaTheme>
+	<h1>Media theme</h1>
+	<p class="note">
+		One MediaTheme supplies outlined play and pause icons to both players, a close icon to the
+		lightbox, and navigation arrows to the lightbox and carousel. Other icons retain their defaults.
+	</p>
+	<h2>Audio</h2>
+	<Audio src="/test.mp3" />
+	<h2>Video</h2>
+	<Video src="/test.mp4" zoom="themed" />
+	<h2>Lightbox</h2>
+	<Image alt="A themed lightbox" src="../assets/test.jpeg" zoom="themed" zoomLevel="native" />
+	<h2>Carousel</h2>
+	<Carousel>
+		<Image alt="First carousel image" src="../assets/test.jpeg" zoom="themed" />
+		<Image alt="Second carousel image" src="../assets/test-dark.jpeg" zoom="themed" />
+	</Carousel>
+</Layout>
+
+<style is:global>
+	:root {
+		--amk-lightbox-backdrop: rgb(0 0 0 / 75%);
+		--amk-lightbox-control-radius: 0.5rem;
+		--amk-lightbox-control-color: #ffdb80;
+		--amk-carousel-control-radius: 0.5rem;
+		--amk-carousel-control-color: #ffdb80;
+	}
+
+	.amk-video {
+		--amk-control-color: #ffdb80;
+	}
+
+	.amk-audio {
+		--media-accent-color: #b47700;
+		--media-font-family: system-ui, sans-serif;
+	}
+</style>
