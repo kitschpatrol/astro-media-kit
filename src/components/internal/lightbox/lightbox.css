@@ -17,6 +17,12 @@
 		--amk-lightbox-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
 		--amk-lightbox-gutter: clamp(0.75rem, 5vmin, 4rem);
 		--amk-lightbox-caption-width: min(20rem, 30vw);
+		--amk-lightbox-control-size: 2.75rem;
+		--amk-lightbox-control-color: #f4f4f5;
+		--amk-lightbox-control-background: rgb(0 0 0 / 60%);
+		--amk-lightbox-control-hover-background: rgb(0 0 0 / 80%);
+		--amk-lightbox-control-radius: 50%;
+		--amk-lightbox-icon-size: 1.25rem;
 	}
 
 	/* A block, so a link around a picture has the picture's layout */
@@ -395,18 +401,29 @@
 	position: absolute;
 	display: grid;
 	place-items: center;
-	width: 2.75rem;
-	height: 2.75rem;
+	width: var(--amk-lightbox-control-size);
+	height: var(--amk-lightbox-control-size);
 	padding: 0;
 	border: 0;
-	border-radius: 50%;
-	color: #f4f4f5;
-	background: rgb(0 0 0 / 60%);
+	border-radius: var(--amk-lightbox-control-radius);
+	color: var(--amk-lightbox-control-color);
+	background: var(--amk-lightbox-control-background);
 }
 
-.amk-lightbox-button svg {
-	width: 1.25rem;
-	height: 1.25rem;
+.amk-lightbox-icon {
+	pointer-events: none;
+	display: block;
+	width: var(--amk-lightbox-icon-size);
+	height: var(--amk-lightbox-icon-size);
+}
+
+.amk-lightbox-icon > svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.amk-lightbox-default-icon {
 	fill: none;
 	stroke: currentcolor;
 	stroke-linecap: round;
@@ -434,8 +451,9 @@
 	right: max(env(safe-area-inset-right), 0.75rem);
 }
 
-/* Shows the magnifier's minus while zoomed; the label stays "Zoom" */
-.amk-lightbox-zoom[aria-pressed='true'] .amk-lightbox-zoom-plus {
+/* State belongs to the button, independent of the supplied icon artwork. */
+.amk-lightbox-zoom[aria-pressed='false'] [data-amk-icon='zoom-out'],
+.amk-lightbox-zoom[aria-pressed='true'] [data-amk-icon='zoom-in'] {
 	display: none;
 }
 
@@ -458,7 +476,7 @@
 	inset-inline-end: max(env(safe-area-inset-left), env(safe-area-inset-right), 0.75rem);
 }
 
-.amk-lightbox:dir(rtl) :is(.amk-lightbox-previous, .amk-lightbox-next) svg {
+.amk-lightbox:dir(rtl) :is(.amk-lightbox-previous, .amk-lightbox-next) .amk-lightbox-icon {
 	scale: -1 1;
 }
 
@@ -500,6 +518,6 @@
 
 @media (hover: hover) {
 	.amk-lightbox-button:not([aria-disabled='true']):hover {
-		background: rgb(0 0 0 / 80%);
+		background: var(--amk-lightbox-control-hover-background);
 	}
 }

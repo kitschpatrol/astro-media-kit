@@ -1,0 +1,39 @@
+---
+import { Carousel, MediaTheme, Zoomer } from 'astro-media-kit/components'
+import ThemeIcon from '../components/ThemeIcon.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Image-only media theme</title>
+	</head>
+	<body>
+		<MediaTheme>
+			<ThemeIcon name="image-only" slot="icon-close" />
+			<ThemeIcon name="carousel-previous" slot="icon-previous" />
+			<ThemeIcon name="carousel-next" slot="icon-next" />
+		</MediaTheme>
+		<Carousel class="themed-carousel" dots>
+			<Zoomer enabled="themed-carousel">
+				<div style="width: 200px; height: 100px; background: teal">Content</div>
+			</Zoomer>
+			<Zoomer enabled="themed-carousel">
+				<div style="width: 200px; height: 100px; background: navy">More content</div>
+			</Zoomer>
+		</Carousel>
+	</body>
+</html>
+
+<style is:global>
+	.themed-carousel {
+		--amk-carousel-control-size: 48px;
+		--amk-carousel-control-radius: 8px;
+		--amk-carousel-control-color: rgb(250 220 100);
+		--amk-carousel-icon-size: 28px;
+
+		width: 400px;
+		max-width: 100%;
+	}
+</style>

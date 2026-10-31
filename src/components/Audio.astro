@@ -4,6 +4,7 @@ import type { AudioService } from './utils/audio'
 import type { OembedInfo } from './utils/oembed'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
+import AudioPlayer from './internal/AudioPlayer.astro'
 import FallbackLink from './internal/FallbackLink.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
@@ -99,11 +100,6 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 }
 ---
 
-{resolvedService === 'local' && <script>
-	import '@videojs/html/audio/player'
-	import '@videojs/html/audio/skin'
-</script>}
-
 {fetchError === undefined || fetchError === '' ? (
 	<Caption {...captionProps}>
 		{resolvedService === 'oembed' ? (
@@ -117,13 +113,14 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 				/>
 			)
 		) : resolvedService === 'local' ? (
-			<div aria-label={resolvedLabel} class="amk not-content" role="group" slot="media-component">
+			<div
+				aria-label={resolvedLabel}
+				class="amk amk-audio not-content"
+				role="group"
+				slot="media-component"
+			>
 				{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
-				<audio-player>
-					<audio-skin>
-						<audio {...audioAttributes} />
-					</audio-skin>
-				</audio-player>
+				<AudioPlayer attributes={audioAttributes} label={resolvedLabel} />
 				<noscript>
 					<audio {...audioAttributes} controls />
 				</noscript>

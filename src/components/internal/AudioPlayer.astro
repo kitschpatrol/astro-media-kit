@@ -1,0 +1,256 @@
+---
+import './audio/skin.css'
+
+export type Props = {
+	attributes: astroHTML.JSX.AudioHTMLAttributes
+	label: string
+}
+
+const { attributes, label } = Astro.props
+const uid = `amk-audio-${crypto.randomUUID()}`
+// Adapted from the Video.js 10.2.0 HTML audio skin source (Apache-2.0).
+// https://shadcn.videojs.org/r/html/audio.json
+---
+
+<script>
+	import './videojs-audio'
+</script>
+
+<audio-player>
+	<media-container
+		aria-label={label}
+		class="media-skin media-container audio-skin"
+		data-preset="audio"
+		data-theme="default"
+	>
+		{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- Audio has no visual content requiring a caption track */}
+		<audio {...attributes} />
+		<media-error-dialog class="audio-dialog-root">
+			<media-dialog-backdrop class="audio-dialog-backdrop"></media-dialog-backdrop>
+			<media-dialog-popup class="audio-dialog-popup">
+				<div class="audio-dialog-content">
+					<media-dialog-title class="audio-dialog-title"></media-dialog-title>
+					<media-dialog-description class="audio-dialog-description"></media-dialog-description>
+				</div>
+				<div class="audio-dialog-actions">
+					<media-dialog-close class="media-button audio-dialog-close"></media-dialog-close>
+				</div>
+			</media-dialog-popup>
+		</media-error-dialog>
+		<media-controls visibility="always">
+			<media-controls-content class="audio-controls audio-controls-content">
+				<media-tooltip-group>
+					<media-controls-group class="audio-controls-start">
+						<div class="audio-play-button">
+							<media-buffering-indicator class="media-buffering-indicator audio-play-button-buffering-indicator">
+								<media-icon
+									class="media-buffering-indicator-spinner-icon"
+									family="amk"
+									name="spinner"
+								></media-icon>
+							</media-buffering-indicator>
+							<media-play-button class="media-button media-play-button" id={`${uid}-0`}>
+								<media-icon
+									class="media-button-icon media-play-button-restart-icon"
+									family="amk"
+									name="restart"
+								></media-icon>
+								<media-icon
+									class="media-button-icon media-play-button-play-icon"
+									family="amk"
+									name="play"
+								></media-icon>
+								<media-icon
+									class="media-button-icon media-play-button-pause-icon"
+									family="amk"
+									name="pause"
+								></media-icon>
+							</media-play-button>
+							<media-tooltip
+								boundary="viewport"
+								class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"
+								side="top"
+								trigger={`${uid}-0`}
+							>
+								<media-tooltip-label></media-tooltip-label>
+								<media-tooltip-shortcut class="media-tooltip-shortcut"></media-tooltip-shortcut>
+							</media-tooltip>
+						</div>
+						<media-seek-button
+							class="media-button media-seek-button audio-seek-button"
+							id={`${uid}-1`}
+							seconds="-10"
+						>
+							<div class="media-seek-button-content">
+								<media-icon
+									class="media-button-icon media-seek-button-backward-icon"
+									family="amk"
+									name="seek"
+								></media-icon>
+								<span class="media-seek-button-label media-seek-button-backward-label">10</span>
+							</div>
+						</media-seek-button>
+						<media-tooltip
+							boundary="viewport"
+							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"
+							side="top"
+							trigger={`${uid}-1`}
+						>
+							<media-tooltip-label></media-tooltip-label>
+							<media-tooltip-shortcut class="media-tooltip-shortcut"></media-tooltip-shortcut>
+						</media-tooltip>
+						<media-seek-button
+							class="media-button media-seek-button audio-seek-button"
+							id={`${uid}-2`}
+							seconds="10"
+						>
+							<div class="media-seek-button-content">
+								<media-icon class="media-button-icon" family="amk" name="seek"></media-icon>
+								<span class="media-seek-button-label media-seek-button-forward-label">10</span>
+							</div>
+						</media-seek-button>
+						<media-tooltip
+							boundary="viewport"
+							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"
+							side="top"
+							trigger={`${uid}-2`}
+						>
+							<media-tooltip-label></media-tooltip-label>
+							<media-tooltip-shortcut class="media-tooltip-shortcut"></media-tooltip-shortcut>
+						</media-tooltip>
+					</media-controls-group>
+					<media-controls-group class="audio-time-slider-group">
+						<media-time class="media-time-value" type="current"></media-time>
+						<media-time-slider class="media-slider audio-time-slider">
+							<media-slider-track class="media-slider-track">
+								<media-slider-buffer class="media-slider-buffer"></media-slider-buffer>
+								<media-slider-fill class="media-slider-fill"></media-slider-fill>
+							</media-slider-track>
+							<media-slider-thumb class="media-slider-thumb audio-time-slider-thumb"></media-slider-thumb>
+							<media-slider-preview class="media-slider-preview" overflow="visible">
+								<div class="media-slider-preview-content media-popup-surface media-tooltip audio-time-slider-preview-content">
+									<media-slider-value
+										class="audio-time-slider-value"
+										type="pointer"
+									></media-slider-value>
+								</div>
+							</media-slider-preview>
+						</media-time-slider>
+						<media-time
+							class="media-time-toggle audio-time-remaining-value"
+							toggle
+							type="remaining"
+						></media-time>
+					</media-controls-group>
+					<media-controls-group class="audio-controls-end">
+						<media-playback-rate-button
+							class="media-button media-playback-rate-button"
+							commandfor={`${uid}-4`}
+							id={`${uid}-3`}
+						></media-playback-rate-button>
+						<media-tooltip
+							boundary="viewport"
+							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"
+							side="top"
+							trigger={`${uid}-3`}
+						>
+							<media-tooltip-label></media-tooltip-label>
+							<media-tooltip-shortcut class="media-tooltip-shortcut"></media-tooltip-shortcut>
+						</media-tooltip>
+						<media-menu
+							align="center"
+							boundary="viewport"
+							class="media-popup media-popup-surface media-menu-popup audio-settings-menu-popup"
+							id={`${uid}-4`}
+							side="top"
+						>
+							<media-menu-content class="media-menu-content">
+								<media-playback-rate-radio-group class="media-menu-radio-group">
+									<template>
+										<media-menu-radio-item class="media-menu-radio-item">
+											<span data-part="label"></span>
+											<media-menu-item-indicator class="media-menu-item-indicator" force-mount>
+												<media-icon
+													class="media-menu-radio-item-icon"
+													family="amk"
+													name="check"
+												></media-icon>
+											</media-menu-item-indicator>
+										</media-menu-radio-item>
+									</template>
+								</media-playback-rate-radio-group>
+							</media-menu-content>
+						</media-menu>
+						<media-mute-button
+							class="media-button media-mute-button"
+							commandfor={`${uid}-6`}
+							id={`${uid}-5`}
+						>
+							<media-icon
+								class="media-button-icon media-mute-button-off-icon"
+								family="amk"
+								name="volume-off"
+							></media-icon>
+							<media-icon
+								class="media-button-icon media-mute-button-low-icon"
+								family="amk"
+								name="volume-low"
+							></media-icon>
+							<media-icon
+								class="media-button-icon media-mute-button-high-icon"
+								family="amk"
+								name="volume-high"
+							></media-icon>
+						</media-mute-button>
+						<media-tooltip
+							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"
+							delay="0"
+							disabled
+							side="top"
+							sticky
+							trigger={`${uid}-5`}
+						>
+							<media-tooltip-label></media-tooltip-label>
+							<media-tooltip-shortcut class="media-tooltip-shortcut"></media-tooltip-shortcut>
+						</media-tooltip>
+						<media-volume-popover
+							boundary="viewport"
+							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-volume-popover"
+							close-delay="100"
+							delay="200"
+							id={`${uid}-6`}
+							open-on-hover
+							side="top"
+						>
+							<media-volume-slider
+								class="media-slider media-volume-slider"
+								orientation="vertical"
+								thumb-alignment="edge"
+							>
+								<media-slider-track class="media-slider-track">
+									<media-slider-fill class="media-slider-fill"></media-slider-fill>
+								</media-slider-track>
+								<media-slider-thumb class="media-slider-thumb media-volume-slider-thumb"></media-slider-thumb>
+							</media-volume-slider>
+						</media-volume-popover>
+					</media-controls-group>
+				</media-tooltip-group>
+			</media-controls-content>
+		</media-controls>
+		<media-hotkey action="togglePaused" keys="Space"></media-hotkey>
+		<media-hotkey action="togglePaused" keys="k"></media-hotkey>
+		<media-hotkey action="toggleMuted" keys="m"></media-hotkey>
+		<media-hotkey action="seekStep" keys="ArrowRight"></media-hotkey>
+		<media-hotkey action="seekStep" keys="ArrowLeft"></media-hotkey>
+		<media-hotkey action="seekStep" keys="l"></media-hotkey>
+		<media-hotkey action="seekStep" keys="j"></media-hotkey>
+		<media-hotkey action="volumeStep" keys="ArrowUp"></media-hotkey>
+		<media-hotkey action="volumeStep" keys="ArrowDown"></media-hotkey>
+		<media-hotkey action="seekToPercent" keys="0-9"></media-hotkey>
+		<media-hotkey action="seekToPercent" keys="Home" value="0"></media-hotkey>
+		<media-hotkey action="seekToPercent" keys="End" value="100"></media-hotkey>
+		<media-hotkey action="speedUp" keys=">"></media-hotkey>
+		<media-hotkey action="speedDown" keys="<"></media-hotkey>
+		<media-status-announcer class="media-status-announcer"></media-status-announcer>
+	</media-container>
+</audio-player>

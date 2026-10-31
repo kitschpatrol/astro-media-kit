@@ -1,14 +1,23 @@
-/* Styles for the Audio component's local-file player. The packaged Video.js
-   audio skin draws its own controls and follows the page's `color-scheme`;
-   this only sizes its host. Prefixed with .amk for scope protection. */
+/* The local audio skin keeps Video.js's audio layout and theme, with its
+   source owned by the kit so icons can use the shared media theme. */
 
 .amk audio-player {
 	display: contents;
 }
 
-.amk audio-skin {
+.amk-audio .audio-skin {
 	display: block;
 	max-width: 100%;
+}
+
+.amk-audio audio,
+.amk-audio media-hotkey {
+	display: none;
+}
+
+.amk-audio media-controls,
+.amk-audio media-tooltip-group {
+	display: contents;
 }
 
 .amk-soundcloud {

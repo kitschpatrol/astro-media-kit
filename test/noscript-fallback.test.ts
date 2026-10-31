@@ -108,6 +108,6 @@ describe('noscript fallback server markup', () => {
 		expect(audio?.is('[loop]')).toBe(true)
 		expect(audio?.attr('preload')).toBe('none')
 		expect(audio?.attr('src')).toBe('/media/loop.mp4')
-		expect($('#audio audio-skin > audio').attr('src')).toBe('/media/loop.mp4')
+		expect($('#audio audio-player > media-container > audio').attr('src')).toBe('/media/loop.mp4')
 	})
 })

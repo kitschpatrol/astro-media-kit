@@ -1,0 +1,73 @@
+---
+import { Audio, MediaTheme, Zoomer } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+import { ClientRouter } from 'astro:transitions'
+import ThemeIcon from '../components/ThemeIcon.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Custom media icons</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<MediaTheme>
+			<ThemeIcon name="play" slot="icon-play" />
+			<ThemeIcon name="pause" slot="icon-pause" />
+			<ThemeIcon name="volume-off" slot="icon-volume-off" />
+			<ThemeIcon name="seek" slot="icon-seek" />
+			<ThemeIcon name="check" slot="icon-check" />
+			<ThemeIcon name="close" slot="icon-close" />
+			<ThemeIcon name="next" slot="icon-next" />
+			<ThemeIcon name="zoom-in" slot="icon-zoom-in" />
+			<ThemeIcon name="zoom-out" slot="icon-zoom-out" />
+		</MediaTheme>
+		<a href="/zoom/index.html" id="navigate-default">
+			Default theme
+		</a>
+		<a href="/media-theme-next/index.html" id="navigate-themed">
+			Another theme
+		</a>
+		<section id="audio">
+			<Audio label="Themed audio" service="local" src="/media/loop.mp4" />
+			<Audio label="Second audio" service="local" src="/media/loop.mp4" />
+		</section>
+		<section id="video">
+			<VideoPlayer
+				aspectRatio="16 / 9"
+				autoPlay={false}
+				captions={[]}
+				controls="full"
+				element="video"
+				fallbackUrl="/media/loop.mp4"
+				hlsOptions={{}}
+				intrinsicWidth={640}
+				loop={true}
+				muted={true}
+				posterUrl={undefined}
+				preload="auto"
+				resolvedLabel="Themed video"
+				videoSrc="/media/loop.mp4"
+				zoom={false}
+			/>
+		</section>
+		<Zoomer enabled="themed" level="fill">
+			<div style="width: 240px; height: 160px; background: teal">First slide</div>
+		</Zoomer>
+		<Zoomer enabled="themed" level="fill">
+			<div style="width: 240px; height: 160px; background: navy">Second slide</div>
+		</Zoomer>
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--amk-lightbox-duration: 0s;
+		--amk-lightbox-control-size: 52px;
+		--amk-lightbox-control-radius: 8px;
+		--amk-lightbox-control-color: rgb(250 220 100);
+		--amk-lightbox-icon-size: 28px;
+	}
+</style>

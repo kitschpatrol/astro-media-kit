@@ -1,0 +1,27 @@
+---
+import { Audio, MediaTheme, Zoomer } from 'astro-media-kit/components'
+import { ClientRouter } from 'astro:transitions'
+import ThemeIcon from '../components/ThemeIcon.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Another media theme</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<MediaTheme>
+			<ThemeIcon name="new-play" slot="icon-play" />
+			<ThemeIcon name="new-close" slot="icon-close" />
+		</MediaTheme>
+		<a href="/zoom/index.html" id="navigate-default">
+			Default theme
+		</a>
+		<Audio label="Another themed audio" service="local" src="/media/loop.mp4" />
+		<Zoomer enabled>
+			<div style="width: 240px; height: 160px; background: teal">Another slide</div>
+		</Zoomer>
+	</body>
+</html>

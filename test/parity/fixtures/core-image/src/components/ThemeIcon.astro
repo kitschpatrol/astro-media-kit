@@ -1,0 +1,8 @@
+---
+type Props = { name: string }
+const { name: iconName } = Astro.props
+---
+
+<svg aria-hidden="true" data-custom-icon={iconName} fill="currentColor" viewBox="0 0 24 24">
+	<path d="M12 2 22 12 12 22 2 12Z" />
+</svg>

@@ -41,7 +41,10 @@
 		"./src/components/internal/videojs-move.ts",
 		"./src/components/internal/videojs-mute-button.ts",
 		"./src/components/internal/videojs-player.ts",
-		"./src/components/internal/videojs-ui.ts"
+		"./src/components/internal/videojs-ui.ts",
+		"./src/components/internal/media-theme.ts",
+		"./src/components/internal/videojs-icons.ts",
+		"./src/components/internal/videojs-audio.ts"
 	],
 	"type": "module",
 	"exports": {

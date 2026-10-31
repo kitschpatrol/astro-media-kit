@@ -1,0 +1,19 @@
+---
+import PlayerOrder from '../components/PlayerOrder.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Audio controls register first</title>
+	</head>
+	<body>
+		<PlayerOrder />
+	</body>
+</html>
+
+<script>
+	import 'astro-media-kit/components/internal/videojs-audio.ts'
+	import 'astro-media-kit/components/internal/videojs-ui.ts'
+</script>

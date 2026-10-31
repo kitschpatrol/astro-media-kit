@@ -39,23 +39,10 @@ import {
 	VolumePopoverElement,
 	VolumeSliderElement,
 } from '@videojs/html'
-import {
-	captionsOffIcon,
-	captionsOnIcon,
-	fullscreenEnterIcon,
-	fullscreenExitIcon,
-	pauseIcon,
-	playIcon,
-	registerIcons,
-	restartIcon,
-	spinnerIcon,
-	volumeHighIcon,
-	volumeLowIcon,
-	volumeOffIcon,
-} from '@videojs/html/icons'
 import './videojs-controls'
 import './videojs-mute-button'
 import './videojs-player'
+import './videojs-icons'
 
 // The constructors come from the public API without registration side effects.
 // Providers precede their parts, including controls and tooltip context.
@@ -97,22 +84,3 @@ for (const element of [
 		customElements.define(element.tagName, element)
 	}
 }
-
-// Register the icons the bars use into the `default` family explicitly.
-// Registration merges, so this combines with the packaged audio skin (which
-// registers its own subset into the same family) regardless of load order.
-// The lazy family loader would not run once the audio skin had populated the
-// family, leaving the captions and fullscreen icons blank on pages with both.
-registerIcons('default', {
-	'captions-off': captionsOffIcon,
-	'captions-on': captionsOnIcon,
-	'fullscreen-enter': fullscreenEnterIcon,
-	'fullscreen-exit': fullscreenExitIcon,
-	pause: pauseIcon,
-	play: playIcon,
-	restart: restartIcon,
-	spinner: spinnerIcon,
-	'volume-high': volumeHighIcon,
-	'volume-low': volumeLowIcon,
-	'volume-off': volumeOffIcon,
-})

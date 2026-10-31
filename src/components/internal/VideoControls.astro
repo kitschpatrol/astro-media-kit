@@ -20,9 +20,9 @@ const uid = `amk-${crypto.randomUUID()}`
 	<media-controls-content class="amk-controls">
 		{controls === 'minimal' && (
 			<media-play-button class="amk-button amk-center-play">
-				<media-icon class="amk-icon-play" name="play" />
-				<media-icon class="amk-icon-pause" name="pause" />
-				<media-icon class="amk-icon-restart" name="restart" />
+				<media-icon class="amk-icon-play" family="amk" name="play" />
+				<media-icon class="amk-icon-pause" family="amk" name="pause" />
+				<media-icon class="amk-icon-restart" family="amk" name="restart" />
 			</media-play-button>
 		)}
 		<media-tooltip-group>
@@ -30,9 +30,9 @@ const uid = `amk-${crypto.randomUUID()}`
 				{hasBar && (
 					<div class="amk-playback">
 						<media-play-button class="amk-button" id={`${uid}-play`}>
-							<media-icon class="amk-icon-play" name="play" />
-							<media-icon class="amk-icon-pause" name="pause" />
-							<media-icon class="amk-icon-restart" name="restart" />
+							<media-icon class="amk-icon-play" family="amk" name="play" />
+							<media-icon class="amk-icon-pause" family="amk" name="pause" />
+							<media-icon class="amk-icon-restart" family="amk" name="restart" />
 						</media-play-button>
 						<media-tooltip
 							boundary="viewport"
@@ -44,9 +44,9 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 						</media-tooltip>
 						<amk-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
-							<media-icon class="amk-icon-volume-off" name="volume-off" />
-							<media-icon class="amk-icon-volume-low" name="volume-low" />
-							<media-icon class="amk-icon-volume-high" name="volume-high" />
+							<media-icon class="amk-icon-volume-off" family="amk" name="volume-off" />
+							<media-icon class="amk-icon-volume-low" family="amk" name="volume-low" />
+							<media-icon class="amk-icon-volume-high" family="amk" name="volume-high" />
 						</amk-mute-button>
 						<media-volume-popover
 							boundary="viewport"
@@ -78,8 +78,8 @@ const uid = `amk-${crypto.randomUUID()}`
 							<media-time type="duration" />
 						</media-time-group>
 						<media-captions-button class="amk-button" id={`${uid}-captions`}>
-							<media-icon class="amk-icon-captions-off" name="captions-off" />
-							<media-icon class="amk-icon-captions-on" name="captions-on" />
+							<media-icon class="amk-icon-captions-off" family="amk" name="captions-off" />
+							<media-icon class="amk-icon-captions-on" family="amk" name="captions-on" />
 						</media-captions-button>
 						<media-tooltip
 							boundary="viewport"
@@ -102,7 +102,7 @@ const uid = `amk-${crypto.randomUUID()}`
 								id={`${uid}-zoom`}
 								type="button"
 							>
-								<media-icon class="amk-icon-zoom-enter" name="fullscreen-enter" />
+								<media-icon class="amk-icon-zoom-enter" family="amk" name="expand" />
 							</button>
 							<media-tooltip
 								boundary="viewport"
@@ -116,8 +116,12 @@ const uid = `amk-${crypto.randomUUID()}`
 					) : (
 						<>
 							<media-fullscreen-button class="amk-button" id={`${uid}-fullscreen`}>
-								<media-icon class="amk-icon-fullscreen-enter" name="fullscreen-enter" />
-								<media-icon class="amk-icon-fullscreen-exit" name="fullscreen-exit" />
+								<media-icon
+									class="amk-icon-fullscreen-enter"
+									family="amk"
+									name="fullscreen-enter"
+								/>
+								<media-icon class="amk-icon-fullscreen-exit" family="amk" name="fullscreen-exit" />
 							</media-fullscreen-button>
 							<media-tooltip
 								boundary="viewport"
