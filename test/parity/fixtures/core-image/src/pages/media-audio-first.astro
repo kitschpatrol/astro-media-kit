@@ -14,6 +14,16 @@ import PlayerOrder from '../components/PlayerOrder.astro'
 </html>
 
 <script>
-	import 'astro-media-kit/components/internal/videojs-audio.ts'
-	import 'astro-media-kit/components/internal/videojs-ui.ts'
+	async function initialize() {
+		await import('astro-media-kit/components/internal/videojs-audio.ts')
+		document.documentElement.dataset.firstHasSeek = String(
+			Boolean(customElements.get('media-seek-button')),
+		)
+		document.documentElement.dataset.firstHasFullscreen = String(
+			Boolean(customElements.get('media-fullscreen-button')),
+		)
+		await import('astro-media-kit/components/internal/videojs-ui.ts')
+	}
+
+	void initialize()
 </script>

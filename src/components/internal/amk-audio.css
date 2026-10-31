@@ -8,6 +8,10 @@
 .amk-audio .audio-skin {
 	display: block;
 	max-width: 100%;
+	/* Reserve the bar until its stylesheet arrives, without painting raw controls. */
+	min-height: calc(var(--media-scale-unit, 16px) * 2.75);
+	max-height: var(--amk-audio-skin-max-height, calc(var(--media-scale-unit, 16px) * 2.75));
+	visibility: var(--amk-audio-skin-visibility, hidden);
 }
 
 .amk-audio audio,

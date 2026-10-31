@@ -4,6 +4,11 @@
    Selectors stay inside .amk-audio without adding specificity. See notice.txt. */
 /* stylelint-disable no-descending-specificity -- Preserve the upstream skin's grouped control states. */
 @layer base {
+	:where(.amk-audio) {
+		--amk-audio-skin-max-height: none;
+		--amk-audio-skin-visibility: visible;
+	}
+
 	:where(.amk-audio) :where(.media-skin) {
 		font-weight: 400;
 		font-style: normal;

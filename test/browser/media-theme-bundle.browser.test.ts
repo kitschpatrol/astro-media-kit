@@ -18,6 +18,10 @@ it.each(['media-audio-first', 'media-video-first'])(
 				)
 				.toBe('Play')
 			const root: Document = frame.contentDocument!
+			expect(root.documentElement.dataset.firstHasSeek).toBe(String(route === 'media-audio-first'))
+			expect(root.documentElement.dataset.firstHasFullscreen).toBe(
+				String(route === 'media-video-first'),
+			)
 			for (const kind of ['audio-player', 'video-player']) {
 				const player = root.querySelector<HTMLElement>(kind)!
 				await expect
@@ -54,6 +58,13 @@ it('initializes both player themes and refreshes the cached viewer across Astro 
 			.toBe('Play')
 		const root: Document = frame.contentDocument!
 		await expect.poll(() => root.readyState).toBe('complete')
+		await expect
+			.poll(
+				() =>
+					getComputedStyle(root.querySelector<HTMLElement>(':scope audio-player media-container')!)
+						.visibility,
+			)
+			.toBe('visible')
 		for (const kind of ['audio-player', 'video-player']) {
 			await expect
 				.poll(
@@ -80,6 +91,13 @@ it('initializes both player themes and refreshes the cached viewer across Astro 
 		await expect
 			.poll(
 				() =>
+					getComputedStyle(root.querySelector<HTMLElement>(':scope audio-player media-container')!)
+						.visibility,
+			)
+			.toBe('visible')
+		await expect
+			.poll(
+				() =>
 					root.querySelector<SVGElement>(':scope audio-player media-icon[name="play"] svg')?.dataset
 						.customIcon,
 			)
@@ -97,6 +115,13 @@ it('initializes both player themes and refreshes the cached viewer across Astro 
 		root.querySelector<HTMLElement>(':scope #navigate-default')!.click()
 		await expect.poll(() => root.title, { timeout: 5000 }).toBe('Zoom integration')
 		expect(frame.contentDocument).toBe(root)
+		await expect
+			.poll(
+				() =>
+					getComputedStyle(root.querySelector<HTMLElement>(':scope audio-player media-container')!)
+						.visibility,
+			)
+			.toBe('visible')
 		await expect
 			.poll(() => root.querySelector<SVGElement>(':scope audio-player media-icon[name="play"] svg'))
 			.not.toBeNull()

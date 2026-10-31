@@ -397,7 +397,7 @@ import { Audio } from 'astro-media-kit/components'
 | `creditMediaType`    | `MediaType`                           | `'audio'`    |
 | `creditOrganization` | `string`                              | —            |
 
-Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
+Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. Its skin stylesheet is requested only when a local audio player renders. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
 
 ### MediaTheme
 
@@ -435,7 +435,7 @@ import CloseIcon from '../icons/CloseIcon.astro'
 
 Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG fail at build time.
 
-Overrides apply to the current document and refresh on Astro client-side navigation. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
+Overrides apply to the current document and refresh on Astro client-side navigation. `MediaTheme` emits inert template content, so it adds no layout box and can also sit inside a Carousel without becoming a slide. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
 
 For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `.amk-video`. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Use the lightbox properties below for overlay controls. Carousel navigation has matching `--amk-carousel-control-size`, `--amk-carousel-control-color`, `--amk-carousel-control-background`, `--amk-carousel-control-hover-background`, `--amk-carousel-control-radius`, and `--amk-carousel-icon-size` variables. Their defaults match the lightbox controls; set them on `:root` or an individual `.amk-carousel`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
 

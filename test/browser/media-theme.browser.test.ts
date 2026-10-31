@@ -85,6 +85,23 @@ it('applies partial overrides to both players and keeps unrelated icon families 
 		.not.toBeNull()
 })
 
+it('reserves the audio bar without showing raw controls while its skin loads', async () => {
+	const fixture = await mountPage('/media-theme/')
+	const links = fixture.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')
+	for (const link of links) {
+		link.disabled = true
+	}
+
+	const skin = query(fixture, 'audio-player media-container')
+	expect(getComputedStyle(skin).visibility).toBe('hidden')
+	expect(skin.getBoundingClientRect().height).toBe(44)
+	for (const link of links) {
+		link.disabled = false
+	}
+
+	await expect.poll(() => getComputedStyle(skin).visibility).toBe('visible')
+})
+
 it('themes lightbox controls, preserves filled artwork, and switches zoom icons with button state', async () => {
 	const fixture = await mountPage('/media-theme/')
 	document.dispatchEvent(new Event('astro:page-load'))

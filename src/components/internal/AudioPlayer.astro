@@ -1,5 +1,7 @@
 ---
-import './audio/skin.css'
+// A rendered link keeps the skin out of unused barrel imports and lets the
+// browser share the stylesheet between players without repeating inline CSS.
+import audioSkinUrl from './audio/skin.css?url'
 
 export type Props = {
 	attributes: astroHTML.JSX.AudioHTMLAttributes
@@ -16,6 +18,7 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 	import './videojs-audio'
 </script>
 
+<link href={audioSkinUrl} rel="stylesheet" />
 <audio-player>
 	<media-container
 		aria-label={label}

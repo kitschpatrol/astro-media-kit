@@ -9,13 +9,13 @@ const listeners = new Set<Listener>()
 /** Read only the current document's optional icon templates. */
 function readIcons(): Icons {
 	const icons: Icons = {}
-	const theme = document.querySelector('[data-amk-media-theme]')
-	for (const name of mediaIconNames) {
-		const template = theme?.querySelector<HTMLTemplateElement>(
-			`template[data-amk-icon="${CSS.escape(name)}"]`,
-		)
-		const svg = template?.content.firstElementChild
-		if (svg?.localName === 'svg') {
+	const theme = document.querySelector<HTMLTemplateElement>('template[data-amk-media-theme]')
+	const templates =
+		theme?.content.querySelectorAll<HTMLTemplateElement>('template[data-amk-icon]') ?? []
+	for (const template of templates) {
+		const name = mediaIconNames.find((name) => name === template.dataset.amkIcon)
+		const svg = template.content.firstElementChild
+		if (name !== undefined && svg?.localName === 'svg') {
 			icons[name] = svg.outerHTML
 		}
 	}
@@ -42,11 +42,14 @@ export function subscribeMediaTheme(listener: Listener): () => void {
 
 /** Theme ordinary icon wrappers, retaining each one's built-in fallback. */
 export function subscribeMediaIconTheme(elements: Iterable<HTMLElement>): () => void {
-	const icons = Array.from(elements, (element) => ({ element, fallback: element.innerHTML }))
+	const icons = Array.from(elements, (element) => ({
+		element,
+		fallback: element.innerHTML,
+		name: mediaIconNames.find((name) => name === element.dataset.amkIcon),
+	}))
 	const unsubscribe = subscribeMediaTheme((overrides) => {
-		for (const { element, fallback } of icons) {
-			const name = element.dataset.amkIcon
-			const iconMarkup = Object.entries(overrides).find(([key]) => key === name)?.[1]
+		for (const { element, fallback, name } of icons) {
+			const iconMarkup = name === undefined ? undefined : overrides[name]
 			element.innerHTML = iconMarkup ?? fallback
 		}
 	})

@@ -10,12 +10,12 @@ import ThemeIcon from '../components/ThemeIcon.astro'
 		<title>Image-only media theme</title>
 	</head>
 	<body>
-		<MediaTheme>
-			<ThemeIcon name="image-only" slot="icon-close" />
-			<ThemeIcon name="carousel-previous" slot="icon-previous" />
-			<ThemeIcon name="carousel-next" slot="icon-next" />
-		</MediaTheme>
 		<Carousel class="themed-carousel" dots>
+			<MediaTheme>
+				<ThemeIcon name="image-only" slot="icon-close" />
+				<ThemeIcon name="carousel-previous" slot="icon-previous" />
+				<ThemeIcon name="carousel-next" slot="icon-next" />
+			</MediaTheme>
 			<Zoomer enabled="themed-carousel">
 				<div style="width: 200px; height: 100px; background: teal">Content</div>
 			</Zoomer>

@@ -1,37 +1,22 @@
 ---
-import { parseHTML } from 'linkedom'
-import { mediaIconNames } from './media-icon-names'
+import { parseMediaThemeIcon } from './utils/media-theme'
 
 /**
  * Optional document-wide icon overrides. Put one in the page layout and supply
  * decorative SVGs through `icon-*` slots. Missing icons keep their defaults.
  */
 const icons = await Promise.all(
-	Object.keys(Astro.slots).map(async (slot) => {
-		const name = mediaIconNames.find((name) => slot === `icon-${name}`)
-		if (name === undefined) {
-			throw new TypeError(`[astro-media-kit] Unknown MediaTheme slot "${slot}".`)
-		}
-
-		const { document } = parseHTML(`<html><body>${await Astro.slots.render(slot)}</body></html>`)
-		const svg = document.body.firstElementChild
-		if (svg?.localName !== 'svg' || document.body.children.length !== 1) {
-			throw new TypeError(`[astro-media-kit] MediaTheme slot "${slot}" must render one SVG.`)
-		}
-
-		svg.removeAttribute('slot')
-		svg.setAttribute('aria-hidden', 'true')
-		svg.setAttribute('focusable', 'false')
-		return { markup: svg.outerHTML, name }
-	}),
+	Object.keys(Astro.slots).map(async (slot) =>
+		parseMediaThemeIcon(slot, await Astro.slots.render(slot)),
+	),
 )
 ---
 
-<div data-amk-media-theme hidden>
+<template data-amk-media-theme>
 	{icons.map(({ markup, name }) => (
 		<template data-amk-icon={name} set:html={markup} />
 	))}
-</div>
+</template>
 
 <script>
 	import './internal/media-theme'
