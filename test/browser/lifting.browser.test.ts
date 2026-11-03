@@ -771,7 +771,7 @@ describe('content', () => {
 
 		expect(getComputedStyle(subject).color).toBe(getComputedStyle(document.body).color)
 		expect(getComputedStyle(query(document, '.amk-lightbox-close')).color).toBe(
-			'rgb(244, 244, 245)',
+			'rgb(244, 244, 244)',
 		)
 	})
 
