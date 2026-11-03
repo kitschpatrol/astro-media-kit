@@ -24,6 +24,7 @@
 		color: var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4));
 		opacity: var(--amk-zoom-indicator-opacity, var(--amk-gallery-icon-opacity, 1));
 		background-color: var(--amk-zoom-indicator-background, transparent);
+		filter: opacity(var(--amk-page-controls-opacity, 1));
 		transition-property: none;
 	}
 
@@ -48,10 +49,6 @@
 	.amk-zoom[data-lifted] > .amk-zoom-indicator {
 		/* The thumbnail preview is appended after the indicator. */
 		z-index: 1;
-	}
-
-	.amk-zoom[data-lifted][data-placeholder='none'] > .amk-zoom-indicator {
-		display: none;
 	}
 
 	@media (hover: hover) {
