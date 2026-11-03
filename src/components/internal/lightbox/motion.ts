@@ -637,6 +637,8 @@ export class CarouselMotion {
 			this.#owner === 'drag' ||
 			this.#owner === 'glide' ||
 			this.#width === 0 ||
+			// A resize is pending: the offset is for the new width, but #width isn't
+			this.#track.clientWidth !== this.#width ||
 			!this.#options.canNavigate()
 		) {
 			return
