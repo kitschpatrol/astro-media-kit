@@ -1,6 +1,7 @@
 import { afterEach, expect, it } from 'vitest'
-import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
-import { boxes, cleanUp, gallery, mount, query, setUpLightbox, viewer } from './helpers'
+import { commands, userEvent } from 'vitest/browser'
+import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { boxes, cleanUp, gallery, mount, query, setUpLightbox, viewer, zoomable } from './helpers'
 import '../../src/components/internal/carousel/carousel.css'
 
 type GalleryKind = 'carousel' | 'lightbox'
@@ -144,4 +145,125 @@ it('sizes and positions the close and zoom buttons independently of gallery arro
 	expect(zoom.getBoundingClientRect().height).toBe(38)
 	expect(zoom.getBoundingClientRect().right).toBe(window.innerWidth - 34)
 	expect(zoom.getBoundingClientRect().top).toBe(22)
+})
+
+it.each(['carousel', 'lightbox'] as const)(
+	'brightens %s icons immediately on hover and fades them back gradually',
+	async (kind) => {
+		const { icon, next, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
+		root.style.setProperty('--amk-gallery-control-transition-duration', '400ms')
+		root.style.setProperty('--amk-gallery-control-active-transition-duration', '0ms')
+		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
+		await userEvent.hover(next)
+		expect(getComputedStyle(icon).opacity).toBe('1')
+		expect(getComputedStyle(icon).transitionDuration).toBe('0s')
+		expect(getComputedStyle(next).backgroundColor).toBe('rgba(0, 0, 0, 0.8)')
+		await commands.mouseMove(5, 5)
+		const fading = icon.getAnimations().find((animation) => animation instanceof CSSTransition)
+		expect(fading).toBeDefined()
+		expect(getComputedStyle(icon).transitionDuration).toBe('0.4s')
+		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
+	},
+)
+
+it.each(['carousel', 'lightbox'] as const)(
+	'uses component %s opacity and timing overrides on keyboard focus',
+	async (kind) => {
+		const { icon, next, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
+		root.style.setProperty('--amk-gallery-icon-active-opacity', '0.9')
+		root.style.setProperty('--amk-gallery-control-transition-duration', '250ms')
+		root.style.setProperty(`--amk-${kind}-icon-opacity`, '0.3')
+		root.style.setProperty(`--amk-${kind}-icon-active-opacity`, '0.8')
+		root.style.setProperty(`--amk-${kind}-control-transition-duration`, '120ms')
+		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.3')
+		await userEvent.keyboard('{Tab}')
+		next.focus()
+		expect(next.matches(':focus-visible')).toBe(true)
+		expect(getComputedStyle(icon).transitionDuration).toBe('0.12s')
+		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.8')
+		root.style.setProperty('--amk-gallery-control-active-transition-duration', '60ms')
+		expect(getComputedStyle(icon).transitionDuration).toBe('0.06s')
+		root.style.setProperty(`--amk-${kind}-control-active-transition-duration`, '0ms')
+		expect(getComputedStyle(icon).transitionDuration).toBe('0s')
+	},
+)
+
+it.each(['carousel', 'lightbox'] as const)(
+	'keeps disabled %s icons dim on hover and keyboard focus',
+	async (kind) => {
+		const { previous, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
+		root.style.setProperty('--amk-gallery-control-active-transition-duration', '0ms')
+		const icon = query(previous, `.amk-${kind}-icon`)
+		await userEvent.hover(previous)
+		await userEvent.keyboard('{Tab}')
+		previous.focus()
+		expect(previous.matches(':focus-visible')).toBe(true)
+		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
+		expect(getComputedStyle(previous).opacity).toBe('0.3')
+		expect(getComputedStyle(previous).backgroundColor).toBe('rgba(0, 0, 0, 0.6)')
+	},
+)
+
+it.each(['carousel', 'lightbox'] as const)(
+	'disables customized %s cosmetic transitions with reduced motion',
+	async (kind) => {
+		const { icon, next, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
+		root.style.setProperty(`--amk-${kind}-control-transition-duration`, '2s')
+		root.style.setProperty(`--amk-${kind}-control-active-transition-duration`, '3s')
+		await commands.emulateReducedMotion(true)
+		try {
+			expect(getComputedStyle(next).transitionDuration).toBe('0s')
+			expect(getComputedStyle(icon).transitionDuration).toBe('0s')
+			await userEvent.hover(next)
+			expect(getComputedStyle(icon).opacity).toBe('1')
+			expect(getComputedStyle(next).transitionDuration).toBe('0s')
+			expect(icon.getAnimations()).toHaveLength(0)
+		} finally {
+			await commands.emulateReducedMotion(false)
+		}
+	},
+)
+
+it('keeps cosmetic durations independent of the lightbox opening, dismissal and closing fades', async () => {
+	const { icon, next, root } = await controls('lightbox')
+	root.style.setProperty('--amk-gallery-control-transition-duration', '2s')
+	root.style.setProperty('--amk-gallery-control-active-transition-duration', '0ms')
+	root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
+	await userEvent.hover(next)
+	expect(getComputedStyle(next).transitionDuration).toBe('0.08s, 0s')
+	expect(getComputedStyle(icon).opacity).toBe('1')
+	root.style.setProperty('--amk-lightbox-drag-opacity', '0.5')
+	await expect.poll(() => getComputedStyle(next).opacity).toBe('0.5')
+	expect(getComputedStyle(icon).opacity).toBe('1')
+	await closeLightbox()
+	expect(getComputedStyle(next).opacity).toBe('0')
+	expect(viewer().open).toBe(false)
+	await openLightbox(boxes(document.body)[0]!)
+	await expect.poll(() => getComputedStyle(next).opacity).toBe('1')
+	expect(viewer().open).toBe(true)
+})
+
+it('applies active opacity to both zoom icon states', async () => {
+	const fixture = mount(zoomable('native'))
+	const image = query(fixture, 'img', HTMLImageElement)
+	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
+	await openLightbox(boxes(fixture)[0]!)
+	viewer().style.setProperty('--amk-gallery-icon-opacity', '0.4')
+	viewer().style.setProperty('--amk-gallery-control-active-transition-duration', '0ms')
+	const button = query(viewer(), '.amk-lightbox-zoom')
+	const zoomIn = query(button, '[data-amk-icon="zoom-in"]')
+	const zoomOut = query(button, '[data-amk-icon="zoom-out"]')
+	await userEvent.hover(button)
+	expect(getComputedStyle(zoomIn).display).toBe('block')
+	expect(getComputedStyle(zoomIn).opacity).toBe('1')
+	expect(getComputedStyle(zoomOut).display).toBe('none')
+	await userEvent.click(button)
+	expect(button.ariaPressed).toBe('true')
+	expect(getComputedStyle(zoomOut).display).toBe('block')
+	expect(getComputedStyle(zoomOut).opacity).toBe('1')
+	expect(getComputedStyle(zoomIn).display).toBe('none')
 })

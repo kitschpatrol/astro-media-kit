@@ -102,7 +102,8 @@
 	border-radius: var(--amk-carousel-control-radius, var(--amk-gallery-control-radius));
 	color: var(--amk-carousel-control-color, var(--amk-gallery-control-color));
 	background: var(--amk-carousel-control-background, var(--amk-gallery-control-background));
-	transition: background-color 0.15s;
+	transition: background-color
+		var(--amk-carousel-control-transition-duration, var(--amk-gallery-control-transition-duration));
 }
 
 .amk-carousel-icon {
@@ -110,6 +111,9 @@
 	display: block;
 	width: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
 	height: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
+	opacity: var(--amk-carousel-icon-opacity, var(--amk-gallery-icon-opacity));
+	transition: opacity
+		var(--amk-carousel-control-transition-duration, var(--amk-gallery-control-transition-duration));
 }
 
 .amk-carousel-icon > svg {
@@ -143,6 +147,30 @@
 		background: var(
 			--amk-carousel-control-hover-background,
 			var(--amk-gallery-control-hover-background)
+		);
+		transition-duration: var(
+			--amk-carousel-control-active-transition-duration,
+			var(
+				--amk-gallery-control-active-transition-duration,
+				var(
+					--amk-carousel-control-transition-duration,
+					var(--amk-gallery-control-transition-duration)
+				)
+			)
+		);
+	}
+
+	.amk-carousel-button:not([aria-disabled='true']):hover .amk-carousel-icon {
+		opacity: var(--amk-carousel-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
+		transition-duration: var(
+			--amk-carousel-control-active-transition-duration,
+			var(
+				--amk-gallery-control-active-transition-duration,
+				var(
+					--amk-carousel-control-transition-duration,
+					var(--amk-gallery-control-transition-duration)
+				)
+			)
 		);
 	}
 }
@@ -205,4 +233,44 @@
 .amk-carousel-dot:focus-visible::before {
 	outline: 2px solid currentcolor;
 	outline-offset: 2px;
+}
+
+/* Keyboard focus receives the same active treatment as a pointer hover. */
+.amk-carousel-button:not([aria-disabled='true']):focus-visible {
+	background: var(
+		--amk-carousel-control-hover-background,
+		var(--amk-gallery-control-hover-background)
+	);
+	transition-duration: var(
+		--amk-carousel-control-active-transition-duration,
+		var(
+			--amk-gallery-control-active-transition-duration,
+			var(
+				--amk-carousel-control-transition-duration,
+				var(--amk-gallery-control-transition-duration)
+			)
+		)
+	);
+}
+
+.amk-carousel-button:not([aria-disabled='true']):focus-visible .amk-carousel-icon {
+	opacity: var(--amk-carousel-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
+	transition-duration: var(
+		--amk-carousel-control-active-transition-duration,
+		var(
+			--amk-gallery-control-active-transition-duration,
+			var(
+				--amk-carousel-control-transition-duration,
+				var(--amk-gallery-control-transition-duration)
+			)
+		)
+	);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.amk-carousel-button,
+	.amk-carousel-icon,
+	.amk-carousel-dot {
+		transition-duration: 0s !important;
+	}
 }

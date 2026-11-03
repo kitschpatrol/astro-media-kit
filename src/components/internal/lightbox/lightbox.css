@@ -423,6 +423,9 @@
 	display: block;
 	width: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
 	height: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
+	opacity: var(--amk-lightbox-icon-opacity, var(--amk-gallery-icon-opacity));
+	transition: opacity
+		var(--amk-lightbox-control-transition-duration, var(--amk-gallery-control-transition-duration));
 }
 
 .amk-lightbox-icon > svg {
@@ -576,7 +579,11 @@
 	opacity: 0;
 	transition:
 		opacity var(--amk-lightbox-duration) var(--amk-lightbox-easing),
-		background-color 0.15s;
+		background-color
+			var(
+				--amk-lightbox-control-transition-duration,
+				var(--amk-gallery-control-transition-duration)
+			);
 }
 
 .amk-lightbox[data-state='open'] :is(.amk-lightbox-button, .amk-lightbox-caption) {
@@ -598,5 +605,73 @@
 			--amk-lightbox-control-hover-background,
 			var(--amk-gallery-control-hover-background)
 		);
+		transition-duration:
+			var(--amk-lightbox-duration),
+			var(
+				--amk-lightbox-control-active-transition-duration,
+				var(
+					--amk-gallery-control-active-transition-duration,
+					var(
+						--amk-lightbox-control-transition-duration,
+						var(--amk-gallery-control-transition-duration)
+					)
+				)
+			);
+	}
+
+	.amk-lightbox-button:not([aria-disabled='true']):hover .amk-lightbox-icon {
+		opacity: var(--amk-lightbox-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
+		transition-duration: var(
+			--amk-lightbox-control-active-transition-duration,
+			var(
+				--amk-gallery-control-active-transition-duration,
+				var(
+					--amk-lightbox-control-transition-duration,
+					var(--amk-gallery-control-transition-duration)
+				)
+			)
+		);
+	}
+}
+
+/* Keyboard focus receives the same active treatment as a pointer hover. */
+.amk-lightbox-button:not([aria-disabled='true']):focus-visible {
+	background: var(
+		--amk-lightbox-control-hover-background,
+		var(--amk-gallery-control-hover-background)
+	);
+	transition-duration:
+		var(--amk-lightbox-duration),
+		var(
+			--amk-lightbox-control-active-transition-duration,
+			var(
+				--amk-gallery-control-active-transition-duration,
+				var(
+					--amk-lightbox-control-transition-duration,
+					var(--amk-gallery-control-transition-duration)
+				)
+			)
+		);
+}
+
+.amk-lightbox-button:not([aria-disabled='true']):focus-visible .amk-lightbox-icon {
+	opacity: var(--amk-lightbox-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
+	transition-duration: var(
+		--amk-lightbox-control-active-transition-duration,
+		var(
+			--amk-gallery-control-active-transition-duration,
+			var(
+				--amk-lightbox-control-transition-duration,
+				var(--amk-gallery-control-transition-duration)
+			)
+		)
+	);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.amk-lightbox-button,
+	.amk-lightbox-icon,
+	.amk-lightbox-caption {
+		transition-duration: 0s !important;
 	}
 }

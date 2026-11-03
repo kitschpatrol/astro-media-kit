@@ -8,5 +8,8 @@
 		--amk-gallery-control-hover-background: rgb(0 0 0 / 80%);
 		--amk-gallery-control-radius: 50%;
 		--amk-gallery-icon-size: 1.25rem;
+		--amk-gallery-icon-opacity: 1;
+		--amk-gallery-icon-active-opacity: 1;
+		--amk-gallery-control-transition-duration: 0.15s;
 	}
 }
