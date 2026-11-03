@@ -62,9 +62,10 @@ export function buildSoundCloudEmbedUrl(
 	trackIdOrUrl: string,
 	options: { autoPlay: boolean },
 ): string {
-	const trackUrl = trackIdOrUrl.startsWith('http')
-		? trackIdOrUrl
-		: `https://api.soundcloud.com/tracks/${trackIdOrUrl}`
+	const trackUrl =
+		tryParseUrl(trackIdOrUrl) === undefined
+			? `https://api.soundcloud.com/tracks/${trackIdOrUrl}`
+			: trackIdOrUrl
 
 	/* eslint-disable ts/naming-convention -- SoundCloud embed API parameter names */
 	const params = new URLSearchParams({

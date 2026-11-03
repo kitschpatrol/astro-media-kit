@@ -90,6 +90,14 @@ describe('buildSoundCloudEmbedUrl', () => {
 		expect(url).toContain('auto_play=true')
 	})
 
+	it('preserves full URLs with uppercase schemes throughout source resolution', () => {
+		const src = 'HTTPS://soundcloud.com/artist/track'
+		const resolved = resolveAudioSource(src)
+		expect(resolved).toEqual({ identifier: src, service: 'soundcloud' })
+		const embed = new URL(buildSoundCloudEmbedUrl(resolved.identifier, { autoPlay: false }))
+		expect(embed.searchParams.get('url')).toBe(src)
+	})
+
 	it('includes expected default parameters', () => {
 		const url = buildSoundCloudEmbedUrl('123', { autoPlay: false })
 		for (const param of [

@@ -16,6 +16,13 @@ describe('tryParseUrl', () => {
 		expect(tryParseUrl('https://example.com/path')?.hostname).toBe('example.com')
 	})
 
+	it.each(['HTTP://example.com/path', 'HTTPS://example.com/path'])(
+		'accepts case-insensitive URL schemes: %s',
+		(input) => {
+			expect(tryParseUrl(input)?.hostname).toBe('example.com')
+		},
+	)
+
 	it('returns undefined for non-URLs', () => {
 		for (const input of ['./local/path', '/absolute/path', 'just-a-string', '']) {
 			expect(tryParseUrl(input)).toBeUndefined()

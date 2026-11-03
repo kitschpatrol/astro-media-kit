@@ -30,6 +30,7 @@ const IMAGE_EXTENSIONS = new Set([
 
 /** Where a path or URL's query or fragment starts. */
 const QUERY_PATTERN = /[#?]/v
+const HTTP_URL_PATTERN = /^https?:\/\//iv
 
 /** Returns true if the path or URL names a file with an image extension. */
 export function hasImageExtension(src: string): boolean {
@@ -65,7 +66,7 @@ function extensionOf(src: string): string {
 
 /** Try to parse a string as an HTTP(S) URL. Returns undefined for non-URLs. */
 export function tryParseUrl(src: string): undefined | URL {
-	if (!src.startsWith('http://') && !src.startsWith('https://')) {
+	if (!HTTP_URL_PATTERN.test(src)) {
 		return undefined
 	}
 
