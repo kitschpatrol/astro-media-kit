@@ -1,3 +1,4 @@
+import type { Asset } from '@mux/ts/resources/video/assets'
 import Mux from '@mux/ts'
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo
@@ -14,11 +15,29 @@ export type MuxConfig = {
 	secret: string
 }
 
+function fallbackMp4Name(renditions: Asset.StaticRenditions): string | undefined {
+	// The current API reports readiness per file; the legacy mp4_support option
+	// reports it on the collection. Audio-only renditions are not video fallbacks.
+	const files = renditions.files ?? []
+	let fallback: (typeof files)[number] | undefined
+	for (const file of files) {
+		if ((file.status ?? renditions.status) !== 'ready' || file.name?.endsWith('.mp4') !== true) {
+			continue
+		}
+
+		if (fallback === undefined || (file.width ?? 0) > (fallback.width ?? 0)) {
+			fallback = file
+		}
+	}
+
+	return fallback?.name
+}
+
 /**
  * Get video information from Mux
  *
- * Video must have `"mp4_support": "standard"` for fallback mp4 support See
- * https://docs.mux.com/api-reference#video/operation/update-asset-mp4-support
+ * Video must have a ready static MP4 rendition for fallback support. Supports
+ * both the Static Renditions API and the deprecated `mp4_support` option.
  */
 export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promise<VideoInfo> {
 	if (!muxIsValidMediaId(mediaId)) {
@@ -71,17 +90,10 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 		)
 	}
 
-	if (video.static_renditions.status !== 'ready' || video.static_renditions.files === undefined) {
-		throw new Error(`${logPrefix} fallback mp4 is not yet ready. Try again in a bit.`)
+	const mp4Name = fallbackMp4Name(video.static_renditions)
+	if (mp4Name === undefined) {
+		throw new Error(`${logPrefix} does not have a ready fallback mp4 rendition.`)
 	}
-
-	// Get highest quality fallback
-	// eslint-disable-next-line unicorn/no-array-reduce
-	const { name: mp4Name } = video.static_renditions.files.reduce((previous, current) =>
-		previous.width === undefined || current.width === undefined || previous.width > current.width
-			? previous
-			: current,
-	)
 
 	// Find captions, if available
 	// Mux embeds these in the HLS stream, but still wanted for fallback
