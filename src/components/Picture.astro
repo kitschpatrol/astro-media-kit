@@ -324,6 +324,11 @@ const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
 // undefined (defaults — remote/string sources land on `'unknown'`).
 const formats = pickFormats(formatsProp, originalSrc)
 
+// Include the fallback format when deciding whether dark backgrounds need
+// their own composited image, even if every preferred format is transparent.
+const clonedSrc = cloneImageMetadata(originalSrc)
+const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
+
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
@@ -344,7 +349,13 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 //    swapped inline background-color — CSS light-dark() can't toggle on a custom selector)
 const needsDarkVariant =
 	darkSrc !== undefined ||
-	needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector)
+	needsBackgroundDarkVariant(
+		[...formats, resultFallbackFormat],
+		background,
+		backgroundDark,
+		darkDisabled,
+		isSelector,
+	)
 let optimizedImagesDark: GetImageResult[] | undefined
 if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background
@@ -367,14 +378,6 @@ if (needsDarkVariant) {
 	)
 }
 
-// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
-const clonedSrc = cloneImageMetadata(originalSrc)
-
-// Determine `<img>` fallback format. `pickFallbackFormat` handles the three
-// shapes of `fallbackFormat`: string (force), object (partial rules merged
-// onto defaults), undefined (defaults — remote sources land on `'unknown'`).
-const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
-
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...mergedImageProps,
@@ -387,9 +390,10 @@ const fallbackImage = await getImage({
 
 const hasDarkMode = optimizedImagesDark !== undefined
 
-// Generate dark fallback image for selector mode (needs its own <img> src)
+// Selector mode needs its own <img>. Media mode needs a dark fallback <source>
+// when no preferred format is supported, including an empty formats list.
 let fallbackImageDark: GetImageResult | undefined
-if (isSelector && hasDarkMode) {
+if (hasDarkMode && (isSelector || !formats.includes(resultFallbackFormat))) {
 	const darkBackground = backgroundDark ?? background
 	const originalSrcDark = isRemote
 		? (darkSrc ?? originalSrc)
@@ -568,6 +572,14 @@ if (isSelector && hasDarkMode) {
 							{...sourceAdditionalAttributes}
 						/>
 					))}
+				{fallbackImageDark && (
+					<source
+						media="(prefers-color-scheme: dark)"
+						srcset={srcsetFor(fallbackImageDark)}
+						type={getMimeType(fallbackImageDark)}
+						{...sourceAdditionalAttributes}
+					/>
+				)}
 				{optimizedImages.map((image) => (
 					<source
 						media={hasDarkMode ? '(prefers-color-scheme: light)' : undefined}

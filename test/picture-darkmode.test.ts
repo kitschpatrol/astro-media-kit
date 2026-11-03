@@ -20,6 +20,42 @@ describe('Picture darkMode selector', () => {
 		fx = await buildFixture('picture-darkmode')
 	})
 
+	describe('media mode fallback formats', () => {
+		it('preserves the dark source when preferred formats are empty', async () => {
+			const $ = await fx.readHTML('/media-fallback/')
+			const picture = $('#empty')
+			const sources = picture.find('source')
+			expect(sources.length).toBe(1)
+			expect(sources.attr('media')).toBe('(prefers-color-scheme: dark)')
+			expect(sources.attr('type')).toBe('image/jpeg')
+			expect(sources.attr('srcset')).toContain('penguin-dark')
+			expect(picture.find('img').attr('src')).toContain('penguin-light')
+			expect($('#disabled source').length).toBe(0)
+		})
+
+		it('provides a dark fallback after preferred dark formats with responsive sizing', async () => {
+			const $ = await fx.readHTML('/media-fallback/')
+			const sources = $('#preferred source')
+			expect(sources.length).toBe(3)
+			expect(sources.eq(0).attr('type')).toBe('image/avif')
+			expect(sources.eq(1).attr('media')).toBe('(prefers-color-scheme: dark)')
+			expect(sources.eq(1).attr('type')).toBe('image/jpeg')
+			expect(sources.eq(1).attr('srcset')).toContain('penguin-dark')
+			expect(sources.eq(1).attr('srcset')).toContain('150w')
+			expect(sources.eq(1).attr('sizes')).toBe('300px')
+			expect(sources.eq(2).attr('media')).toBe('(prefers-color-scheme: light)')
+		})
+
+		it('composites the dark background for an opaque fallback behind transparent preferred formats', async () => {
+			const $ = await fx.readHTML('/media-fallback/')
+			const picture = $('#background')
+			const darkFallback = picture.find('source[type="image/jpeg"]')
+			expect(darkFallback.length).toBe(1)
+			expect(darkFallback.attr('media')).toBe('(prefers-color-scheme: dark)')
+			expect(darkFallback.attr('srcset')).not.toBe(picture.find('img').attr('src'))
+		})
+	})
+
 	describe('selector mode with no dark variant', () => {
 		it('renders a plain <picture> without the amk-light class', async () => {
 			const $ = await fx.readHTML('/selector-no-dark/')

@@ -1,0 +1,44 @@
+---
+import { Picture } from 'astro-media-kit/components'
+import diagram from '../assets/diagram.svg'
+import penguinDark from '../assets/penguin-dark.png'
+import penguinLight from '../assets/penguin-light.jpg'
+---
+
+<html>
+	<body>
+		<Picture
+			alt="Empty formats"
+			formats={[]}
+			pictureAttributes={{ id: 'empty' }}
+			src={penguinLight}
+			srcDark={penguinDark}
+		/>
+		<Picture
+			alt="Dark fallback"
+			formats={['avif']}
+			pictureAttributes={{ id: 'preferred' }}
+			sizes="300px"
+			src={penguinLight}
+			srcDark={penguinDark}
+			widths={[150, 300]}
+		/>
+		<Picture
+			alt="Opaque fallback"
+			background="white"
+			backgroundDark="black"
+			fallbackFormat="jpg"
+			formats={['webp']}
+			pictureAttributes={{ id: 'background' }}
+			src={diagram}
+		/>
+		<Picture
+			alt="Disabled dark mode"
+			darkMode="none"
+			formats={[]}
+			pictureAttributes={{ id: 'disabled' }}
+			src={penguinLight}
+			srcDark={penguinDark}
+		/>
+	</body>
+</html>
