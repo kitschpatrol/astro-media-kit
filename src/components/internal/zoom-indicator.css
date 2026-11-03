@@ -46,6 +46,11 @@
 	}
 
 	.amk-zoom[data-lifted] > .amk-zoom-indicator {
+		/* The thumbnail preview is appended after the indicator. */
+		z-index: 1;
+	}
+
+	.amk-zoom[data-lifted][data-placeholder='none'] > .amk-zoom-indicator {
 		display: none;
 	}
 

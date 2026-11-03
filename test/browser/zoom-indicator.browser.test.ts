@@ -166,19 +166,50 @@ it('inherits the rest duration for active states and removes transitions with re
 	}
 })
 
-it('keeps custom decorations inert and outside the lifted media', async () => {
+it('keeps custom decorations inert', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
 	const decoration = query(fixture, '[data-custom-interactive]')
 	decoration.focus()
 	expect(document.activeElement).not.toBe(decoration)
+})
+
+it.each(['#builtin', '#custom', '#selector'])(
+	'keeps the %s indicator on its page thumbnail while the media is enlarged',
+	async (selector) => {
+		const fixture = await mountPage('/zoom-indicator/')
+		const opener = query(fixture, `${selector} .amk-zoom`)
+		opener.scrollIntoView()
+		const media = opener.firstElementChild
+		const indicator = query(opener, '.amk-zoom-indicator')
+		const before = indicator.getBoundingClientRect()
+		await openLightbox(opener)
+		expect(viewer().contains(media)).toBe(true)
+		expect(viewer().querySelector('.amk-zoom-indicator')).toBeNull()
+		expect(query(opener, '[data-preview]')).toBeDefined()
+		expect(indicator.parentElement).toBe(opener)
+		expect(indicator.checkVisibility()).toBe(true)
+		const enlarged = indicator.getBoundingClientRect()
+		for (const axis of ['x', 'y', 'width', 'height'] as const) {
+			expect(enlarged[axis]).toBeCloseTo(before[axis], 1)
+		}
+
+		await close()
+		expect(opener.firstElementChild).toBe(media)
+		expect(query(opener, '.amk-zoom-indicator')).toBe(indicator)
+		expect(indicator.checkVisibility()).toBe(true)
+		expect(opener.querySelector('[data-preview]')).toBeNull()
+	},
+)
+
+it('hides the indicator with an explicitly disabled thumbnail preview', async () => {
+	const fixture = await mountPage('/zoom-indicator/')
 	const opener = query(fixture, '#builtin .amk-zoom')
-	const media = opener.firstElementChild
+	// Image and Picture emit this attribute for zoomPlaceholder="none".
+	opener.dataset.placeholder = 'none'
 	const indicator = query(opener, '.amk-zoom-indicator')
 	await openLightbox(opener)
-	expect(viewer().contains(media)).toBe(true)
-	expect(viewer().querySelector('.amk-zoom-indicator')).toBeNull()
+	expect(opener.querySelector('[data-preview]')).toBeNull()
 	expect(getComputedStyle(indicator).display).toBe('none')
 	await close()
-	expect(opener.firstElementChild).toBe(media)
 	expect(getComputedStyle(indicator).display).toBe('grid')
 })

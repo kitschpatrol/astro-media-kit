@@ -276,7 +276,7 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 </Picture>
 ```
 
-A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. It stays out of the lightbox while the media is enlarged.
+A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. While the media is enlarged, the indicator remains visible over the page's thumbnail preview and stays out of the lightbox. With `zoomPlaceholder="none"`, it hides along with the thumbnail until the lightbox closes.
 
 To replace the built-in artwork across a page, add `<YourPlusIcon slot="icon-zoom-indicator" />` to `MediaTheme`. Individual `zoom-indicator` slots take precedence over that shared icon. As with other `MediaTheme` icons, the shared replacement requires JavaScript; per-image slots and the built-in plus render on the server.
 
