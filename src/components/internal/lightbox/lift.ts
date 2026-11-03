@@ -1,5 +1,6 @@
 import type { Box, Fit } from './geometry'
 import type { Lift, Measurement, Point, Slide } from './types'
+import { releaseControlPreview, retainControlPreview } from './control-preview'
 import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { ratioOf } from './media'
@@ -50,6 +51,7 @@ export function dropSlides(slides: Slide[]) {
 		}
 
 		removePlaceholder(lift.placeholder)
+		releaseControlPreview(lift.subject)
 
 		item.style.removeProperty('--amk-lightbox-placeholder-width')
 		item.style.removeProperty('--amk-lightbox-placeholder-height')
@@ -102,6 +104,10 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 
 	// A link's media was never in the page: nothing holds its place or stands in
 	const isLink = isLinkItem(item)
+	if (!isLink) {
+		retainControlPreview(item, subject)
+	}
+
 	const placeholder = isLink ? undefined : createPlaceholder(item, subject)
 	slide.lift = {
 		...measurement,

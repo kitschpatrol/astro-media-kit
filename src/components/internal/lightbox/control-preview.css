@@ -1,0 +1,13 @@
+@layer amk-lightbox {
+	.amk-page-control-preview {
+		pointer-events: none;
+		position: absolute;
+		z-index: 1;
+		display: none;
+		filter: opacity(var(--amk-page-controls-opacity, 1));
+	}
+
+	.amk-zoom[data-lifted] > .amk-page-control-preview {
+		display: block;
+	}
+}
