@@ -39,7 +39,9 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 
 	// Step 2: Parse the HTML for the oEmbed discovery link.
 	const { document } = parseHTML(html)
-	const oembedLink = document.querySelector('link[rel="alternate"][type="application/json+oembed"]')
+	const oembedLink = document.querySelector(
+		'link[rel~="alternate"][type="application/json+oembed"]',
+	)
 
 	if (!oembedLink) {
 		throw new Error(
@@ -55,7 +57,9 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	}
 
 	// Step 3: Fetch the oEmbed JSON response.
-	const oembedResponse = await fetch(endpointUrl)
+	const baseHref = document.querySelector('base[href]')?.getAttribute('href') ?? undefined
+	const baseUrl = baseHref === undefined ? canonicalUrl : new URL(baseHref, canonicalUrl)
+	const oembedResponse = await fetch(new URL(endpointUrl, baseUrl).href)
 	if (!oembedResponse.ok) {
 		throw new Error(
 			`oEmbed endpoint request failed (${String(oembedResponse.status)}) for "${canonicalUrl}"`,

@@ -51,6 +51,29 @@ describe('fetchOEmbed', () => {
 		expect(info.providerName).toBe('example.com')
 		expect(info.width).toBe(0)
 	})
+
+	it.each([
+		['/oembed?item=1', '', 'https://provider.example/oembed?item=1'],
+		['../oembed?item=1', '', 'https://provider.example/oembed?item=1'],
+		['//api.example/oembed', '', 'https://api.example/oembed'],
+		['oembed', '<base href="/api/">', 'https://provider.example/api/oembed'],
+	])(
+		'resolves discovery URL %s against the redirected page and its base',
+		async (href, base, expected) => {
+			const page = new Response(
+				`${base}<link rel="alternate stylesheet" type="application/json+oembed" href="${href}">`,
+			)
+			Object.defineProperty(page, 'url', { value: 'https://provider.example/watch/1' })
+			const fetch = vi
+				.fn()
+				.mockResolvedValueOnce(page)
+				.mockResolvedValueOnce(Response.json({ html: '<iframe></iframe>' }))
+			vi.stubGlobal('fetch', fetch)
+
+			await fetchOEmbed('https://short.example/1')
+			expect(fetch).toHaveBeenNthCalledWith(2, expected)
+		},
+	)
 })
 
 describe('sanitizeEmbedHtml', () => {
