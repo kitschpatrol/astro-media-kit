@@ -1,3 +1,5 @@
+@import '../gallery-controls.css';
+
 /* The lightbox: the `.amk-zoom` items `<Zoomer>` renders in the page, and the
    `.amk-lightbox` dialog their content is lifted into. Astro bundles this with
    the page's own CSS, so it is in place before the first paint and the script
@@ -17,12 +19,6 @@
 		--amk-lightbox-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
 		--amk-lightbox-gutter: clamp(0.75rem, 5vmin, 4rem);
 		--amk-lightbox-caption-width: min(20rem, 30vw);
-		--amk-lightbox-control-size: 2.75rem;
-		--amk-lightbox-control-color: #f4f4f4;
-		--amk-lightbox-control-background: rgb(0 0 0 / 60%);
-		--amk-lightbox-control-hover-background: rgb(0 0 0 / 80%);
-		--amk-lightbox-control-radius: 50%;
-		--amk-lightbox-icon-size: 1.25rem;
 	}
 
 	/* A block, so a link around a picture has the picture's layout */
@@ -401,20 +397,20 @@
 	position: absolute;
 	display: grid;
 	place-items: center;
-	width: var(--amk-lightbox-control-size);
-	height: var(--amk-lightbox-control-size);
+	width: var(--amk-lightbox-control-size, var(--amk-gallery-control-size));
+	height: var(--amk-lightbox-control-size, var(--amk-gallery-control-size));
 	padding: 0;
 	border: 0;
-	border-radius: var(--amk-lightbox-control-radius);
-	color: var(--amk-lightbox-control-color);
-	background: var(--amk-lightbox-control-background);
+	border-radius: var(--amk-lightbox-control-radius, var(--amk-gallery-control-radius));
+	color: var(--amk-lightbox-control-color, var(--amk-gallery-control-color));
+	background: var(--amk-lightbox-control-background, var(--amk-gallery-control-background));
 }
 
 .amk-lightbox-icon {
 	pointer-events: none;
 	display: block;
-	width: var(--amk-lightbox-icon-size);
-	height: var(--amk-lightbox-icon-size);
+	width: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
+	height: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
 }
 
 .amk-lightbox-icon > svg {
@@ -518,6 +514,9 @@
 
 @media (hover: hover) {
 	.amk-lightbox-button:not([aria-disabled='true']):hover {
-		background: var(--amk-lightbox-control-hover-background);
+		background: var(
+			--amk-lightbox-control-hover-background,
+			var(--amk-gallery-control-hover-background)
+		);
 	}
 }

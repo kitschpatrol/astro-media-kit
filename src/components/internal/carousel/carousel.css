@@ -1,3 +1,5 @@
+@import '../gallery-controls.css';
+
 /* The embedded carousel `<Carousel>` renders: the lightbox's track in the
    page, with the same buttons, and dots below. Astro bundles this with the
    page's CSS. */
@@ -5,17 +7,6 @@
 	--amk-carousel-duration: 0.4s;
 
 	position: relative;
-}
-
-@layer amk-carousel {
-	:root {
-		--amk-carousel-control-size: 2.75rem;
-		--amk-carousel-control-color: #f4f4f4;
-		--amk-carousel-control-background: rgb(0 0 0 / 60%);
-		--amk-carousel-control-hover-background: rgb(0 0 0 / 80%);
-		--amk-carousel-control-radius: 50%;
-		--amk-carousel-icon-size: 1.25rem;
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -92,21 +83,21 @@
 	translate: 0 -50%;
 	display: grid;
 	place-items: center;
-	width: var(--amk-carousel-control-size);
-	height: var(--amk-carousel-control-size);
+	width: var(--amk-carousel-control-size, var(--amk-gallery-control-size));
+	height: var(--amk-carousel-control-size, var(--amk-gallery-control-size));
 	padding: 0;
 	border: 0;
-	border-radius: var(--amk-carousel-control-radius);
-	color: var(--amk-carousel-control-color);
-	background: var(--amk-carousel-control-background);
+	border-radius: var(--amk-carousel-control-radius, var(--amk-gallery-control-radius));
+	color: var(--amk-carousel-control-color, var(--amk-gallery-control-color));
+	background: var(--amk-carousel-control-background, var(--amk-gallery-control-background));
 	transition: background-color 0.15s;
 }
 
 .amk-carousel-icon {
 	pointer-events: none;
 	display: block;
-	width: var(--amk-carousel-icon-size);
-	height: var(--amk-carousel-icon-size);
+	width: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
+	height: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
 }
 
 .amk-carousel-icon > svg {
@@ -137,7 +128,10 @@
 
 @media (hover: hover) {
 	.amk-carousel-button:not([aria-disabled='true']):hover {
-		background: var(--amk-carousel-control-hover-background);
+		background: var(
+			--amk-carousel-control-hover-background,
+			var(--amk-gallery-control-hover-background)
+		);
 	}
 }
 
