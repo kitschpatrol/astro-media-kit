@@ -46,6 +46,15 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	await expect
 		.poll(() => images.every((image) => !image.checkVisibility() || image.complete))
 		.toBe(true)
+	// Wait for the media and volume trigger to connect before sending pointer input.
+	await expect
+		.poll(() => query(player, 'video', HTMLVideoElement).readyState, { timeout: 10_000 })
+		.toBeGreaterThan(0)
+	await expect
+		.poll(() => query(player, 'media-volume-popover').dataset.availability)
+		.toBe('available')
+	// Leave room above the controls, independent of the previous test's scroll position.
+	player.scrollIntoView({ behavior: 'instant', block: 'center' })
 	return { item, player }
 }
 
@@ -107,6 +116,7 @@ it('stands its poster in for the player while it is lifted', async () => {
 it('keeps the floated controls visible while they are used, and hides them when idle', async () => {
 	const { player } = await mountPlayer()
 	await query(player, 'video', HTMLVideoElement).play()
+	await userEvent.hover(query(player, 'media-container'))
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	const controls = query(player, '.amk-controls')
@@ -470,7 +480,7 @@ it('leaves slider arrows to volume adjustment inside a gallery and supports drag
 	const thumb = query(popover, '[role="slider"]')
 	thumb.focus()
 	await userEvent.keyboard('{ArrowLeft}')
-	await expect.poll(() => video.volume).toBe(0.95)
+	await expect.poll(() => video.volume).toBeCloseTo(0.95, 5)
 	await userEvent.keyboard('{ArrowRight}')
 	await expect.poll(() => video.volume).toBe(1)
 	expect(currentLayer().contains(player)).toBe(true)

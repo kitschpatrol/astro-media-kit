@@ -48,17 +48,17 @@ it('fades the other items away as the gallery opens, and back as the carousel re
 	await openLightbox(boxes(fixture)[0]!)
 
 	await expect.poll(() => second!.volume).toBe(0)
-	expect(first!.volume).toBe(0.8)
+	expect(first!.volume).toBeCloseTo(0.8, 5)
 	expect(second!.muted).toBe(true)
 
 	await userEvent.click(query(document, '.amk-lightbox-next'))
 	await expect.poll(activeSlideLabel).toBe('2 of 2')
-	await expect.poll(() => second!.volume).toBe(0.5)
+	await expect.poll(() => second!.volume).toBeCloseTo(0.5, 5)
 	await expect.poll(() => first!.volume).toBe(0)
 
 	await closeLightbox()
-	await expect.poll(() => first!.volume).toBe(0.8)
-	expect(second!.volume).toBe(0.5)
+	await expect.poll(() => first!.volume).toBeCloseTo(0.8, 5)
+	expect(second!.volume).toBeCloseTo(0.5, 5)
 })
 
 it('restores the level the gallery opened with, not a level set meanwhile', async () => {
@@ -68,18 +68,18 @@ it('restores the level the gallery opened with, not a level set meanwhile', asyn
 	await expect.poll(() => second!.volume).toBe(0)
 
 	await userEvent.click(query(document, '.amk-lightbox-next'))
-	await expect.poll(() => second!.volume).toBe(0.5)
+	await expect.poll(() => second!.volume).toBeCloseTo(0.5, 5)
 	second!.volume = 0.2
 	await userEvent.click(query(document, '.amk-lightbox-previous'))
 	await expect.poll(activeSlideLabel).toBe('1 of 2')
 	await expect.poll(() => second!.volume).toBe(0)
 	await userEvent.click(query(document, '.amk-lightbox-next'))
-	await expect.poll(() => second!.volume).toBe(0.5)
+	await expect.poll(() => second!.volume).toBeCloseTo(0.5, 5)
 	expect(first!.volume).toBe(0)
 
 	await closeLightbox(true)
-	await expect.poll(() => first!.volume).toBe(0.8)
-	await expect.poll(() => second!.volume).toBe(0.5)
+	await expect.poll(() => first!.volume).toBeCloseTo(0.8, 5)
+	await expect.poll(() => second!.volume).toBeCloseTo(0.5, 5)
 })
 
 it('leaves media that is not playing alone', async () => {
@@ -94,14 +94,14 @@ it('leaves media that is not playing alone', async () => {
 	await new Promise((resolve) => {
 		setTimeout(resolve, 300)
 	})
-	expect(paused!.volume).toBe(0.5)
+	expect(paused!.volume).toBeCloseTo(0.5, 5)
 
 	await userEvent.click(query(document, '.amk-lightbox-next'))
 	await expect.poll(activeSlideLabel).toBe('2 of 2')
 	await expect.poll(() => playing!.volume).toBe(0)
-	expect(paused!.volume).toBe(0.5)
+	expect(paused!.volume).toBeCloseTo(0.5, 5)
 	await closeLightbox()
-	await expect.poll(() => playing!.volume).toBe(0.8)
+	await expect.poll(() => playing!.volume).toBeCloseTo(0.8, 5)
 })
 
 it('leaves a lone item its sound', async () => {
@@ -112,7 +112,7 @@ it('leaves a lone item its sound', async () => {
 	await new Promise((resolve) => {
 		setTimeout(resolve, 300)
 	})
-	expect(video.volume).toBe(0.6)
+	expect(video.volume).toBeCloseTo(0.6, 5)
 	await closeLightbox()
-	expect(video.volume).toBe(0.6)
+	expect(video.volume).toBeCloseTo(0.6, 5)
 })

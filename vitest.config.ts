@@ -111,8 +111,9 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 export default defineConfig(async (): Promise<ViteUserConfig> => {
 	// Built before any server starts: Vite lists the public directory once, on
 	// start, so the browser project serves the fixture's pages and assets from
-	// its first request
-	const { dist } = await buildFixture('core-image')
+	// its first request. Unit tests rebuild dist while browser tests run, so
+	// serve a separate build.
+	const { dist } = await buildFixture('core-image', '.vitest/dist')
 	return {
 		test: {
 			projects: [

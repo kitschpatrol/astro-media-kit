@@ -297,4 +297,7 @@ export async function cleanUp(): Promise<void> {
 	for (const fixture of fixtures.splice(0)) {
 		fixture.remove()
 	}
+
+	// The next hover must enter its target even if a new fixture has the same layout.
+	await commands.mouseMove(5, 5)
 }

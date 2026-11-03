@@ -51,6 +51,9 @@ jobs:
         run: pnpm run build
 
       - name: Lint
+        env:
+          # Type-aware ESLint exceeds Node's default 2 GiB heap on macOS runners.
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm run lint
 
       - name: Test
