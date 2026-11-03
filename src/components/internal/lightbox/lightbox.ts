@@ -313,7 +313,9 @@ function galleryOf(item: HTMLElement): HTMLElement[] {
 		// A lifted subject is on its way home from the viewer, and will be back
 		const isShowing =
 			Object.hasOwn(candidate.dataset, 'lifted') ||
-			(isLinkItem(candidate) ? candidate.checkVisibility() : isSubjectShowing(candidate))
+			(isLinkItem(candidate)
+				? candidate.checkVisibility({ visibilityProperty: true })
+				: isSubjectShowing(candidate))
 		return (
 			candidate === item ||
 			((candidate.dataset.gallery ?? '') === name &&
@@ -326,7 +328,7 @@ function galleryOf(item: HTMLElement): HTMLElement[] {
 
 function isSubjectShowing(item: HTMLElement): boolean {
 	const subject = subjectOf(item)
-	return subject !== undefined && rendered(subject).checkVisibility()
+	return subject !== undefined && rendered(subject).checkVisibility({ visibilityProperty: true })
 }
 
 /** The nearest ancestor of `item` that matches its scope selector. */

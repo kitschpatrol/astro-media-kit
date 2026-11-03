@@ -83,6 +83,20 @@ describe('galleries', () => {
 		expect(activeSlideLabel()).toBe('2 of 2')
 	})
 
+	it('excludes subjects and text links hidden with CSS visibility from galleries', async () => {
+		const fixture = mount(`
+			${item(block('visible'), 'data-gallery="g"')}
+			<section style="visibility: hidden">${item(block('hidden ancestor'), 'data-gallery="g"')}</section>
+			${item(block('hidden subject', 'width: 240px; height: 160px; visibility: hidden'), 'data-gallery="g"')}
+			<a class="amk-zoom amk-zoom-link" href="#hidden" data-gallery="g" style="visibility: hidden">
+				Hidden link<template>${block('hidden link')}</template>
+			</a>`)
+		const items = boxes(fixture)
+		await openLightbox(items[0]!)
+		expect(activeSlideLabel()).toBe('1 of 1')
+		expect(items.slice(1).some((each) => isLifted(each))).toBe(false)
+	})
+
 	it('keeps same-named galleries in different scopes apart', async () => {
 		const fixture = mount(`
 			<section class="post">${item(block('a'), 'data-gallery="g" data-scope=".post"')}
