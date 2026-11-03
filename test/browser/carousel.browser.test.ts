@@ -161,16 +161,24 @@ it('hides captions unless asked, leaving them to the lightbox', async () => {
 	expect(query(viewer(), '.amk-lightbox-caption').textContent).toContain('stays hidden')
 })
 
-it('returns from the lightbox onto the slide that was showing there', async () => {
-	const { carousel, track } = await mountCarousel()
+it.each(['ltr', 'rtl'] as const)(
+	'advances only the %s page carousel after navigating in the lightbox',
+	async (direction) => {
+		const { carousel, track } = await mountCarousel()
+		carousel.dir = direction
+		carousel.style.marginBlockStart = '120vh'
+		carousel.scrollIntoView({ behavior: 'instant', block: 'center' })
+		const scroll = { x: window.scrollX, y: window.scrollY }
 
-	await userEvent.click(query(track, '.amk-zoom'))
-	await expect.poll(() => viewer().dataset.state).toBe('open')
-	await userEvent.keyboard('{ArrowRight}')
-	await expect.poll(activeSlideLabel).toBe('2 of 3')
-	await userEvent.keyboard('{Escape}')
-	await expect.poll(() => viewer().open).toBe(false)
+		await userEvent.click(query(track, '.amk-zoom'))
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(activeSlideLabel).toBe('2 of 3')
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => viewer().open).toBe(false)
 
-	await expect.poll(() => slideAt(track)).toBe(1)
-	await expect.poll(() => currentDot(carousel)).toBe('Slide 2')
-})
+		await expect.poll(() => slideAt(track)).toBe(1)
+		await expect.poll(() => currentDot(carousel)).toBe('Slide 2')
+		expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
+	},
+)

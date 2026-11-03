@@ -622,6 +622,8 @@ The server renders each item's gallery and fallback attributes. With zoom enable
 
 While the original is lifted, its wrapper holds its place in the page and a decorative preview stands in: a copy of an image that follows the candidate the lifted original loads, so the two crossfade and land on the same pixels; a player's poster, or its live frames on a canvas, for video; a copy of ordinary HTML. `zoomPlaceholder="none"` reserves the space without a preview. Hovering an item for a moment, or focusing it, warms the candidate the viewer will need, without changing the visible thumbnail.
 
+Closing preserves the document's scroll position. An on-page Carousel advances to the selected slide without scrolling its ancestors. If the thumbnail remains offscreen, the closing animation travels toward its existing position without scrolling it into view; other scroll containers keep their positions.
+
 A ZoomLink's media isn't in the page: it is instantiated from the link's template as the link is used, hovered as well as clicked, grows out of the link once it can show, shrinks back into it as the viewer closes, and is discarded then. It joins a gallery like any other item.
 
 In the viewer:

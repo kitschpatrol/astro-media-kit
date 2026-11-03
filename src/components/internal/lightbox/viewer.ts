@@ -220,14 +220,9 @@ class Viewer {
 			return
 		}
 
-		// Into view when it is out of it: scrolled away in the page, or past the
-		// edge of a scroll container it sits in, such as an embedded carousel,
-		// which then shows the slide that was on. An item partly in view stays
-		// where it is, so the page doesn't move under the viewer
-		if (!isInViewport(lift.item.getBoundingClientRect()) || isClippedOut(lift.item)) {
-			lift.item.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
-		}
-
+		// Advance an embedded carousel locally, but never scroll its ancestors.
+		// Other offscreen thumbnails keep their position as the return target.
+		revealCarouselItem(lift.item)
 		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
 	}
@@ -1245,31 +1240,19 @@ function describeSlide(slide: Slide): string {
 	return name === '' ? label : `${label}, ${name}`
 }
 
-/**
- * Whether `item` lies entirely outside the box of an ancestor that clips its
- * overflow, such as the track of an embedded carousel scrolled to another
- * slide.
- */
-function isClippedOut(item: Element): boolean {
-	const box = item.getBoundingClientRect()
-	for (let node = item.parentElement; node !== null; node = node.parentElement) {
-		const style = getComputedStyle(node)
-		if (style.overflowX === 'visible' && style.overflowY === 'visible') {
-			continue
+/** Reveal the selected slide in its page carousels without moving the document. */
+function revealCarouselItem(item: Element) {
+	let slide = item.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
+	while (slide !== undefined) {
+		const track = slide.parentElement
+		if (track?.classList.contains('amk-carousel-track') === true) {
+			const index = [...track.children].indexOf(slide)
+			const direction = track.matches(':dir(rtl)') ? -1 : 1
+			track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
 		}
 
-		const clip = node.getBoundingClientRect()
-		if (
-			box.right <= clip.left ||
-			box.left >= clip.right ||
-			box.bottom <= clip.top ||
-			box.top >= clip.bottom
-		) {
-			return true
-		}
+		slide = track?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
 	}
-
-	return false
 }
 
 function isInViewport(box: Box): boolean {
