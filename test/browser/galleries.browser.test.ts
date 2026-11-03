@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { commands, page, userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { subjectOf } from '../../src/components/internal/lightbox/dom'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
@@ -194,10 +194,12 @@ describe('galleries', () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
 		await openLightbox(boxes(fixture)[0]!)
 
-		await userEvent.dragAndDrop(
-			page.elementLocator(query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-frame')),
-			page.elementLocator(query(document, '.amk-lightbox-previous')),
-		)
+		const frame = query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-frame')
+		const box = frame.getBoundingClientRect()
+		const y = box.y + box.height / 2
+		await commands.mouseDown(box.right - 5, y)
+		await commands.mouseMove(5, y)
+		await commands.mouseUp()
 
 		await expect.poll(activeSlideLabel).toBe('2 of 3')
 		await settle()
@@ -219,8 +221,11 @@ describe('galleries', () => {
 		await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
 		await openLightbox(boxes(fixture)[0]!)
 
-		await commands.mouseDown(640, 400)
-		await commands.mouseUp(500, 400)
+		const box = image.getBoundingClientRect()
+		const y = box.y + box.height / 2
+		await commands.mouseDown(box.right - 16, y)
+		await commands.mouseMove(5, y)
+		await commands.mouseUp()
 
 		await expect.poll(trackOffset).toBe(1280)
 		expect(activeSlideLabel()).toBe('2 of 3')
@@ -349,9 +354,7 @@ describe('galleries', () => {
 		await expect.poll(() => query(fixture, 'img', HTMLImageElement).naturalWidth).toBeGreaterThan(0)
 		await openLightbox(boxes(fixture)[0]!)
 		await commands.mouseDown(640, 400)
-		// Two native moves keep this clearly faster than the flick threshold,
-		// rather than depending on the frame rate of an eight-step glide.
-		await commands.mouseUp(640, 480, 2)
+		await commands.mouseFlick(640, 480)
 		await expect.poll(() => viewer().open).toBe(false)
 	})
 
@@ -484,7 +487,7 @@ describe('galleries', () => {
 		await openLightbox(boxes(fixture)[0]!)
 
 		await commands.mouseDown(900, 400)
-		await commands.mouseUp(780, 400)
+		await commands.mouseFlick(780, 400)
 
 		await expect.poll(trackOffset).toBe(1280)
 		expect(activeSlideLabel()).toBe('2 of 3')
@@ -516,7 +519,7 @@ describe('galleries', () => {
 		await commands.mouseDown(1100, 400)
 		await commands.mouseMove(300, 400)
 		await settle()
-		await commands.mouseUp(400, 400)
+		await commands.mouseFlick(400, 400)
 
 		await expect.poll(trackOffset).toBe(0)
 		expect(activeSlideLabel()).toBe('1 of 3')

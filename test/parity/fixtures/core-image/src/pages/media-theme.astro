@@ -3,6 +3,8 @@ import { Audio, MediaTheme, Zoomer } from 'astro-media-kit/components'
 import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
 import { ClientRouter } from 'astro:transitions'
 import ThemeIcon from '../components/ThemeIcon.astro'
+
+// PCM audio keeps playback tests independent of optional platform codecs.
 ---
 
 <!doctype html>
@@ -31,8 +33,8 @@ import ThemeIcon from '../components/ThemeIcon.astro'
 			Another theme
 		</a>
 		<section id="audio">
-			<Audio label="Themed audio" service="local" src="/media/loop.mp4" />
-			<Audio label="Second audio" service="local" src="/media/loop.mp4" />
+			<Audio label="Themed audio" service="local" src="/media/silence.wav" />
+			<Audio label="Second audio" service="local" src="/media/silence.wav" />
 		</section>
 		<section id="video">
 			<VideoPlayer

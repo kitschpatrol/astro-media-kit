@@ -57,7 +57,6 @@ it('initializes both player themes and refreshes the cached viewer across Astro 
 			)
 			.toBe('Play')
 		const root: Document = frame.contentDocument!
-		await expect.poll(() => root.readyState).toBe('complete')
 		await expect
 			.poll(
 				() =>

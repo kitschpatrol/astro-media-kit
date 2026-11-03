@@ -8,6 +8,7 @@ declare module 'vitest/browser' {
 	interface BrowserCommands {
 		emulateReducedMotion: (isReduced: boolean) => Promise<void>
 		mouseDown: (x: number, y: number) => Promise<void>
+		mouseFlick: (x: number, y: number) => Promise<void>
 		mouseMove: (x: number, y: number) => Promise<void>
 		mouseUp: (x?: number, y?: number, steps?: number) => Promise<void>
 		mouseWheel: (deltaX: number, deltaY: number) => Promise<void>

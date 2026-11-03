@@ -832,6 +832,7 @@ describe('content', () => {
 				</video>`),
 		)
 		const video = query(fixture, 'video', HTMLVideoElement)
+		video.load()
 		await expect.poll(() => video.currentTime, { timeout: 5000 }).toBeGreaterThan(0.2)
 		const events: string[] = []
 		for (const type of ['pause', 'emptied', 'abort', 'loadstart', 'seeking']) {

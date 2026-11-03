@@ -28,7 +28,7 @@ afterEach(() => {
 describe('localVideoProbeCandidates', () => {
 	it('tries the public directory before the raw path for site-root-relative sources', () => {
 		expect(localVideoProbeCandidates('/videos/intro.mp4')).toEqual([
-			nodePath.posix.join(process.cwd(), 'public/videos/intro.mp4'),
+			nodePath.posix.join(process.cwd().replaceAll('\\', '/'), 'public/videos/intro.mp4'),
 			'/videos/intro.mp4',
 		])
 	})

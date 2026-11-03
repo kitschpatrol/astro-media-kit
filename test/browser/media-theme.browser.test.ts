@@ -59,13 +59,14 @@ it('applies partial overrides to both players and keeps unrelated icon families 
 	).toBe(true)
 	const player = query(fixture, 'audio-player')
 	const audio = query(player, 'audio', HTMLAudioElement)
-	// Keep the UI test independent of platform AAC decoders, particularly Firefox's.
-	audio.src = '/media/loop.webm'
 	// DOMParser-created media needs an explicit load after mounting.
 	audio.load()
 	await expect.poll(() => audio.readyState, { timeout: 5000 }).toBeGreaterThan(0)
 	await userEvent.click(query(player, 'media-play-button'))
 	await expect.poll(() => audio.paused).toBe(false)
+	await expect.poll(() => audio.currentTime).toBeGreaterThan(0)
+	expect(audio.error).toBeNull()
+	expect(player.querySelector('media-error-dialog[data-open]')).toBeNull()
 	await expect
 		.poll(() => query(player, 'media-play-button').getAttribute('aria-label'))
 		.toBe('Pause')

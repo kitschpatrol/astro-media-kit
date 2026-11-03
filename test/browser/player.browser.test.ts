@@ -53,8 +53,16 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	await expect
 		.poll(() => query(player, 'media-volume-popover').dataset.availability)
 		.toBe('available')
+	await expect
+		.poll(() => query(player, 'amk-mute-button').getAttribute('aria-controls'))
+		.toBe(query(player, 'media-volume-popover').id)
 	// Leave room above the controls, independent of the previous test's scroll position.
 	player.scrollIntoView({ behavior: 'instant', block: 'center' })
+	// Start outside the settled player so the next hover delivers a fresh pointer entry.
+	await commands.mouseMove(5, 5)
+	await expect
+		.poll(() => query(player, 'amk-mute-button').getAttribute('aria-expanded'))
+		.toBe('false')
 	return { item, player }
 }
 

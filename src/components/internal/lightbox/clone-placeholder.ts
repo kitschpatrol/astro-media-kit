@@ -73,11 +73,15 @@ export function clonePlaceholder(subject: Element, signal: AbortSignal): HTMLEle
 			} else if ((name === 'href' || name === 'xlink:href') && attribute.value.startsWith('#')) {
 				attribute.value = `#${ids.get(attribute.value.slice(1)) ?? attribute.value.slice(1)}`
 			} else {
-				attribute.value = attribute.value.replaceAll(
+				const value = attribute.value.replaceAll(
 					fragmentUrl,
 					(match: string, _quote: string, id: string) =>
 						ids.has(id) ? `url(#${ids.get(id)!})` : match,
 				)
+				// Reassigning an unchanged image URL can restart its load in WebKit.
+				if (value !== attribute.value) {
+					attribute.value = value
+				}
 			}
 		}
 

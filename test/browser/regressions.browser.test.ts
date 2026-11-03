@@ -40,7 +40,7 @@ async function open(content: string): Promise<HTMLElement> {
 }
 
 function videoFixture(): HTMLElement {
-	return mount(
+	const fixture = mount(
 		item(
 			`<video muted loop playsinline width="1280" height="720" style="width: 100%; height: auto" aria-label="Test clip">
 				<source src="/media/loop.mp4" type="video/mp4" />
@@ -49,6 +49,8 @@ function videoFixture(): HTMLElement {
 			'style="width: 640px"',
 		),
 	)
+	query(fixture, 'video', HTMLVideoElement).load()
+	return fixture
 }
 
 it('keeps only one slide zoomed when zoom interrupts navigation', async () => {
@@ -419,6 +421,7 @@ it('opens immediately when preparation encounters a failed image', async () => {
 })
 
 it('keeps a warm-up going when intent repeats, rather than starting over', async () => {
+	await commands.mouseMove(1200, 760)
 	const fixture = mount(
 		item(
 			`<img src="/media/tile-480.jpg" alt="" sizes="240px" width="2400" height="2400"
@@ -607,7 +610,9 @@ it('starts a live placeholder when video data arrives after lifting', async () =
 	const canvas = fixture.querySelector('canvas')!
 	expect(canvas.width).toBe(1)
 	const video = viewer().querySelector('video')!
-	video.src = video.canPlayType('video/webm') === '' ? '/media/loop.mp4' : '/media/loop.webm'
+	// Match the MP4-first fallback used by the other native video fixtures.
+	video.src = video.canPlayType('video/mp4') === '' ? '/media/loop.webm' : '/media/loop.mp4'
+	video.load()
 	await video.play()
 	await expect.poll(() => canvas.width).toBeGreaterThan(1)
 	expect(canvas.width).toBe(Math.ceil(200 * devicePixelRatio))

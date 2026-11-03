@@ -51,6 +51,40 @@ const mouseUp = defineBrowserCommand<[x?: number, y?: number, steps?: number]>(
 )
 
 /**
+ * Release a native flick with an input clock independent of the runner's frame
+ * rate.
+ */
+const mouseFlick = defineBrowserCommand<[x: number, y: number]>(async (context, x, y) => {
+	const frame = await context.frame()
+	const point = await toWindow(frame, x, y)
+	const clock = await frame.evaluateHandle(() => {
+		const controller = new AbortController()
+		let time = performance.now()
+		const stamp = (event: PointerEvent) => {
+			time += 16
+			Object.defineProperty(event, 'timeStamp', { value: time })
+		}
+
+		// Keep native hit testing and pointer capture, while specifying a quick
+		// gesture even when a busy CI runner takes longer to dispatch its events.
+		for (const type of ['pointermove', 'pointerup'] as const) {
+			document.addEventListener(type, stamp, { capture: true, signal: controller.signal })
+		}
+
+		return controller
+	})
+	try {
+		await context.page.mouse.move(point.x, point.y, { steps: 2 })
+		await context.page.mouse.up()
+	} finally {
+		await clock.evaluate((controller) => {
+			controller.abort()
+		})
+		await clock.dispose()
+	}
+})
+
+/**
  * Deliver actual wheel input through the browser, including its native
  * snapping.
  */
@@ -136,6 +170,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 							commands: {
 								emulateReducedMotion,
 								mouseDown,
+								mouseFlick,
 								mouseMove,
 								mouseUp,
 								mouseWheel,
@@ -147,6 +182,9 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 							provider: playwright(),
 							viewport: { width: 1280, height: 800 },
 						},
+						// Source selection, decoding, and native scrolling can outlast the
+						// default one-second poll on hosted runners.
+						expect: { poll: { timeout: 5000 } },
 						// Native input tests must not compete for browser focus across files.
 						fileParallelism: false,
 						include: ['test/**/*.browser.test.ts'],

@@ -69,13 +69,24 @@ it('opens the item clicked under the viewer while another opens or closes', asyn
 
 	const closing = closeLightbox()
 	expect(isLifted(c!)).toBe(false)
-	// Once the returning subject no longer covers c, a click there is for c
-	await expect
-		.poll(() => currentLayer().getBoundingClientRect().bottom)
-		.toBeLessThan(middleOf(c!).y)
+	// Hold the return just before it ends, after it uncovers c. Polling an
+	// 80 ms transition can miss this state altogether on a busy runner.
+	const layer = currentLayer()
+	const animations = layer.getAnimations()
+	expect(animations.length).toBeGreaterThan(0)
+	for (const animation of animations) {
+		animation.pause()
+		animation.currentTime = Number(animation.effect!.getTiming().duration) * 0.99
+	}
+
+	expect(layer.getBoundingClientRect().bottom).toBeLessThan(middleOf(c!).y)
 	clickViewerAt(middleOf(c!))
 	expect(activeSlideLabel()).toBe('3 of 3')
 	expect(isLifted(c!)).toBe(true)
+	for (const animation of animations) {
+		animation.finish()
+	}
+
 	await closing
 	await transitionsDone()
 	await expect
