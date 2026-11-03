@@ -144,7 +144,7 @@ export async function cloudflareGetVideoInfo(
 
 	// Generate fallback mp4 link, not available via API
 	// https://community.cloudflare.com/t/include-download-mp4-link-in-api-request-please/539413/8
-	const mp4Url = `${hlsUrl.replace('manifest/video.m3u8', '')}/downloads/default.mp4`
+	const mp4Url = hlsUrl.replace('/manifest/video.m3u8', '/downloads/default.mp4')
 
 	// Find captions, if available
 	// URL is like this but doesn't work unless the url is signed, which won't be possible AOT
