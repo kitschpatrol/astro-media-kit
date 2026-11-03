@@ -1,12 +1,30 @@
 import { isPlainObject, isUrlInstance } from '@sindresorhus/is'
 import nodePath from 'node:path'
 
+const WINDOWS_DRIVE_PREFIX = /^\/[a-z]:\//iv
+const FILE_OR_HTTP_URL = /^(?:file|https?):\/\//iv
+const QUERY_OR_HASH = /[?#]/v
+
 type PathLikeInput =
 	| string
 	| URL
 	| {
 			src?: string | URL
 	  }
+
+function decodeUrlPath(path: string): string {
+	try {
+		return decodeURIComponent(path)
+	} catch {
+		// A literal percent sign is also a valid filesystem filename.
+		return path
+	}
+}
+
+function urlPath(url: URL): string {
+	const path = decodeUrlPath(url.pathname)
+	return url.protocol === 'file:' && WINDOWS_DRIVE_PREFIX.test(path) ? path.slice(1) : path
+}
 
 function toPosix(path: string): string {
 	return path.replaceAll('\\', '/')
@@ -59,28 +77,24 @@ function getPlainPath(path: PathLikeInput): string {
 		throw new TypeError('Cannot derive absolute file path from provided input.')
 	}
 
-	// For URL instances, use pathname directly. fileURLToPath() throws on
-	// Windows for file URLs without a drive letter (e.g. file:///images/x.png).
-	let pathString = isUrlInstance(pathStringOrUrl)
-		? pathStringOrUrl.pathname
-		: toPosix(pathStringOrUrl)
+	if (isUrlInstance(pathStringOrUrl)) {
+		return urlPath(pathStringOrUrl)
+	}
 
-	// Strip Vite's /@fs/ prefix if present
+	let pathString = toPosix(pathStringOrUrl)
 	if (pathString.startsWith('/@fs/')) {
-		pathString = pathString.slice(4) // Remove '/@fs' prefix, keeping the leading '/'
+		pathString = pathString.slice(4)
+		// Vite prefixes Windows drive paths with /@fs/ as well.
+		if (WINDOWS_DRIVE_PREFIX.test(pathString)) {
+			pathString = pathString.slice(1)
+		}
 	}
 
-	try {
-		// Try to parse string as URL — primarily to strip query strings/hashes
-		// that Vite may append (e.g. ?import, ?url). Reject results whose
-		// protocol isn't file:, since URL parsing treats Windows drive letters
-		// (e.g. D:/foo) as a custom scheme and would silently drop the drive.
-		const url = new URL(pathString, 'file://')
-		return url.protocol === 'file:' ? url.pathname : pathString
-	} catch {
-		// Fall back to treating as file path
-		return pathString
-	}
+	// Only parse actual URLs. Parsing plain filenames as URLs percent-encodes
+	// spaces and mistakes Windows drive letters for URL schemes.
+	return FILE_OR_HTTP_URL.test(pathString)
+		? urlPath(new URL(pathString))
+		: pathString.split(QUERY_OR_HASH, 1)[0]!
 }
 
 /**
@@ -109,7 +123,7 @@ export function getAbsoluteFilePath(path: PathLikeInput, shouldAddDistribution =
  * @returns The absolute file path.
  */
 export function getPublicFilePath(path: string): string {
-	return nodePath.posix.join(posixCwd(), 'public', toPosix(path))
+	return nodePath.posix.join(posixCwd(), 'public', decodeUrlPath(getPlainPath(path)))
 }
 
 /**
@@ -118,7 +132,9 @@ export function getPublicFilePath(path: string): string {
 export function stripCwd(path: string): string {
 	const cwd = posixCwd()
 	const normalized = toPosix(path)
-	return normalized.startsWith(cwd) ? normalized.slice(cwd.length) : normalized
+	return normalized === cwd || normalized.startsWith(`${cwd}/`)
+		? normalized.slice(cwd.length)
+		: normalized
 }
 
 /**

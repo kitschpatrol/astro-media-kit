@@ -3,6 +3,7 @@ import {
 	getAbsoluteFilePath,
 	getFileExtension,
 	getPathWithoutExtension,
+	getPublicFilePath,
 	resolveAliases,
 	stripCwd,
 } from '../src/utilities/path'
@@ -15,6 +16,11 @@ describe('getFileExtension', () => {
 
 	it('extracts extension from URL', () => {
 		expect(getFileExtension(new URL('file:///images/photo.png'))).toBe('.png')
+	})
+
+	it('ignores URL query strings and fragments', () => {
+		expect(getFileExtension('https://example.com/photo.jpg?width=800#preview')).toBe('.jpg')
+		expect(getFileExtension('C:\\images\\photo.jpg?import#preview')).toBe('.jpg')
 	})
 
 	it('extracts extension from object with src', () => {
@@ -63,6 +69,11 @@ describe('stripCwd', () => {
 		expect(stripCwd('/other/path/file.ts')).toBe('/other/path/file.ts')
 	})
 
+	it('does not strip a sibling directory sharing the cwd prefix', () => {
+		const sibling = `${posixCwd}-other/src/file.ts`
+		expect(stripCwd(sibling)).toBe(sibling)
+	})
+
 	it('leaves relative paths unchanged', () => {
 		expect(stripCwd('./relative/file.ts')).toBe('./relative/file.ts')
 	})
@@ -72,6 +83,17 @@ describe('getAbsoluteFilePath', () => {
 	it('resolves relative path against cwd', () => {
 		const result = getAbsoluteFilePath('/src/file.ts')
 		expect(result).toBe(`${posixCwd}/src/file.ts`)
+	})
+
+	it('preserves spaces and Unicode in local filenames', () => {
+		expect(getAbsoluteFilePath('./src/my photo.jpg')).toBe(`${posixCwd}/src/my photo.jpg`)
+		expect(getAbsoluteFilePath('./src/日本.jpg')).toBe(`${posixCwd}/src/日本.jpg`)
+	})
+
+	it('decodes file URL paths', () => {
+		expect(getAbsoluteFilePath(new URL(`file://${posixCwd}/src/my%20photo.jpg`))).toBe(
+			`${posixCwd}/src/my photo.jpg`,
+		)
 	})
 
 	it('adds dist prefix when requested', () => {
@@ -105,5 +127,23 @@ describe('resolveAliases', () => {
 
 	it('only matches ~/ prefix, not bare ~', () => {
 		expect(resolveAliases('~notAlias')).toBe('~notAlias')
+	})
+})
+
+describe('getPublicFilePath', () => {
+	it('removes URL query strings and media fragments before probing', () => {
+		expect(getPublicFilePath('/videos/intro.mp4?v=1#t=2')).toBe(
+			`${posixCwd}/public/videos/intro.mp4`,
+		)
+	})
+
+	it('accepts a literal percent sign in a public filename', () => {
+		expect(getPublicFilePath('/videos/100%.mp4')).toBe(`${posixCwd}/public/videos/100%.mp4`)
+	})
+
+	it('decodes encoded public filenames', () => {
+		expect(getPublicFilePath('/videos/my%20video.mp4')).toBe(
+			`${posixCwd}/public/videos/my video.mp4`,
+		)
 	})
 })
