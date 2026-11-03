@@ -4,6 +4,7 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { disposeCarousels, setUpCarousels } from '../../src/components/internal/carousel/carousel'
+import { isClickFromDrag } from '../../src/components/internal/lightbox/motion'
 import { activeSlideLabel, cleanUp, mountPage, query, setUpLightbox, viewer } from './helpers'
 import '../../src/components/internal/carousel/carousel.css'
 
@@ -34,6 +35,31 @@ function slideAt(track: HTMLElement): number {
 function currentDot(carousel: HTMLElement): string {
 	return query(carousel, '.amk-carousel-dot[aria-current="true"]').getAttribute('aria-label') ?? ''
 }
+
+it('stops reacting to a retained track after disposal and can initialize it again', async () => {
+	const { carousel, track } = await mountCarousel()
+	disposeCarousels()
+	track.scrollLeft = track.clientWidth
+	track.dispatchEvent(new Event('scroll'))
+	expect(currentDot(carousel)).toBe('Slide 1')
+
+	setUpCarousels()
+	track.scrollLeft = track.clientWidth
+	track.dispatchEvent(new Event('scroll'))
+	expect(currentDot(carousel)).toBe('Slide 2')
+})
+
+it('releases drag click suppression when disposed during a drag', async () => {
+	const { track } = await mountCarousel()
+	const box = track.getBoundingClientRect()
+	const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+	await commands.mouseDown(middle.x, middle.y)
+	await commands.mouseMove(middle.x - 100, middle.y)
+	expect(Object.hasOwn(track.dataset, 'dragging')).toBe(true)
+	disposeCarousels()
+	expect(isClickFromDrag()).toBe(false)
+	expect(Object.hasOwn(track.dataset, 'dragging')).toBe(false)
+})
 
 it('lays slides out one per track width, with captions shown on request', async () => {
 	const { carousel, track } = await mountCarousel()

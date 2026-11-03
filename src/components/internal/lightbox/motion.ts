@@ -84,6 +84,7 @@ export class CarouselMotion {
 	get target(): number {
 		return this.#target ?? this.#index
 	}
+	readonly #controller = new AbortController()
 	#count = 0
 	#direction = 1
 	#drag: Drag | undefined
@@ -108,20 +109,21 @@ export class CarouselMotion {
 	constructor(track: HTMLElement, options: MotionOptions) {
 		this.#track = track
 		this.#options = options
+		const { signal } = this.#controller
 		// On the document, since the click that ends a drag can land on an
 		// ancestor of the track when the pointer was let go over another element
-		document.addEventListener('click', this.#handleClick, { capture: true })
-		track.addEventListener('pointerdown', this.#handlePointerdown)
-		track.addEventListener('pointermove', this.#handlePointermove)
-		track.addEventListener('pointerup', this.#handlePointerEnd)
-		track.addEventListener('pointercancel', this.#handlePointerEnd)
-		track.addEventListener('lostpointercapture', this.#handlePointerEnd)
-		track.addEventListener('scroll', this.#handleScroll, { passive: true })
-		track.addEventListener('scrollend', this.#realign)
-		track.addEventListener('touchstart', this.#handleGesture, { passive: true })
-		track.addEventListener('touchend', this.#handleTouchEnd, { passive: true })
-		track.addEventListener('touchcancel', this.#handleTouchEnd, { passive: true })
-		track.addEventListener('wheel', this.#handleGesture, { passive: true })
+		document.addEventListener('click', this.#handleClick, { capture: true, signal })
+		track.addEventListener('pointerdown', this.#handlePointerdown, { signal })
+		track.addEventListener('pointermove', this.#handlePointermove, { signal })
+		track.addEventListener('pointerup', this.#handlePointerEnd, { signal })
+		track.addEventListener('pointercancel', this.#handlePointerEnd, { signal })
+		track.addEventListener('lostpointercapture', this.#handlePointerEnd, { signal })
+		track.addEventListener('scroll', this.#handleScroll, { passive: true, signal })
+		track.addEventListener('scrollend', this.#realign, { signal })
+		track.addEventListener('touchstart', this.#handleGesture, { passive: true, signal })
+		track.addEventListener('touchend', this.#handleTouchEnd, { passive: true, signal })
+		track.addEventListener('touchcancel', this.#handleTouchEnd, { passive: true, signal })
+		track.addEventListener('wheel', this.#handleGesture, { passive: true, signal })
 	}
 
 	configure(count: number, index: number) {
@@ -133,10 +135,13 @@ export class CarouselMotion {
 		this.render(index * this.#width)
 	}
 
-	/** Stop, and stop listening to the document. */
+	/** Stop and release every listener before the track is removed or reused. */
 	destroy() {
+		this.#controller.abort()
 		this.stop()
-		document.removeEventListener('click', this.#handleClick, { capture: true })
+		if (this.#shouldIgnoreClick) {
+			this.#ignoreClick(false)
+		}
 	}
 
 	/**
