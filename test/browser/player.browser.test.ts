@@ -17,6 +17,7 @@ import {
 	fadeOf,
 	isLifted,
 	liftDone,
+	mount,
 	mountPage,
 	query,
 	settle,
@@ -175,6 +176,72 @@ it('slides its control bar up as it lifts, and away again as it lands', async ()
 		expect(controls.hasAttribute('popover')).toBe(false)
 	} finally {
 		slow.remove()
+	}
+})
+
+it('crossfades video control strips in place, including a rapid reversal', async () => {
+	const { item, player } = await mountPlayer()
+	const otherItem = query(document, '#video-minimal .amk-zoom')
+	const otherPlayer = query(otherItem, 'video-player')
+	item.dataset.gallery = 'strips'
+	otherItem.dataset.gallery = 'strips'
+	otherPlayer.dataset.controls = 'full'
+	mount('<style>.amk { --amk-duration: 800ms; }</style>')
+	await openLightbox(item)
+	const first = query(player, '.amk-controls')
+	const second = query(otherPlayer, '.amk-controls')
+	await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(() => second.matches(':popover-open')).toBe(true)
+	expect(first.matches(':popover-open')).toBe(true)
+	expect(getComputedStyle(query(first, '.amk-bar')).pointerEvents).toBe('none')
+	for (const controls of [first, second]) {
+		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
+		const properties = controls
+			.getAnimations()
+			.filter((animation) => animation instanceof CSSTransition)
+			.map((animation) => animation.transitionProperty)
+		expect(properties).toContain('opacity')
+		expect(properties).not.toContain('translate')
+	}
+
+	await userEvent.click(query(viewer(), '.amk-lightbox-previous'))
+	await expect.poll(() => Object.hasOwn(first.dataset, 'crossfadeOut')).toBe(false)
+	expect(Object.hasOwn(second.dataset, 'crossfadeOut')).toBe(true)
+	for (const controls of [first, second]) {
+		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
+		expect(
+			controls
+				.getAnimations()
+				.filter((animation) => animation instanceof CSSTransition)
+				.map((animation) => animation.transitionProperty),
+		).not.toContain('translate')
+	}
+
+	await closeLightbox()
+	expect(Object.hasOwn(first.dataset, 'crossfade')).toBe(false)
+	expect(Object.hasOwn(second.dataset, 'crossfade')).toBe(false)
+})
+
+it('switches video control strips without motion when reduced motion is requested', async () => {
+	const { item, player } = await mountPlayer()
+	const otherItem = query(document, '#video-minimal .amk-zoom')
+	item.dataset.gallery = 'reduced-strips'
+	otherItem.dataset.gallery = 'reduced-strips'
+	const first = query(player, '.amk-controls')
+	const second = query(otherItem, '.amk-controls')
+	await commands.emulateReducedMotion(true)
+	try {
+		await openLightbox(item)
+		await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(() => second.matches(':popover-open')).toBe(true)
+		expect(getComputedStyle(second).opacity).toBe('1')
+		expect(second.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
+		expect(first.getAnimations()).toHaveLength(0)
+		expect(second.getAnimations()).toHaveLength(0)
+	} finally {
+		await commands.emulateReducedMotion(false)
 	}
 })
 

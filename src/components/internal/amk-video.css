@@ -716,9 +716,38 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 }
 
 .amk-controls[popover]:not(:popover-open) {
+	--amk-controls-pointer: none;
+	pointer-events: none;
 	translate: 0 100%;
 	display: none;
 	opacity: 0;
+}
+
+/* Moving between two videos exchanges their bars at the same screen position. */
+.amk-controls[popover][data-crossfade] {
+	translate: 0 0;
+	transition:
+		opacity var(--amk-duration),
+		display var(--amk-duration) allow-discrete,
+		overlay var(--amk-duration) allow-discrete;
+}
+
+.amk-controls[popover][data-crossfade-out] {
+	--amk-controls-pointer: none;
+	pointer-events: none;
+	opacity: 0;
+}
+
+@starting-style {
+	.amk-controls[popover][data-crossfade]:popover-open {
+		translate: 0 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.amk-controls[popover][data-crossfade] {
+		transition: none;
+	}
 }
 
 .amk-lightbox[data-dismissing] .amk-controls[popover] {
