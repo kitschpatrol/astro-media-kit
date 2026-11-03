@@ -79,12 +79,24 @@
 .amk-carousel-button {
 	cursor: pointer;
 	position: absolute;
-	top: 50%;
+	top: var(--amk-carousel-control-block-position, var(--amk-gallery-control-block-position, 50%));
 	translate: 0 -50%;
 	display: grid;
 	place-items: center;
-	width: var(--amk-carousel-control-size, var(--amk-gallery-control-size));
-	height: var(--amk-carousel-control-size, var(--amk-gallery-control-size));
+	width: var(
+		--amk-carousel-control-width,
+		var(
+			--amk-carousel-control-size,
+			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+		)
+	);
+	height: var(
+		--amk-carousel-control-height,
+		var(
+			--amk-carousel-control-size,
+			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+		)
+	);
 	padding: 0;
 	border: 0;
 	border-radius: var(--amk-carousel-control-radius, var(--amk-gallery-control-radius));
@@ -136,11 +148,11 @@
 }
 
 .amk-carousel-previous {
-	inset-inline-start: 0.75rem;
+	inset-inline-start: var(--amk-carousel-control-inset, var(--amk-gallery-control-inset, 0.75rem));
 }
 
 .amk-carousel-next {
-	inset-inline-end: 0.75rem;
+	inset-inline-end: var(--amk-carousel-control-inset, var(--amk-gallery-control-inset, 0.75rem));
 }
 
 .amk-carousel:dir(rtl) .amk-carousel-icon {

@@ -9,6 +9,7 @@ setUpLightbox()
 afterEach(async () => {
 	await cleanUp()
 	document.querySelector('.amk-lightbox')?.removeAttribute('style')
+	document.querySelector('.amk-lightbox')?.removeAttribute('dir')
 })
 
 async function controls(kind: GalleryKind): Promise<{
@@ -80,3 +81,67 @@ it.each(['carousel', 'lightbox'] as const)(
 		expect(getComputedStyle(icon).width).toBe('22px')
 	},
 )
+
+it.each(['carousel', 'lightbox'] as const)(
+	'sizes rectangular %s arrows while preserving component size precedence',
+	async (kind) => {
+		const { next, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-control-width', '52px')
+		root.style.setProperty('--amk-gallery-control-height', '88px')
+		expect(getComputedStyle(next).width).toBe('52px')
+		expect(getComputedStyle(next).height).toBe('88px')
+
+		root.style.setProperty(`--amk-${kind}-control-size`, '36px')
+		expect(getComputedStyle(next).width).toBe('36px')
+		expect(getComputedStyle(next).height).toBe('36px')
+		root.style.setProperty(`--amk-${kind}-control-width`, '60px')
+		expect(getComputedStyle(next).width).toBe('60px')
+		expect(getComputedStyle(next).height).toBe('36px')
+	},
+)
+
+it.each(['carousel', 'lightbox'] as const)(
+	'places %s arrows at the configured insets in both reading directions',
+	async (kind) => {
+		const { next, previous, root } = await controls(kind)
+		root.style.setProperty('--amk-gallery-control-inset', '24px')
+		root.style.setProperty('--amk-gallery-control-block-position', '40%')
+		const box = root.getBoundingClientRect()
+		expect(previous.getBoundingClientRect().left).toBeCloseTo(box.left + 24, 0)
+		expect(next.getBoundingClientRect().right).toBeCloseTo(box.right - 24, 0)
+		expect(next.getBoundingClientRect().top).toBeCloseTo(box.top + box.height * 0.4 - 22, 0)
+
+		root.dir = 'rtl'
+		expect(previous.getBoundingClientRect().right).toBeCloseTo(box.right - 24, 0)
+		expect(next.getBoundingClientRect().left).toBeCloseTo(box.left + 24, 0)
+		root.style.setProperty(`--amk-${kind}-control-inset`, '32px')
+		root.style.setProperty(`--amk-${kind}-control-block-position`, '60%')
+		expect(next.getBoundingClientRect().left).toBeCloseTo(box.left + 32, 0)
+		expect(next.getBoundingClientRect().top).toBeCloseTo(box.top + box.height * 0.6 - 22, 0)
+	},
+)
+
+it('sizes and positions the close and zoom buttons independently of gallery arrows', async () => {
+	const { next, root } = await controls('lightbox')
+	root.style.setProperty('--amk-gallery-control-width', '52px')
+	root.style.setProperty('--amk-gallery-control-height', '88px')
+	root.style.setProperty('--amk-lightbox-close-width', '44px')
+	root.style.setProperty('--amk-lightbox-close-height', '36px')
+	root.style.setProperty('--amk-lightbox-close-inset', '20px auto auto 30px')
+	root.style.setProperty('--amk-lightbox-zoom-width', '40px')
+	root.style.setProperty('--amk-lightbox-zoom-height', '38px')
+	root.style.setProperty('--amk-lightbox-zoom-inset', '22px 34px auto auto')
+	const close = query(root, '.amk-lightbox-close')
+	const zoom = query(root, '.amk-lightbox-zoom')
+	zoom.hidden = false
+	expect(next.getBoundingClientRect().width).toBe(52)
+	expect(next.getBoundingClientRect().height).toBe(88)
+	expect(close.getBoundingClientRect().width).toBe(44)
+	expect(close.getBoundingClientRect().height).toBe(36)
+	expect(close.getBoundingClientRect().left).toBe(30)
+	expect(close.getBoundingClientRect().top).toBe(20)
+	expect(zoom.getBoundingClientRect().width).toBe(40)
+	expect(zoom.getBoundingClientRect().height).toBe(38)
+	expect(zoom.getBoundingClientRect().right).toBe(window.innerWidth - 34)
+	expect(zoom.getBoundingClientRect().top).toBe(22)
+})

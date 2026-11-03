@@ -397,8 +397,20 @@
 	position: absolute;
 	display: grid;
 	place-items: center;
-	width: var(--amk-lightbox-control-size, var(--amk-gallery-control-size));
-	height: var(--amk-lightbox-control-size, var(--amk-gallery-control-size));
+	width: var(
+		--amk-lightbox-control-width,
+		var(
+			--amk-lightbox-control-size,
+			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+		)
+	);
+	height: var(
+		--amk-lightbox-control-height,
+		var(
+			--amk-lightbox-control-size,
+			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+		)
+	);
 	padding: 0;
 	border: 0;
 	border-radius: var(--amk-lightbox-control-radius, var(--amk-gallery-control-radius));
@@ -443,8 +455,38 @@
 }
 
 .amk-lightbox-zoom {
-	top: max(env(safe-area-inset-top), 0.75rem);
-	right: max(env(safe-area-inset-right), 0.75rem);
+	inset: var(
+		--amk-lightbox-zoom-inset,
+		max(
+				env(safe-area-inset-top),
+				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+			)
+			max(
+				env(safe-area-inset-right),
+				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+			)
+			auto auto
+	);
+	width: var(
+		--amk-lightbox-zoom-width,
+		var(
+			--amk-lightbox-control-width,
+			var(
+				--amk-lightbox-control-size,
+				var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+			)
+		)
+	);
+	height: var(
+		--amk-lightbox-zoom-height,
+		var(
+			--amk-lightbox-control-height,
+			var(
+				--amk-lightbox-control-size,
+				var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+			)
+		)
+	);
 }
 
 /* State belongs to the button, independent of the supplied icon artwork. */
@@ -454,22 +496,60 @@
 }
 
 .amk-lightbox-close {
-	top: max(env(safe-area-inset-top), 0.75rem);
-	left: max(env(safe-area-inset-left), 0.75rem);
+	inset: var(
+		--amk-lightbox-close-inset,
+		max(
+				env(safe-area-inset-top),
+				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+			)
+			auto auto
+			max(
+				env(safe-area-inset-left),
+				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+			)
+	);
+	width: var(
+		--amk-lightbox-close-width,
+		var(
+			--amk-lightbox-control-width,
+			var(
+				--amk-lightbox-control-size,
+				var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+			)
+		)
+	);
+	height: var(
+		--amk-lightbox-close-height,
+		var(
+			--amk-lightbox-control-height,
+			var(
+				--amk-lightbox-control-size,
+				var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+			)
+		)
+	);
 }
 
 .amk-lightbox-previous,
 .amk-lightbox-next {
-	top: 50%;
+	top: var(--amk-lightbox-control-block-position, var(--amk-gallery-control-block-position, 50%));
 	translate: 0 -50%;
 }
 
 .amk-lightbox-previous {
-	inset-inline-start: max(env(safe-area-inset-left), env(safe-area-inset-right), 0.75rem);
+	inset-inline-start: max(
+		env(safe-area-inset-left),
+		env(safe-area-inset-right),
+		var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+	);
 }
 
 .amk-lightbox-next {
-	inset-inline-end: max(env(safe-area-inset-left), env(safe-area-inset-right), 0.75rem);
+	inset-inline-end: max(
+		env(safe-area-inset-left),
+		env(safe-area-inset-right),
+		var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+	);
 }
 
 .amk-lightbox:dir(rtl) :is(.amk-lightbox-previous, .amk-lightbox-next) .amk-lightbox-icon {
