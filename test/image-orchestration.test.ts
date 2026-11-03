@@ -488,6 +488,13 @@ describe('buildSrcsetAttribute', () => {
 		const img = stubImage({ srcsetAttribute: '/400.webp 400w', srcsetValues: 1 })
 		expect(buildSrcsetAttribute(img, {}, true)).toBe('/400.webp 400w')
 	})
+
+	it('does not mix density and width descriptors when responsive layout discards densities', () => {
+		const img = stubImage({ srcsetAttribute: '/400.webp 400w, /800.webp 800w', srcsetValues: 2 })
+		expect(buildSrcsetAttribute(img, { densities: [1, 2] }, true)).toBe(
+			'/400.webp 400w, /800.webp 800w',
+		)
+	})
 })
 
 describe('getMimeType', () => {

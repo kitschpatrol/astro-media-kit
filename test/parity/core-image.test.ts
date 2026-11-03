@@ -12,6 +12,19 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		fx = await buildFixture('core-image')
 	})
 
+	it('Picture - responsive layouts discard densities without mixing srcset descriptors', async () => {
+		const $ = await fx.readHTML('/picture-responsive-densities/')
+		const source = $('picture source')
+		const candidates = source
+			.attr('srcset')!
+			.split(',')
+			.map((candidate) => candidate.trim())
+		expect(candidates.length).toBeGreaterThan(1)
+		for (const candidate of candidates) {
+			expect(candidate).toMatch(/\s\d+w$/v)
+		}
+	})
+
 	it('Local images - emits a hashed asset URL containing the original filename', async () => {
 		// SSG mode pre-builds images to /_astro/<name>.<hash>.<ext>. (Dev/SSR use the
 		// /_image endpoint with query params; we test SSG here.)

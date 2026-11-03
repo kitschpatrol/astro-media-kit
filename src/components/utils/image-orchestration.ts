@@ -486,7 +486,9 @@ export function buildSrcsetAttribute(
 	useResponsive: boolean,
 ): string {
 	const { densities, widths } = props
-	if (densities !== undefined || (widths === undefined && !useResponsive)) {
+	// Astro discards densities when a responsive layout generates width
+	// descriptors. A bare URL would add an incompatible implicit 1x candidate.
+	if (!useResponsive && (densities !== undefined || widths === undefined)) {
 		return `${image.src}${image.srcSet.values.length > 0 ? `, ${image.srcSet.attribute}` : ''}`
 	}
 
