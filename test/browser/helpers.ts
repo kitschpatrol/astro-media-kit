@@ -10,7 +10,7 @@ declare module 'vitest/browser' {
 		mouseDown: (x: number, y: number) => Promise<void>
 		mouseFlick: (x: number, y: number) => Promise<void>
 		mouseMove: (x: number, y: number) => Promise<void>
-		mouseUp: (x?: number, y?: number, steps?: number) => Promise<void>
+		mouseUp: () => Promise<void>
 		mouseWheel: (deltaX: number, deltaY: number) => Promise<void>
 		touchSwipe: (direction?: 'down' | 'left' | 'up') => Promise<boolean>
 	}
@@ -185,10 +185,10 @@ export function gallery(labels: string[]): string {
 }
 
 /** A responsive image item, 240px wide, whose placeholder is a faithful copy. */
-export function imageItem(attributes = '', name = 'tile'): string {
+export function imageItem(attributes = '', name = 'tile', search = ''): string {
 	return item(
-		`<img src="/media/${name}-480.jpg" alt="" sizes="240px" width="2400" height="2400"
-			srcset="/media/${name}-480.jpg 480w, /media/${name}-960.jpg 960w, /media/${name}-2400.jpg 2400w"
+		`<img src="/media/${name}-480.jpg${search}" alt="" sizes="240px" width="2400" height="2400"
+			srcset="/media/${name}-480.jpg${search} 480w, /media/${name}-960.jpg${search} 960w, /media/${name}-2400.jpg${search} 2400w"
 			style="width: 100%; height: auto" />`,
 		`${attributes} style="width: 240px"`,
 	)

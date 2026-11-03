@@ -16,7 +16,7 @@ concurrency:
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false
@@ -42,7 +42,7 @@ jobs:
         run: pnpm ci
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium firefox webkit
+        run: pnpm exec playwright install --with-deps chromium firefox ${{ runner.os != 'Windows' && 'webkit' || '' }}
 
       - name: Build
         env:

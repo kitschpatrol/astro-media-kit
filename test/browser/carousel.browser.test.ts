@@ -97,7 +97,8 @@ it('drags with the mouse without opening the lightbox, and opens it on a click',
 	const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 
 	await commands.mouseDown(middle.x, middle.y)
-	await commands.mouseUp(middle.x - 200, middle.y)
+	await commands.mouseMove(middle.x - 200, middle.y)
+	await commands.mouseUp()
 	await expect.poll(() => slideAt(track)).toBe(1)
 	await new Promise((resolve) => {
 		setTimeout(resolve, 200)

@@ -35,20 +35,10 @@ const mouseMove = defineBrowserCommand<[x: number, y: number]>(async (context, x
 	await context.page.mouse.move(point.x, point.y, { steps: 8 })
 })
 
-/**
- * Release the mouse where it is, or glide it to a point in the test page's
- * viewport first and release it still moving.
- */
-const mouseUp = defineBrowserCommand<[x?: number, y?: number, steps?: number]>(
-	async (context, x, y, steps = 8) => {
-		if (x !== undefined && y !== undefined) {
-			const point = await toWindow(await context.frame(), x, y)
-			await context.page.mouse.move(point.x, point.y, { steps })
-		}
-
-		await context.page.mouse.up()
-	},
-)
+/** Release the mouse where it is. */
+const mouseUp = defineBrowserCommand(async (context) => {
+	await context.page.mouse.up()
+})
 
 /**
  * Release a native flick with an input clock independent of the runner's frame
@@ -96,7 +86,12 @@ const mouseWheel = defineBrowserCommand<[deltaX: number, deltaY: number]>(
 	},
 )
 
-/** Chromium exposes native touch dragging through its browser protocol. */
+/**
+ * Chromium exposes native touch dragging through its browser protocol. Touch
+ * emulation isn't needed for that, and turning it off again would discard
+ * Playwright's hover setting for the rest of the run: where the hardware has no
+ * mouse, as on Linux runners, nothing could open on hover after that.
+ */
 const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 	async (context, direction = 'left') => {
 		if (context.page.context().browser()?.browserType().name() !== 'chromium') {
@@ -111,7 +106,6 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 			direction === 'left' ? 400 : direction === 'up' ? 150 : 650,
 		)
 		try {
-			await session.send('Emulation.setTouchEmulationEnabled', { enabled: true })
 			await session.send('Input.dispatchTouchEvent', {
 				touchPoints: [{ ...start, id: 1 }],
 				type: 'touchStart',
@@ -134,7 +128,6 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 
 			await session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
 		} finally {
-			await session.send('Emulation.setTouchEmulationEnabled', { enabled: false })
 			await session.detach()
 		}
 
@@ -178,7 +171,13 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 							},
 							enabled: true,
 							headless: true,
-							instances: [{ browser: 'chromium' }, { browser: 'firefox' }, { browser: 'webkit' }],
+							// WebKit's Windows build can't play the test media, and every test
+							// that waits on it runs out its timeout. Safari doesn't run there.
+							instances: [
+								{ browser: 'chromium' },
+								{ browser: 'firefox' },
+								...(process.platform === 'win32' ? [] : [{ browser: 'webkit' as const }]),
+							],
 							provider: playwright(),
 							viewport: { width: 1280, height: 800 },
 						},

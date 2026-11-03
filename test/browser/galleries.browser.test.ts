@@ -44,9 +44,8 @@ describe('galleries', () => {
 			query(document, '.amk-lightbox-previous').click()
 			expect(getComputedStyle(track).transitionDuration).toBe('1s')
 			expect(Object.hasOwn(track.dataset, 'moving')).toBe(true)
-			await settle(80)
+			await expect.poll(trackOffset).toBeLessThan(track.clientWidth)
 			expect(trackOffset()).toBeGreaterThan(0)
-			expect(trackOffset()).toBeLessThan(track.clientWidth)
 			expect(getComputedStyle(currentLayer()).transitionDuration).toBe('0s, 0s, 0s, 0.3s')
 		} finally {
 			viewer().style.removeProperty('--amk-lightbox-duration')
@@ -536,7 +535,8 @@ describe('galleries', () => {
 			await commands.mouseDown(900, 400)
 			await commands.mouseMove(700, 400)
 			await userEvent.keyboard('{Escape}')
-			await commands.mouseUp(500, 400)
+			await commands.mouseMove(500, 400)
+			await commands.mouseUp()
 			await settle(100)
 
 			expect(trackOffset()).toBe(0)
@@ -650,7 +650,7 @@ describe('galleries', () => {
 			await openLightbox(boxes(fixture)[0]!)
 
 			await commands.mouseDown(380, 400)
-			await commands.mouseUp(500, 400)
+			await commands.mouseFlick(500, 400)
 
 			await expect.poll(trackOffset).toBe(1280)
 			expect(activeSlideLabel()).toBe('2 of 3')

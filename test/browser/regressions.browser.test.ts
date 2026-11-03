@@ -53,6 +53,22 @@ function videoFixture(): HTMLElement {
 	return fixture
 }
 
+/** Whether wheel input can scroll a plain scroller here. */
+async function wheelScrolls(): Promise<boolean> {
+	const fixture = mount(
+		'<div style="position: fixed; inset: 0; overflow: auto"><div style="height: 200vh"></div></div>',
+	)
+	const scroller = query(fixture, 'div')
+	await commands.mouseWheel(0, 100)
+	for (let frame = 0; frame < 60 && scroller.scrollTop === 0; frame++) {
+		await frames(1)
+	}
+
+	const didScroll = scroller.scrollTop > 0
+	fixture.remove()
+	return didScroll
+}
+
 it('keeps only one slide zoomed when zoom interrupts navigation', async () => {
 	await open(
 		Array.from({ length: 2 }, () =>
@@ -101,13 +117,16 @@ it('leaves a decorative image copy while preserving the original element', async
 })
 
 it('keeps loaded thumbnails drawable on every frame when neighboring pictures are lifted', async () => {
+	// URLs no earlier document has cached: WebKit makes each new element revalidate
+	// those that have expired, and a copy draws nothing until that returns.
+	const uncached = `?${crypto.randomUUID()}`
 	const fixture = mount(
 		`<div style="display: flex; gap: 16px">${['aurora', 'dune', 'tile']
 			.map((name) =>
 				item(
 					`<picture>
-						<source type="image/webp" sizes="auto, 1600px" srcset="/media/${name}-480.webp 480w, /media/${name}-1600.webp 1600w">
-						<img src="/media/${name}-480.jpg" srcset="/media/${name}-480.jpg 480w, /media/${name}-1600.jpg 1600w" sizes="auto, 1600px" loading="lazy" decoding="async" width="2400" height="1600" style="width: 100%; height: auto" alt="${name}">
+						<source type="image/webp" sizes="auto, 1600px" srcset="/media/${name}-480.webp${uncached} 480w, /media/${name}-1600.webp${uncached} 1600w">
+						<img src="/media/${name}-480.jpg${uncached}" srcset="/media/${name}-480.jpg${uncached} 480w, /media/${name}-1600.jpg${uncached} 1600w" sizes="auto, 1600px" loading="lazy" decoding="async" width="2400" height="1600" style="width: 100%; height: auto" alt="${name}">
 					</picture>`,
 					'data-gallery="handoff" style="width: 160px"',
 				),
@@ -447,7 +466,13 @@ it('keeps a warm-up going when intent repeats, rather than starting over', async
 	expect(decode.mock.contexts[0]).not.toBe(query(fixture, 'img'))
 })
 
-it('keeps inner content scrolling natively and contains wheel input at its boundary', async () => {
+it('keeps inner content scrolling natively and contains wheel input at its boundary', async ({
+	skip,
+}) => {
+	if (!(await wheelScrolls())) {
+		skip('Wheel input does not scroll even a plain scroller in this browser')
+	}
+
 	const fixture = mount(`<div style="height: 200vh"></div>
 		${item(
 			'<div class="scroll-content" style="width: 400px; height: 300px; overflow: auto"><div style="height: 4000px">Scrollable content</div></div>',

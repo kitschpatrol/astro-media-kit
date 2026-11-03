@@ -6,6 +6,7 @@ import {
 	block,
 	boxes,
 	cleanUp,
+	frames,
 	gallery,
 	item,
 	mount,
@@ -130,5 +131,26 @@ it('stays on the same slide when the viewport resizes', async () => {
 		expect(activeSlideLabel()).toBe('3 of 3')
 	} finally {
 		await page.viewport(1280, 800)
+	}
+})
+
+it('stays on the same slide when a scroll ends before the resize that caused it is handled', async () => {
+	const fixture = mount(gallery(['a', 'b', 'c']))
+	await openLightbox(boxes(fixture)[2]!)
+	const track = query(document, '.amk-lightbox-track')
+
+	try {
+		// Narrower, the track clamps its offset. Browsers can report the end of that
+		// scroll first, while the viewer still has the old width, as slow ones do.
+		track.style.width = '700px'
+		expect(track.scrollLeft).toBe(1400)
+		track.dispatchEvent(new Event('scrollend'))
+		await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		await frames()
+
+		expect(track.scrollLeft).toBe(1400)
+		expect(activeSlideLabel()).toBe('3 of 3')
+	} finally {
+		track.style.removeProperty('width')
 	}
 })

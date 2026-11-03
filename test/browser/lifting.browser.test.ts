@@ -33,7 +33,6 @@ import {
 const clippedPattern = /^inset\(/v
 const fullInsetPattern = /^inset\(0(?:px)?\)$/v
 const largeCandidatePattern = /-(?:960|1600)\.jpg$/v
-const smallCandidatePattern = /-480\.jpg$/v
 setUpLightbox()
 afterEach(cleanUp)
 
@@ -287,12 +286,14 @@ describe('lifting', () => {
 	})
 
 	it('keeps an image placeholder on the candidate the lifted image loads', async () => {
-		const fixture = mount(imageItem())
+		// Chromium can reuse a larger candidate cached by an earlier test. Isolate
+		// these requests so the test actually starts with a small source.
+		const fixture = mount(imageItem('', 'tile', `?${crypto.randomUUID()}`))
 		const box = boxes(fixture)[0]!
 		const image = query(fixture, 'img', HTMLImageElement)
 		await image.decode()
 		const small = image.currentSrc
-		expect(small).toMatch(smallCandidatePattern)
+		expect(small).toContain('-480.')
 		prepareLightbox(box)
 		await openLightbox(box)
 		const copy = query(box, '[data-preview]', HTMLImageElement)

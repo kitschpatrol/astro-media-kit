@@ -61,6 +61,9 @@ it('applies partial overrides to both players and keeps unrelated icon families 
 	const audio = query(player, 'audio', HTMLAudioElement)
 	// DOMParser-created media needs an explicit load after mounting.
 	audio.load()
+	// Firefox raises a media error for audible playback without an audio device,
+	// which hosted runners lack.
+	audio.muted = true
 	await expect.poll(() => audio.readyState, { timeout: 5000 }).toBeGreaterThan(0)
 	await userEvent.click(query(player, 'media-play-button'))
 	await expect.poll(() => audio.paused).toBe(false)
@@ -72,6 +75,10 @@ it('applies partial overrides to both players and keeps unrelated icon families 
 		.toBe('Pause')
 	await userEvent.click(query(player, 'media-play-button'))
 	await expect.poll(() => audio.paused).toBe(true)
+	audio.muted = false
+	await expect
+		.poll(() => query(player, 'media-mute-button').getAttribute('aria-label'))
+		.toBe('Mute')
 	await userEvent.click(query(player, 'media-mute-button'))
 	await expect.poll(() => audio.muted).toBe(true)
 	await expect

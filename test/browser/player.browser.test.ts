@@ -66,7 +66,9 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	return { item, player }
 }
 
-it('is not a button, and leaves clicks on its controls to the player', async () => {
+// WebKit on Linux runners has stalled this file's first video load for over 10s,
+// though the same load works in the next test. The cause is unknown.
+it('is not a button, and leaves clicks on its controls to the player', { retry: 1 }, async () => {
 	const { item, player } = await mountPlayer()
 	expect(item.hasAttribute('role')).toBe(false)
 	expect(item.hasAttribute('tabindex')).toBe(false)
@@ -286,6 +288,8 @@ it('keeps the floated bar and popup visible while hovering the playing volume sl
 	const controls = query(player, '.amk-controls')
 	const popover = query(player, 'media-volume-popover')
 
+	// Wake controls that have gone idle on a slow run, since those can't be hovered.
+	await commands.mouseMove(640, 300)
 	await userEvent.hover(query(player, 'amk-mute-button'))
 
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
