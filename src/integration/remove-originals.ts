@@ -1,4 +1,5 @@
 import type { AstroConfig, AstroIntegrationLogger } from 'astro'
+import type { Dirent } from 'node:fs'
 import { readdir, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -50,24 +51,20 @@ export function hasOriginalImageShape(file: string): boolean {
  * Originals with no variant siblings are retained — they are the only copy.
  */
 export function findUnusedOriginals(files: readonly string[]): string[] {
-	const result: string[] = []
+	// Index variant stems once. Scanning every filename for every original
+	// makes this build hook quadratic on large image collections.
+	const variantStems = new Set<string>()
 	for (const file of files) {
-		if (!hasOriginalImageShape(file)) {
-			continue
-		}
-
-		// `path.parse(file).name` is `{base}.{HASH8}`; a variant sibling's name
-		// starts with that plus `_`.
-		const variantPrefix = `${path.parse(file).name}_`
-		const hasVariant = files.some(
-			(other) => other !== file && path.parse(other).name.startsWith(variantPrefix),
-		)
-		if (hasVariant) {
-			result.push(file)
+		const { name } = path.parse(file)
+		const separator = name.lastIndexOf('.') + 9
+		if (name[separator] === '_' && name.length > separator + 1) {
+			variantStems.add(name.slice(0, separator))
 		}
 	}
 
-	return result
+	return files.filter(
+		(file) => hasOriginalImageShape(file) && variantStems.has(path.parse(file).name),
+	)
 }
 
 /**
@@ -82,7 +79,19 @@ export async function removeOriginalImages(
 	logger: AstroIntegrationLogger,
 ): Promise<void> {
 	const astroAssetsDirectory = path.join(fileURLToPath(directory), astroConfig.build.assets)
-	const files = await readdir(astroAssetsDirectory)
+	let entries: Dirent[]
+	try {
+		entries = await readdir(astroAssetsDirectory, { withFileTypes: true })
+	} catch (error) {
+		// Builds without bundled assets do not create this directory.
+		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+			return
+		}
+
+		throw error
+	}
+
+	const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name)
 	const unusedOriginals = findUnusedOriginals(files)
 
 	let removedFilesCount = 0

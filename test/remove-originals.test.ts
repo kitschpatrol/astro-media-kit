@@ -2,8 +2,17 @@
  * Synthetic hash fragments from Astro build output — unknown "words".
  * CSpell:disable
  */
-import { describe, expect, it } from 'vitest'
-import { findUnusedOriginals, hasOriginalImageShape } from '../src/integration/remove-originals'
+import type { AstroConfig, AstroIntegrationLogger } from 'astro'
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { describe, expect, it, vi } from 'vitest'
+import {
+	findUnusedOriginals,
+	hasOriginalImageShape,
+	removeOriginalImages,
+} from '../src/integration/remove-originals'
 
 describe('hasOriginalImageShape', () => {
 	const originals = [
@@ -129,6 +138,16 @@ describe('findUnusedOriginals', () => {
 		expect(findUnusedOriginals(files)).toEqual(['photo.ABCDEFGH.jpg'])
 	})
 
+	it('does not remove an original for an empty transform suffix', () => {
+		expect(findUnusedOriginals(['photo.ABCDEFGH.jpg', 'photo.ABCDEFGH_.webp'])).toEqual([])
+	})
+
+	it('matches dotted basenames without confusing underscores in the hash', () => {
+		expect(findUnusedOriginals(['my.photo.AB_CDEFG.jpg', 'my.photo.AB_CDEFG_small.webp'])).toEqual([
+			'my.photo.AB_CDEFG.jpg',
+		])
+	})
+
 	it('returns empty when only originals exist', () => {
 		const files = ['photo-1.ABCDEFGH.jpg', 'photo-2.IJKLMNOP.webp']
 		expect(findUnusedOriginals(files)).toEqual([])
@@ -142,5 +161,42 @@ describe('findUnusedOriginals', () => {
 	it('does not treat differently-hashed files as siblings', () => {
 		const files = ['photo.ABCDEFGH.jpg', 'photo.IJKLMNOP_x1.webp']
 		expect(findUnusedOriginals(files)).toEqual([])
+	})
+})
+
+describe('removeOriginalImages', () => {
+	const config = { build: { assets: '_astro' } }
+	const logger = { error: vi.fn(), info: vi.fn() } as unknown as AstroIntegrationLogger
+
+	it('accepts a build without an assets directory', async () => {
+		const root = await mkdtemp(path.join(tmpdir(), 'amk-originals-'))
+		try {
+			await expect(
+				removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger),
+			).resolves.toBeUndefined()
+		} finally {
+			await rm(root, { force: true, recursive: true })
+		}
+	})
+
+	it('only considers regular files as originals and variants', async () => {
+		const root = await mkdtemp(path.join(tmpdir(), 'amk-originals-'))
+		const assets = path.join(root, '_astro')
+		try {
+			await mkdir(assets)
+			await writeFile(path.join(assets, 'photo.ABCDEFGH.jpg'), 'original')
+			await mkdir(path.join(assets, 'photo.ABCDEFGH_variant.webp'))
+			await writeFile(path.join(assets, 'other.ABCDEFGH.jpg'), 'original')
+			await writeFile(path.join(assets, 'other.ABCDEFGH_variant.webp'), 'variant')
+			await removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger)
+			const remaining = await readdir(assets)
+			expect(remaining.toSorted()).toEqual([
+				'other.ABCDEFGH_variant.webp',
+				'photo.ABCDEFGH.jpg',
+				'photo.ABCDEFGH_variant.webp',
+			])
+		} finally {
+			await rm(root, { force: true, recursive: true })
+		}
 	})
 })
