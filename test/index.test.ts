@@ -94,6 +94,88 @@ import { Image } from 'astro-media-kit'
 		expect(result).toContain('srcDark={__ami_1}')
 	})
 
+	it('imports secondary props when the first prop is already an expression', async () => {
+		const expression = '{light}'
+		const source = `---
+const light = importedImage
+---
+<Picture src=${expression} srcDark="../assets/dark.png" />`
+		const result = await transformAstroSource(source, {
+			Picture: [
+				{ fromProp: 'src', toProp: 'src' },
+				{ fromProp: 'srcDark', toProp: 'srcDark' },
+			],
+		})
+		expect(result).toContain('src={light}')
+		expect(result).toContain('srcDark={__ami_0}')
+		expect(result).toContain('import __ami_0 from "../assets/dark.png"')
+	})
+
+	it('derives each import from its configured source prop', async () => {
+		const source = `---
+---
+<Picture src="../assets/light.png" sketch="../assets/drawing.tldr" />`
+		const result = await transformAstroSource(source, {
+			Picture: [
+				{ fromProp: 'src', toProp: 'src' },
+				{ fromProp: 'sketch', toProp: 'srcDark', transform: tldrawDarkTransform },
+			],
+		})
+		expect(result).toContain('import __ami_1 from "../assets/drawing.tldr?dark=true&tldr"')
+	})
+
+	it('applies transforms that replace their source prop', async () => {
+		const source = `---
+---
+<Picture src="../assets/drawing.tldr" />`
+		const result = await transformAstroSource(source, {
+			Picture: [{ fromProp: 'src', toProp: 'src', transform: tldrawDarkTransform }],
+		})
+		expect(result).toContain('import __ami_0 from "../assets/drawing.tldr?dark=true&tldr"')
+		expect(result).toContain('src={__ami_0}')
+	})
+
+	it('supports a transform without a separate primary import', async () => {
+		const source = `---
+---
+<Picture src="../assets/drawing.tldr" />`
+		const result = await transformAstroSource(source, {
+			Picture: [{ fromProp: 'src', toProp: 'srcDark', transform: tldrawDarkTransform }],
+		})
+		expect(result).toContain('src="../assets/drawing.tldr"')
+		expect(result).toContain('srcDark={__ami_0}')
+	})
+
+	it('preserves an explicit expression when remapping a prop', async () => {
+		const expression = '{customImage}'
+		const source = `---
+---
+<Picture source="../assets/light.png" src=${expression} />`
+		expect(
+			await transformAstroSource(source, {
+				Picture: [{ fromProp: 'source', toProp: 'src' }],
+			}),
+		).toBeUndefined()
+	})
+
+	it('honors shouldImport on derived entries', async () => {
+		const source = `---
+---
+<Picture src="../assets/drawing.tldr" />`
+		expect(
+			await transformAstroSource(source, {
+				Picture: [
+					{
+						fromProp: 'src',
+						shouldImport: () => false,
+						toProp: 'srcDark',
+						transform: tldrawDarkTransform,
+					},
+				],
+			}),
+		).toBeUndefined()
+	})
+
 	it('deduplicates imports for same path', async () => {
 		const source = `---
 ---

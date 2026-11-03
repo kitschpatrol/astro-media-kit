@@ -160,69 +160,43 @@ function processComponent(
 	entries: ResolvedEntry[],
 	imports: Map<string, ImportEntry>,
 ): boolean {
-	const existingProps = new Set(node.attributes.map((attribute) => attribute.name))
-
-	const primaryEntries = entries.filter((entry) => !entry.transform)
-
-	if (primaryEntries.length === 0) {
-		return false
-	}
-
-	const derivedEntries = entries.filter((entry) => entry.transform)
-
-	// Use the first primary entry's value as the anchor path for derived entries
-	const anchorEntry = primaryEntries[0]!
-	const anchorAttribute = findQuotedAttribute(node.attributes, anchorEntry.fromProp)
-	if (!anchorAttribute || !isImportable(anchorEntry, anchorAttribute.value)) {
-		return false
-	}
-
-	const anchorPath = anchorAttribute.value
+	// Read the original attributes: an earlier entry may already have rewritten
+	// the source prop to an import expression.
+	const attributes = node.attributes.map((attribute) => ({ ...attribute }))
 	let modified = false
+	const orderedEntries = [
+		...entries.filter((entry) => !entry.transform),
+		...entries.filter((entry) => entry.transform),
+	]
 
-	// Process primary entries — replace quoted string attrs with expression imports
-	for (const entry of primaryEntries) {
-		const attribute = findQuotedAttribute(node.attributes, entry.fromProp)
-		if (!attribute || !isImportable(entry, attribute.value)) {
+	for (const entry of orderedEntries) {
+		const target = node.attributes.find((attribute) => attribute.name === entry.toProp)
+		const originalTarget = attributes.find((attribute) => attribute.name === entry.toProp)
+		// Explicit target props win over remapped or generated values.
+		const attribute = originalTarget ?? findQuotedAttribute(attributes, entry.fromProp)
+		if (attribute?.kind !== 'quoted' || !isImportable(entry, attribute.value)) {
 			continue
 		}
 
-		const importEntry = getOrCreateImport(imports, attribute.value)
+		const importPath =
+			originalTarget && entry.fromProp !== entry.toProp
+				? attribute.value
+				: entry.transform
+					? entry.transform(attribute.value)
+					: attribute.value
+		if (importPath === undefined || !isImportablePath(importPath)) {
+			continue
+		}
 
-		if (entry.fromProp === entry.toProp) {
-			// In-place: src="./foo.png" → src={__ami_0}
-			attribute.kind = 'expression'
-			attribute.value = importEntry.name
+		const importEntry = getOrCreateImport(imports, importPath)
+		if (target) {
+			target.kind = 'expression'
+			target.value = importEntry.name
 		} else {
-			// Remap: keep original string attr, add new expression attr
 			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
 		}
 
 		modified = true
-	}
-
-	// Process derived entries — use anchor path + transform to generate new props
-	for (const entry of derivedEntries) {
-		if (existingProps.has(entry.toProp)) {
-			// Prop already exists — import its value if it's a quoted string
-			const attribute = findQuotedAttribute(node.attributes, entry.toProp)
-			if (attribute && isImportablePath(attribute.value)) {
-				const importEntry = getOrCreateImport(imports, attribute.value)
-				attribute.kind = 'expression'
-				attribute.value = importEntry.name
-				modified = true
-			}
-		} else {
-			// Derive from anchor path via transform
-			const transformedPath = entry.transform!(anchorPath)
-			if (transformedPath === undefined) {
-				continue
-			}
-
-			const importEntry = getOrCreateImport(imports, transformedPath)
-			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
-			modified = true
-		}
 	}
 
 	return modified
