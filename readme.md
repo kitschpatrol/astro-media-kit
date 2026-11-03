@@ -630,7 +630,7 @@ YouTube, Vimeo, local, and oEmbed do not require credentials.
 
 The current service adapters have these additional requirements:
 
-- **Bunny:** the video must be ready and have MP4 fallback encoding enabled. Title search selects the first returned match.
+- **Bunny:** the video must be ready and have MP4 fallback encoding enabled. The MP4 fallback uses the highest available resolution at or below 720p, or the smallest available resolution when all are higher. Title search selects the first returned match.
 - **Mux:** pass an asset ID, not a playback ID. The asset must be ready, have exactly one video track, a playback ID, and ready static MP4 renditions.
 - **Cloudflare:** the video must be ready and have an HLS URL and thumbnail. The MP4 fallback URL is derived from the HLS URL without checking its availability; caption metadata is not currently loaded.
 

@@ -199,7 +199,8 @@ export async function bunnyGetVideoInfo(
 		throw new Error(`${logPrefix} is not ready. Try again in a bit.`)
 	}
 
-	// Find fallback mp4 res, 720 or lower
+	// Prefer a fallback at 720p or lower, or the smallest available resolution
+	// when the library only encodes higher resolutions.
 	if (!hasMp4Fallback) {
 		throw new Error(
 			`${logPrefix} does not have a fallback mp4. You must enable mp4 fallback encoding in the Bunny control panel.`,
@@ -219,7 +220,7 @@ export async function bunnyGetVideoInfo(
 	// eslint-disable-next-line unicorn/no-array-reduce
 	const fallbackResolution = resolutions.reduce(
 		(max, current) => (current <= 720 && current > max ? current : max),
-		-Infinity,
+		Math.min(...resolutions),
 	)
 
 	// Find captions, if available
