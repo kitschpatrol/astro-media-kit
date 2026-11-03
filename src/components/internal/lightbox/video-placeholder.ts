@@ -1,24 +1,27 @@
 import { previewContext } from './canvas-context'
 
-/** The on-page video box and the way its source frame fits that box. */
-export type VideoPreviewFrame = { height: number; objectFit: string; width: number }
+/** The on-page box of an image or video, and the way its source fits that box. */
+export type PreviewFrame = { height: number; objectFit: string; width: number }
 
-/** Match the displayed video resolution, including display density and cropping. */
-export function videoPreviewSize(video: HTMLVideoElement, frame: VideoPreviewFrame) {
+/**
+ * Match the displayed resolution of a source with these intrinsic dimensions,
+ * including display density and cropping.
+ */
+export function previewSize(source: { width: number; height: number }, frame: PreviewFrame) {
 	let { width, height } = frame
 	let density = devicePixelRatio
 	if (frame.objectFit !== 'fill') {
-		const contain = Math.min(width / video.videoWidth, height / video.videoHeight)
+		const contain = Math.min(width / source.width, height / source.height)
 		const scale =
 			frame.objectFit === 'cover'
-				? Math.max(width / video.videoWidth, height / video.videoHeight)
+				? Math.max(width / source.width, height / source.height)
 				: frame.objectFit === 'none'
 					? 1
 					: frame.objectFit === 'scale-down'
 						? Math.min(1, contain)
 						: contain
-		width = video.videoWidth * scale
-		height = video.videoHeight * scale
+		width = source.width * scale
+		height = source.height * scale
 		if (frame.objectFit === 'none' || frame.objectFit === 'scale-down') {
 			// These fits use the bitmap's intrinsic dimensions as CSS dimensions.
 			// Exceeding the source size would enlarge the preview's visible content.
@@ -36,7 +39,7 @@ export function videoPreviewSize(video: HTMLVideoElement, frame: VideoPreviewFra
 export function mirrorVideo(
 	video: HTMLVideoElement,
 	canvas: HTMLCanvasElement,
-	target: VideoPreviewFrame,
+	target: PreviewFrame,
 ) {
 	const context = previewContext(canvas)
 	if (context === undefined) {
@@ -62,7 +65,10 @@ export function mirrorVideo(
 			return
 		}
 
-		const { width, height } = videoPreviewSize(video, target)
+		const { width, height } = previewSize(
+			{ width: video.videoWidth, height: video.videoHeight },
+			target,
+		)
 		if (canvas.width !== width || canvas.height !== height) {
 			canvas.width = width
 			canvas.height = height

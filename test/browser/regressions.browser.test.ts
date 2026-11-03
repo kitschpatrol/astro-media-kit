@@ -53,6 +53,25 @@ function videoFixture(): HTMLElement {
 	return fixture
 }
 
+/** Cache `url` in a document that is gone again, as an earlier page would. */
+async function visit(url: string) {
+	const frame = document.createElement('iframe')
+	frame.srcdoc = `<img src="${url}" alt="">`
+	const loaded = new Promise((resolve) => {
+		frame.addEventListener('load', resolve, { once: true })
+	})
+	document.body.append(frame)
+	await loaded
+	frame.remove()
+}
+
+/** Whether `element` has pixels to show right now. */
+function hasPixels(element: HTMLCanvasElement | HTMLImageElement): boolean {
+	const context = document.createElement('canvas').getContext('2d')!
+	context.drawImage(element, 0, 0, 1, 1)
+	return context.getImageData(0, 0, 1, 1).data[3] === 255
+}
+
 /** Whether wheel input can scroll a plain scroller here. */
 async function wheelScrolls(): Promise<boolean> {
 	const fixture = mount(
@@ -117,16 +136,13 @@ it('leaves a decorative image copy while preserving the original element', async
 })
 
 it('keeps loaded thumbnails drawable on every frame when neighboring pictures are lifted', async () => {
-	// URLs no earlier document has cached: WebKit makes each new element revalidate
-	// those that have expired, and a copy draws nothing until that returns.
-	const uncached = `?${crypto.randomUUID()}`
 	const fixture = mount(
 		`<div style="display: flex; gap: 16px">${['aurora', 'dune', 'tile']
 			.map((name) =>
 				item(
 					`<picture>
-						<source type="image/webp" sizes="auto, 1600px" srcset="/media/${name}-480.webp${uncached} 480w, /media/${name}-1600.webp${uncached} 1600w">
-						<img src="/media/${name}-480.jpg${uncached}" srcset="/media/${name}-480.jpg${uncached} 480w, /media/${name}-1600.jpg${uncached} 1600w" sizes="auto, 1600px" loading="lazy" decoding="async" width="2400" height="1600" style="width: 100%; height: auto" alt="${name}">
+						<source type="image/webp" sizes="auto, 1600px" srcset="/media/${name}-480.webp 480w, /media/${name}-1600.webp 1600w">
+						<img src="/media/${name}-480.jpg" srcset="/media/${name}-480.jpg 480w, /media/${name}-1600.jpg 1600w" sizes="auto, 1600px" loading="lazy" decoding="async" width="2400" height="1600" style="width: 100%; height: auto" alt="${name}">
 					</picture>`,
 					'data-gallery="handoff" style="width: 160px"',
 				),
@@ -175,6 +191,56 @@ it('keeps loaded thumbnails drawable on every frame when neighboring pictures ar
 		isSampling = false
 	}
 })
+
+const framedImage =
+	'class="framed" width="2400" height="1600" alt="" style="width: 100%; height: auto; object-fit: cover; border-radius: 12px; filter: saturate(0.5)"'
+
+it.each([
+	['plain image', '.jpg', (url: string) => `<img src="${url}" ${framedImage} />`],
+	[
+		'picture',
+		'.webp',
+		(url: string) =>
+			`<picture><source type="image/webp" srcset="${url}"><img src="/media/dune-480.jpg" ${framedImage} /></picture>`,
+	],
+] as const)(
+	'keeps a %s preview drawable when a new element would wait on revalidating it',
+	async (_name, extension, subject) => {
+		const url = `/media/dune-480${extension}?must-revalidate=${crypto.randomUUID()}`
+		await visit(url)
+		const fixture = mount(
+			`<style>.framed { background-color: rgb(204, 204, 204) }</style>${item(subject(url), 'style="width: 160px"')}`,
+		)
+		const box = boxes(fixture)[0]!
+		const original = query(box, 'img', HTMLImageElement)
+		await original.decode()
+		const home = original.getBoundingClientRect()
+
+		const opening = openLightbox(box)
+		const preview = box.querySelector<HTMLCanvasElement | HTMLImageElement | HTMLPictureElement>(
+			'[data-preview]',
+		)!
+		const shown =
+			preview instanceof HTMLPictureElement ? query(preview, 'img', HTMLImageElement) : preview
+		// The state a frame is painted from, well before the server can answer
+		await frames(1)
+		expect(hasPixels(shown)).toBe(true)
+		const drawn = preview.getBoundingClientRect()
+		expect(drawn.width).toBeCloseTo(home.width, 0)
+		expect(drawn.height).toBeCloseTo(home.height, 0)
+		expect(getComputedStyle(shown).objectFit).toBe('cover')
+		expect(getComputedStyle(shown).borderRadius).toBe('12px')
+		expect(getComputedStyle(shown).filter).toBe('saturate(0.5)')
+		expect(getComputedStyle(shown).backgroundColor).toBe('rgb(204, 204, 204)')
+		await opening
+		expect(hasPixels(shown)).toBe(true)
+
+		viewer().close()
+		await frames()
+		expect(preview.isConnected).toBe(false)
+		expect(box.contains(original)).toBe(true)
+	},
+)
 
 it('copies canvas pixels into a bounded bitmap and releases it on return', async () => {
 	const fixture = mount(

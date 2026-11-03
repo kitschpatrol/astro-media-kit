@@ -157,6 +157,30 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 				{
 					// Found up front, so Vite never re-optimizes and reloads mid-run
 					optimizeDeps: { entries: ['test/**/*.browser.test.ts'] },
+					plugins: [
+						{
+							// An explicit cache policy, so that no test depends on how long ago
+							// the fixture was built. A URL with `must-revalidate` in it gets what
+							// a host gives images it doesn't fingerprint, on a slow connection.
+							configureServer(server) {
+								server.middlewares.use((request, response, next) => {
+									const url = request.url ?? ''
+									if (url.includes('must-revalidate')) {
+										response.setHeader('Cache-Control', 'no-cache')
+										setTimeout(next, 200)
+										return
+									}
+
+									if (url.startsWith('/media/') || url.startsWith('/_astro/')) {
+										response.setHeader('Cache-Control', 'max-age=3600')
+									}
+
+									next()
+								})
+							},
+							name: 'media-cache-policy',
+						},
+					],
 					publicDir: dist,
 					test: {
 						browser: {

@@ -1,10 +1,10 @@
 import type { Box } from './geometry'
-import type { VideoPreviewFrame } from './video-placeholder'
+import type { PreviewFrame } from './video-placeholder'
 import { previewContext } from './canvas-context'
 import { clonePlaceholder } from './clone-placeholder'
 import { rendered } from './dom'
 import { lengthOf } from './geometry'
-import { mirrorVideo, videoPreviewSize } from './video-placeholder'
+import { mirrorVideo, previewSize } from './video-placeholder'
 
 /** A decorative copy, and the subject's box within the item's padding box. */
 export type Placeholder = { box: Box; element: HTMLElement }
@@ -35,20 +35,24 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 		const canvas = document.createElement('canvas')
 		disposers.set(canvas, mirrorVideo(visible, canvas, frame))
 		placeholder = canvas
-	} else if (visible instanceof HTMLVideoElement || visible instanceof HTMLCanvasElement) {
+	} else if (
+		visible instanceof HTMLVideoElement ||
+		visible instanceof HTMLCanvasElement ||
+		(visible instanceof HTMLImageElement && !canDrawAtOnce(visible))
+	) {
 		placeholder = snapshot(visible, frame)
-	} else {
-		const controller = new AbortController()
-		placeholder = clonePlaceholder(subject, controller.signal)
-		if (placeholder !== undefined) {
-			disposers.set(placeholder, () => {
-				controller.abort()
-			})
-		}
 	}
 
 	if (placeholder === undefined) {
-		return undefined
+		const controller = new AbortController()
+		placeholder = clonePlaceholder(subject, controller.signal)
+		if (placeholder === undefined) {
+			return undefined
+		}
+
+		disposers.set(placeholder, () => {
+			controller.abort()
+		})
 	}
 
 	placeholder.dataset.preview = ''
@@ -137,7 +141,7 @@ export function placePlaceholder(
  * element's shadow root for streaming services, and in the light DOM for local
  * files. An embedded player without a poster reserves space only.
  */
-function playerPlaceholder(container: Element, frame: VideoPreviewFrame): HTMLElement | undefined {
+function playerPlaceholder(container: Element, frame: PreviewFrame): HTMLElement | undefined {
 	const poster = container.closest('video-player')?.getAttribute('poster') ?? ''
 	const media = container.querySelector('.amk-media')
 	const video =
@@ -167,16 +171,32 @@ function playerPlaceholder(container: Element, frame: VideoPreviewFrame): HTMLEl
 	return snapshot(video, frame)
 }
 
+/**
+ * Whether a new element could show what `image` shows in this very frame.
+ * WebKit makes each new element revalidate an image that an earlier document
+ * cached, if its cache policy calls for that, and the element paints nothing
+ * until the server answers.
+ */
+function canDrawAtOnce(image: HTMLImageElement): boolean {
+	const probe = new Image()
+	probe.crossOrigin = image.crossOrigin
+	probe.src = image.currentSrc
+	return probe.complete
+}
+
 function snapshot(
-	element: HTMLCanvasElement | HTMLVideoElement,
-	frame: VideoPreviewFrame,
+	element: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement,
+	frame: PreviewFrame,
 ): HTMLCanvasElement | undefined {
 	let width: number
 	let height: number
 	if (element instanceof HTMLCanvasElement) {
 		width = element.width
 		height = element.height
-	} else if (element instanceof HTMLVideoElement && element.readyState >= 2) {
+	} else if (element instanceof HTMLImageElement) {
+		width = element.naturalWidth
+		height = element.naturalHeight
+	} else if (element.readyState >= 2) {
 		width = element.videoWidth
 		height = element.videoHeight
 	} else {
@@ -189,11 +209,13 @@ function snapshot(
 	}
 
 	const canvas = document.createElement('canvas')
-	if (element instanceof HTMLVideoElement) {
-		const dimensions = videoPreviewSize(element, frame)
-		canvas.width = dimensions.width
-		canvas.height = dimensions.height
-	} else {
+	if (element instanceof HTMLImageElement) {
+		// The content styling a copy of the element would have kept
+		canvas.className = element.className
+		canvas.style.cssText = element.style.cssText
+	}
+
+	if (element instanceof HTMLCanvasElement) {
 		// Canvas subjects retain the one-megapixel and 2x thumbnail limits.
 		const scale = Math.min(
 			1,
@@ -202,6 +224,10 @@ function snapshot(
 		)
 		canvas.width = Math.max(1, Math.round(width * scale))
 		canvas.height = Math.max(1, Math.round(height * scale))
+	} else {
+		const dimensions = previewSize({ width, height }, frame)
+		canvas.width = dimensions.width
+		canvas.height = dimensions.height
 	}
 
 	const context = previewContext(canvas)
