@@ -1,0 +1,17 @@
+---
+import { Image } from 'astro-media-kit/components'
+import { ClientRouter } from 'astro:transitions'
+import penguin from '../assets/penguin1.jpg'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Default indicators</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<Image alt="Default plus" src={penguin} width={300} zoom zoomIndicator />
+	</body>
+</html>

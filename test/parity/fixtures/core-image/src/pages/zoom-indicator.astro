@@ -1,0 +1,134 @@
+---
+import { Image, MediaTheme, Picture } from 'astro-media-kit/components'
+import { ClientRouter } from 'astro:transitions'
+import penguin from '../assets/penguin1.jpg'
+
+const layouts = ['none', 'fixed', 'constrained', 'full-width'] as const
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Zoom indicators</title>
+		<ClientRouter />
+	</head>
+	<body>
+		<MediaTheme>
+			<svg data-custom-icon="global-indicator" slot="icon-zoom-indicator" viewBox="0 0 24 24">
+				<path d="M3 12h18" stroke="currentColor" />
+			</svg>
+		</MediaTheme>
+		<section id="default">
+			<Image alt="Default" src={penguin} width={300} zoom />
+		</section>
+		<section id="builtin">
+			<Image alt="Builtin" src={penguin} width={300} zoom zoomIndicator />
+		</section>
+		<section id="custom">
+			<Picture alt="Custom" src={penguin} width={300} zoom>
+				<svg data-custom-icon="local-indicator" slot="zoom-indicator" viewBox="0 0 24 24">
+					<circle cx="12" cy="12" fill="currentColor" r="8" />
+				</svg>
+				Caption stays here.
+			</Picture>
+		</section>
+		<section id="disabled">
+			<Image alt="Disabled" src={penguin} width={300} zoom zoomIndicator={false}>
+				<span slot="zoom-indicator">Hidden indicator</span>
+			</Image>
+		</section>
+		<section id="no-zoom">
+			<Picture alt="No zoom" src={penguin} width={300} zoomIndicator />
+		</section>
+		<section id="custom-inert">
+			<Image alt="Inert custom decoration" src={penguin} width={300} zoom>
+				<button data-custom-interactive slot="zoom-indicator" type="button">
+					Decoration
+				</button>
+			</Image>
+		</section>
+		<section id="selector">
+			<Picture
+				alt="Dark picture"
+				darkMode=".dark"
+				src={penguin}
+				srcDark={penguin}
+				width={300}
+				zoom
+				zoomIndicator
+			/>
+		</section>
+		{layouts.map((layout) => (
+			<Fragment>
+				<section class="layout-pair" data-component="image" data-layout={layout}>
+					<div class="layout-host" data-enabled="false">
+						<Image
+							alt="Without indicator"
+							height={200}
+							layout={layout}
+							src={penguin}
+							width={300}
+							zoom
+						>
+							Caption
+						</Image>
+					</div>
+					<div class="layout-host" data-enabled="true">
+						<Image
+							alt="With indicator"
+							height={200}
+							layout={layout}
+							src={penguin}
+							width={300}
+							zoom
+							zoomIndicator
+						>
+							Caption
+						</Image>
+					</div>
+				</section>
+				<section class="layout-pair" data-component="picture" data-layout={layout}>
+					<div class="layout-host" data-enabled="false">
+						<Picture
+							alt="Without indicator"
+							height={200}
+							layout={layout}
+							src={penguin}
+							width={300}
+							zoom
+						>
+							Caption
+						</Picture>
+					</div>
+					<div class="layout-host" data-enabled="true">
+						<Picture
+							alt="With indicator"
+							height={200}
+							layout={layout}
+							src={penguin}
+							width={300}
+							zoom
+							zoomIndicator
+						>
+							Caption
+						</Picture>
+					</div>
+				</section>
+			</Fragment>
+		))}
+		<a href="/zoom-indicator-default/index.html" id="navigate-default">
+			Default indicators
+		</a>
+	</body>
+</html>
+
+<style is:global>
+	.layout-host {
+		width: 600px;
+	}
+
+	.layout-host figure {
+		margin: 0;
+	}
+</style>

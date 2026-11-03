@@ -135,6 +135,7 @@ const image = {
 	],
 	width: [undefined, 320, 640, 960],
 	widths: [undefined, ['320, 640', [320, 640]], ['320, 640, 960', [320, 640, 960]]],
+	zoomIndicator: [undefined, true, false],
 	zoomPlaceholder,
 } satisfies Controls<Omit<ImageControlProps, 'format'>>
 
@@ -254,6 +255,7 @@ const definitions = {
 		controls: {
 			enabled: [undefined, true, false, 'gallery'],
 			href: [undefined, '/test.jpeg'],
+			indicator: [undefined, true, false],
 			interactive: [undefined, true, false],
 			level: [undefined, 'fit', 'fill', 'native'],
 			nativeWidth: [undefined, photo.width, 640],

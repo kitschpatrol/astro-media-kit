@@ -206,6 +206,11 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 *   `inferSize: true`.
 		 */
 		width?: LocalImageProps['width']
+		/**
+		 * Show a decorative corner indicator when zoom is enabled. A custom
+		 * `zoom-indicator` slot enables it unless this is explicitly false.
+		 */
+		zoomIndicator?: boolean | undefined
 	}
 
 const {
@@ -225,6 +230,7 @@ const {
 	src,
 	srcDark: srcDarkProp,
 	zoom,
+	zoomIndicator,
 	zoomLevel,
 	zoomPlaceholder,
 	zoomScope,
@@ -520,7 +526,12 @@ if (isSelector && hasDarkMode) {
 
 {selectorStyle !== undefined && selectorStyle !== '' && <Fragment set:html={selectorStyle} />}
 <Caption {...captionProps}>
-	<Zoomer {...zoomerProps} {...zoomTarget(fallbackImage)} slot="media-component">
+	<Zoomer
+		{...zoomerProps}
+		{...zoomTarget(fallbackImage)}
+		indicator={zoomIndicator ?? Astro.slots.has('zoom-indicator')}
+		slot="media-component"
+	>
 		{isSelector && hasDarkMode ? (
 			<div
 				{...pictureAttributes}
@@ -596,6 +607,11 @@ if (isSelector && hasDarkMode) {
 					style={mergeImageStyle(imgStyle, backgroundStyle)}
 				/>
 			</picture>
+		)}
+		{Astro.slots.has('zoom-indicator') && (
+			<Fragment slot="indicator">
+				<slot name="zoom-indicator" />
+			</Fragment>
 		)}
 	</Zoomer>
 	<slot />

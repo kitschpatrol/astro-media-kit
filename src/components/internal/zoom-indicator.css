@@ -1,0 +1,91 @@
+@layer amk-lightbox {
+	.amk-zoom[data-zoom-indicator] {
+		position: relative;
+		width: fit-content;
+		max-width: 100%;
+	}
+
+	.amk-zoom[data-zoom-indicator] > img,
+	.amk-zoom[data-zoom-indicator] > picture,
+	.amk-zoom[data-zoom-indicator] > picture img,
+	.amk-zoom[data-zoom-indicator] > .amk-picture img {
+		display: block;
+	}
+
+	.amk-zoom-indicator {
+		pointer-events: none;
+		position: absolute;
+		inset: var(--amk-zoom-indicator-inset, auto 0.75rem 0.75rem auto);
+		display: grid;
+		place-items: center;
+		width: var(--amk-zoom-indicator-size, var(--amk-gallery-icon-size, 1.25rem));
+		height: var(--amk-zoom-indicator-size, var(--amk-gallery-icon-size, 1.25rem));
+		line-height: 1;
+		color: var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4));
+		opacity: var(--amk-zoom-indicator-opacity, var(--amk-gallery-icon-opacity, 1));
+	}
+
+	.amk-zoom-indicator > svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.amk-zoom:focus-visible > .amk-zoom-indicator {
+		opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
+	}
+
+	.amk-zoom[data-lifted] > .amk-zoom-indicator {
+		display: none;
+	}
+
+	@media (hover: hover) {
+		.amk-zoom:hover > .amk-zoom-indicator {
+			opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.amk-zoom-indicator {
+			transition-duration: var(
+				--amk-zoom-indicator-transition-duration,
+				var(--amk-gallery-control-transition-duration, 150ms)
+			);
+			transition-property: opacity;
+		}
+
+		.amk-zoom:focus-visible > .amk-zoom-indicator {
+			transition-duration: var(
+				--amk-zoom-indicator-active-transition-duration,
+				var(
+					--amk-gallery-control-active-transition-duration,
+					var(
+						--amk-zoom-indicator-transition-duration,
+						var(--amk-gallery-control-transition-duration, 150ms)
+					)
+				)
+			);
+		}
+
+		@media (hover: hover) {
+			.amk-zoom:hover > .amk-zoom-indicator {
+				transition-duration: var(
+					--amk-zoom-indicator-active-transition-duration,
+					var(
+						--amk-gallery-control-active-transition-duration,
+						var(
+							--amk-zoom-indicator-transition-duration,
+							var(--amk-gallery-control-transition-duration, 150ms)
+						)
+					)
+				);
+			}
+		}
+	}
+}
+
+/* Keep full-width media filling its parent even on pages with player CSS,
+   which also shrink-wraps ordinary image zoom wrappers. */
+.amk-zoom[data-zoom-indicator]:has([data-astro-image='full-width']) {
+	width: 100%;
+}
