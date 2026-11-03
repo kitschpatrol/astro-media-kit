@@ -1,5 +1,5 @@
 ---
-import { Audio, Carousel, Image, MediaTheme, Video } from 'astro-media-kit/components'
+import { Audio, Carousel, Image, MediaTheme, Picture, Video } from 'astro-media-kit/components'
 import Layout from '../layouts/Layout.astro'
 ---
 
@@ -26,32 +26,76 @@ import Layout from '../layouts/Layout.astro'
 		<svg fill="none" slot="icon-next" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 			<path d="m9 5 7 7-7 7" />
 		</svg>
+		<svg
+			fill="none"
+			slot="icon-zoom-indicator"
+			stroke="currentColor"
+			stroke-width="2"
+			viewBox="0 0 24 24"
+		>
+			<path d="M12 3v18M3 12h18" />
+		</svg>
 	</MediaTheme>
 	<h1>Media theme</h1>
 	<p class="note">
 		One MediaTheme supplies outlined play and pause icons to both players, a close icon to the
-		lightbox, and navigation arrows to the lightbox and carousel. Other icons retain their defaults.
+		lightbox, navigation arrows to both galleries, and a plus to image indicators. One set of
+		gallery variables supplies the rectangular targets, colors, and opacity transitions.
 	</p>
 	<h2>Audio</h2>
 	<Audio src="/test.mp3" />
 	<h2>Video</h2>
 	<Video src="/test.mp4" zoom="themed" />
 	<h2>Lightbox</h2>
-	<Image alt="A themed lightbox" src="../assets/test.jpeg" zoom="themed" zoomLevel="native" />
+	<Image
+		alt="A themed lightbox with a shared corner indicator"
+		src="../assets/test.jpeg"
+		zoom="themed"
+		zoomIndicator
+		zoomLevel="native"
+	/>
+	<h2>Custom image indicator</h2>
+	<Picture alt="A picture with its own corner artwork" src="../assets/test.jpeg" zoom="themed">
+		<svg
+			fill="none"
+			slot="zoom-indicator"
+			stroke="currentColor"
+			stroke-width="2"
+			viewBox="0 0 24 24"
+		>
+			<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+		</svg>
+		This caption stays separate from the custom indicator slot.
+	</Picture>
 	<h2>Carousel</h2>
 	<Carousel>
-		<Image alt="First carousel image" src="../assets/test.jpeg" zoom="themed" />
-		<Image alt="Second carousel image" src="../assets/test-dark.jpeg" zoom="themed" />
+		<Image alt="First carousel image" src="../assets/test.jpeg" zoom="themed" zoomIndicator />
+		<Image alt="Second carousel image" src="../assets/test-dark.jpeg" zoom="themed" zoomIndicator />
 	</Carousel>
 </Layout>
 
 <style is:global>
 	:root {
 		--amk-lightbox-backdrop: rgb(0 0 0 / 75%);
-		--amk-lightbox-control-radius: 0.5rem;
-		--amk-lightbox-control-color: #ffdb80;
-		--amk-carousel-control-radius: 0.5rem;
-		--amk-carousel-control-color: #ffdb80;
+		--amk-gallery-control-color: #ffdb80;
+		--amk-gallery-control-background: transparent;
+		--amk-gallery-control-hover-background: transparent;
+		--amk-gallery-control-radius: 0;
+		--amk-gallery-control-width: 52px;
+		--amk-gallery-control-height: 88px;
+		--amk-gallery-control-inset: 12px;
+		--amk-gallery-icon-size: 24px;
+		--amk-gallery-icon-opacity: 0.4;
+		--amk-gallery-icon-active-opacity: 1;
+		--amk-gallery-control-transition-duration: 250ms;
+		--amk-gallery-control-active-transition-duration: 0ms;
+		--amk-lightbox-close-width: 44px;
+		--amk-lightbox-close-height: 36px;
+		--amk-lightbox-close-inset: 12px auto auto 12px;
+		--amk-lightbox-zoom-width: 44px;
+		--amk-lightbox-zoom-height: 36px;
+		--amk-zoom-indicator-size: 24px;
+		--amk-zoom-indicator-inset: auto 12px 12px auto;
 	}
 
 	.amk-video {

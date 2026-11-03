@@ -155,36 +155,37 @@ Caption text is passed as a slot child:
 
 Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps`, with differences noted; `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL. Image transformation props depend on the configured image service and remote-image authorization.
 
-| Prop                      | Type                                                                                                            | Default                       | Origin             | Remote   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------ | -------- |
-| `src`                     | `ImageMetadata \| Promise<{ default: ImageMetadata }> \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                             | `astro` (widened)  | yes      |
-| `alt`                     | `string`                                                                                                        | —                             | `astro`            | yes      |
-| `width`                   | number or numeric string                                                                                        | —                             | `astro`            | yes      |
-| `height`                  | number or numeric string                                                                                        | —                             | `astro`            | yes      |
-| `quality`                 | `ImageQuality` (number, presets, or service-specific strings)                                                   | —                             | `astro`            | yes      |
-| `format`                  | `ImageOutputFormat \| FormatRules`                                                                              | local: `'webp'` (`svg → svg`) | `astro` (widened)  | yes      |
-| `densities`               | ``(number \| `${number}x`)[]``                                                                                  | —                             | `astro`            | yes      |
-| `widths`                  | `number[]`                                                                                                      | —                             | `astro`            | yes      |
-| `sizes`                   | `string`                                                                                                        | —                             | `astro`            | yes      |
-| `fit`                     | `ImageFit` (`'cover'`, `'contain'`, `'fill'`, `'none'`, `'scale-down'`, or service-specific strings)            | `'cover'`                     | `astro`            | yes      |
-| `position`                | `string`                                                                                                        | `'center'`                    | `astro`            | yes      |
-| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                                                            | `'none'`                      | `astro`            | yes      |
-| `loading`                 | `'lazy' \| 'eager'`                                                                                             | `'lazy'`                      | `astro`            | yes      |
-| `decoding`                | `'auto' \| 'sync' \| 'async'`                                                                                   | `'async'`                     | `astro`            | yes      |
-| `priority`                | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
-| `inferSize`               | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
-| (other `<img>` attrs)     | `HTMLAttributes<'img'>`                                                                                         | —                             | `astro`            | yes      |
-| `className`               | `string`                                                                                                        | —                             | `media-kit`        | yes      |
-| `background`              | `string` (CSS color)                                                                                            | —                             | `astro` (extended) | yes      |
-| `backgroundDark`          | `string` (CSS color)                                                                                            | —                             | `media-kit`        | yes      |
-| `credit`                  | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | partial¹ |
-| `creditMediaType`         | `MediaType`                                                                                                     | —                             | `media-kit`        | yes      |
-| `creditMediaTypeFallback` | `MediaType`                                                                                                     | `'image'`                     | `media-kit`        | yes      |
-| `creditOrganization`      | `string`                                                                                                        | —                             | `media-kit`        | yes      |
-| `zoom`                    | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | yes      |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                                                   | `'fit'`                       | `media-kit`        | yes      |
-| `zoomPlaceholder`         | `'auto' \| 'none'`                                                                                              | `'auto'`                      | `media-kit`        | yes      |
-| `zoomScope`               | `string` (CSS selector)                                                                                         | —                             | `media-kit`        | yes      |
+| Prop                      | Type                                                                                                            | Default                              | Origin             | Remote   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------ | -------- |
+| `src`                     | `ImageMetadata \| Promise<{ default: ImageMetadata }> \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                                    | `astro` (widened)  | yes      |
+| `alt`                     | `string`                                                                                                        | —                                    | `astro`            | yes      |
+| `width`                   | number or numeric string                                                                                        | —                                    | `astro`            | yes      |
+| `height`                  | number or numeric string                                                                                        | —                                    | `astro`            | yes      |
+| `quality`                 | `ImageQuality` (number, presets, or service-specific strings)                                                   | —                                    | `astro`            | yes      |
+| `format`                  | `ImageOutputFormat \| FormatRules`                                                                              | local: `'webp'` (`svg → svg`)        | `astro` (widened)  | yes      |
+| `densities`               | ``(number \| `${number}x`)[]``                                                                                  | —                                    | `astro`            | yes      |
+| `widths`                  | `number[]`                                                                                                      | —                                    | `astro`            | yes      |
+| `sizes`                   | `string`                                                                                                        | —                                    | `astro`            | yes      |
+| `fit`                     | `ImageFit` (`'cover'`, `'contain'`, `'fill'`, `'none'`, `'scale-down'`, or service-specific strings)            | `'cover'`                            | `astro`            | yes      |
+| `position`                | `string`                                                                                                        | `'center'`                           | `astro`            | yes      |
+| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                                                            | `'none'`                             | `astro`            | yes      |
+| `loading`                 | `'lazy' \| 'eager'`                                                                                             | `'lazy'`                             | `astro`            | yes      |
+| `decoding`                | `'auto' \| 'sync' \| 'async'`                                                                                   | `'async'`                            | `astro`            | yes      |
+| `priority`                | `boolean`                                                                                                       | `false`                              | `astro`            | yes      |
+| `inferSize`               | `boolean`                                                                                                       | `false`                              | `astro`            | yes      |
+| (other `<img>` attrs)     | `HTMLAttributes<'img'>`                                                                                         | —                                    | `astro`            | yes      |
+| `className`               | `string`                                                                                                        | —                                    | `media-kit`        | yes      |
+| `background`              | `string` (CSS color)                                                                                            | —                                    | `astro` (extended) | yes      |
+| `backgroundDark`          | `string` (CSS color)                                                                                            | —                                    | `media-kit`        | yes      |
+| `credit`                  | `boolean \| string`                                                                                             | `false`                              | `media-kit`        | partial¹ |
+| `creditMediaType`         | `MediaType`                                                                                                     | —                                    | `media-kit`        | yes      |
+| `creditMediaTypeFallback` | `MediaType`                                                                                                     | `'image'`                            | `media-kit`        | yes      |
+| `creditOrganization`      | `string`                                                                                                        | —                                    | `media-kit`        | yes      |
+| `zoom`                    | `boolean \| string`                                                                                             | `false`                              | `media-kit`        | yes      |
+| `zoomIndicator`           | `boolean`                                                                                                       | `false` (a supplied slot enables it) | `media-kit`        | yes      |
+| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                                                   | `'fit'`                              | `media-kit`        | yes      |
+| `zoomPlaceholder`         | `'auto' \| 'none'`                                                                                              | `'auto'`                             | `media-kit`        | yes      |
+| `zoomScope`               | `string` (CSS selector)                                                                                         | —                                    | `media-kit`        | yes      |
 
 ¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
@@ -259,6 +260,39 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 ```astro
 <Picture src={heroLight} alt="Always light" darkMode="none" />
 ```
+
+### Image zoom indicators
+
+`Image` and `Picture` can display a decorative corner indicator when zoom is enabled. Add `zoomIndicator` to show the built-in plus, or supply a `zoom-indicator` slot for custom artwork:
+
+```astro
+<Image src={photo} alt="Mountain lake" zoom zoomIndicator />
+
+<Picture src={photo} alt="Mountain lake" zoom>
+  <svg slot="zoom-indicator" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <path d="M12 4v16M4 12h16" />
+  </svg>
+  This remains the image caption.
+</Picture>
+```
+
+A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. It stays out of the lightbox while the media is enlarged.
+
+To replace the built-in artwork across a page, add `<YourPlusIcon slot="icon-zoom-indicator" />` to `MediaTheme`. Individual `zoom-indicator` slots take precedence over that shared icon. As with other `MediaTheme` icons, the shared replacement requires JavaScript; per-image slots and the built-in plus render on the server.
+
+Set these variables in global CSS or on an ancestor of the image:
+
+| Property                                          | Default                                    |
+| ------------------------------------------------- | ------------------------------------------ |
+| `--amk-zoom-indicator-size`                       | Shared gallery icon size                   |
+| `--amk-zoom-indicator-color`                      | Shared gallery control color               |
+| `--amk-zoom-indicator-inset`                      | `auto 0.75rem 0.75rem auto` (bottom right) |
+| `--amk-zoom-indicator-opacity`                    | Shared gallery resting icon opacity        |
+| `--amk-zoom-indicator-active-opacity`             | Shared gallery active icon opacity         |
+| `--amk-zoom-indicator-transition-duration`        | Shared gallery transition duration         |
+| `--amk-zoom-indicator-active-transition-duration` | Shared gallery active transition duration  |
+
+The inset accepts CSS shorthand in top/right/bottom/left order: for a top-left indicator, use `0.75rem auto auto 0.75rem`. Custom SVGs should use `currentColor` to follow the color setting. Opacity follows hover and keyboard focus, and cosmetic transitions are disabled with reduced motion.
 
 ### Recommended defaults
 
@@ -448,7 +482,7 @@ The Carousel does not enable zoom or assign a gallery automatically. Give its im
 
 ### MediaTheme
 
-Place one optional `<MediaTheme>` in your page layout to replace decorative icons across the kit's video controls, local audio controls, carousels, and lightbox. Supply inline SVGs or Astro components that render a single SVG through named `icon-*` slots. Every omitted icon keeps its built-in artwork; without `MediaTheme`, all components work as usual.
+Place one optional `<MediaTheme>` in your page layout to replace decorative icons across the kit's video controls, local audio controls, carousels, image zoom indicators, and lightbox. Supply inline SVGs or Astro components that render a single SVG through named `icon-*` slots. Every omitted icon keeps its built-in artwork; without `MediaTheme`, all components work as usual.
 
 ```astro
 ---
@@ -479,12 +513,62 @@ import CloseIcon from '../icons/CloseIcon.astro'
 | `icon-check`                                             | Local audio's selected playback-speed indicator                                       |
 | `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts         |
 | `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                        |
+| `icon-zoom-indicator`                                    | Opted-in Image and Picture corner indicators                                          |
 
 Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG throw during rendering, which happens at build time for static pages.
 
 Overrides apply to the current document and refresh on Astro client-side navigation. `MediaTheme` emits inert template content, so it adds no layout box and can also sit inside a Carousel without becoming a slide. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
 
-For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `.amk-video`. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Use the lightbox properties below for overlay controls. Carousel navigation has matching `--amk-carousel-control-size`, `--amk-carousel-control-color`, `--amk-carousel-control-background`, `--amk-carousel-control-hover-background`, `--amk-carousel-control-radius`, and `--amk-carousel-icon-size` variables. Their defaults match the lightbox controls; set them on `:root` or an individual `.amk-carousel`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
+For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `.amk-video`. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
+
+#### Shared gallery controls
+
+Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:root` in global CSS to style both together. An individual carousel can inherit settings from its surrounding element; the lightbox is appended to `<body>`, so its shared settings need to be global or set on `.amk-lightbox`.
+
+| Property                                                      | Default                     |
+| ------------------------------------------------------------- | --------------------------- |
+| `--amk-gallery-control-size`                                  | `2.75rem`                   |
+| `--amk-gallery-control-width`, `--amk-gallery-control-height` | Shared control size         |
+| `--amk-gallery-control-color`                                 | `#f4f4f4`                   |
+| `--amk-gallery-control-background`                            | `rgb(0 0 0 / 60%)`          |
+| `--amk-gallery-control-hover-background`                      | `rgb(0 0 0 / 80%)`          |
+| `--amk-gallery-control-radius`                                | `50%`                       |
+| `--amk-gallery-control-inset`                                 | `0.75rem`                   |
+| `--amk-gallery-control-block-position`                        | `50%` (navigation arrows)   |
+| `--amk-gallery-icon-size`                                     | `1.25rem`                   |
+| `--amk-gallery-icon-opacity`                                  | `1`                         |
+| `--amk-gallery-icon-active-opacity`                           | `1`                         |
+| `--amk-gallery-control-transition-duration`                   | `0.15s`                     |
+| `--amk-gallery-control-active-transition-duration`            | Resting transition duration |
+
+Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's controls. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. These variables resolve where each control is rendered, so settings inherited from a carousel's ancestor work without aliases.
+
+Component-specific properties are optional overrides rather than populated defaults. If your own CSS reads one directly, include the shared fallback, such as `var(--amk-lightbox-control-size, var(--amk-gallery-control-size))`.
+
+Use `--amk-lightbox-close-width`, `--amk-lightbox-close-height`, and `--amk-lightbox-close-inset` for a close target with different dimensions or placement; corresponding `--amk-lightbox-zoom-*` settings customize the secondary zoom button. Close/zoom insets use CSS top/right/bottom/left shorthand. Navigation insets follow the inline direction; `--amk-gallery-control-block-position` moves both arrows vertically from their default centered position. The lightbox's default placement respects device safe areas. Explicit close/zoom inset shorthands replace that default placement.
+
+For rectangular arrow targets, a smaller close target, icons resting at 40%, immediate hover/focus brightness, and a gradual fade-out:
+
+```css
+:root {
+  --amk-gallery-control-width: 52px;
+  --amk-gallery-control-height: 88px;
+  --amk-gallery-control-inset: 12px;
+  --amk-gallery-control-radius: 0;
+  --amk-gallery-control-background: transparent;
+  --amk-gallery-control-hover-background: transparent;
+  --amk-gallery-icon-opacity: 0.4;
+  --amk-gallery-icon-active-opacity: 1;
+  --amk-gallery-control-transition-duration: 250ms;
+  --amk-gallery-control-active-transition-duration: 0ms;
+
+  --amk-lightbox-close-width: 44px;
+  --amk-lightbox-close-height: 36px;
+  --amk-lightbox-close-inset: 12px auto auto 12px;
+}
+```
+
+Active styling applies to hover-capable pointers and keyboard focus. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity and transition durations unless their indicator-specific properties override them. Existing SVG replacement slots continue to work with these controls.
 
 ### ZoomLink
 
@@ -508,7 +592,7 @@ import photo from '../assets/photo.jpg'
 
 **Caption** wraps media in `<figure>`/`<figcaption>` when there is caption text or a visible credit, with a credit line built from `creator`, `organization`, and `type` when `showCredit` is on. Its named `media-component` slot holds the media; the default slot holds the caption text. Image, Picture, Video, and Audio render it from their `credit*` props, so you generally don't need to use it directly.
 
-**Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, and `nativeWidth` for the `native` zoom level. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap.
+**Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, and `nativeWidth` for the `native` zoom level. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap. Set standalone `indicator` to enable the decorative marker and optionally replace its artwork through the named `indicator` slot. Unlike Image and Picture, the standalone slot does not enable the indicator by itself.
 
 ### Lightbox
 
