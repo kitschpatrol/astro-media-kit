@@ -1,5 +1,5 @@
 import type { AstroIntegrationLogger } from 'astro'
-import { exiftool } from 'exiftool-vendored'
+import { ExifTool } from 'exiftool-vendored'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -46,6 +46,13 @@ export async function stripExifFromImages(
 		targets.push(path.join(entry.parentPath, entry.name))
 	}
 
+	if (targets.length === 0) {
+		return
+	}
+
+	// Own this pool so a completed build does not permanently shut down the
+	// shared instance used for image credits or subsequent builds.
+	const metadataTool = new ExifTool()
 	let strippedCount = 0
 	let failedCount = 0
 
@@ -55,7 +62,7 @@ export async function stripExifFromImages(
 		// can append `-overwrite_original` and skip the backup.
 		const results = await Promise.allSettled(
 			targets.map(async (filePath) =>
-				exiftool.write(filePath, {}, { writeArgs: ['-all=', '-overwrite_original'] }),
+				metadataTool.write(filePath, {}, { writeArgs: ['-all=', '-overwrite_original'] }),
 			),
 		)
 
@@ -70,7 +77,7 @@ export async function stripExifFromImages(
 			}
 		}
 	} finally {
-		await exiftool.end()
+		await metadataTool.end()
 	}
 
 	if (strippedCount === 0 && failedCount === 0) {

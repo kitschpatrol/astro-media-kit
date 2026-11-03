@@ -72,6 +72,19 @@ describe('stripExifFromImages', () => {
 		expect(backups).toEqual([])
 	})
 
+	it('can strip metadata again in the same process', async () => {
+		const repeatedPath = path.join(root, 'repeated.jpg')
+		await sharp({
+			create: { background: { r: 0, g: 0, b: 0 }, channels: 3, height: 8, width: 8 },
+		})
+			.withExif({ IFD0: { Copyright: 'Second build' } })
+			.jpeg()
+			.toFile(repeatedPath)
+		await stripExifFromImages(pathToFileURL(`${root}/`), silentLogger)
+		const { exif } = await sharp(repeatedPath).metadata()
+		expect(exif).toBeUndefined()
+	})
+
 	it('leaves non-image files untouched', async () => {
 		expect(await readFile(textPath, 'utf8')).toBe(textContents)
 	})
