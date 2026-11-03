@@ -600,8 +600,9 @@ it('only fades its bar in the page as the controls hide and show', async () => {
 	expect(offset()).toBeCloseTo(resting, 0)
 })
 
-it('fades its bar back into the player without sliding as the lightbox closes', async () => {
-	const { player } = await mountPlayer()
+it('returns its bar on the active thumbnail fade without a second opacity transition', async () => {
+	const { item, player } = await mountPlayer()
+	item.style.setProperty('--amk-lightbox-close-fade-duration', '800ms')
 	const controls = query(player, '.amk-controls')
 	const bar = query(player, '.amk-bar')
 	const container = query(player, 'media-container')
@@ -610,6 +611,10 @@ it('fades its bar back into the player without sliding as the lightbox closes', 
 	await userEvent.click(query(player, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	await liftDone()
+	expect(getComputedStyle(controls).filter).toBe('none')
+	await expect
+		.poll(() => getComputedStyle(item).getPropertyValue('--amk-page-controls-opacity'))
+		.toBe('0')
 	viewer().requestClose()
 	await expect.poll(() => viewer().open).toBe(false)
 
@@ -618,7 +623,21 @@ it('fades its bar back into the player without sliding as the lightbox closes', 
 	const { bottom } = container.getBoundingClientRect()
 	expect(bar.getBoundingClientRect().bottom).toBeCloseTo(bottom, 0)
 	expect(getComputedStyle(bar).translate).toBe('none')
-	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
+	expect(getComputedStyle(controls).opacity).toBe('1')
+	expect(
+		controls
+			.getAnimations()
+			.filter((animation) => animation instanceof CSSTransition)
+			.map((animation) => animation.transitionProperty),
+	).not.toContain('opacity')
+	expect(
+		item
+			.getAnimations()
+			.filter((animation) => animation instanceof CSSTransition)
+			.map((animation) => animation.transitionProperty),
+	).toContain('--amk-page-controls-opacity')
+	await expect.poll(() => getComputedStyle(controls).filter).toBe('opacity(1)')
+	expect(getComputedStyle(query(player, '.amk-media')).filter).toBe('none')
 })
 
 it.each([false, true])('crossfades video with its page preview, playing=%s', async (playing) => {

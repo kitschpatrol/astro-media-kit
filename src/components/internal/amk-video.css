@@ -181,6 +181,13 @@
 	transition: opacity var(--amk-duration);
 }
 
+/* Page controls follow the active thumbnail without fading the video itself.
+   Popups live in the top layer, so they consume the same factor separately. */
+.amk-zoom .amk-controls:not([popover]),
+.amk-zoom .amk-controls:not([popover]) [data-popup] {
+	filter: opacity(var(--amk-page-controls-opacity, 1));
+}
+
 /* Only playing videos hide idle controls. Keyboard focus reveals them again;
    paused videos keep them visible, including outside the player's footprint. */
 .amk-player[data-playing] .amk-controls:not([popover], [data-visible], :has(:focus-visible)) {
@@ -220,11 +227,6 @@
 		pointer-events: none;
 		opacity: 0;
 	}
-}
-
-/* Returning controls fade in without moving inside the player. */
-.amk-controls[data-returning] {
-	opacity: 0;
 }
 
 .amk-button,

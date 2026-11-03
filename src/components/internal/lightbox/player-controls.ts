@@ -253,9 +253,9 @@ export function hideControls() {
 }
 
 /**
- * Put a bar back in its player, at the player's own control level, where it
- * fades into place: the one in `subject`, or every bar when no subject is
- * given.
+ * Put a bar back in its player, at the player's own control level. Its page
+ * wrapper owns the visibility fade; an inactive item replaces an already
+ * visible control preview. Release one subject, or every bar when omitted.
  */
 export function releaseControls(subject?: Element) {
 	for (const [each, level] of levels) {
@@ -286,12 +286,14 @@ export function releaseControls(subject?: Element) {
 
 		hide(bar)
 		const { controls } = bar
-		// Start transparent in the player, then let its normal fade reveal it.
-		controls.dataset.returning = ''
+		// Replace the page preview at its current opacity. The active thumbnail
+		// remains faded until restore; inactive thumbnails are already visible.
+		const { transition } = controls.style
+		controls.style.transition = 'none'
 		controls.removeAttribute('popover')
-		controls.getBoundingClientRect()
-		delete controls.dataset.returning
 		delete controls.dataset.crossfade
+		controls.getBoundingClientRect()
+		controls.style.transition = transition
 		bars.delete(each)
 	}
 }
