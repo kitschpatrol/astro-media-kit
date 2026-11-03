@@ -10,7 +10,7 @@
 @layer amk-carousel {
 	:root {
 		--amk-carousel-control-size: 2.75rem;
-		--amk-carousel-control-color: #f4f4f5;
+		--amk-carousel-control-color: #f4f4f4;
 		--amk-carousel-control-background: rgb(0 0 0 / 60%);
 		--amk-carousel-control-hover-background: rgb(0 0 0 / 80%);
 		--amk-carousel-control-radius: 50%;

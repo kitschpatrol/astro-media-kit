@@ -13,8 +13,8 @@
 
 .amk {
 	--amk-control-size: 44px;
-	--amk-control-background: rgb(20 20 30 / 70%);
-	--amk-control-hover-background: rgb(50 50 70 / 70%);
+	--amk-control-background: rgb(20 20 20 / 70%);
+	--amk-control-hover-background: rgb(50 50 50 / 70%);
 	--amk-control-color: #fff;
 	--amk-icon-size: 24px;
 	--amk-font-size: 14px;

@@ -541,7 +541,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-lightbox-gutter`                   | `clamp(0.75rem, 5vmin, 4rem)`     |
 | `--amk-lightbox-caption-width`            | `min(20rem, 30vw)`                |
 | `--amk-lightbox-control-size`             | `2.75rem`                         |
-| `--amk-lightbox-control-color`            | `#f4f4f5`                         |
+| `--amk-lightbox-control-color`            | `#f4f4f4`                         |
 | `--amk-lightbox-control-background`       | `rgb(0 0 0 / 60%)`                |
 | `--amk-lightbox-control-hover-background` | `rgb(0 0 0 / 80%)`                |
 | `--amk-lightbox-control-radius`           | `50%`                             |
