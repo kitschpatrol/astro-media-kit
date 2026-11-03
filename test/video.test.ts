@@ -169,6 +169,14 @@ describe('resolveVideoSource', () => {
 	})
 
 	describe('URL extraction', () => {
+		it.each([
+			'https://www.youtube.com/embed/dQw4w9WgXcQextra',
+			'https://www.youtube.com/shorts/dQw4w9WgXcQextra',
+			'https://player.vimeo.com/video/10184668extra',
+		])('does not truncate an invalid video ID in %s', (src) => {
+			expect(resolveVideoSource(src)).toEqual({ identifier: src, service: 'oembed' })
+		})
+
 		it('extracts YouTube ID from watch URL', () => {
 			expect(resolveVideoSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toEqual({
 				identifier: 'dQw4w9WgXcQ',

@@ -294,8 +294,8 @@ const YOUTUBE_HOSTS = new Set([
 	'youtube.com',
 ])
 
-const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w\-]{11})/v
-const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)/v
+const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w\-]{11})(?:\/|$)/v
+const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)(?:\/|$)/v
 
 /** Extracts a YouTube video ID from various YouTube URL formats. */
 function extractYouTubeId(url: URL): string | undefined {
