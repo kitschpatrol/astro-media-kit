@@ -56,10 +56,10 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 		</tbody>
 	</table>
 
-	<h2>2. Transparency-aware fallback</h2>
+	<h2>2. Output format defaults</h2>
 	<p class="note">
-		{'<Image>'} chooses an output format based on the input when {'format'} isn't set: SVG / GIF /
-		JPG stay in-format, other inputs go PNG.
+		{'<Image>'} follows Astro's output format defaults when {'format'} isn't set: SVG stays SVG, and
+		other supported inputs use WebP.
 	</p>
 	<table>
 		<thead>
@@ -82,7 +82,7 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 				<td>
 					<Image alt="jpeg default" src="../assets/test.jpeg" />
 				</td>
-				<td class="check">Output stays JPEG</td>
+				<td class="check">Output becomes WebP</td>
 			</tr>
 			<tr>
 				<td>SVG input, format="webp"</td>
@@ -148,7 +148,7 @@ const { title } = pages.find((p) => p.href === '/image-component')!
 						src="../assets/tiger.svg"
 					/>
 				</td>
-				<td class="check">Beige baked, CSS overrides in dark (no Image variant)</td>
+				<td class="check">Beige remains baked in both modes (no Image variant)</td>
 			</tr>
 		</tbody>
 	</table>

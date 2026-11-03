@@ -68,8 +68,9 @@ export type FallbackRules = FormatRules
  * one `<source>` element is emitted per entry, in order. Merged on top of
  * `DEFAULT_FORMATS_RULES`, so passing `formats={{ svg: ['svg'] }}` overrides
  * one entry while every other input format keeps its default rule. An empty
- * array (`{ svg: [] }`) emits zero `<source>` elements for that input — the
- * `<img>` fallback alone carries the image.
+ * array (`{ svg: [] }`) emits zero preferred `<source>` elements for that
+ * input. The `<img>` carries the light fallback; a dark fallback `<source>` is
+ * still emitted when needed to preserve theme switching.
  */
 export type FormatsRules = Simplify<Partial<Record<FallbackKey, ImageOutputFormat[]>>>
 

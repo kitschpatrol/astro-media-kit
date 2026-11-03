@@ -132,9 +132,9 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 * format, in order. Astro's built-in accepts an `ImageOutputFormat[]` only;
 		 * media-kit widens it to also accept a partial `FormatsRules` object
 		 * mapping input formats to output-format lists (merged on top of a rule set
-		 * matching Astro's defaults). An empty array entry (`{ svg: [] }`) emits
-		 * zero `<source>` elements for that input — the `<img>` fallback alone
-		 * carries the image.
+		 * matching Astro's defaults). An empty array entry (`{ svg: [] }`) skips
+		 * preferred sources; the `<img>` carries the light fallback, and a dark
+		 * fallback `<source>` is still emitted when needed for theme switching.
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
 		 *
