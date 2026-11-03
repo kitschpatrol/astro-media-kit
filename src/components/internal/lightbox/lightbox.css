@@ -1,5 +1,12 @@
 @import '../gallery-controls.css';
 
+/* Page controls follow their active slide, independently of hover styling. */
+@property --amk-page-controls-opacity {
+	inherits: true;
+	initial-value: 1;
+	syntax: '<number>';
+}
+
 /* The lightbox: the `.amk-zoom` items `<Zoomer>` renders in the page, and the
    `.amk-lightbox` dialog their content is lifted into. Astro bundles this with
    the page's own CSS, so it is in place before the first paint and the script
@@ -23,7 +30,14 @@
 
 	/* A block, so a link around a picture has the picture's layout */
 	.amk-zoom {
+		--amk-page-controls-opacity: 1;
+
 		display: block;
+		transition-property: none;
+	}
+
+	.amk-zoom[data-zoom-active] {
+		--amk-page-controls-opacity: 0;
 	}
 
 	.amk-zoom:not([data-zoom-interactive]) {
@@ -124,7 +138,22 @@
 		transition: none !important;
 	}
 
+	@media (prefers-reduced-motion: no-preference) {
+		.amk-zoom {
+			transition-duration: var(--amk-lightbox-close-fade-duration);
+			transition-property: --amk-page-controls-opacity;
+		}
+
+		.amk-zoom[data-zoom-active] {
+			transition-duration: var(--amk-lightbox-open-fade-duration);
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
+		.amk-zoom {
+			transition-property: none !important;
+		}
+
 		.amk-lightbox {
 			--amk-lightbox-duration: 0s !important;
 			--amk-lightbox-open-fade-duration: 0s !important;

@@ -67,6 +67,8 @@ const markup = `
  * `<dialog>`, and puts them back when it closes.
  */
 class Viewer {
+	/** The page item whose controls are hidden while its media is active. */
+	#activePageItem: HTMLElement | undefined
 	#activeSlide: Slide | undefined
 	/** The subject whose player controls are floated, if it has any. */
 	#activeSubject: Element | undefined
@@ -194,6 +196,7 @@ class Viewer {
 		const { index } = this.#motion
 		if (index !== this.#index) {
 			this.#index = index
+			this.#setPageItem(this.#slides[index]?.item)
 			this.#updateControls()
 		}
 
@@ -265,6 +268,7 @@ class Viewer {
 		this.#openingClickDeadline = performance.now() + 150
 		this.#index = index
 		this.#openedIndex = index
+		this.#setPageItem(current.item)
 
 		this.#slides = items.map((each, position) => createSlide(each, position, items.length))
 		// Ghosts stay where they are, so their transitions carry on
@@ -338,6 +342,8 @@ class Viewer {
 		endVolumes()
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
+		// Its player is home before the page controls begin fading back in.
+		this.#setPageItem(undefined)
 		if (current !== undefined) {
 			closeInactiveTooltips(current.item)
 		}
@@ -1014,8 +1020,25 @@ class Viewer {
 		}
 
 		this.#index = index
+		this.#setPageItem(this.#slides[index]?.item)
 		this.#liftAround(index)
 		this.#updateControls()
+	}
+
+	/** Fade the previous page item's controls in as the next item's fade out. */
+	#setPageItem(item: HTMLElement | undefined) {
+		if (item === this.#activePageItem) {
+			return
+		}
+
+		if (this.#activePageItem !== undefined) {
+			delete this.#activePageItem.dataset.zoomActive
+		}
+
+		this.#activePageItem = item
+		if (item !== undefined) {
+			item.dataset.zoomActive = ''
+		}
 	}
 
 	/**
