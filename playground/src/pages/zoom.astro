@@ -17,8 +17,14 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<h2>1. Single image zoom</h2>
 	<p class="note">Click to open lightbox. Each item opens independently.</p>
 	<div class="grid">
-		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom={true} />
-		<Picture alt="SVG tiger" formats={['svg']} src="../assets/tiger.svg" zoom={true} />
+		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom={true} zoomIndicator />
+		<Picture
+			alt="SVG tiger"
+			formats={['svg']}
+			src="../assets/tiger.svg"
+			zoom={true}
+			zoomIndicator
+		/>
 	</div>
 
 	<h2>2. Named gallery</h2>
@@ -167,6 +173,58 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 			zoom="test"
 		/>
 	</div>
+
+	<h2 id="zoom-indicators">9. Zoom indicators</h2>
+	<p class="note">
+		The first section uses the default plus. These examples customize its appearance or replace it
+		through the <code>zoom-indicator</code> slot. Hover or use Tab to focus the image: the first
+		indicator reverses its colors immediately and fades back when inactive. Reduced motion disables
+		the fade. Click any image to open the gallery; indicators stay out of the lightbox.
+	</p>
+	<div class="grid">
+		<div class="indicator-contrast">
+			<Image
+				alt="Photo with a black and white zoom indicator"
+				src="../assets/test.jpeg"
+				zoom="indicators"
+				zoomIndicator
+			>
+				Custom background and active colors.
+			</Image>
+		</div>
+		<div class="indicator-custom">
+			<Picture
+				alt="Tiger with a custom corner indicator"
+				formats={['svg']}
+				src="../assets/tiger.svg"
+				zoom="indicators"
+			>
+				<svg
+					fill="none"
+					slot="zoom-indicator"
+					stroke="currentColor"
+					stroke-width="2"
+					viewBox="0 0 24 24"
+				>
+					<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+				</svg>
+				A custom slot enables the indicator, positioned at the top left.
+			</Picture>
+		</div>
+		<div class="indicator-disabled">
+			<Image
+				alt="Photo with its zoom indicator disabled"
+				src="../assets/test-dark.jpeg"
+				zoom="indicators"
+				zoomIndicator={false}
+			>
+				<svg fill="none" slot="zoom-indicator" stroke="currentColor" viewBox="0 0 24 24">
+					<path d="M12 4v16M4 12h16" />
+				</svg>
+				Explicitly disabled despite the supplied slot. Zoom still works.
+			</Image>
+		</div>
+	</div>
 </Layout>
 
 <style>
@@ -185,5 +243,25 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	.grid :global(img) {
 		max-width: 100%;
 		height: auto;
+	}
+
+	.indicator-contrast {
+		--amk-zoom-indicator-size: 32px;
+		--amk-zoom-indicator-inset: auto 12px 12px auto;
+		--amk-zoom-indicator-color: #000;
+		--amk-zoom-indicator-background: #fff;
+		--amk-zoom-indicator-active-color: #fff;
+		--amk-zoom-indicator-active-background: #000;
+		--amk-zoom-indicator-opacity: 1;
+		--amk-zoom-indicator-active-opacity: 1;
+		--amk-zoom-indicator-transition-duration: 250ms;
+		--amk-zoom-indicator-active-transition-duration: 0ms;
+	}
+
+	.indicator-custom {
+		--amk-zoom-indicator-size: 32px;
+		--amk-zoom-indicator-inset: 12px auto auto 12px;
+		--amk-zoom-indicator-color: #000;
+		--amk-zoom-indicator-background: #fff;
 	}
 </style>
