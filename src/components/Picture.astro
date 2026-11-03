@@ -504,8 +504,13 @@ const srcsetFor = (image: GetImageResult): string =>
 
 // Build injected <style> for selector mode
 let selectorStyle: string | undefined
+let selectorClass: string | undefined
 if (isSelector && hasDarkMode) {
-	selectorStyle = `<style>picture.amk-dark{display:none}${darkMode} picture.amk-dark{display:block}${darkMode} picture.amk-light{display:none}</style>`
+	// Scope each pair independently, and group selector lists before appending
+	// the descendant. Otherwise a selector from another Picture can toggle this
+	// pair, or a comma-separated selector can hide the theme container itself.
+	selectorClass = `amk-picture-${crypto.randomUUID()}`
+	selectorStyle = `<style>.${selectorClass}>picture.amk-dark{display:none}:is(${darkMode}) .${selectorClass}>picture.amk-dark{display:block}:is(${darkMode}) .${selectorClass}>picture.amk-light{display:none}</style>`
 }
 ---
 
@@ -513,7 +518,10 @@ if (isSelector && hasDarkMode) {
 <Caption {...captionProps}>
 	<Zoomer {...zoomerProps} {...zoomTarget(fallbackImage)} slot="media-component">
 		{isSelector && hasDarkMode ? (
-			<div {...pictureAttributes} class:list={[pictureAttributes.class, 'amk-picture']}>
+			<div
+				{...pictureAttributes}
+				class:list={[pictureAttributes.class, 'amk-picture', selectorClass]}
+			>
 				<picture class="amk-dark">
 					{optimizedImagesDark!.map((image) => (
 						<source

@@ -8,6 +8,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './parity/helpers/build-fixture'
 
+const DARK_RULE =
+	/:is\(\[data-theme='dark'\]\) \.amk-picture-[\da-f\-]+>picture\.amk-dark\{display:block\}/v
+const LIGHT_RULE =
+	/:is\(\[data-theme='dark'\]\) \.amk-picture-[\da-f\-]+>picture\.amk-light\{display:none\}/v
+
 describe('Picture darkMode selector', () => {
 	let fx: Awaited<ReturnType<typeof buildFixture>>
 
@@ -55,8 +60,8 @@ describe('Picture darkMode selector', () => {
 				.toArray()
 				.join('\n')
 			expect(styleText).toContain('picture.amk-dark{display:none}')
-			expect(styleText).toContain("[data-theme='dark'] picture.amk-dark{display:block}")
-			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
+			expect(styleText).toMatch(DARK_RULE)
+			expect(styleText).toMatch(LIGHT_RULE)
 		})
 	})
 
@@ -84,8 +89,8 @@ describe('Picture darkMode selector', () => {
 				.map((_, element) => $(element).html() ?? '')
 				.toArray()
 				.join('\n')
-			expect(styleText).toContain("[data-theme='dark'] picture.amk-dark{display:block}")
-			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
+			expect(styleText).toMatch(DARK_RULE)
+			expect(styleText).toMatch(LIGHT_RULE)
 		})
 	})
 
@@ -114,7 +119,7 @@ describe('Picture darkMode selector', () => {
 				.map((_, element) => $(element).html() ?? '')
 				.toArray()
 				.join('\n')
-			expect(styleText).toContain("[data-theme='dark'] picture.amk-light{display:none}")
+			expect(styleText).toMatch(LIGHT_RULE)
 
 			// The bare <picture> has no amk-light class, so the rule cannot match it.
 			const bare = $('body > picture')

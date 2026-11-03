@@ -1,0 +1,32 @@
+---
+import { Picture } from 'astro-media-kit/components'
+import penguin from '../assets/penguin1.jpg'
+---
+
+<html>
+	<body>
+		<section id="themes">
+			<Picture
+				alt="First theme"
+				darkMode=".first-theme"
+				pictureAttributes={{ id: 'first' }}
+				src={penguin}
+				srcDark={penguin}
+			/>
+			<Picture
+				alt="Second theme"
+				darkMode=".second-theme"
+				pictureAttributes={{ id: 'second' }}
+				src={penguin}
+				srcDark={penguin}
+			/>
+			<Picture
+				alt="Selector list"
+				darkMode=".first-theme, .second-theme"
+				pictureAttributes={{ id: 'both' }}
+				src={penguin}
+				srcDark={penguin}
+			/>
+		</section>
+	</body>
+</html>
