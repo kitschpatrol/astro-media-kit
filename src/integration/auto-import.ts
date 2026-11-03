@@ -2,6 +2,7 @@ import type { AttributeNode, ComponentNode, FrontmatterNode, Node } from '@astro
 import { parse } from '@astrojs/compiler'
 import { is, serialize } from '@astrojs/compiler/utils'
 import { readFile } from 'node:fs/promises'
+import { isImageUrlSource } from '../components/utils/image'
 import { isVideoSource } from '../components/utils/video'
 
 /**
@@ -124,7 +125,7 @@ function isImportable(entry: ResolvedEntry, path: string): boolean {
 }
 
 function isImportablePath(path: string): boolean {
-	return !path.startsWith('http://') && !path.startsWith('https://') && !path.startsWith('data:')
+	return !isImageUrlSource(path) && !path.startsWith('data:')
 }
 
 function makeExpressionAttribute(name: string, value: string): AttributeNode {

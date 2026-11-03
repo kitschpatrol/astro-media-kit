@@ -10,6 +10,7 @@
 
 import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
 import type { getImage, imageConfig } from 'astro:assets'
+import type { HTMLAttributes } from 'astro/types'
 import * as mime from 'mrmime'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import type { Simplify } from './types'
@@ -157,9 +158,9 @@ export function isESMImportedImage(src: ImageMetadata | string): src is ImageMet
  * Resolve a possibly-Promise ESM default export down to its `ImageMetadata` or
  * string form. Kept small so it can be used interchangeably with plain values.
  */
-export async function resolveSrc(
-	src: ImageMetadata | Promise<{ default: ImageMetadata }> | string,
-): Promise<ImageMetadata | string> {
+export async function resolveSrc<
+	T extends DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string,
+>(src: Promise<{ default: T }> | T): Promise<T> {
 	if (typeof src === 'object' && 'then' in src) {
 		const resolved = await src
 		return resolved.default
@@ -275,18 +276,42 @@ export function mergeLayoutDefaults<T extends LayoutMergeProps>(
 }
 
 /**
- * Return a `{ background }` fragment only when the output format is opaque
- * (JPEG) — these formats lose transparency, so we composite the user's
- * background color into the pixels. Transparent formats (PNG, WebP, AVIF, SVG)
- * get the background via CSS instead.
+ * Preserve Astro's background compositing. When a dark background is also
+ * requested, keep transparent formats transparent so CSS can switch colors;
+ * opaque JPEG output still needs its background composited into the pixels.
  */
 export function compositingBackground(
 	format: string | undefined,
 	background?: string,
+	backgroundDark?: string,
 ): Record<string, string> {
-	return background !== undefined && background !== '' && opaqueFormats.has(format!)
+	return background !== undefined &&
+		background !== '' &&
+		(backgroundDark === undefined || opaqueFormats.has(format!))
 		? { background }
 		: {}
+}
+
+/** Preserve the caller's inline styling and append the kit's background styles. */
+export function mergeImageStyle(
+	style: HTMLAttributes<'img'>['style'],
+	backgroundStyle: string | undefined,
+): HTMLAttributes<'img'>['style'] {
+	if (backgroundStyle === undefined) {
+		return style
+	}
+
+	if (typeof style === 'string') {
+		return `${style};${backgroundStyle}`
+	}
+
+	const backgroundProperties = Object.fromEntries(
+		backgroundStyle.split(';').map((declaration) => {
+			const colon = declaration.indexOf(':')
+			return [declaration.slice(0, colon), declaration.slice(colon + 1)]
+		}),
+	)
+	return { ...style, ...backgroundProperties }
 }
 
 /**
@@ -552,9 +577,9 @@ export function warnRemoteMissingDimsOrInferSize(
 	componentName: 'Image' | 'Picture',
 	src: string,
 	options: {
-		height?: number | undefined
+		height?: `${number}` | number | undefined
 		inferSize?: boolean | undefined
-		width?: number | undefined
+		width?: `${number}` | number | undefined
 	},
 ): void {
 	if (!import.meta.env.DEV) {

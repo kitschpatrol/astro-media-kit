@@ -1,0 +1,57 @@
+---
+import type { LocalImageProps, RemoteImageProps } from 'astro:assets'
+import { Image, Picture } from 'astro-media-kit/components'
+import { Image as AstroImage, Picture as AstroPicture } from 'astro:assets'
+import penguin from '../assets/penguin1.jpg'
+
+const cases: Record<string, LocalImageProps | RemoteImageProps> = {
+	dimensions: { alt: 'Penguin', height: '200.5', src: penguin, width: '300.5' },
+	priority: { alt: 'Penguin', priority: true, src: penguin },
+	promise: { alt: 'Penguin', src: import('../assets/penguin1.jpg') },
+	public: { alt: 'Aurora', height: 320, src: '/media/aurora-480.jpg', width: 480 },
+	remote: { alt: 'Remote', height: 320, src: 'https://example.com/photo.jpg', width: 480 },
+	style: { alt: 'Penguin', src: penguin, style: 'border-radius:12px;opacity:0.8' },
+	'style-object': { alt: 'Penguin', src: penguin, style: { borderRadius: '12px', opacity: 0.8 } },
+}
+---
+
+<html>
+	<body>
+		{Object.entries(cases).map(([name, props]) => (
+			<>
+				<Image {...props} id={`image-${name}`} />
+				<AstroImage {...props} id={`astro-image-${name}`} />
+				<Picture {...props} pictureAttributes={{ id: `picture-${name}` }} />
+				<AstroPicture {...props} pictureAttributes={{ id: `astro-picture-${name}` }} />
+			</>
+		))}
+		<Image
+			alt="Penguin"
+			background="#fff"
+			id="image-background"
+			src={penguin}
+			style="border-radius:12px"
+		/>
+		<AstroImage
+			alt="Penguin"
+			background="#fff"
+			id="astro-image-background"
+			src={penguin}
+			style="border-radius:12px"
+		/>
+		<Picture
+			alt="Penguin"
+			background="#fff"
+			pictureAttributes={{ id: 'picture-background' }}
+			src={penguin}
+			style={{ borderRadius: '12px' }}
+		/>
+		<AstroPicture
+			alt="Penguin"
+			background="#fff"
+			pictureAttributes={{ id: 'astro-picture-background' }}
+			src={penguin}
+			style={{ borderRadius: '12px' }}
+		/>
+	</body>
+</html>

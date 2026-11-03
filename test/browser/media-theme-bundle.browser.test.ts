@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { waitForFrame } from './frame'
 
 it.each(['media-audio-first', 'media-video-first'])(
 	'connects both player contexts when %s initializes shared controls',
@@ -8,6 +9,7 @@ it.each(['media-audio-first', 'media-video-first'])(
 		frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
 		document.body.append(frame)
 		try {
+			await waitForFrame(frame, route)
 			await expect
 				.poll(
 					() =>
@@ -49,6 +51,7 @@ it('initializes both player themes and refreshes the cached viewer across Astro 
 	frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
 	document.body.append(frame)
 	try {
+		await waitForFrame(frame, 'media-theme')
 		await expect
 			.poll(() =>
 				frame.contentDocument
@@ -142,6 +145,7 @@ it('supports image-only icon themes without loading Video.js', async () => {
 	frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
 	document.body.append(frame)
 	try {
+		await waitForFrame(frame, 'media-theme-image')
 		await expect.poll(() => frame.contentDocument?.readyState).toBe('complete')
 		await expect
 			.poll(() => frame.contentDocument?.querySelector<HTMLElement>('.amk-zoom'))

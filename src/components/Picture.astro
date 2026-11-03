@@ -8,14 +8,12 @@
 //   a single forced output format (Astro built-in semantics) or a partial
 //   per-input-format rules map (media-kit extension)
 // - Responsive srcset mirroring the `sizes` attribute onto each <source>
-// - Background compositing for opaque output formats
+// - Astro background compositing with optional CSS dark backgrounds
 // - Caption + Zoom wrappers from the media-kit
 //
-// Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
-// `getImage()`. Features that require local file bytes (XMP credit extraction,
-// background compositing, transparency-aware fallback, and local/remote mixed
-// dark-mode pairs) are skipped for remote sources — dev warnings surface when
-// those props are set.
+// URL sources, including public assets, use Astro's image pipeline via
+// `getImage()`. XMP extraction is available only for local metadata sources;
+// URL and local metadata dark variants cannot be mixed.
 
 import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -27,7 +25,7 @@ import type { FormatRules, FormatsRules, GetImageResult } from './utils/image-or
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
-import { isRemoteImageSource } from './utils/image'
+import { isImageUrlSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
@@ -35,6 +33,7 @@ import {
 	compositingBackground,
 	extractScopedStyleClass,
 	getMimeType,
+	mergeImageStyle,
 	mergeLayoutDefaults,
 	needsBackgroundDarkVariant,
 	pickFallbackFormat,
@@ -56,19 +55,19 @@ import Zoomer from './Zoomer.astro'
  * Props for the `<Picture>` component — renders `<picture>` with dark mode,
  * responsive sources, and zoom. Inherits from Astro's `LocalImageProps` (all
  * `getImage()`-compatible fields plus `<img>` HTMLAttributes) and Astro's
- * `<Picture>` extras (`formats`, `pictureAttributes`); only props widened,
- * narrowed, or added by media-kit are re-declared here.
+ * `<Picture>` extras (`formats`, `pictureAttributes`); only props widened or
+ * added by media-kit are re-declared here.
  */
 export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
-		 * CSS background color for the image (visible behind transparent areas).
-		 * For opaque output formats (JPEG) the color is composited into the pixels
-		 * via the image service; for transparent formats it's applied via inline
-		 * CSS. Ignored for remote sources.
+		 * Astro's compositing background, also applied as a CSS background. When
+		 * `backgroundDark` is supplied, transparent output formats keep their
+		 * transparency so CSS can switch colors; JPEG still uses pixel
+		 * compositing.
 		 *
-		 * Media-kit addition.
+		 * Astro `<Picture>` built-in, extended with CSS background styling.
 		 *
 		 * @default undefined — transparency is preserved; no background color
 		 *   is applied.
@@ -80,8 +79,7 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 * `light-dark()` so a single `<img>` responds to `prefers-color-scheme`. In
 		 * selector mode (`darkMode` set to a CSS selector) the component emits a
 		 * second `<picture>` carrying the dark background-color inline, since
-		 * `light-dark()` can't toggle on a custom selector. Ignored for remote
-		 * sources.
+		 * `light-dark()` can't toggle on a custom selector.
 		 *
 		 * Media-kit addition.
 		 *
@@ -146,17 +144,16 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		formats?: FormatsRules | ImageOutputFormat[] | undefined
 		/**
-		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
-		 * the string-numeric form Astro's type allows.
+		 * Display height in pixels. Accepts numbers and Astro's numeric strings.
 		 *
-		 * Astro `<Picture>` built-in (narrowed by media-kit).
+		 * Astro `<Picture>` built-in.
 		 *
 		 * @default undefined — for local sources, derived from the image's
 		 *   intrinsic dimensions (combined with `width` if set). For remote
 		 *   sources, omitting both `width` and `height` requires
 		 *   `inferSize: true`.
 		 */
-		height?: number | undefined
+		height?: LocalImageProps['height']
 		/**
 		 * Probe the source at build time to determine its intrinsic dimensions.
 		 * Required for remote sources without explicit `width` + `height` —
@@ -178,14 +175,15 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		pictureAttributes?: HTMLAttributes<'picture'> | undefined
 		/**
-		 * Image source: `ImageMetadata`, a `{ dark, light }` pair, or an absolute
-		 * file path string.
+		 * Astro image metadata, an import promise, or a public/remote image URL.
+		 * Also accepts local filesystem paths and `{ dark, light }` metadata
+		 * pairs.
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
 		 *
 		 * @default undefined — required; rendering throws if omitted.
 		 */
-		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		src: DarkLightImageMetadata | ImageMetadataLike | LocalImageProps['src'] | string
 		/**
 		 * Dark mode image variant. Rendered via `prefers-color-scheme` media query
 		 * on `<source>`. Pass `false` to disable auto dark mode generation from a
@@ -198,17 +196,16 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		 */
 		srcDark?: boolean | ImageMetadata | ImageMetadataLike | string | undefined
 		/**
-		 * Display width in pixels. Narrowed to numeric-only — `getImage()` rejects
-		 * the string-numeric form Astro's type allows.
+		 * Display width in pixels. Accepts numbers and Astro's numeric strings.
 		 *
-		 * Astro `<Picture>` built-in (narrowed by media-kit).
+		 * Astro `<Picture>` built-in.
 		 *
 		 * @default undefined — for local sources, derived from the image's
 		 *   intrinsic dimensions (combined with `height` if set). For remote
 		 *   sources, omitting both `width` and `height` requires
 		 *   `inferSize: true`.
 		 */
-		width?: number | undefined
+		width?: LocalImageProps['width']
 	}
 
 const {
@@ -260,7 +257,8 @@ const darkDisabled = isNone || srcDarkProp === false
 const srcDarkSource =
 	isNone || typeof srcDarkProp === 'boolean' || srcDarkProp === undefined ? undefined : srcDarkProp
 
-const isRemote = isRemoteImageSource(src)
+const resolvedSource = await resolveSrc(src)
+const isRemote = typeof resolvedSource === 'string' && isImageUrlSource(resolvedSource)
 
 // Branch: remote URL sources skip metadata probing and use Astro's remote pipeline.
 let lightSrc: ImageMetadata | string
@@ -269,27 +267,29 @@ let lightSrcLabel: string
 let captionSrc: ImageMetadata | undefined
 
 if (isRemote) {
-	const srcDarkIsLocal = srcDarkSource !== undefined && !isRemoteImageSource(srcDarkSource)
+	const srcDarkIsLocal = srcDarkSource !== undefined && !isImageUrlSource(srcDarkSource)
 	warnRemoteIncompatibleProps('Picture', {
-		background,
-		backgroundDark,
 		srcDarkIsLocal,
 	})
-	warnRemoteMissingDimsOrInferSize('Picture', src, {
+	warnRemoteMissingDimsOrInferSize('Picture', resolvedSource, {
 		height: imageProps.height,
 		inferSize: imageProps.inferSize,
 		width: imageProps.width,
 	})
-	lightSrc = src
+	lightSrc = resolvedSource
 	darkSrc =
-		darkDisabled || srcDarkSource === undefined || srcDarkIsLocal ? undefined : srcDarkSource
-	lightSrcLabel = src
+		darkDisabled || typeof srcDarkSource !== 'string' || srcDarkIsLocal ? undefined : srcDarkSource
+	lightSrcLabel = resolvedSource
 	captionSrc = undefined
 } else {
-	const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(src, srcDarkSource, {
-		componentName: 'Picture',
-		darkDisabled,
-	})
+	const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
+		resolvedSource,
+		srcDarkSource,
+		{
+			componentName: 'Picture',
+			darkDisabled,
+		},
+	)
 	lightSrc = imageMetadata
 	darkSrc = imageMetadataDark
 	lightSrcLabel = imageMetadata.src
@@ -328,7 +328,7 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
 		getImage({
 			...mergedImageProps,
-			...(!isRemote && compositingBackground(format, background)),
+			...compositingBackground(format, background, backgroundDark),
 			densities: imageProps.densities,
 			format,
 			src: originalSrc,
@@ -342,11 +342,9 @@ const optimizedImages: GetImageResult[] = await Promise.all(
 // 2. backgroundDark differs from background on an opaque format (same source, different composited bg), or
 // 3. backgroundDark differs from background in selector mode (same source, dark <picture> carries the
 //    swapped inline background-color — CSS light-dark() can't toggle on a custom selector)
-//    — case (2)/(3) skipped for remote sources (no compositing, and no local metadata)
-const needsDarkVariant = isRemote
-	? darkSrc !== undefined
-	: darkSrc !== undefined ||
-		needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector)
+const needsDarkVariant =
+	darkSrc !== undefined ||
+	needsBackgroundDarkVariant(formats, background, backgroundDark, darkDisabled, isSelector)
 let optimizedImagesDark: GetImageResult[] | undefined
 if (needsDarkVariant) {
 	const darkBackground = backgroundDark ?? background
@@ -359,7 +357,7 @@ if (needsDarkVariant) {
 		formats.map(async (format) =>
 			getImage({
 				...mergedImageProps,
-				...(!isRemote && compositingBackground(format, darkBackground)),
+				...compositingBackground(format, darkBackground, backgroundDark),
 				densities: imageProps.densities,
 				format,
 				src: originalSrcDark,
@@ -380,7 +378,7 @@ const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
 // Generate fallback image (always light variant)
 const fallbackImage = await getImage({
 	...mergedImageProps,
-	...(!isRemote && compositingBackground(resultFallbackFormat, background)),
+	...compositingBackground(resultFallbackFormat, background, backgroundDark),
 	densities: imageProps.densities,
 	format: resultFallbackFormat,
 	src: originalSrc,
@@ -400,7 +398,7 @@ if (isSelector && hasDarkMode) {
 			: await resolveSrc(darkSrc)
 	fallbackImageDark = await getImage({
 		...mergedImageProps,
-		...(!isRemote && compositingBackground(resultFallbackFormat, darkBackground)),
+		...compositingBackground(resultFallbackFormat, darkBackground, backgroundDark),
 		densities: imageProps.densities,
 		format: resultFallbackFormat,
 		src: originalSrcDark,
@@ -431,7 +429,11 @@ if (import.meta.env.DEV) {
 	imgAdditionalAttributes['data-image-component'] = 'true'
 }
 
-const { class: imgClassName, ...imgAttributes } = {
+const {
+	class: imgClassName,
+	style: imgStyle,
+	...imgAttributes
+} = {
 	...imgAdditionalAttributes,
 	...fallbackImage.attributes,
 }
@@ -444,6 +446,7 @@ if (effectiveSizes !== undefined) {
 
 // Build dark fallback img attributes for selector mode
 let imgClassNameDark: string | undefined
+let imgStyleDark: HTMLAttributes<'img'>['style']
 let imgAttributesDark: Record<string, unknown> = {}
 if (fallbackImageDark) {
 	const imgAdditionalAttributesDark: HTMLAttributes<'img'> = {}
@@ -455,7 +458,11 @@ if (fallbackImageDark) {
 		imgAdditionalAttributesDark['data-image-component'] = 'true'
 	}
 
-	const { class: cls, ...attributes } = {
+	const {
+		class: cls,
+		style,
+		...attributes
+	} = {
 		...imgAdditionalAttributesDark,
 		...fallbackImageDark.attributes,
 	}
@@ -464,6 +471,7 @@ if (fallbackImageDark) {
 	}
 
 	imgClassNameDark = cls ?? undefined
+	imgStyleDark = style
 	imgAttributesDark = attributes
 }
 
@@ -520,7 +528,7 @@ if (isSelector && hasDarkMode) {
 						src={fallbackImageDark!.src}
 						{...imgAttributesDark}
 						class:list={[className, imgClassNameDark, 'amk']}
-						style={backgroundStyleDark}
+						style={mergeImageStyle(imgStyleDark, backgroundStyleDark)}
 					/>
 				</picture>
 				<picture class="amk-light">
@@ -537,7 +545,7 @@ if (isSelector && hasDarkMode) {
 						src={fallbackImage.src}
 						{...imgAttributes}
 						class:list={[className, imgClassName, 'amk']}
-						style={backgroundStyle}
+						style={mergeImageStyle(imgStyle, backgroundStyle)}
 					/>
 				</picture>
 			</div>
@@ -565,7 +573,7 @@ if (isSelector && hasDarkMode) {
 					src={fallbackImage.src}
 					{...imgAttributes}
 					class:list={[className, imgClassName, 'amk']}
-					style={backgroundStyle}
+					style={mergeImageStyle(imgStyle, backgroundStyle)}
 				/>
 			</picture>
 		)}

@@ -26,12 +26,12 @@
 
 This is a small collection of Astro components to help you write minimalist, platonic markup in your content and templates without compromising robust output.
 
-`<Image>` and `<Picture>` are designed as **clean super-sets** of Astro's built-in components — every prop Astro accepts is accepted here, and the component adds a handful of extras (dark-mode sources, captions, zoom, background compositing) on top. Both local and remote image sources are supported; remote sources skip the features that require access to the source file on disk (XMP credit extraction, background compositing).
+`<Image>` and `<Picture>` are designed as **clean super-sets** of Astro's built-in components: Astro's props remain supported, including numeric string dimensions, import promises, inline styles, and public or remote image URLs. The kit adds dark-mode sources, captions, zoom, background styling, and per-input-format rules. XMP credit extraction requires a local source.
 
 It includes:
 
 - **Image**\
-  Superset of Astro's `<Image>` with captions, XMP credit extraction, lightbox zoom, background compositing, and a per-input-format `format` override.
+  Superset of Astro's `<Image>` with captions, XMP credit extraction, lightbox zoom, background styling, and a per-input-format `format` override.
 - **Picture**\
   Superset of Astro's `<Picture>` with configurable dark mode (OS preference, CSS selector, or disabled), per-input-format `formats` and `fallbackFormat` overrides, and everything `<Image>` adds.
 - **Video**\
@@ -41,7 +41,7 @@ It includes:
 - **MediaTheme**\
   Optional shared icon overrides for video, local audio, carousels, and the lightbox.
 - **Carousel**\
-  Embedded carousel of any of the above, with buttons, swiping, dots, and captions, that opens into the lightbox.
+  Embedded carousel with buttons, swiping, optional dots and captions, and lightbox galleries when its media children have `zoom` enabled.
 - **ZoomLink**\
   Text link that opens an image or a video in the lightbox, and goes to the file itself without JavaScript.
 - **Astro Integration**\
@@ -73,7 +73,7 @@ pnpm add astro-media-kit
 The simplest way to use `astro-media-kit` is as an Astro integration. This enables auto-importing of image assets in your `.astro` files so you can write `src="../assets/photo.jpg"` as a string and have it resolved to an ESM import automatically:
 
 ```ts
-// Astro.config.ts
+// File: astro.config.ts
 import mediaKit from 'astro-media-kit'
 import { defineConfig } from 'astro/config'
 
@@ -93,7 +93,7 @@ export default defineConfig({
       // aphex: false,           // Apple Photos imports
       // removeOriginals: false, // Delete unused original images after build
       // stripExif: false,       // Strip EXIF/XMP metadata from build-output images
-      // video: false,           // Env schema injection for video services
+      // video: false,           // Secret env schema for video services
       // watermark: false,       // Dev-mode variant label overlay
     }),
   ],
@@ -108,7 +108,7 @@ export default defineConfig({
 
 ### Direct component usage
 
-You can also import components directly without the integration. In this case, pass imported `ImageMetadata` objects or remote URLs rather than local string paths:
+You can also import components directly without the integration. Pass imported `ImageMetadata` objects, import promises, or public/remote URLs with sizing information:
 
 ```astro
 ---
@@ -118,7 +118,7 @@ import hero from '../assets/hero.jpg'
 
 <Image src={hero} alt="Hero image" />
 <Picture src={hero} alt="Hero image" />
-<Image src="https://example.com/photo.jpg" alt="A remote image" />
+<Image src="https://example.com/photo.jpg" width={1200} height={800} alt="A remote image" />
 <Video src="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
 ```
 
@@ -126,9 +126,9 @@ import hero from '../assets/hero.jpg'
 
 ### Image
 
-A clean superset of Astro's `<Image>`: every prop Astro accepts is passed through to `getImage()`, and the component adds captions, performs XMP credit extraction, integrates lightbox zoom, and handles CSS/pixel-level background compositing.
+A clean superset of Astro's `<Image>`: Astro's image props pass through to `getImage()`, and the component adds captions, XMP credit extraction, lightbox zoom, and background styling.
 
-Accepts `ImageMetadata`, a `{ dark, light }` pair, a local file path string, or a remote `http(s)` URL.
+Accepts Astro's imported `ImageMetadata`, import promises, public image URLs such as `/images/photo.jpg`, and remote `http(s)` URLs. Also accepts `ImageMetadataLike`, a `{ dark, light }` pair, and absolute filesystem paths inside the project. Relative strings beginning with `./` or `../` require the integration's auto-import transform; otherwise import the image yourself.
 
 The `{ dark, light }` pair is permitted for symmetry with the `<Picture>` component, but note that `<Image>` uses the light variant _only_ and emits a dev warning if `dark` is defined. Use `<Picture>` instead for full dark mode support.
 
@@ -140,7 +140,7 @@ import photo from '../assets/photo.jpg'
 
 <Image src={photo} alt="A photo" zoom />
 <Image src={photo} alt="With background" background="#f0f0f0" backgroundDark="#1a1a1a" />
-<Image src="https://example.com/photo.jpg" alt="Remote" />
+<Image src="https://example.com/photo.jpg" width={1200} height={800} alt="Remote" />
 ```
 
 Caption text is passed as a slot child:
@@ -153,46 +153,52 @@ Caption text is passed as a slot child:
 
 #### Image Props
 
-Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps` (passed through unchanged to `getImage()`), `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL.
+Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps`, with differences noted; `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL. Image transformation props depend on the configured image service and remote-image authorization.
 
-| Prop                      | Type                                                                     | Default                | Origin            | Remote   |
-| ------------------------- | ------------------------------------------------------------------------ | ---------------------- | ----------------- | -------- |
-| `src`                     | `ImageMetadata \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                      | `media-kit`       | yes      |
-| `alt`                     | `string`                                                                 | —                      | `astro`           | yes      |
-| `width`                   | `number`                                                                 | —                      | `astro`           | yes      |
-| `height`                  | `number`                                                                 | —                      | `astro`           | yes      |
-| `quality`                 | `number \| 'low' \| 'mid' \| 'high' \| 'max'`                            | —                      | `astro`           | yes      |
-| `format`                  | `ImageOutputFormat \| FormatRules`                                       | `'webp'` (`svg → svg`) | `astro` (widened) | yes      |
-| `densities`               | ``readonly (number \| `${number}x`)[]``                                  | —                      | `astro`           | yes      |
-| `widths`                  | `readonly number[]`                                                      | —                      | `astro`           | yes      |
-| `sizes`                   | `string`                                                                 | —                      | `astro`           | yes      |
-| `fit`                     | `'cover' \| 'contain' \| 'fill' \| 'inside' \| 'outside'`                | `'cover'`              | `astro`           | yes      |
-| `position`                | `string`                                                                 | `'center'`             | `astro`           | yes      |
-| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                     | `'none'`               | `astro`           | yes      |
-| `loading`                 | `'lazy' \| 'eager'`                                                      | `'lazy'`               | `astro`           | yes      |
-| `decoding`                | `'auto' \| 'sync' \| 'async'`                                            | `'async'`              | `astro`           | yes      |
-| `inferSize`               | `boolean`                                                                | `false`                | `astro`           | yes      |
-| (all `<img>` attrs)       | `HTMLAttributes<'img'>`                                                  | —                      | `astro`           | yes      |
-| `className`               | `string`                                                                 | —                      | `media-kit`       | yes      |
-| `background`              | `string` (CSS color)                                                     | —                      | `media-kit`       | **no**   |
-| `backgroundDark`          | `string` (CSS color)                                                     | —                      | `media-kit`       | **no**   |
-| `credit`                  | `boolean \| string`                                                      | `false`                | `media-kit`       | partial¹ |
-| `creditMediaType`         | `MediaType`                                                              | —                      | `media-kit`       | yes      |
-| `creditMediaTypeFallback` | `MediaType`                                                              | `'image'`              | `media-kit`       | yes      |
-| `creditOrganization`      | `string`                                                                 | —                      | `media-kit`       | yes      |
-| `zoom`                    | `boolean \| string`                                                      | `false`                | `media-kit`       | yes      |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                            | `'fit'`                | `media-kit`       | yes      |
-| `zoomScope`               | `string` (CSS selector)                                                  | —                      | `media-kit`       | yes      |
+| Prop                      | Type                                                                                                            | Default                       | Origin             | Remote   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------ | -------- |
+| `src`                     | `ImageMetadata \| Promise<{ default: ImageMetadata }> \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                             | `astro` (widened)  | yes      |
+| `alt`                     | `string`                                                                                                        | —                             | `astro`            | yes      |
+| `width`                   | number or numeric string                                                                                        | —                             | `astro`            | yes      |
+| `height`                  | number or numeric string                                                                                        | —                             | `astro`            | yes      |
+| `quality`                 | `ImageQuality` (number, presets, or service-specific strings)                                                   | —                             | `astro`            | yes      |
+| `format`                  | `ImageOutputFormat \| FormatRules`                                                                              | local: `'webp'` (`svg → svg`) | `astro` (widened)  | yes      |
+| `densities`               | ``(number \| `${number}x`)[]``                                                                                  | —                             | `astro`            | yes      |
+| `widths`                  | `number[]`                                                                                                      | —                             | `astro`            | yes      |
+| `sizes`                   | `string`                                                                                                        | —                             | `astro`            | yes      |
+| `fit`                     | `ImageFit` (`'cover'`, `'contain'`, `'fill'`, `'none'`, `'scale-down'`, or service-specific strings)            | `'cover'`                     | `astro`            | yes      |
+| `position`                | `string`                                                                                                        | `'center'`                    | `astro`            | yes      |
+| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                                                            | `'none'`                      | `astro`            | yes      |
+| `loading`                 | `'lazy' \| 'eager'`                                                                                             | `'lazy'`                      | `astro`            | yes      |
+| `decoding`                | `'auto' \| 'sync' \| 'async'`                                                                                   | `'async'`                     | `astro`            | yes      |
+| `priority`                | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
+| `inferSize`               | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
+| (other `<img>` attrs)     | `HTMLAttributes<'img'>`                                                                                         | —                             | `astro`            | yes      |
+| `className`               | `string`                                                                                                        | —                             | `media-kit`        | yes      |
+| `background`              | `string` (CSS color)                                                                                            | —                             | `astro` (extended) | yes      |
+| `backgroundDark`          | `string` (CSS color)                                                                                            | —                             | `media-kit`        | yes      |
+| `credit`                  | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | partial¹ |
+| `creditMediaType`         | `MediaType`                                                                                                     | —                             | `media-kit`        | yes      |
+| `creditMediaTypeFallback` | `MediaType`                                                                                                     | `'image'`                     | `media-kit`        | yes      |
+| `creditOrganization`      | `string`                                                                                                        | —                             | `media-kit`        | yes      |
+| `zoom`                    | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | yes      |
+| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                                                   | `'fit'`                       | `media-kit`        | yes      |
+| `zoomPlaceholder`         | `'auto' \| 'none'`                                                                                              | `'auto'`                      | `media-kit`        | yes      |
+| `zoomScope`               | `string` (CSS selector)                                                                                         | —                             | `media-kit`        | yes      |
 
 ¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
-`layout` falls back to `image.layout` from `astro.config` first; the listed `'none'` is the un-configured baseline. `fit` and `position` defaults only apply when a responsive `layout` is active — under `layout='none'` they're left unset unless `image.objectFit` / `image.objectPosition` are configured globally. `quality` is resolved by the configured image service (sharp baseService picks format-specific values, e.g. `80` for WebP/JPEG).
+URL sources use the `unknown` entry when resolving Image's `format` rules. Without a forced format or an `unknown` override, Astro's image service chooses the remote default.
 
-Remote-source caveats: when `src` is an `http(s)` URL, you must pass either `width` + `height` or `inferSize` — `getImage()` throws otherwise. A dev-mode warning fires up front if both are missing. The following media-kit features are also skipped for remote sources (with dev-mode warnings): `background` / `backgroundDark` compositing and mixed local/remote `{ dark, light }` pairs.
+`layout` falls back to `image.layout` from `astro.config` first; the listed `'none'` is the un-configured baseline. `fit` and `position` defaults only apply when a responsive `layout` is active — under `layout='none'` they're left unset unless `image.objectFit` / `image.objectPosition` are configured globally. `quality` is resolved by the configured image service. `priority` defaults `loading` to `'eager'`, `decoding` to `'sync'`, and `fetchpriority` to `'high'` unless you explicitly set those attributes. Use either `widths` or `densities`; responsive layouts use width descriptors and discard `densities`.
+
+Remote-source caveats: when `src` is an `http(s)` URL, you must pass either `width` + `height` or `inferSize` — `getImage()` throws otherwise. A dev-mode warning fires up front if neither sizing strategy is supplied. With Astro's default image service, authorize remote images through `image.domains` or `image.remotePatterns` to optimize them; `inferSize` also requires authorization. Unauthorized sources with explicit dimensions are passed through. Public image URLs also need explicit dimensions. The kit preserves inline styles, adding its background declarations when requested. `class` takes precedence over the MDX-compatible `className` alias.
+
+`background` retains Astro's pixel compositing and also adds a CSS background. When `backgroundDark` is supplied, transparent output formats retain their transparency so CSS can switch the background; JPEG output uses pixel compositing. Image's single JPEG output cannot switch its baked-in background with dark mode; use Picture when you need separate composited variants.
 
 ### Picture
 
-A clean superset of Astro's `<Picture>`: all of `<Image>`'s props, plus the `formats` / `fallbackFormat` / `pictureAttributes` extras Astro's `<Picture>` adds, plus built-in dark-mode source switching. Renders a `<picture>` with multiple `<source>` elements for format and dark-mode variants.
+Renders a `<picture>` through Astro's image pipeline, with `<source>` elements for format and dark-mode variants. Shares Image's sizing, caption, zoom, and background props; use `formats` and `fallbackFormat` instead of Image's `format` prop.
 
 ```astro
 ---
@@ -203,30 +209,32 @@ import heroDark from '../assets/hero-dark.png'
 
 <Picture src={heroLight} srcDark={heroDark} alt="Hero" />
 <Picture src={heroLight} alt="No dark variant" srcDark={false} />
-<Picture src="https://example.com/hero.png" alt="Remote" />
+<Picture src="https://example.com/hero.png" width={1200} height={800} alt="Remote" />
 ```
 
 #### Picture Props
 
-All props from [Image](#image) above, plus:
+Shared props from [Image](#image) above, with these Picture-specific props:
 
-| Prop                | Type                                                      | Default    | Origin            | Remote   |
-| ------------------- | --------------------------------------------------------- | ---------- | ----------------- | -------- |
-| `formats`           | `ImageOutputFormat[] \| FormatsRules`                     | `['webp']` | `astro` (widened) | yes      |
-| `fallbackFormat`    | `ImageOutputFormat \| FormatRules`                        | —          | `astro` (widened) | yes      |
-| `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`       | `astro`           | yes      |
-| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —          | `media-kit`       | partial² |
-| `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`  | `media-kit`       | yes      |
+| Prop                | Type                                                      | Default          | Origin            | Remote   |
+| ------------------- | --------------------------------------------------------- | ---------------- | ----------------- | -------- |
+| `formats`           | `ImageOutputFormat[] \| FormatsRules`                     | `['webp']`       | `astro` (widened) | yes      |
+| `fallbackFormat`    | `ImageOutputFormat \| FormatRules`                        | per-input format | `astro` (widened) | yes      |
+| `pictureAttributes` | `HTMLAttributes<'picture'>`                               | `{}`             | `astro`           | yes      |
+| `srcDark`           | `ImageMetadata \| ImageMetadataLike \| string \| boolean` | —                | `media-kit`       | partial² |
+| `darkMode`          | `'media' \| 'none' \| string`                             | `'media'`        | `media-kit`       | yes      |
 
-² `srcDark` works with matching source types. Mixed local/remote dark pairs are ignored with a dev warning — pass either two local `ImageMetadata` objects or two remote URL strings.
+² Use local metadata for both variants, or URL strings for both `src` and `srcDark`. With a URL `src`, a local `srcDark` is ignored with a dev warning. A URL `srcDark` with a local `src` is unsupported. A `{ dark, light }` pair contains local metadata, not URL strings. Relative `srcDark` strings need their own auto-import entry or an explicit import; the default integration only imports `src`.
 
-When `src` is a `{ dark, light }` pair (e.g. from a tldraw import), the dark variant is used automatically unless `srcDark={false}`.
+`fallbackFormat` defaults to the input format for GIF, SVG, JPG, and JPEG, and PNG otherwise. URL sources use the `unknown` entry when resolving Picture's `formats` and `fallbackFormat` rules, regardless of their URL extension.
+
+When `src` is a `{ dark, light }` pair, the dark variant is used automatically unless `srcDark={false}` or `darkMode="none"`.
 
 #### Dark mode strategies
 
 The `darkMode` prop controls how Picture switches between light and dark image variants. It accepts three kinds of values:
 
-**`'media'`** (default) — Uses `prefers-color-scheme` media queries on `<source>` elements. The browser picks the correct variant based on the OS color scheme preference. Background colors use the CSS `light-dark()` function. This is the most performant option: a single `<picture>` element, and the browser handles source selection natively.
+**`'media'`** (default) — Uses `prefers-color-scheme` media queries on `<source>` elements. The browser picks the variant based on the browser/OS color scheme preference. Background colors use the CSS `light-dark()` function. Uses a single `<picture>` element, with native browser source selection.
 
 ```astro
 <!-- Default behavior — follows OS dark mode preference -->
@@ -236,7 +244,7 @@ The `darkMode` prop controls how Picture switches between light and dark image v
 
 **CSS selector string** — Any string other than `'media'` or `'none'` is treated as a CSS selector that identifies dark mode on the page. This is for frameworks that control dark mode via a class or attribute rather than the OS preference, like Starlight (`[data-theme="dark"]`) or Tailwind CSS (`.dark`).
 
-Renders two `<picture>` elements (one light, one dark) and injects a `<style>` block that toggles visibility based on the selector. The dark variant's images load lazily when the selector activates. Selectors containing `{`, `}`, `<`, `>`, or `;` are rejected to keep the injected stylesheet well-formed.
+When a dark variant exists, renders two `<picture>` elements (one light, one dark) inside a `<div>` receiving `pictureAttributes`, and injects a `<style>` block that toggles visibility based on the selector. Loading follows the `loading` / `priority` props and the browser's lazy-loading behavior; selector mode alone does not guarantee that the hidden image stays unloaded. Without a dark variant, renders one `<picture>`. Selectors containing `{`, `}`, `<`, `>`, or `;` are rejected to keep the injected stylesheet well-formed.
 
 ```astro
 <!-- Starlight -->
@@ -254,10 +262,10 @@ Renders two `<picture>` elements (one light, one dark) and injects a `<style>` b
 
 ### Recommended defaults
 
-`<Image>` and `<Picture>` match Astro's built-in defaults exactly. For projects that share a common image setup across many call sites, a thin wrapper is a natural place to bake in conventions — responsive breakpoints, zoom scope, and a few props worth defaulting:
+`<Image>` and `<Picture>` follow Astro's local-image format and layout defaults. For projects that share a common image setup across many call sites, a thin wrapper is a natural place to bake in conventions — responsive breakpoints, zoom scope, and a few props worth defaulting:
 
-- **`inferSize` for remote sources.** `getImage()` throws on a remote `src` without either `inferSize` or `width` + `height` (a dev-mode warning fires up front when both are missing). `inferSize={true}` is a no-op on local `ImageMetadata` sources — Astro strips the flag before processing and only probes for remote URLs — so the default has no cost.
-- **`fallbackFormat` favoring WebP on `<Picture>`.** Astro's per-input defaults fall back to PNG for `avif`, `tiff`, `webp`, and unknown sources. For most modern projects WebP is a better fallback — near-universal support (Safari 14+, \~97% global), and noticeably smaller than PNG. Keep PNG only if targeting legacy browsers or targets like emails / RSS readers.
+- **`inferSize` for authorized remote sources.** `getImage()` throws on a remote `src` without either `inferSize` or `width` + `height` (a dev-mode warning fires up front when neither strategy is supplied). `inferSize={true}` is a no-op on local `ImageMetadata` sources — Astro strips the flag before processing and only probes for remote URLs. Remote sources must be authorized through `image.domains` or `image.remotePatterns`.
+- **`fallbackFormat` favoring WebP on `<Picture>`.** Astro's per-input defaults fall back to PNG for `avif`, `tiff`, `webp`, and unknown sources. If your target browsers support WebP, you can choose it as the fallback for those inputs; compare output size and quality for your images before choosing a default.
 - **`formats` preserving SVGs.** Astro's default `['webp']` applies to every input, so an SVG `src` hits the image service for raster conversion and throws unless `image.dangerouslyProcessSVG` is enabled in `astro.config`. Pass `formats={{ svg: ['svg'] }}` (per call site or as a wrapper default) to emit a single vector `<source>` for SVG inputs while every other input keeps the `['webp']` default. Empty entries like `{ svg: [] }` skip `<source>` generation entirely and let the `<img>` fallback carry the SVG directly.
 
 Destructured defaults still let each call site override:
@@ -267,9 +275,10 @@ Destructured defaults still let each call site override:
 ```astro
 ---
 // src/components/Image.astro
-import { Image as MediaKitImage, type ImageProps } from 'astro-media-kit/components'
+import type { ImageProps } from 'astro-media-kit/components'
+import { Image as MediaKitImage } from 'astro-media-kit/components'
 
-interface Props extends ImageProps {}
+type Props = ImageProps
 
 const { inferSize = true, ...imageProps } = Astro.props
 ---
@@ -282,9 +291,10 @@ const { inferSize = true, ...imageProps } = Astro.props
 ```astro
 ---
 // src/components/Picture.astro
-import { Picture as MediaKitPicture, type PictureProps } from 'astro-media-kit/components'
+import type { PictureProps } from 'astro-media-kit/components'
+import { Picture as MediaKitPicture } from 'astro-media-kit/components'
 
-interface Props extends PictureProps {}
+type Props = PictureProps
 
 const {
   fallbackFormat = {
@@ -326,7 +336,7 @@ import { Video } from 'astro-media-kit/components'
 <!-- Local file (served from public/) -->
 <Video src="/videos/intro.mp4" />
 
-<!-- Minimal controls for background-style video -->
+<!-- No playback controls for background-style video -->
 <Video src="dQw4w9WgXcQ" service="youtube" controls="none" autoPlay loop />
 ```
 
@@ -341,7 +351,7 @@ import { Video } from 'astro-media-kit/components'
 | `muted`              | `boolean`                                                                         | `true`                      |
 | `loop`               | `boolean`                                                                         | `false`                     |
 | `preload`            | `'auto' \| 'metadata' \| 'none'`                                                  | `'metadata'`                |
-| `poster`             | `string`                                                                          | service-provided            |
+| `poster`             | `string`                                                                          | — (local sources only)      |
 | `label`              | `string`                                                                          | video title, else `'Video'` |
 | `capQualityToSize`   | `boolean`                                                                         | `true`                      |
 | `initialBandwidth`   | `number`                                                                          | —                           |
@@ -350,11 +360,16 @@ import { Video } from 'astro-media-kit/components'
 | `creditOrganization` | `string`                                                                          | —                           |
 | `zoom`               | `boolean \| string`                                                               | `false`                     |
 | `zoomLevel`          | `'fill' \| 'fit' \| 'native'`                                                     | `'fit'`                     |
+| `zoomPlaceholder`    | `'auto' \| 'none'`                                                                | `'auto'`                    |
 | `zoomScope`          | `string` (CSS selector)                                                           | —                           |
 
-`service` is required for Bunny title search and for bare IDs not wrapped in a recognizable URL. `capQualityToSize` and `initialBandwidth` apply to HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs). `<Video>` does not extract XMP metadata — `credit`, `creditMediaType`, and `creditOrganization` must be supplied as props.
+`service` is required for Bunny title search. Bare Bunny UUIDs, Cloudflare 32-character hex IDs, Mux 44-character alphanumeric IDs, YouTube 11-character IDs, and numeric Vimeo IDs are inferred automatically. Bunny, Cloudflare, and Mux take these identifiers rather than arbitrary provider URLs. Use `service` to override inference when necessary.
 
-`controls` selects the player's control bar layout: `'full'` shows the standard set of controls (play, mute with a volume slider that pops up over it, time range, time display, fullscreen, captions when present); `'minimal'` shows a large play button and, when `zoom` is enabled, a lightbox expand button (suited to background or hero video), and gains the `'lightbox'` set while lifted into the lightbox; `'lightbox'` shows the same buttons as `'full'` minus the fullscreen button (for players that should omit their fullscreen control); `'native'` skips the Video.js UI entirely and uses the underlying element's native controls — the service's iframe chrome for YouTube/Vimeo, the browser's built-in controls for local files and HLS (`zoom` is ignored in this mode); `'none'` renders the player without playback controls, with a bottom-right expand button when `zoom` is enabled; playback errors remain dismissible. On the page, full and minimal players toggle playback when their video surface is clicked or tapped; only the expand button opens the lightbox. In the lightbox, the video surface supports dragging, playback uses the toolbar, and the lightbox’s close button replaces the expand button. Minimal players never offer native fullscreen. In minimal and none modes, the on-page expand button appears only on hover or keyboard focus, even while paused.
+`capQualityToSize` and `initialBandwidth` apply to the hls.js engine for HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs); native HLS playback ignores them. `initialBandwidth` is in bits per second. `poster` is currently honored only for local/direct media sources; other services use their returned thumbnails. `<Video>` does not extract XMP metadata — use `credit`, `creditMediaType`, and `creditOrganization` for manual credits.
+
+Generic oEmbed sources retain the provider's player and do not use the kit's playback controls, autoplay/mute/loop/preload settings, HLS settings, poster override, or lightbox zoom. The page must advertise a JSON oEmbed discovery endpoint that returns embed HTML. Video metadata and oEmbed requests run during rendering; failures are logged, shown inline in development, and omitted from the production page.
+
+`controls` selects the player's control bar layout: `'full'` shows play, mute with a volume popup, a time slider and display, captions when present, and either native fullscreen or a lightbox expand button when `zoom` is enabled. `'minimal'` shows a large play button and, with `zoom`, an expand button; it gains the full playback bar without native fullscreen in the lightbox. `'lightbox'` shows the playback bar without fullscreen or expand buttons. `'native'` skips the Video.js UI and uses the underlying element's controls: the service's iframe controls for YouTube/Vimeo, or browser controls for local files and HLS; it has no lightbox opener. `'none'` hides playback controls, retaining an expand button with `zoom` and dismissible playback errors. On the page, full and minimal players toggle playback when their video surface is clicked or tapped; only the expand button opens the lightbox. In the lightbox, the video surface supports dragging, playback uses the toolbar when available, and the lightbox's close button replaces the expand button. Minimal players never offer native fullscreen. In minimal and none modes, the on-page expand button appears only on hover or keyboard focus, even while paused.
 
 URL formats recognized automatically:
 
@@ -365,7 +380,7 @@ URL formats recognized automatically:
 | Local   | Direct file URLs (detected by extension)                                 |
 | oEmbed  | Any other URL (falls back to oEmbed discovery)                           |
 
-Local files are probed for their dimensions at render time (site-root paths such as `/videos/intro.mp4` resolve to `public/`), so the player reserves the right aspect ratio before the video loads.
+Local/direct media sources are probed for dimensions at render time. Site-root paths such as `/videos/intro.mp4` are tried under the default `public/` directory first. When probing succeeds, the player reserves the corresponding aspect ratio; if probing fails, the media determines its size after loading. Custom `publicDir` locations are not resolved automatically by this probe. YouTube and Vimeo use oEmbed dimensions to establish an aspect ratio, rather than the source video's pixel resolution.
 
 Playback is built on [Video.js 10](https://videojs.org). Bunny, Cloudflare, and Mux stream HLS through `@videojs/hlsjs-video`, YouTube and Vimeo play through `@videojs/youtube-video` and `@videojs/vimeo-video`, direct `.m3u8` URLs use the HLS adapter, and other local files use the native `<video>` element. The control bar is composed from Video.js UI components, with a poster, a buffering indicator, tooltips, touch-to-reveal controls that fade away when the player is idle unless the pointer is over the bar, and the usual keyboard shortcuts when the player is focused (Space or K to play, M to mute, arrow keys to seek and change volume, C for captions, and F for native fullscreen with full controls and no lightbox zoom). Paused videos keep their playback controls visible. During playback, controls hide after 1.5 seconds of inactivity, while hovering the bar, an open popup, or keyboard focus keeps them usable. On-page controls fade without sliding; a playing video reveals them only while the pointer is over the player or its controls. Controls adapt to narrow containers, and playback failures display a dismissible message with a direct video link. Video players and lightboxes support Astro client-side navigation. Opening or closing the lightbox preserves external caption tracks and the selected caption language. Set `--media-accent-color` on a wrapping element to tint the slider fills.
 
@@ -398,6 +413,38 @@ import { Audio } from 'astro-media-kit/components'
 | `creditOrganization` | `string`                              | —            |
 
 Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. Its skin stylesheet is requested only when a local audio player renders. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
+
+`autoPlay`, `muted`, `loop`, and `preload` configure local audio; SoundCloud receives only `autoPlay`, while generic oEmbed uses the provider's embed settings. Numeric SoundCloud track IDs are inferred automatically. Generic oEmbed requires a page advertising a JSON discovery endpoint that returns embed HTML. As with Video, oEmbed failures are logged and shown inline only in development.
+
+### Carousel
+
+Each top-level child element becomes a slide. Scripts, styles, stylesheet links, and inert templates stay outside the slide track. Navigation buttons, swiping, dragging, and arrow-key navigation are available when there is more than one slide. Dots and on-page captions are optional.
+
+```astro
+---
+import { Carousel, Image } from 'astro-media-kit/components'
+import first from '../assets/first.jpg'
+import second from '../assets/second.jpg'
+---
+
+<Carousel label="Trip photos" captions dots>
+  <Image src={first} alt="The beach" zoom="trip">
+    The first stop.
+  </Image>
+  <Image src={second} alt="The mountains" zoom="trip">
+    The next stop.
+  </Image>
+</Carousel>
+```
+
+| Prop                 | Type      | Default                      |
+| -------------------- | --------- | ---------------------------- |
+| `captions`           | `boolean` | `false`                      |
+| `dots`               | `boolean` | `false`                      |
+| `label`              | `string`  | `'Carousel'`                 |
+| `class`, `className` | `string`  | — (`class` takes precedence) |
+
+The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping.
 
 ### MediaTheme
 
@@ -433,7 +480,7 @@ import CloseIcon from '../icons/CloseIcon.astro'
 | `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts         |
 | `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                        |
 
-Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG fail at build time.
+Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG throw during rendering, which happens at build time for static pages.
 
 Overrides apply to the current document and refresh on Astro client-side navigation. `MediaTheme` emits inert template content, so it adds no layout box and can also sit inside a Carousel without becoming a slide. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
 
@@ -441,7 +488,7 @@ For video control styling, set `--amk-control-size`, `--amk-control-color`, `--a
 
 ### ZoomLink
 
-A text link that opens an image or a video in the lightbox, for media the page doesn't show on its own. The media is rendered into an inert `<template>` inside the link, so nothing loads until the link is used; without JavaScript, the link goes to the image, or to the video's fallback file.
+A text link that opens an image or a video in the lightbox, for media the page doesn't show on its own. The media elements are rendered into an inert `<template>` inside the link, so they do not load until client interaction; the supporting scripts and styles still load with the page, and server-side image processing or video metadata requests still run during rendering. Without JavaScript, the link goes to the image or the video's fallback URL.
 
 ```astro
 ---
@@ -455,19 +502,19 @@ import photo from '../assets/photo.jpg'
 </p>
 ```
 
-`src` takes what `<Image>` takes for an image, including a `{ dark, light }` pair, which renders through `<Picture>`, or a string. A string is a video source, as `<Video>` takes it, when it is a service URL or ID, a page to embed, or a media file, and an image path or URL otherwise; with the integration, a relative image path is auto-imported as it is on `<Image>`. An image's `alt` defaults to the link's text. `zoom` is on by default, and takes a gallery name to open the link's media alongside other items; `zoomLevel` and `zoomScope` work as on the other components.
+`src` accepts imported image metadata, import promises, a `{ dark, light }` pair (rendered through `<Picture>`), or a string. Strings with recognized image extensions use Image; other URLs, recognized service IDs, and media-file paths use Video. With the integration, a relative image path is auto-imported as it is on Image. ZoomLink has no sizing, `inferSize`, or image-format props, so public/remote image strings lack the dimensions needed to render; use imported local images instead. An image's `alt` defaults to the link's text. `zoom` is on by default, and takes a gallery name to open the link's media alongside other items; `zoomLevel` and `zoomScope` work as on the other components. It also accepts `class` and `className`, with `class` taking precedence. Generic oEmbed videos and videos that fail to load render as plain links, since they have no zoomable player.
 
 ### Supporting components
 
-**Caption** wraps content in `<figure>`/`<figcaption>`, with a credit line built from `creator`, `organization`, and `type` when `showCredit` is on. Image, Picture, Video, and Audio render it from their `credit*` props, so you generally don't need to use it directly.
+**Caption** wraps media in `<figure>`/`<figcaption>` when there is caption text or a visible credit, with a credit line built from `creator`, `organization`, and `type` when `showCredit` is on. Its named `media-component` slot holds the media; the default slot holds the caption text. Image, Picture, Video, and Audio render it from their `credit*` props, so you generally don't need to use it directly.
 
 **Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, and `nativeWidth` for the `native` zoom level. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap.
 
 ### Lightbox
 
-The lightbox moves the real element into a full-screen `<dialog>`, animates it up from where it sat, and moves it back when the viewer closes. Nothing is cloned or reconstructed: a `<picture>` keeps its `srcset`, so the browser fetches a larger candidate by itself once the picture is laid out at full size, and a video keeps playing with its position, sound, captions, and controls. Images and videos crossfade with their on-page previews while opening and closing. The player's control bar rises from the bottom of the viewer as the player lifts, sinks away as it lands, and fades back into the player once it has; the lightbox’s close button returns the video to the page. Items that share a `zoom` gallery name open together as a carousel you can swipe, drag, or step through with the buttons and the keyboard. Only the item on show is heard: as a gallery opens, media playing in its other items fades out, comes back as the carousel reaches them, at the level each had when the gallery opened, and every item returns to that level when the viewer closes.
+The lightbox moves the real element into a full-screen `<dialog>`, animates it up from where it sat, and moves it back when the viewer closes. The displayed media is the original element: a `<picture>` keeps its `srcset`, and a video retains its playback state subject to the browser limitations below. Decorative previews and captions are copied separately. Images and videos crossfade with their on-page previews while opening and closing. The player's control bar rises from the bottom of the viewer as the player lifts, sinks away as it lands, and fades back into the player once it has; the lightbox's close button returns the video to the page. Items that share a `zoom` gallery name open together as a carousel you can swipe, drag, or step through with the buttons and the keyboard. Only the item on show is heard: as a gallery opens, media playing in its other items fades out, comes back as the carousel reaches them, at the level each had when the gallery opened, and every item returns to that level when the viewer closes.
 
-Everything the client needs is rendered on the server. Image and Picture emit a real link to the largest generated candidate in their fallback format, which works without JavaScript and keeps browser behavior for modified clicks, along with that candidate's width for the `native` zoom level. Video emits its source dimensions. Wrappers around plain content are buttons, with `role`, `tabindex`, and `aria-haspopup` in the HTML; wrappers around a player are marked interactive, so the player's own controls keep their clicks. The stylesheet is bundled with the page's CSS, and the script loads only on pages with a zoom-enabled component. There are no runtime observers: a handful of listeners on the document cover every item, including the ones Astro's client router swaps in.
+The server renders each item's gallery and fallback attributes. With zoom enabled, Image and Picture emit a real link to the largest generated candidate in their fallback format, which works without JavaScript and keeps browser behavior for modified clicks, along with that candidate's width for the `native` zoom level. Video emits the dimensions its metadata adapter provides. Wrappers around plain content are buttons, with `role`, `tabindex`, and `aria-haspopup` in the HTML; wrappers around a player are marked interactive, so the player's own controls keep their clicks. The stylesheet is bundled with the page's CSS, and the script loads on pages with a zoom-enabled component. Document listeners cover items added by Astro's client router; a `ResizeObserver` tracks the viewer's dimensions.
 
 While the original is lifted, its wrapper holds its place in the page and a decorative preview stands in: a copy of an image that follows the candidate the lifted original loads, so the two crossfade and land on the same pixels; a player's poster, or its live frames on a canvas, for video; a copy of ordinary HTML. `zoomPlaceholder="none"` reserves the space without a preview. Hovering an item for a moment, or focusing it, warms the candidate the viewer will need, without changing the visible thumbnail.
 
@@ -476,12 +523,12 @@ A ZoomLink's media isn't in the page: it is instantiated from the link's templat
 In the viewer:
 
 - Drag the content up or down to dismiss it; a short drag springs back. Swipe, scroll horizontally, or drag with the mouse to move between items; a drag let go while still moving carries on to the next item, as paging does on iOS.
-- Use the previous and next buttons, the arrow keys, Home, and End. Close with Escape, Space, the close button, or a click outside the content. A focused player keeps its own keys, except Escape, which closes, and the left and right arrows, which move between items when there are others.
+- Use the previous and next buttons, the arrow keys, Home, and End. Close with Escape, the close button, or a click outside the content; Space also closes when focus is outside the content, caption, and controls. A focused player keeps its own keys, except Escape and gallery navigation arrows. Sliders keep their arrow keys, and an open player popup receives Escape before the viewer closes.
 - With `zoomLevel="fill"` or `"native"`, click the content to zoom in on that point, or use the Zoom button. Pan by scrolling, dragging, or with the arrow keys, and click again to zoom back out. `"fit"` (the default) closes on click.
 - A figure's caption is copied beside the content when there is room, and below it otherwise. The caption on the page stays where it is.
 - Transitions can be turned around partway, and a click on another item while the viewer opens or closes opens that item instead.
 
-The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. The page-facing rules sit in the `amk-lightbox` cascade layer, so any of your styles override them. Set these custom properties on `:root` or `.amk-lightbox`:
+The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk-lightbox` cascade layer so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
 
 | Property                                  | Default                           |
 | ----------------------------------------- | --------------------------------- |
@@ -504,17 +551,21 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 
 Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
 
-The lightbox targets current browsers (Chrome or Edge 139, Firefox 144, and Safari 26.2 or newer, the first with the invoker commands it uses). Where `moveBefore()` is missing, as in Safari, elements move with a plain insertion: video keeps playing, but iframes inside a lifted element reload, and a player's popups start over. Where `sizes="auto"` is missing, images keep their page-sized candidate in the viewer unless they were warmed on hover or focus first.
+The lightbox requires native `<dialog>` and [invoker-command support](https://developer.mozilla.org/en-US/docs/Web/API/HTMLButtonElement/command). It uses [`moveBefore()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore) when available to preserve element state during a lift. Otherwise it falls back to insertion: HTML video playback is preserved, but iframes inside lifted elements reload and player popups restart. Without `sizes="auto"`, an image can keep its page-sized candidate unless hover or focus warmed a larger candidate first. Explicit `sizes` values also continue to control candidate selection unless a warm-up temporarily replaces them.
 
 ### Scoped galleries
 
-By default, all components sharing the same `zoom` gallery name form a single gallery, regardless of where they appear in the DOM. The `zoomScope` prop limits this by setting a CSS selector boundary — items under separate ancestors matching the selector become separate galleries, even if they share the same gallery name.
+By default, visible zoom-enabled items sharing the same gallery name form a single gallery, regardless of where they appear in the DOM. The `zoomScope` prop limits this by setting a CSS selector boundary — items under separate ancestors matching the selector become separate galleries, even if they share the same gallery name.
 
 This is useful for reusable components (e.g. cards, sections) where you want each instance to have its own gallery without manually assigning unique names:
 
 ```astro
 ---
 import { Picture } from 'astro-media-kit/components'
+import a from '../assets/a.jpg'
+import b from '../assets/b.jpg'
+import c from '../assets/c.jpg'
+import d from '../assets/d.jpg'
 ---
 
 <!-- Each <article> gets its own gallery automatically -->
@@ -539,7 +590,7 @@ When `zoom={true}` (no gallery name) is combined with `zoomScope`, items under t
 </section>
 ```
 
-If the selector matches no ancestor, the element falls back to standalone behavior and a warning is logged. If `zoom` is `false`, `zoomScope` is ignored.
+If the selector matches no ancestor, the element falls back to standalone behavior and a warning is logged. An invalid CSS selector throws when the gallery is resolved. If `zoom` is `false`, `zoomScope` is ignored.
 
 ### Credit metadata
 
@@ -551,7 +602,7 @@ If the selector matches no ancestor, the element falls back to standalone behavi
 | `Credit`  | `creditOrganization`   | Publication or organization alongside the creator  |
 | `Label`   | `creditMediaType`      | Semantic media type (see values below)             |
 
-The `Label` tag maps to the `MediaType` union: `'animation'`, `'audio'`, `'diagram'`, `'illustration'`, `'image'`, `'photo'`, `'render'`, `'screenshot'`, or `'video'`.
+Explicit `creditMediaType` values use the `MediaType` union: `'animation'`, `'audio'`, `'diagram'`, `'illustration'`, `'image'`, `'photo'`, `'render'`, `'screenshot'`, or `'video'`. An extracted XMP `Label` may contain any text; it is not validated against that union. If `Creator` is a list, the first entry is used.
 
 The `credit` prop collapses the "show the credit line" toggle and the creator-name override into a single value:
 
@@ -559,15 +610,15 @@ The `credit` prop collapses the "show the credit line" toggle and the creator-na
 - `credit={true}` — render the credit line using XMP-extracted or explicit values
 - `credit="Jane Doe"` — render the credit line with `"Jane Doe"` as the creator name (overrides XMP `Creator`)
 
-When present, these are rendered as a credit line in the `<figcaption>` — for example, "Photo: Jane Doe / Acme Corp". Explicit props override XMP values.
+When a creator or organization is present and credits are enabled, these are rendered as a credit line in the `<figcaption>` — for example, "Photo: Jane Doe / Acme Corp". A media type alone does not create a credit line. Explicit props override XMP values.
 
 If the `Label` tag is missing or extraction is not applicable, `creditMediaTypeFallback` is used (defaults to `'image'`).
 
-XMP extraction only runs on local image sources. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`. Remote `<Image>` / `<Picture>` sources also skip XMP extraction (manual values still work).
+XMP extraction only runs on local image assets passed as metadata or filesystem paths. Public and remote image URL strings skip extraction; manual values still work. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`.
 
 ## Video services
 
-Services that require API credentials use Astro's `astro:env/server` for secret access. Set the corresponding environment variables, and optionally use the integration's `video` option to have Astro validate them at build time.
+Services that require API credentials use Astro's `astro:env/server` for secret access. Set the corresponding environment variables. The integration's `video` option registers their secret schema; also set Astro's `env.validateSecrets: true` to validate them when starting the dev server or a build. Without that setting, Astro validates secrets when accessed rather than at startup.
 
 | Service    | Environment variables                                         |
 | ---------- | ------------------------------------------------------------- |
@@ -577,11 +628,27 @@ Services that require API credentials use Astro's `astro:env/server` for secret 
 
 YouTube, Vimeo, local, and oEmbed do not require credentials.
 
-To inject env schema validation:
+The current service adapters have these additional requirements:
+
+- **Bunny:** the video must be ready and have MP4 fallback encoding enabled. Title search selects the first returned match.
+- **Mux:** pass an asset ID, not a playback ID. The asset must be ready, have exactly one video track, a playback ID, and ready static MP4 renditions.
+- **Cloudflare:** the video must be ready and have an HLS URL and thumbnail. The MP4 fallback URL is derived from the HLS URL without checking its availability; caption metadata is not currently loaded.
+
+The adapters do not generate signed playback tokens.
+
+To register the schema and enable startup validation:
 
 ```ts
-mediaKit({
-  video: ['bunny', 'mux'], // Or 'bunny', or true for all
+import mediaKit from 'astro-media-kit'
+import { defineConfig } from 'astro/config'
+
+export default defineConfig({
+  env: { validateSecrets: true },
+  integrations: [
+    mediaKit({
+      video: ['bunny', 'mux'], // Or 'bunny', or true for all credentialed services
+    }),
+  ],
 })
 ```
 
@@ -591,9 +658,11 @@ The `mediaKit()` integration registers Vite plugins in `astro:config:setup`. All
 
 ### Auto-import
 
-Enabled by default. Parses `.astro` files at build time and replaces string `src` attribute values on configured components with ESM import expressions, so Astro's image pipeline can process them.
+Enabled by default. Parses `.astro` files during development and builds and replaces quoted local asset paths on configured components with ESM import expressions, so Astro's image pipeline can process them. Remote URLs, public image URLs, data URLs, and expression-valued attributes are left alone. This imports image assets, not the components themselves, and does not transform `.md` or `.mdx` files.
 
 ```ts
+import mediaKit, { imageOnlyImport, tldrawDarkImport } from 'astro-media-kit'
+
 // Default behavior — Image, Picture, and ZoomLink src props are auto-imported
 mediaKit()
 
@@ -670,7 +739,7 @@ mediaKit({
 
 ### Remove originals
 
-Astro's image pipeline leaves the full-size source files in the assets directory even when every reference on the site uses a transformed variant. Enable `removeOriginals` to delete them after the build completes:
+For builds that emit full-size originals alongside transformed image variants, enable `removeOriginals` to clean up those originals after the build completes:
 
 ```ts
 mediaKit({
@@ -678,11 +747,11 @@ mediaKit({
 })
 ```
 
-Originals match the shape `{base}.{HASH8}.{ext}` — the 8-character hash Astro appends before the extension (e.g. `photo.Ab1Cd2Ef.jpg`). Transformed variants use an `_` separator after the hash (`photo.Ab1Cd2Ef_W800.webp`) and are left alone. An original is only removed when at least one transformed sibling exists, so unused `public/` images are preserved. Inspired by [this Astro issue](https://github.com/withastro/astro/issues/4961).
+This cleanup checks files directly in Astro's configured assets directory. It recognizes JPG, JPEG, PNG, WebP, and SVG originals with the shape `{base}.{HASH8}.{ext}` — the 8-character hash Astro appends before the extension (e.g. `photo.Ab1Cd2Ef.jpg`). Transformed variants use an `_` separator after the hash (`photo.Ab1Cd2Ef_W800.webp`) and are left alone. An original is removed only when at least one transformed sibling exists. This is a filename heuristic, not a check for remaining links to the original; enable it only when those originals are not referenced directly. Ordinary files copied from `public/` without such hashes are unaffected. Inspired by [this Astro issue](https://github.com/withastro/astro/issues/4961).
 
 ### Strip EXIF
 
-Source images often carry EXIF/XMP metadata — GPS coordinates, camera serial numbers, creator fields — that shouldn't end up on the public site. Enable `stripExif` to remove all metadata tags from every image in the build output after the build completes:
+Enable `stripExif` to strip writable metadata tags, including EXIF/XMP, from supported images in the build output after the build completes:
 
 ```ts
 mediaKit({
@@ -690,11 +759,11 @@ mediaKit({
 })
 ```
 
-This walks the build output directory recursively and strips metadata from `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files — covering both Astro-processed assets and pass-through copies from `public/`. Source images under `src/` and `public/` on disk are left untouched. Stripping is performed by [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js).
+This walks the build output directory recursively and processes `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files — covering both Astro-processed assets and pass-through copies from `public/`. Source images under `src/` and `public/` on disk are left untouched. Stripping is performed by [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js); individual failures are logged and do not stop the build. Formats outside this list are not processed.
 
 ### Watermark (dev)
 
-Stamps every responsive image variant with its pixel dimensions and encoded byte size as a tiled text overlay, so you can visually confirm which srcset candidate the browser actually loaded. Intended for dev use — a warning is logged if enabled outside `astro dev`.
+Stamps processed raster images with their pixel dimensions and encoded byte size as a tiled text overlay, so you can visually confirm which srcset candidate the browser actually loaded. SVG output, animated output, and images below `minDimension` are skipped. Intended for dev use — a warning is logged if enabled outside `astro dev`; the option still stamps build output when enabled.
 
 ```ts
 mediaKit({
@@ -707,7 +776,7 @@ mediaKit({
 | Option         | Type      | Default | Description                                                                 |
 | -------------- | --------- | ------- | --------------------------------------------------------------------------- |
 | `enabled`      | `boolean` | `true`  | Object-form-only toggle. Set to `false` to disable without removing tuning. |
-| `angle`        | `number`  | `-30`   | Counter-clockwise tilt in degrees                                           |
+| `angle`        | `number`  | `-30`   | Rotation in degrees; negative values tilt counter-clockwise                 |
 | `minDimension` | `number`  | `96`    | Skip variants smaller than this on either axis                              |
 | `opacity`      | `number`  | `0.8`   | Label fill/stroke opacity (0–1)                                             |
 
@@ -721,9 +790,9 @@ See the [Video services](#video-services) section above.
 
 Exported from `astro-media-kit`:
 
-- **`resolveImageSource(src, srcDark?)`** — Resolve a string path or `ImageMetadata` (optionally plus a dark counterpart) to a usable `ImageMetadata` or `DarkLightImageMetadata` object. Enforces format/width/height parity between light and dark.
+- **`resolveImageSource(src, srcDark?)`** — Resolve a local string path, `ImageMetadata`, or `ImageMetadataLike` (optionally plus a dark counterpart) to `ImageMetadata` or `DarkLightImageMetadata`. Enforces format/width/height parity when a dark counterpart is provided. Does not fetch remote URLs.
 - **`probeImageMetadata(filePath)`** — Read a local image file and return its `ImageMetadata` (dimensions, format) using Astro's `imageMetadata` utility. Local files only.
-- **`isImageMetadataObject(src)`** — Type guard that checks whether a value is an `ImageMetadata` object (including Astro's SVG-component wrapper form).
+- **`isImageMetadataObject(src)`** — Type guard that recognizes image-like values by a string `src`, including Astro's SVG-component wrapper form. It does not validate dimensions or format.
 - **`transformAstroSource(source, options)`** — Auto-import transform used by the integration. Exported for custom tooling.
 - **`tldrawDarkImport`** — An `AutoImportEntry` that generates a `srcDark` import for `.tldr` files.
 - **`imageOnlyImport`** — An `AutoImportEntry` that imports `src` unless it is a video source, for `ZoomLink`.
@@ -742,11 +811,11 @@ Exported from `astro-media-kit`:
 - **`AphexConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
 - **`AutoImportConfig`**, **`AutoImportEntry`**, **`AutoImportPluginConfig`** — Types for the auto-import feature's component mapping.
 
-Component prop types are exported from `astro-media-kit/components`: **`AudioProps`**, **`CaptionProps`**, **`ImageProps`**, **`PictureProps`**, **`VideoProps`**.
+Component prop types are exported from `astro-media-kit/components`: **`AudioProps`**, **`CaptionProps`**, **`CarouselProps`**, **`ImageProps`**, **`PictureProps`**, **`VideoProps`**, and **`ZoomLinkProps`**. **`MediaIconName`** is also exported there for icon overrides.
 
 ## Development notes
 
-`pnpm test` runs the Node tests, then the lightbox's behavior tests in Chromium, Firefox, and WebKit through Playwright; first run `pnpm exec playwright install` to download the browsers. The browser tests load the pages the `core-image` fixture builds, so they exercise the markup the components render. Run one browser with `pnpm vitest run --project browser --browser.name=chromium`.
+`pnpm test` runs Node unit/build tests and browser behavior tests in Chromium, Firefox, and WebKit through Playwright; first run `pnpm exec playwright install` to download the browsers. Browser tests use both generated test markup and the pages built by the `core-image` fixture. Run only the Node project with `pnpm vitest run --project unit`, or one browser with `pnpm vitest run --project browser --browser.name=chromium`. Even the unit-only command builds the browser fixture while loading the shared Vitest configuration.
 
 This project is also interesting: [Alos-no/Astro-Smart-Media](https://github.com/Alos-no/Astro-Smart-Media)
 

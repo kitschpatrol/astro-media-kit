@@ -27,6 +27,11 @@ const configWithTldrawDark = {
 }
 
 describe('transformAstroSource', () => {
+	it('preserves public image URLs for Astro rather than importing them as modules', async () => {
+		const source = '<Image src="/images/photo.jpg" alt="Photo" width="300" height="200" />'
+		expect(await transformAstroSource(source, defaultConfig)).toBeUndefined()
+	})
+
 	it('leaves values an entry declines as they are', async () => {
 		const config = {
 			ZoomLink: [

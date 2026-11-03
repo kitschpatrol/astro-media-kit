@@ -12,6 +12,7 @@ import {
 	extractScopedStyleClass,
 	getMimeType,
 	isESMImportedImage,
+	mergeImageStyle,
 	pickFallbackFormat,
 	pickFormats,
 	pickImageFormat,
@@ -209,14 +210,44 @@ describe('compositingBackground', () => {
 		expect(compositingBackground('jpg', '#000')).toEqual({ background: '#000' })
 	})
 
-	it('omits background for transparent formats', () => {
-		expect(compositingBackground('png', '#fff')).toEqual({})
-		expect(compositingBackground('webp', '#fff')).toEqual({})
-		expect(compositingBackground('svg', '#fff')).toEqual({})
+	it('preserves Astro background compositing for transparent output formats', () => {
+		expect(compositingBackground('png', '#fff')).toEqual({ background: '#fff' })
+		expect(compositingBackground('webp', '#fff')).toEqual({ background: '#fff' })
+	})
+
+	it('keeps transparency for CSS dark backgrounds while compositing opaque formats', () => {
+		expect(compositingBackground('png', '#fff', '#111')).toEqual({})
+		expect(compositingBackground('webp', '#fff', '#111')).toEqual({})
+		expect(compositingBackground('jpeg', '#fff', '#111')).toEqual({ background: '#fff' })
 	})
 
 	it('omits when background is not set', () => {
 		expect(compositingBackground('jpg')).toEqual({})
+	})
+})
+
+describe('mergeImageStyle', () => {
+	it('preserves string and object styles when no background extension is set', () => {
+		const objectStyle = { borderRadius: '12px', opacity: 0.8 }
+		expect(mergeImageStyle('border-radius:12px', undefined)).toBe('border-radius:12px')
+		expect(mergeImageStyle(objectStyle, undefined)).toBe(objectStyle)
+	})
+
+	it('preserves caller properties while applying background styles', () => {
+		expect(mergeImageStyle('border-radius:12px', 'background-color:#fff')).toBe(
+			'border-radius:12px;background-color:#fff',
+		)
+		expect(
+			mergeImageStyle(
+				{ borderRadius: '12px', opacity: 0.8 },
+				'color-scheme:light dark;background-color:light-dark(#fff,#111)',
+			),
+		).toEqual({
+			'background-color': 'light-dark(#fff,#111)',
+			borderRadius: '12px',
+			'color-scheme': 'light dark',
+			opacity: 0.8,
+		})
 	})
 })
 

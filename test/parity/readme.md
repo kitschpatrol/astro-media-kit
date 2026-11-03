@@ -8,7 +8,9 @@ These tests verify that `astro-media-kit`'s `Image` and `Picture` components rem
 ## Scope
 
 - **In scope:** invariants Astro's own tests assert against `Image` / `Picture` — `_image` endpoint URL shape, `srcset` format, attribute propagation, format inference, `<picture>` / `<source>` structure — plus direct equality with Astro's built-in output on those shared props.
-- **Out of scope:** media-kit extensions (`caption*`, `zoom*`, `darkMode`, `background*`, `srcDark`, `fallbackFormat` object form). Those are covered by the unit tests under `test/*.test.ts`. Fixture pages that exercise media-kit-only prop shapes (e.g. `picture-formats-rules-jpg.astro`, `picture-formats-rules-svg.astro`) have no `astro:assets` counterpart and are not part of the diff layer.
+- **Out of scope:** media-kit extensions (`credit*`, `zoom*`, `darkMode`, `backgroundDark`, `srcDark`, `fallbackFormat` object form). Those are covered by the unit tests under `test/*.test.ts`. Fixture pages that exercise media-kit-only prop shapes (e.g. `picture-formats-rules-jpg.astro`, `picture-formats-rules-svg.astro`) have no `astro:assets` counterpart and are not part of the diff layer.
+
+The `superset-props.astro` fixture compares numeric string dimensions, import promises, string and object inline styles, public/remote URLs, and priority settings against Astro's components. Its background cases separately verify that the generated image URLs match Astro's transforms and that the kit's additional CSS background preserves the caller's styles.
 
 ## Diff allowlist
 

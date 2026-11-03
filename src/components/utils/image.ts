@@ -137,6 +137,21 @@ export function isRemoteImageSource(src: unknown): src is string {
 }
 
 /**
+ * Recognize URLs for Astro's image pipeline, including site-root paths to
+ * public assets. Vite filesystem URLs and absolute paths inside the project
+ * retain the kit's local-file handling.
+ */
+export function isImageUrlSource(src: unknown): boolean {
+	return (
+		isRemoteImageSource(src) ||
+		(typeof src === 'string' &&
+			src.startsWith('/') &&
+			!src.startsWith('/@fs/') &&
+			!src.startsWith(`${process.cwd().replaceAll('\\', '/')}/`))
+	)
+}
+
+/**
  * Checks if the given source is a { dark, light } image metadata pair.
  */
 export function isDarkLightImageMetadata(src: unknown): src is DarkLightImageMetadata {

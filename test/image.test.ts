@@ -7,6 +7,7 @@ import {
 	getCreditFromXmpTags,
 	isDarkLightImageMetadata,
 	isImageMetadataObject,
+	isImageUrlSource,
 	isRemoteImageSource,
 } from '../src/components/utils/image'
 
@@ -42,6 +43,20 @@ describe('isImageMetadataObject', () => {
 		for (const meta of ['not-an-object', null, { notSrc: true }]) {
 			expect(isImageMetadataObject({ meta })).toBe(false)
 		}
+	})
+})
+
+describe('isImageUrlSource', () => {
+	it('delegates remote and public URLs to Astro', () => {
+		expect(isImageUrlSource('https://example.com/photo.jpg')).toBe(true)
+		expect(isImageUrlSource('/images/photo.jpg')).toBe(true)
+	})
+
+	it('retains metadata and project filesystem sources', () => {
+		expect(isImageUrlSource(valid)).toBe(false)
+		expect(isImageUrlSource(`${process.cwd().replaceAll('\\', '/')}/src/photo.jpg`)).toBe(false)
+		expect(isImageUrlSource('/@fs/project/photo.jpg')).toBe(false)
+		expect(isImageUrlSource('../assets/photo.jpg')).toBe(false)
 	})
 })
 

@@ -8,7 +8,7 @@
 // layers share the same fixture build via the cache in
 // `helpers/build-fixture.ts`, so this adds no extra build cost.
 
-import { beforeAll, describe, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './helpers/build-fixture'
 import { compareImg, comparePicture } from './helpers/compare-img'
 
@@ -52,5 +52,33 @@ describe('parity diff: media-kit vs astro:assets output (SSG)', () => {
 	it('picture-formats: <picture>/<source>/<img> matches astro:assets output', async () => {
 		const $ = await fx.readHTML('/picture-formats/')
 		comparePicture($, 'picture#local', 'picture#astro')
+	})
+
+	it.each(['dimensions', 'promise', 'style', 'style-object', 'public', 'remote', 'priority'])(
+		"Image preserves Astro's %s props",
+		async (name) => {
+			const $ = await fx.readHTML('/superset-props/')
+			compareImg($, `#image-${name}`, `#astro-image-${name}`)
+		},
+	)
+
+	it.each(['dimensions', 'promise', 'style', 'style-object', 'public', 'remote', 'priority'])(
+		"Picture preserves Astro's %s props",
+		async (name) => {
+			const $ = await fx.readHTML('/superset-props/')
+			comparePicture($, `#picture-${name}`, `#astro-picture-${name}`)
+		},
+	)
+
+	it('keeps Astro background transforms and caller styles alongside the CSS background extension', async () => {
+		const $ = await fx.readHTML('/superset-props/')
+		for (const name of ['image', 'picture']) {
+			const selector = name === 'image' ? '#image-background' : '#picture-background img'
+			const astroSelector =
+				name === 'image' ? '#astro-image-background' : '#astro-picture-background img'
+			expect($(selector).attr('src')).toBe($(astroSelector).attr('src'))
+			expect($(selector).attr('style')).toContain('border-radius:12px')
+			expect($(selector).attr('style')).toContain('background-color:#fff')
+		}
 	})
 })

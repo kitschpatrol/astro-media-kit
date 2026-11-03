@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { waitForFrame } from './frame'
 
 // Load the built scripts in a separate document. Mounting server HTML into
 // the test document cannot catch registration order in Astro's shared chunks.
@@ -10,6 +11,7 @@ it.each(['zoom', 'zoom-hls'])(
 		frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
 		document.body.append(frame)
 		try {
+			await waitForFrame(frame, route)
 			await expect
 				.poll(() =>
 					frame.contentDocument?.querySelector('amk-mute-button')?.getAttribute('aria-label'),

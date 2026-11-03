@@ -5,16 +5,14 @@
 //
 // - Default output format mirrors Astro's `baseService`: SVG sources stay
 //   SVG, everything else becomes WebP. User-supplied `format` wins.
-// - Background compositing for opaque output formats (JPEG)
+// - Astro background compositing with optional CSS dark backgrounds
 // - Caption + Zoom wrappers from the media-kit
 //
 // For responsive dark-mode image sources, use `<Picture>`. When given a `{ dark, light }`
 // pair, this component picks `.light` and emits a dev warning.
 //
-// Remote `http(s)` URLs are passed through to Astro's remote image pipeline via
-// `getImage()`. Features that require local file bytes (XMP credit extraction,
-// background compositing) are skipped for remote sources — dev warnings surface
-// when those props are set.
+// URL sources, including public assets, use Astro's image pipeline via
+// `getImage()`. XMP extraction is available only for local metadata sources.
 
 import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
@@ -26,18 +24,18 @@ import type { FormatRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
-import { isDarkLightImageMetadata, isRemoteImageSource } from './utils/image'
+import { isDarkLightImageMetadata, isImageUrlSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	cloneImageMetadata,
 	compositingBackground,
+	mergeImageStyle,
 	mergeLayoutDefaults,
 	pickImageFormat,
 	resolveSizesAttribute,
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
-	warnRemoteIncompatibleProps,
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
@@ -49,18 +47,18 @@ import Zoomer from './Zoomer.astro'
  * Props for the `<Image>` component — renders a single `<img>` with caption and
  * zoom support. Inherits from Astro's `LocalImageProps` (all
  * `getImage()`-compatible fields plus `<img>` HTMLAttributes); only props
- * widened, narrowed, or added by media-kit are re-declared here.
+ * widened or added by media-kit are re-declared here.
  */
 export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'> &
 	PrefixedCaptionProps &
 	PrefixedZoomProps & {
 		/**
-		 * CSS background color for the image (visible behind transparent areas).
-		 * For opaque output formats (JPEG) the color is composited into the pixels
-		 * via the image service; for transparent formats it's applied via inline
-		 * CSS. Ignored for remote sources.
+		 * Astro's compositing background, also applied as a CSS background. When
+		 * `backgroundDark` is supplied, transparent output formats keep their
+		 * transparency so CSS can switch colors; JPEG still uses pixel
+		 * compositing.
 		 *
-		 * Media-kit addition.
+		 * Astro `<Image>` built-in, extended with CSS background styling.
 		 *
 		 * @default undefined — transparency is preserved; no background color
 		 *   is applied.
@@ -69,7 +67,7 @@ export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'>
 		/**
 		 * Dark mode background color override. Used in conjunction with
 		 * `background`; rendered via `light-dark()` so a single `<img>` responds to
-		 * `prefers-color-scheme`. Ignored for remote sources.
+		 * `prefers-color-scheme`.
 		 *
 		 * Media-kit addition.
 		 *
@@ -90,28 +88,26 @@ export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'>
 		 * Output format for the `<img>`. Astro's built-in accepts an
 		 * `ImageOutputFormat` string only; media-kit widens it to also accept a
 		 * partial `FormatRules` object mapping input formats to output formats
-		 * (merged on top of a rule set matching Astro's `baseService` default).
-		 * Only consulted for local sources — the remote branch defers entirely to
-		 * Astro's remote pipeline.
+		 * (merged on top of a rule set matching Astro's `baseService` default). URL
+		 * sources use the `unknown` entry when a rules object is supplied.
 		 *
 		 * Astro `<Image>` built-in (widened by media-kit).
 		 *
-		 * @default undefined — Astro's `baseService` default applies: `svg → svg`,
-		 *   everything else (and `'unknown'` for remote sources) → `webp`.
+		 * @default undefined — local SVG stays SVG and other local inputs become
+		 *   WebP. URL sources defer to Astro's image service.
 		 */
 		format?: FormatRules | ImageOutputFormat | undefined
 		/**
-		 * Display height in pixels. Narrowed to numeric-only — `getImage()` rejects
-		 * the string-numeric form Astro's type allows.
+		 * Display height in pixels. Accepts numbers and Astro's numeric strings.
 		 *
-		 * Astro `<Image>` built-in (narrowed by media-kit).
+		 * Astro `<Image>` built-in.
 		 *
 		 * @default undefined — for local sources, derived from the image's
 		 *   intrinsic dimensions (combined with `width` if set). For remote
 		 *   sources, omitting both `width` and `height` requires
 		 *   `inferSize: true`.
 		 */
-		height?: number | undefined
+		height?: LocalImageProps['height']
 		/**
 		 * Probe the source at build time to determine its intrinsic dimensions.
 		 * Required for remote sources without explicit `width` + `height` —
@@ -124,27 +120,26 @@ export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'>
 		 */
 		inferSize?: boolean
 		/**
-		 * Image source: an `ImageMetadata` object, a `{ dark, light }` pair (only
-		 * `.light` is used — use `<Picture>` for dark-mode image sources), or an
-		 * absolute file path string.
+		 * Astro image metadata, an import promise, or a public/remote image URL.
+		 * Also accepts local filesystem paths and `{ dark, light }` metadata pairs
+		 * (only `.light` is used; use `<Picture>` for dark-mode image sources).
 		 *
 		 * Astro `<Image>` built-in (widened by media-kit).
 		 *
 		 * @default undefined — required; rendering throws if omitted.
 		 */
-		src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string
+		src: DarkLightImageMetadata | ImageMetadataLike | LocalImageProps['src'] | string
 		/**
-		 * Display width in pixels. Narrowed to numeric-only — `getImage()` rejects
-		 * the string-numeric form Astro's type allows.
+		 * Display width in pixels. Accepts numbers and Astro's numeric strings.
 		 *
-		 * Astro `<Image>` built-in (narrowed by media-kit).
+		 * Astro `<Image>` built-in.
 		 *
 		 * @default undefined — for local sources, derived from the image's
 		 *   intrinsic dimensions (combined with `height` if set). For remote
 		 *   sources, omitting both `width` and `height` requires
 		 *   `inferSize: true`.
 		 */
-		width?: number | undefined
+		width?: LocalImageProps['width']
 	}
 
 const {
@@ -172,11 +167,22 @@ const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope 
 // (MDX may pass both; getImage() passes through `className` unfiltered)
 const className = classFromAstro ?? classFromJsx
 
-const isRemote = isRemoteImageSource(src)
+// Match Astro's Image convenience conversion before computing responsive sizes.
+if (typeof imageProps.width === 'string') {
+	// eslint-disable-next-line radix -- Match Astro Image's implicit radix for numeric strings, including hexadecimal values
+	imageProps.width = Number.parseInt(imageProps.width)
+}
+
+if (typeof imageProps.height === 'string') {
+	// eslint-disable-next-line radix -- Match Astro Image's implicit radix for numeric strings, including hexadecimal values
+	imageProps.height = Number.parseInt(imageProps.height)
+}
+
+const resolvedSource = await resolveSrc(src)
+const isRemote = typeof resolvedSource === 'string' && isImageUrlSource(resolvedSource)
 
 if (isRemote) {
-	warnRemoteIncompatibleProps('Image', { background, backgroundDark })
-	warnRemoteMissingDimsOrInferSize('Image', src, {
+	warnRemoteMissingDimsOrInferSize('Image', resolvedSource, {
 		height: imageProps.height,
 		inferSize: imageProps.inferSize,
 		width: imageProps.width,
@@ -185,7 +191,7 @@ if (isRemote) {
 
 // Dev-only hint when a { dark, light } pair is passed — Image silently uses
 // `.light`, but the user probably meant to reach for `<Picture>` instead.
-if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(src)) {
+if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(resolvedSource)) {
 	console.warn(
 		'[astro-media-kit] Image received a { dark, light } source — rendering the `.light` variant only. Use `<Picture>` for dark-mode image sources.',
 	)
@@ -202,27 +208,19 @@ let imageMetadataSrc: string
 let captionSrc: ImageMetadata | undefined
 
 if (isRemote) {
-	// Remote: delegate to Astro's remote pipeline via getImage(). Astro
-	// requires either `width` + `height` or `inferSize: true` on remote
-	// sources — getImage() throws otherwise. A `FormatRules` map can't be
-	// resolved without input format metadata, so only forward a forced string
-	// (warn on the map shape).
-	if (formatProp !== undefined && typeof formatProp !== 'string' && import.meta.env.DEV) {
-		console.warn(
-			"[astro-media-kit] Image received a `format` rules object on a remote source — rules-map shape requires local input format metadata. Pass a single `ImageOutputFormat` string instead, or omit `format` to use Astro's remote default.",
-		)
-	}
-
-	const remoteFormat = typeof formatProp === 'string' ? formatProp : undefined
+	// Delegate URL sources to Astro. A rules map uses its `unknown` override;
+	// without one, the image service determines the output format.
+	const remoteFormat = typeof formatProp === 'string' ? formatProp : formatProp?.unknown
 	image = await getImage({
 		...mergedImageProps,
+		...compositingBackground(remoteFormat, background, backgroundDark),
 		...(remoteFormat !== undefined && remoteFormat !== '' && { format: remoteFormat }),
-		src,
+		src: resolvedSource,
 	} as UnresolvedImageTransform)
-	imageMetadataSrc = src
+	imageMetadataSrc = resolvedSource
 	captionSrc = undefined
 } else {
-	const { imageMetadata } = await resolveSrcToMetadata(src, undefined, {
+	const { imageMetadata } = await resolveSrcToMetadata(resolvedSource, undefined, {
 		componentName: 'Image',
 		darkDisabled: true,
 	})
@@ -238,7 +236,7 @@ if (isRemote) {
 
 	image = await getImage({
 		...mergedImageProps,
-		...compositingBackground(outputFormat, background),
+		...compositingBackground(outputFormat, background, backgroundDark),
 		format: outputFormat,
 		src: clonedSrc,
 	} as UnresolvedImageTransform)
@@ -278,7 +276,11 @@ if (import.meta.env.DEV) {
 	imgAdditionalAttributes['data-image-component'] = 'true'
 }
 
-const { class: imgClassName, ...imgAttributes } = {
+const {
+	class: imgClassName,
+	style: imgStyle,
+	...imgAttributes
+} = {
 	...imgAdditionalAttributes,
 	...image.attributes,
 }
@@ -304,7 +306,7 @@ const captionProps = await toCaptionProps(
 			src={image.src}
 			{...imgAttributes}
 			class:list={[className, imgClassName, 'amk']}
-			style={backgroundStyle}
+			style={mergeImageStyle(imgStyle, backgroundStyle)}
 		/>
 	</Zoomer>
 	<slot />
