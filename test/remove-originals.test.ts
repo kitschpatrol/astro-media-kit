@@ -3,6 +3,7 @@
  * CSpell:disable
  */
 import type { AstroConfig, AstroIntegrationLogger } from 'astro'
+import * as fileSystem from 'node:fs/promises'
 import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -13,6 +14,8 @@ import {
 	hasOriginalImageShape,
 	removeOriginalImages,
 } from '../src/integration/remove-originals'
+
+vi.mock('node:fs/promises', { spy: true })
 
 describe('hasOriginalImageShape', () => {
 	const originals = [
@@ -166,7 +169,8 @@ describe('findUnusedOriginals', () => {
 
 describe('removeOriginalImages', () => {
 	const config = { build: { assets: '_astro' } }
-	const logger = { error: vi.fn(), info: vi.fn() } as unknown as AstroIntegrationLogger
+	const logError = vi.fn()
+	const logger = { error: logError, info: vi.fn() } as unknown as AstroIntegrationLogger
 
 	it('accepts a build without an assets directory', async () => {
 		const root = await mkdtemp(path.join(tmpdir(), 'amk-originals-'))
@@ -195,6 +199,176 @@ describe('removeOriginalImages', () => {
 				'photo.ABCDEFGH.jpg',
 				'photo.ABCDEFGH_variant.webp',
 			])
+		} finally {
+			await rm(root, { force: true, recursive: true })
+		}
+	})
+
+	it.each([
+		['index.html', '<img src="/_astro/my%20photo.ABCDEFGH.jpg">'],
+		[
+			'nested/index.html',
+			'<a href="../_astro/my%20photo.ABCDEFGH.jpg?download#full">Full size</a>',
+		],
+		['nested/index.html', '<img src="/docs/_astro/my%20photo.ABCDEFGH.jpg">'],
+		['index.html', '<img src="https://example.com/docs/_astro/my%20photo.ABCDEFGH.jpg">'],
+		['index.html', '<img src="https://cdn.example.com/images/my%20photo.ABCDEFGH.jpg">'],
+		['index.html', '<img srcset="/small.webp 300w, /_astro/my%20photo.ABCDEFGH.jpg 1200w">'],
+		['index.html', '<div style="background-image: url(/_astro/my%20photo.ABCDEFGH.jpg)"></div>'],
+		['index.html', '<img src="/_astro/my%20photo%2E%41BCDEFGH%2Ejpg">'],
+		['index.html', '<img src="/_astro/my%20photo&#46;&#65;BCDEFGH&period;jpg">'],
+		['assets/theme.css', '.hero{background:url(../_astro/my%20photo.ABCDEFGH.jpg)}'],
+		['assets/theme.css', String.raw`.hero{background:url(../_astro/my\ photo\.ABCDEF\47 H.jpg)}`],
+		['assets/data.json', String.raw`{"url":"/_astro/my%20photo\u002eABCDEFGH.jpg"}`],
+		['assets/loader.js', String.raw`const src = '/_astro/my%20photo.ABCDEFGH\x2ejpg'`],
+		['assets/loader.js', String.raw`const src = '/_astro/my%20photo\u{2e}ABCDEFGH.jpg'`],
+		[
+			'assets/loader.js',
+			String.raw`const invalid = '\u{110000}'; const src = '/_astro/my%20photo.ABCDEFGH.jpg'`,
+		],
+		['assets/drawing.svg', '<svg><image href="/_astro/my%20photo.ABCDEFGH.jpg" /></svg>'],
+		['site.webmanifest', '{"icons":[{"src":"/_astro/my%20photo.ABCDEFGH.jpg"}]}'],
+		[
+			'sitemap.xml',
+			'<urlset><url><loc>https://example.com/_astro/my%20photo.ABCDEFGH.jpg</loc></url></urlset>',
+		],
+		[
+			'feed.xml',
+			'<rss><channel><image><url>https://example.com/_astro/my%20photo&#46;ABCDEFGH&#46;jpg</url></image></channel></rss>',
+		],
+		['index.html', '<!-- Unrelated URL: https://example.com/different-name.ABCDEFGH.jpg -->'],
+	])('retains originals referenced by %s: %s', async (referenceFile, content) => {
+		const root = await mkdtemp(path.join(tmpdir(), 'amk-references-'))
+		const assets = path.join(root, '_astro')
+		try {
+			await mkdir(assets)
+			for (const file of [
+				'my photo.ABCDEFGH.jpg',
+				'my photo.ABCDEFGH_small.webp',
+				'other.IJKLMNOP.jpg',
+				'other.IJKLMNOP_small.webp',
+			]) {
+				await writeFile(path.join(assets, file), 'image')
+			}
+
+			const pagePath = path.join(root, referenceFile)
+			await mkdir(path.dirname(pagePath), { recursive: true })
+			await writeFile(pagePath, content)
+			await removeOriginalImages(
+				pathToFileURL(`${root}/`),
+				{ ...config, base: '/docs', site: 'https://example.com' } as AstroConfig,
+				logger,
+			)
+			const remaining = await readdir(assets)
+			expect(remaining.toSorted()).toEqual([
+				'my photo.ABCDEFGH.jpg',
+				'my photo.ABCDEFGH_small.webp',
+				'other.IJKLMNOP_small.webp',
+			])
+		} finally {
+			await rm(root, { force: true, recursive: true })
+		}
+	})
+
+	it('retains all originals if a generated reference file cannot be read', async () => {
+		const root = await mkdtemp(path.join(tmpdir(), 'amk-references-'))
+		const assets = path.join(root, '_astro')
+		try {
+			await mkdir(assets)
+			await writeFile(path.join(assets, 'photo.ABCDEFGH.jpg'), 'original')
+			await writeFile(path.join(assets, 'photo.ABCDEFGH_variant.webp'), 'variant')
+			await writeFile(path.join(root, 'index.html'), '<img src="/_astro/photo.ABCDEFGH.jpg">')
+			const read = vi.spyOn(fileSystem, 'readFile').mockRejectedValueOnce(new Error('Read failed'))
+			try {
+				await removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger)
+			} finally {
+				read.mockRestore()
+			}
+
+			const remaining = await readdir(assets)
+			expect(remaining.toSorted()).toEqual(['photo.ABCDEFGH.jpg', 'photo.ABCDEFGH_variant.webp'])
+			expect(logError).toHaveBeenCalledWith(
+				'Skipping original image cleanup because references could not be read: Read failed',
+			)
+		} finally {
+			await rm(root, { force: true, recursive: true })
+		}
+	})
+
+	it.each(['server', 'client/server'])(
+		'scans references in %s output without duplicate reads',
+		async (serverPath) => {
+			const root = await mkdtemp(path.join(tmpdir(), 'amk-server-references-'))
+			const client = path.join(root, 'client')
+			const assets = path.join(client, '_astro')
+			const server = path.join(root, serverPath)
+			try {
+				await mkdir(assets, { recursive: true })
+				await mkdir(server, { recursive: true })
+				for (const file of [
+					'photo.ABCDEFGH.jpg',
+					'photo.ABCDEFGH_small.webp',
+					'other.IJKLMNOP.jpg',
+					'other.IJKLMNOP_small.webp',
+				]) {
+					await writeFile(path.join(assets, file), 'image')
+				}
+
+				await writeFile(
+					path.join(server, 'entry.mjs'),
+					'export const image = "/_astro/photo.ABCDEFGH.jpg"',
+				)
+				const read = vi.spyOn(fileSystem, 'readFile')
+				read.mockClear()
+				try {
+					await removeOriginalImages(
+						pathToFileURL(`${client}/`),
+						{
+							build: { ...config.build, server: pathToFileURL(`${server}/`) },
+							output: 'server',
+						} as AstroConfig,
+						logger,
+					)
+					expect(read).toHaveBeenCalledTimes(1)
+				} finally {
+					read.mockRestore()
+				}
+
+				const remaining = await readdir(assets)
+				expect(remaining.toSorted()).toEqual([
+					'other.IJKLMNOP_small.webp',
+					'photo.ABCDEFGH.jpg',
+					'photo.ABCDEFGH_small.webp',
+				])
+			} finally {
+				await rm(root, { force: true, recursive: true })
+			}
+		},
+	)
+
+	it.each([
+		['static', 'server'],
+		['server', 'server'],
+		['server', 'client/server'],
+	] as const)('handles missing %s output at %s conservatively', async (output, serverPath) => {
+		const root = await mkdtemp(path.join(tmpdir(), 'amk-missing-server-'))
+		const client = path.join(root, 'client')
+		const assets = path.join(client, '_astro')
+		try {
+			await mkdir(assets, { recursive: true })
+			await writeFile(path.join(assets, 'photo.ABCDEFGH.jpg'), 'original')
+			await writeFile(path.join(assets, 'photo.ABCDEFGH_small.webp'), 'variant')
+			await removeOriginalImages(
+				pathToFileURL(`${client}/`),
+				{
+					build: { ...config.build, server: pathToFileURL(`${root}/${serverPath}/`) },
+					output,
+				} as AstroConfig,
+				logger,
+			)
+			const remaining = await readdir(assets)
+			expect(remaining.includes('photo.ABCDEFGH.jpg')).toBe(output === 'server')
+			expect(remaining).toContain('photo.ABCDEFGH_small.webp')
 		} finally {
 			await rm(root, { force: true, recursive: true })
 		}
