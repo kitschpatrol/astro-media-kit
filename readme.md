@@ -286,13 +286,33 @@ Set these variables in global CSS or on an ancestor of the image:
 | ------------------------------------------------- | ------------------------------------------ |
 | `--amk-zoom-indicator-size`                       | Shared gallery icon size                   |
 | `--amk-zoom-indicator-color`                      | Shared gallery control color               |
+| `--amk-zoom-indicator-active-color`               | Resting indicator color                    |
+| `--amk-zoom-indicator-background`                 | `transparent`                              |
+| `--amk-zoom-indicator-active-background`          | Resting indicator background               |
 | `--amk-zoom-indicator-inset`                      | `auto 0.75rem 0.75rem auto` (bottom right) |
 | `--amk-zoom-indicator-opacity`                    | Shared gallery resting icon opacity        |
 | `--amk-zoom-indicator-active-opacity`             | Shared gallery active icon opacity         |
 | `--amk-zoom-indicator-transition-duration`        | Shared gallery transition duration         |
 | `--amk-zoom-indicator-active-transition-duration` | Shared gallery active transition duration  |
 
-The inset accepts CSS shorthand in top/right/bottom/left order: for a top-left indicator, use `0.75rem auto auto 0.75rem`. Custom SVGs should use `currentColor` to follow the color setting. Opacity follows hover and keyboard focus, and cosmetic transitions are disabled with reduced motion.
+The inset accepts CSS shorthand in top/right/bottom/left order: for a top-left indicator, use `0.75rem auto auto 0.75rem`. Custom SVGs should use `currentColor` to follow the color setting. Background properties accept CSS colors. Color, background, and opacity follow hover and keyboard focus, use the existing resting/active transition durations, and disable cosmetic transitions with reduced motion.
+
+For a black plus on a white background that reverses immediately on hover or keyboard focus and fades back afterward:
+
+```css
+:root {
+  --amk-zoom-indicator-color: #000;
+  --amk-zoom-indicator-background: #fff;
+  --amk-zoom-indicator-active-color: #fff;
+  --amk-zoom-indicator-active-background: #000;
+  --amk-zoom-indicator-opacity: 1;
+  --amk-zoom-indicator-active-opacity: 1;
+  --amk-zoom-indicator-transition-duration: 250ms;
+  --amk-zoom-indicator-active-transition-duration: 0ms;
+}
+```
+
+Indicator opacity affects both the artwork and its background. Set both opacity values to `1` for an opaque tile, including when shared gallery icons rest at a lower opacity. Omitted active colors retain the resting colors; the default background remains transparent.
 
 ### Recommended defaults
 

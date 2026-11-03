@@ -69,6 +69,7 @@ it('supports size, color, corner positioning, and shared idle/active styling', a
 	expect(style.width).toBe('28px')
 	expect(style.height).toBe('28px')
 	expect(style.color).toBe('rgb(200, 20, 30)')
+	expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
 	expect(style.top).toBe('5px')
 	expect(style.left).toBe('7px')
 	expect(style.pointerEvents).toBe('none')
@@ -78,11 +79,66 @@ it('supports size, color, corner positioning, and shared idle/active styling', a
 	const canHover = matchMedia('(hover: hover)').matches
 	expect(style.opacity).toBe(canHover ? '1' : '0.4')
 	expect(style.transitionDuration).toBe(canHover ? '0s' : '0.25s')
+	expect(style.color).toBe('rgb(200, 20, 30)')
+	expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
 
 	await userEvent.hover(query(fixture, '#default'))
 	opener.focus()
 	expect(style.opacity).toBe('1')
 })
+
+it.each(['hover', 'focus'] as const)(
+	'switches inherited indicator colors on %s and fades back to the resting colors',
+	async (interaction) => {
+		const fixture = await mountPage('/zoom-indicator/')
+		const section = query(fixture, '#builtin')
+		section.style.cssText =
+			'--amk-zoom-indicator-color: black; --amk-zoom-indicator-background: white; --amk-zoom-indicator-transition-duration: 250ms; --amk-zoom-indicator-active-transition-duration: 0ms;'
+		const indicator = query(section, '.amk-zoom-indicator')
+		const opener = query(section, '.amk-zoom')
+		const style = getComputedStyle(indicator)
+		await expect.poll(() => style.color).toBe('rgb(0, 0, 0)')
+		await expect.poll(() => style.backgroundColor).toBe('rgb(255, 255, 255)')
+		if (interaction === 'hover') {
+			await userEvent.hover(opener)
+		} else {
+			await userEvent.keyboard('{Tab}')
+			opener.focus()
+		}
+
+		expect(opener.matches(':focus-visible')).toBe(interaction === 'focus')
+		// Omitted active tokens retain locally inherited resting colors.
+		expect(style.color).toBe('rgb(0, 0, 0)')
+		expect(style.backgroundColor).toBe('rgb(255, 255, 255)')
+		section.style.setProperty('--amk-zoom-indicator-active-color', 'white')
+		section.style.setProperty('--amk-zoom-indicator-active-background', 'black')
+		expect(style.color).toBe('rgb(255, 255, 255)')
+		expect(style.backgroundColor).toBe('rgb(0, 0, 0)')
+		expect(style.transitionDuration).toBe('0s')
+		if (interaction === 'focus') {
+			await userEvent.hover(opener)
+			await userEvent.hover(query(fixture, '#default'))
+		}
+
+		expect(style.color).toBe('rgb(255, 255, 255)')
+		expect(style.backgroundColor).toBe('rgb(0, 0, 0)')
+		if (interaction === 'focus') {
+			opener.blur()
+		} else {
+			await userEvent.hover(query(fixture, '#default'))
+		}
+
+		expect(style.transitionDuration).toBe('0.25s')
+		expect(
+			indicator
+				.getAnimations()
+				.filter((animation) => animation instanceof CSSTransition)
+				.map((animation) => animation.transitionProperty),
+		).toEqual(expect.arrayContaining(['color', 'background-color']))
+		await expect.poll(() => style.color).toBe('rgb(0, 0, 0)')
+		await expect.poll(() => style.backgroundColor).toBe('rgb(255, 255, 255)')
+	},
+)
 
 it('inherits the rest duration for active states and removes transitions with reduced motion', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
@@ -97,8 +153,14 @@ it('inherits the rest duration for active states and removes transitions with re
 	await commands.emulateReducedMotion(true)
 	try {
 		expect(getComputedStyle(indicator).transitionDuration).toBe('0s')
+		section.style.setProperty('--amk-zoom-indicator-background', 'white')
+		section.style.setProperty('--amk-zoom-indicator-active-background', 'black')
+		section.style.setProperty('--amk-zoom-indicator-active-color', 'white')
 		opener.focus()
 		expect(getComputedStyle(indicator).transitionDuration).toBe('0s')
+		expect(getComputedStyle(indicator).color).toBe('rgb(255, 255, 255)')
+		expect(getComputedStyle(indicator).backgroundColor).toBe('rgb(0, 0, 0)')
+		expect(indicator.getAnimations()).toHaveLength(0)
 	} finally {
 		await commands.emulateReducedMotion(false)
 	}
