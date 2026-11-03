@@ -416,12 +416,17 @@ export function isVideoSource(src: string): boolean {
  * (when `service` is explicitly `'bunny'`).
  *
  * When `service` is explicitly provided, it overrides inference but URL-to-ID
- * extraction still runs so downstream code receives the extracted identifier.
+ * extraction still runs so downstream code receives the extracted identifier,
+ * except for oEmbed discovery, which requires the original page URL.
  */
 export function resolveVideoSource(src: string, service?: Service): ResolvedSource {
 	const url = tryParseUrl(src)
 
 	if (url) {
+		if (service === 'oembed') {
+			return { identifier: src, service }
+		}
+
 		const resolved = resolveFromUrl(src, url)
 		if (resolved) {
 			return { identifier: resolved.identifier, service: service ?? resolved.service }

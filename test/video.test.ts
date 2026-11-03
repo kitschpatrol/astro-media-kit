@@ -249,6 +249,15 @@ describe('resolveVideoSource', () => {
 	})
 
 	describe('explicit service override', () => {
+		it.each([
+			'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30',
+			'https://youtu.be/dQw4w9WgXcQ',
+			'https://vimeo.com/10184668#t=30s',
+			'https://player.vimeo.com/video/10184668',
+		])('preserves the complete page URL for explicit oEmbed discovery: %s', (src) => {
+			expect(resolveVideoSource(src, 'oembed')).toEqual({ identifier: src, service: 'oembed' })
+		})
+
 		it('overrides inferred service', () => {
 			expect(resolveVideoSource('dQw4w9WgXcQ', 'bunny')).toEqual({
 				identifier: 'dQw4w9WgXcQ',
