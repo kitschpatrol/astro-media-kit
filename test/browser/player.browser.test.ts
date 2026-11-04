@@ -300,6 +300,35 @@ it('retains the shared background until a returning idle video finishes its long
 	expect(getComputedStyle(second).opacity).toBe('1')
 })
 
+it(
+	'lets idle hiding replace a long crossfade before restoring the bar background',
+	{ timeout: 10_000 },
+	async () => {
+		const { item, player } = await mountPlayer()
+		const other = query(document, '#video-minimal .amk-zoom')
+		item.dataset.gallery = 'long-background'
+		other.dataset.gallery = 'long-background'
+		const first = query(player, '.amk-controls')
+		const second = query(other, '.amk-controls')
+		first.style.setProperty('--amk-duration', '100ms')
+		second.style.setProperty('--amk-duration', '2s')
+		await query(other, 'video', HTMLVideoElement).play()
+		await openLightbox(item)
+		await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(() => viewer().querySelector('.amk-controls-background')).not.toBeNull()
+		const background = query(viewer(), '.amk-controls-background')
+		await expect.poll(() => Object.hasOwn(second.dataset, 'userInactive')).toBe(true)
+		expect(background.isConnected).toBe(true)
+		expect(Number(getComputedStyle(second).opacity)).toBeGreaterThan(0)
+		await expect.poll(() => background.isConnected).toBe(false)
+		expect(getComputedStyle(second).opacity).toBe('0')
+		expect(getComputedStyle(query(second, '.amk-bar')).backgroundColor).toBe(
+			'rgba(20, 20, 20, 0.7)',
+		)
+	},
+)
+
 it.each([
 	['#first .amk-zoom', 'Home', 'next'],
 	['#video-zoom-only .amk-zoom', 'End', 'previous'],

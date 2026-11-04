@@ -479,9 +479,17 @@ function hideBackground() {
 }
 
 function setBackgroundInactive(controls: HTMLElement, inactive: boolean) {
-	if (background?.controls === controls) {
-		background.element.toggleAttribute('data-user-inactive', inactive)
+	if (
+		background?.controls !== controls ||
+		Object.hasOwn(background.element.dataset, 'userInactive') === inactive
+	) {
+		return
 	}
+
+	background.element.toggleAttribute('data-user-inactive', inactive)
+	// An idle fade can replace the swap's opacity transition. Follow the new
+	// animations before handing the surface back to the real bar.
+	void settleBackground(background, ++background.exit)
 }
 
 function hide(bar: Bar) {
