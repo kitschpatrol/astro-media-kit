@@ -29,10 +29,10 @@ import { isImageUrlSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
-	cloneImageMetadata,
 	compositingBackground,
 	extractScopedStyleClass,
 	getMimeType,
+	isESMImportedImage,
 	mergeImageStyle,
 	mergeLayoutDefaults,
 	needsBackgroundDarkVariant,
@@ -269,8 +269,6 @@ const isRemote = typeof resolvedSource === 'string' && isImageUrlSource(resolved
 // Branch: remote URL sources skip metadata probing and use Astro's remote pipeline.
 let lightSrc: ImageMetadata | string
 let darkSrc: ImageMetadata | string | undefined
-let lightSrcLabel: string
-let captionSrc: ImageMetadata | undefined
 
 if (isRemote) {
 	const srcDarkIsLocal = srcDarkSource !== undefined && !isImageUrlSource(srcDarkSource)
@@ -285,8 +283,6 @@ if (isRemote) {
 	lightSrc = resolvedSource
 	darkSrc =
 		darkDisabled || typeof srcDarkSource !== 'string' || srcDarkIsLocal ? undefined : srcDarkSource
-	lightSrcLabel = resolvedSource
-	captionSrc = undefined
 } else {
 	const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
 		resolvedSource,
@@ -298,8 +294,6 @@ if (isRemote) {
 	)
 	lightSrc = imageMetadata
 	darkSrc = imageMetadataDark
-	lightSrcLabel = imageMetadata.src
-	captionSrc = imageMetadata
 }
 
 // Propagate scoped style class to picture element
@@ -332,8 +326,7 @@ const formats = pickFormats(formatsProp, originalSrc)
 
 // Include the fallback format when deciding whether dark backgrounds need
 // their own composited image, even if every preferred format is transparent.
-const clonedSrc = cloneImageMetadata(originalSrc)
-const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, clonedSrc)
+const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, originalSrc)
 
 const optimizedImages: GetImageResult[] = await Promise.all(
 	formats.map(async (format) =>
@@ -393,6 +386,12 @@ const fallbackImage = await getImage({
 	src: originalSrc,
 	widths: imageProps.widths,
 } as UnresolvedImageTransform)
+
+// Reading `src` on an imported image records a raw reference that keeps the
+// original file in the build output. The transform's own copy is untracked.
+const transformedSrc = fallbackImage.options.src
+const lightSrcLabel = isESMImportedImage(transformedSrc) ? transformedSrc.src : transformedSrc
+const captionSrc = isESMImportedImage(transformedSrc) ? transformedSrc : undefined
 
 const hasDarkMode = optimizedImagesDark !== undefined
 

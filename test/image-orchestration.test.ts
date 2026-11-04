@@ -4,7 +4,6 @@ import {
 	assertNotRelativePath,
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
-	cloneImageMetadata,
 	compositingBackground,
 	DEFAULT_FALLBACK_RULES,
 	DEFAULT_FORMATS_RULES,
@@ -408,22 +407,6 @@ describe('resolveSrc', () => {
 	it('unwraps Promise-of-default-export shape', async () => {
 		const promise = Promise.resolve({ default: pngMeta })
 		await expect(resolveSrc(promise)).resolves.toBe(pngMeta)
-	})
-})
-
-describe('cloneImageMetadata', () => {
-	it('prefers the private .clone property when present', () => {
-		const clone = { ...pngMeta }
-		const withClone: typeof pngMeta & { clone: typeof pngMeta } = { ...pngMeta, clone }
-		expect(cloneImageMetadata(withClone)).toBe(clone)
-	})
-
-	it('falls back to the original when no clone is present', () => {
-		expect(cloneImageMetadata(pngMeta)).toBe(pngMeta)
-	})
-
-	it('passes strings through unchanged', () => {
-		expect(cloneImageMetadata('/img.png')).toBe('/img.png')
 	})
 })
 

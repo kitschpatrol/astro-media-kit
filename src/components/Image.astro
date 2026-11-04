@@ -27,8 +27,8 @@ import Caption from './Caption.astro'
 import { isDarkLightImageMetadata, isImageUrlSource } from './utils/image'
 import {
 	buildBackgroundStyle,
-	cloneImageMetadata,
 	compositingBackground,
+	isESMImportedImage,
 	mergeImageStyle,
 	mergeLayoutDefaults,
 	pickImageFormat,
@@ -231,10 +231,6 @@ if (isRemote) {
 		darkDisabled: true,
 	})
 
-	// Clone src object to avoid Astro thinking the image is used outside optimization pipeline
-	const originalSrc = await resolveSrc(imageMetadata)
-	const clonedSrc = cloneImageMetadata(originalSrc)
-
 	// Output format: resolve via `pickImageFormat`, which handles a forced
 	// string, a partial `FormatRules` map, or undefined (defaults to Astro's
 	// `baseService` rule — SVG stays SVG, everything else becomes WebP).
@@ -244,10 +240,13 @@ if (isRemote) {
 		...mergedImageProps,
 		...compositingBackground(outputFormat, background, backgroundDark),
 		format: outputFormat,
-		src: clonedSrc,
+		src: imageMetadata,
 	} as UnresolvedImageTransform)
-	imageMetadataSrc = imageMetadata.src
-	captionSrc = imageMetadata
+	// Reading `src` on an imported image records a raw reference that keeps the
+	// original file in the build output. The transform's own copy is untracked.
+	const transformedSrc = image.options.src
+	imageMetadataSrc = isESMImportedImage(transformedSrc) ? transformedSrc.src : transformedSrc
+	captionSrc = isESMImportedImage(transformedSrc) ? transformedSrc : undefined
 }
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Image')

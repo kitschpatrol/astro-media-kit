@@ -389,21 +389,6 @@ export function pickFormats(
 	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
 }
 
-/**
- * Clone an ImageMetadata object using Astro's private `.clone` helper so
- * downstream code (e.g. getImage) doesn't see the same reference twice —
- * otherwise Astro warns about the asset being used outside the optimization
- * pipeline. Falls through for string paths.
- */
-export function cloneImageMetadata(src: ImageMetadata | string): ImageMetadata | string {
-	if (!isESMImportedImage(src)) {
-		return src
-	}
-
-	const withClone = src as ImageMetadata & { clone?: ImageMetadata }
-	return withClone.clone ?? src
-}
-
 const SCOPED_STYLE_CLASS_REGEX = /\bastro-\w{8}\b/v
 
 /**

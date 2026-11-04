@@ -90,18 +90,31 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
 		return false
 	}
 
-	if ('src' in src && typeof src.src === 'string') {
+	if (hasStringSrc(src)) {
 		return true
 	}
 
 	// Astro wraps SVG imports in createSvgComponent in production builds,
 	// placing ImageMetadata under .meta instead of at the top level.
 	return (
-		'meta' in src &&
-		typeof src.meta === 'object' &&
-		src.meta !== null &&
-		'src' in src.meta &&
-		typeof src.meta.src === 'string'
+		'meta' in src && typeof src.meta === 'object' && src.meta !== null && hasStringSrc(src.meta)
+	)
+}
+
+/**
+ * Whether `value` carries a string `src`, without reading it: Astro serves
+ * imported images through a `src` getter that records a raw reference, which
+ * keeps the original file in the build output beside its transforms.
+ */
+function hasStringSrc(value: unknown): boolean {
+	if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+		return false
+	}
+
+	const descriptor = Object.getOwnPropertyDescriptor(value, 'src')
+	return (
+		descriptor !== undefined &&
+		(descriptor.get !== undefined || typeof descriptor.value === 'string')
 	)
 }
 
@@ -112,7 +125,7 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
  */
 export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
 	// Plain object with .src — already correct
-	if (typeof src === 'object' && 'src' in src && typeof src.src === 'string') {
+	if (typeof src === 'object' && hasStringSrc(src)) {
 		return src
 	}
 	// SVG component function: metadata is spread on the function AND available as .meta

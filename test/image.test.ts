@@ -1,3 +1,4 @@
+import type { ImageMetadata } from 'astro'
 import { exiftool } from 'exiftool-vendored'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import path from 'node:path'
@@ -9,9 +10,27 @@ import {
 	isImageMetadataObject,
 	isImageUrlSource,
 	isRemoteImageSource,
+	unwrapImageMetadata,
 } from '../src/components/utils/image'
 
 const valid = { format: 'png', height: 100, src: '/image.png', width: 200 }
+
+/**
+ * An imported image as Astro serves it: `src` is a getter that records a raw
+ * reference, which keeps the original file in the build output.
+ */
+function trackedAsset(): { asset: ImageMetadata; reads: () => number } {
+	let reads = 0
+	const asset: ImageMetadata = { format: 'png', height: 100, src: '', width: 200 }
+	Object.defineProperty(asset, 'src', {
+		enumerable: true,
+		get() {
+			reads++
+			return '/image.png'
+		},
+	})
+	return { asset, reads: () => reads }
+}
 
 describe('isImageMetadataObject', () => {
 	it('accepts valid ImageMetadata objects', () => {
@@ -36,6 +55,14 @@ describe('isImageMetadataObject', () => {
 	it('rejects objects without valid src', () => {
 		expect(isImageMetadataObject({ format: 'png', height: 100, width: 200 })).toBe(false)
 		expect(isImageMetadataObject({ src: 42 })).toBe(false)
+	})
+
+	it('leaves a tracked src getter unread', () => {
+		const { asset, reads } = trackedAsset()
+		expect(isImageMetadataObject(asset)).toBe(true)
+		expect(isImageMetadataObject({ meta: asset })).toBe(true)
+		expect(unwrapImageMetadata(asset)).toBe(asset)
+		expect(reads()).toBe(0)
 	})
 
 	it('rejects SVG wrappers with invalid meta', () => {

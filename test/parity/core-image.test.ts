@@ -2,6 +2,8 @@
 // Upstream Astro pinned: 6.3.5
 // Scope: Astro-standard props only. Media-kit extensions (caption/zoom/darkMode/background) are tested in test/*.test.ts.
 
+import { readdir } from 'node:fs/promises'
+import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './helpers/build-fixture'
 
@@ -87,6 +89,15 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		expect(src).toBeDefined()
 		expect(src).toMatch(/^\/_astro\//v)
 		expect(src).toContain('penguin1')
+	})
+
+	it('Local images - leaves unreferenced originals out of the build output', async () => {
+		// Astro deletes an original that only its transforms used. Reading an
+		// imported image's `src` before `getImage()` counts as using it directly.
+		const files = await readdir(path.join(fx.dist, '_astro'))
+		const originals = files.filter((file) => /^penguin[12]\.[^._]+\.(?:jpg|png)$/v.test(file))
+		expect(originals).toEqual([])
+		expect(files.some((file) => /^penguin1\.[^._]+_[^.]+\.jpg$/v.test(file))).toBe(true)
 	})
 
 	it('Local images - propagates width and height to the <img>', async () => {
