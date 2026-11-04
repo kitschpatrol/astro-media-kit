@@ -481,8 +481,8 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	left: var(--media-slider-fill);
 	translate: -50% -50%;
 	scale: 0;
-	width: 12px;
-	height: 12px;
+	width: 14px;
+	height: 14px;
 	border-radius: 50%;
 	background: var(--amk-control-color);
 	box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
@@ -494,8 +494,6 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	left: 50%;
 	translate: -50% 50%;
 	scale: 1;
-	width: 14px;
-	height: 14px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
