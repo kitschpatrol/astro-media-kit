@@ -478,8 +478,10 @@ export function buildSrcsetAttribute(
 
 	const { densities, widths } = props
 	// Astro discards densities when a responsive layout generates width
-	// descriptors. A bare URL would add an incompatible implicit 1x candidate.
-	return !useResponsive && (densities !== undefined || widths === undefined)
+	// descriptors. A bare URL would add an incompatible implicit 1x candidate
+	// there, and a duplicate one beside an explicit 1x density.
+	const hasExplicit1x = image.srcSet.values.some((value) => value.descriptor === '1x')
+	return !useResponsive && !hasExplicit1x && (densities !== undefined || widths === undefined)
 		? `${image.src}, ${image.srcSet.attribute}`
 		: image.srcSet.attribute
 }

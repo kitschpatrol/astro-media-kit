@@ -414,6 +414,7 @@ describe('resolveSrc', () => {
 // heavy generics we don't need to exercise here.
 function stubImage(
 	options: {
+		descriptors?: string[]
 		format?: string
 		src?: string
 		srcsetAttribute?: string
@@ -421,10 +422,11 @@ function stubImage(
 	} = {},
 ): GetImageResult {
 	const {
+		srcsetValues = 0,
+		descriptors = Array.from({ length: srcsetValues }, (_, i) => `${String(i + 1)}x`),
 		format = 'webp',
 		src = '/_astro/img.webp',
 		srcsetAttribute = '',
-		srcsetValues = 0,
 	} = options
 	return {
 		attributes: {},
@@ -433,8 +435,8 @@ function stubImage(
 		src,
 		srcSet: {
 			attribute: srcsetAttribute,
-			values: Array.from({ length: srcsetValues }, (_, i) => ({
-				descriptor: `${String(i + 1)}x`,
+			values: descriptors.map((descriptor, i) => ({
+				descriptor,
 				transform: { src },
 				url: `/_astro/img-${String(i + 1)}.webp`,
 			})),
@@ -452,10 +454,18 @@ describe('buildSrcsetAttribute', () => {
 	)
 
 	it('prepends base src when densities are set', () => {
-		const img = stubImage({ srcsetAttribute: '/2x.webp 2x', srcsetValues: 1 })
-		expect(buildSrcsetAttribute(img, { densities: [1, 2] }, false)).toBe(
+		const img = stubImage({ descriptors: ['2x'], srcsetAttribute: '/2x.webp 2x' })
+		expect(buildSrcsetAttribute(img, { densities: [2] }, false)).toBe(
 			'/_astro/img.webp, /2x.webp 2x',
 		)
+	})
+
+	it('omits the implicit 1x candidate when the densities already produce one', () => {
+		const img = stubImage({
+			descriptors: ['1x', '2x'],
+			srcsetAttribute: '/1x.webp 1x, /2x.webp 2x',
+		})
+		expect(buildSrcsetAttribute(img, { densities: [1, 2] }, false)).toBe('/1x.webp 1x, /2x.webp 2x')
 	})
 
 	it('returns just the base src when densities are set but srcset has no variants', () => {
@@ -464,7 +474,7 @@ describe('buildSrcsetAttribute', () => {
 	})
 
 	it('prepends base src when neither widths nor useResponsive are set', () => {
-		const img = stubImage({ srcsetAttribute: '/400.webp 400w', srcsetValues: 1 })
+		const img = stubImage({ descriptors: ['400w'], srcsetAttribute: '/400.webp 400w' })
 		expect(buildSrcsetAttribute(img, {}, false)).toBe('/_astro/img.webp, /400.webp 400w')
 	})
 
