@@ -3,7 +3,7 @@ import { exiftool } from 'exiftool-vendored'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
 	getCreditFromXmpTags,
 	isDarkLightImageMetadata,
@@ -193,11 +193,32 @@ describe('getCreditFromXmpTags', () => {
 		})
 	})
 
-	it('returns undefined fields for a missing file', async () => {
-		expect(await getCreditFromXmpTags(path.join(root, 'missing.jpg'))).toEqual({
-			creator: undefined,
-			credit: undefined,
-			label: undefined,
+	it('reads the imported file whose path Astro keeps on the metadata', async () => {
+		const asset: ImageMetadata & { fsPath: string } = {
+			format: 'jpg',
+			fsPath: taggedPath,
+			height: 8,
+			src: '/_astro/tagged.hash.jpg',
+			width: 8,
+		}
+		expect(await getCreditFromXmpTags(asset)).toEqual({
+			creator: 'Zoë Doe',
+			credit: 'Zoë Agency',
+			label: 'Archive',
 		})
+	})
+
+	it('warns once and returns undefined fields for a missing file', async () => {
+		const warn = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+		try {
+			const missing = path.join(root, 'missing.jpg')
+			const empty = { creator: undefined, credit: undefined, label: undefined }
+			expect(await getCreditFromXmpTags(missing)).toEqual(empty)
+			expect(await getCreditFromXmpTags(missing)).toEqual(empty)
+			expect(warn).toHaveBeenCalledOnce()
+			expect(warn.mock.calls[0]?.[0]).toContain(missing)
+		} finally {
+			warn.mockRestore()
+		}
 	})
 })

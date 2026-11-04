@@ -54,12 +54,11 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 	credit: string | undefined
 	label: string | undefined
 }> {
-	const isProduction = import.meta.env.MODE === 'production'
-	const absoluteSrc = getAbsoluteFilePath(src, isProduction)
+	const filePath = sourceFilePath(src)
 
 	try {
 		const { XMP: { Creator: creator, Credit: credit, Label: label } = {} } =
-			(await exiftool.readRaw(absoluteSrc, { readArgs: ['-g', '-xmp:all'] })) as {
+			(await exiftool.readRaw(filePath, { readArgs: ['-g', '-xmp:all'] })) as {
 				// eslint-disable-next-line ts/naming-convention
 				XMP?: {
 					// eslint-disable-next-line ts/naming-convention
@@ -72,9 +71,30 @@ export async function getCreditFromXmpTags(src: ImageMetadata | string): Promise
 			}
 
 		return { creator: Array.isArray(creator) ? creator[0] : creator, credit, label }
-	} catch {
+	} catch (error) {
+		// Credits are optional, so a failed lookup warns once per file and
+		// leaves the credit line to the explicit props
+		if (!reportedXmpFailures.has(filePath)) {
+			reportedXmpFailures.add(filePath)
+			console.warn(
+				`[astro-media-kit] Could not read XMP credit tags from "${filePath}": ${error instanceof Error ? error.message : String(error)}. Pass credit, creditOrganization, and creditMediaType explicitly to skip the lookup.`,
+			)
+		}
+
 		return { creator: undefined, credit: undefined, label: undefined }
 	}
+}
+
+const reportedXmpFailures = new Set<string>()
+
+/**
+ * The file to read tags from: the imported file, whose path Astro keeps on the
+ * metadata, or else the served file, which a build emits under `dist`.
+ */
+function sourceFilePath(src: ImageMetadata | string): string {
+	return typeof src === 'object' && 'fsPath' in src && typeof src.fsPath === 'string'
+		? src.fsPath
+		: getAbsoluteFilePath(src, import.meta.env.MODE === 'production')
 }
 
 /**
