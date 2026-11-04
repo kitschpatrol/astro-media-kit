@@ -11,19 +11,23 @@
    and volume slider itself, from `mutedAvailability` / `volumeAvailability`,
    via the native `hidden` attribute (see the last rule in this file). */
 
-.amk {
-	--amk-control-size: 44px;
-	--amk-control-background: rgb(20 20 20 / 70%);
-	--amk-control-hover-background: rgb(50 50 50 / 70%);
-	--amk-control-color: #fff;
-	--amk-icon-size: 24px;
-	--amk-font-size: 14px;
-	--amk-slider-track-height: 4px;
-	--amk-slider-track: rgb(255 255 255 / 30%);
-	--amk-slider-buffer: rgb(255 255 255 / 40%);
-	--amk-slider-fill: var(--media-accent-color, #fff);
-	--amk-duration: 0.2s;
-	--amk-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
+/* Defaults on the root, in a layer, so that a page's own value wins wherever
+   it is set: on the root, on an element around the player, or on the player.
+   A value declared on the player itself would beat every ancestor's. */
+@layer amk-video {
+	:root {
+		--amk-control-size: 44px;
+		--amk-control-background: rgb(20 20 20 / 70%);
+		--amk-control-hover-background: rgb(50 50 50 / 70%);
+		--amk-control-color: #fff;
+		--amk-icon-size: 24px;
+		--amk-font-size: 14px;
+		--amk-slider-track-height: 4px;
+		--amk-slider-track: rgb(255 255 255 / 30%);
+		--amk-slider-buffer: rgb(255 255 255 / 40%);
+		--amk-duration: 0.2s;
+		--amk-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
+	}
 }
 
 /* --- Layout --- */
@@ -447,9 +451,10 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	background: var(--amk-slider-buffer);
 }
 
+/* Resolved where it is used, so a wrapping element's accent color reaches it */
 .amk-slider-fill {
 	width: var(--media-slider-fill);
-	background: var(--amk-slider-fill);
+	background: var(--amk-slider-fill, var(--media-accent-color, #fff));
 }
 
 .amk-volume-slider .amk-slider-fill {
