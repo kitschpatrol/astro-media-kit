@@ -108,6 +108,39 @@ it('lifts the whole player, hides expand, and closes from the lightbox button', 
 	expect(isLifted(item)).toBe(false)
 })
 
+it.each(['pointer', 'Enter', 'Space'] as const)(
+	'restores video expand focus only for keyboard activation, opened with %s',
+	async (activation) => {
+		const { player } = await mountPlayer()
+		const button = query(player, '[data-zoom-open]')
+		if (activation === 'pointer') {
+			await userEvent.click(button)
+		} else {
+			await userEvent.keyboard('{Tab}')
+			button.focus()
+			await userEvent.keyboard(activation === 'Enter' ? '{Enter}' : ' ')
+		}
+
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+		await liftDone()
+		await commands.mouseMove(5, 5)
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => viewer().open).toBe(false)
+		const keyboard = activation !== 'pointer'
+		expect(document.activeElement === button).toBe(keyboard)
+		expect(button.matches(':focus-visible')).toBe(keyboard)
+		// Tooltip reopening on restored keyboard focus varies across engines;
+		// it must never linger without an active trigger.
+		await expect
+			.poll(
+				() =>
+					query(player, '.amk-zoom-tooltip').matches(':popover-open') &&
+					!button.matches(':focus-visible'),
+			)
+			.toBe(false)
+	},
+)
+
 it('keeps zoom cursors off the video toolbar in both zoom states', async () => {
 	const { item, player } = await mountPlayer()
 	item.dataset.level = 'fill'

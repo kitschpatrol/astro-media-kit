@@ -137,6 +137,14 @@ function handleClick(event: MouseEvent) {
 		const item = path.slice(at + 1).find(isItem)
 		if (item !== undefined) {
 			event.preventDefault()
+			const opener = path[at]
+			// A pointer-opened dialog must not restore keyboard-visible focus to
+			// this button after Escape, which also reopens its tooltip. Keyboard
+			// and virtual clicks have detail 0 and keep normal focus restoration.
+			if (event.detail > 0 && opener instanceof HTMLElement) {
+				opener.blur()
+			}
+
 			void openLightbox(item)
 		}
 
