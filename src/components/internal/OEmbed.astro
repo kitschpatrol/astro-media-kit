@@ -17,29 +17,15 @@ export type Props = {
 	/** The fallback link's poster, used only with an aspect ratio to size it. */
 	posterUrl?: string | undefined
 	resolvedLabel: string
-	/**
-	 * Sanitize provider HTML: adds missing `title` on iframes, removes deprecated
-	 * attributes (`frameborder`, `scrolling`), and lowercases non-standard
-	 * attribute names.
-	 *
-	 * @default true
-	 */
-	sanitize?: boolean | undefined
 }
 
-const {
-	aspectRatio,
-	href,
-	html,
-	linkLabel,
-	posterUrl,
-	resolvedLabel,
-	sanitize = true,
-} = Astro.props
+const { aspectRatio, href, html, linkLabel, posterUrl, resolvedLabel } = Astro.props
 const isScaled = aspectRatio !== undefined && aspectRatio !== ''
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
-const resolvedHtml = sanitize ? sanitizeEmbedHtml(html, resolvedLabel) : html
+// Provider HTML with a title on its iframes, deprecated attributes removed,
+// and attribute names lowercased
+const resolvedHtml = sanitizeEmbedHtml(html, resolvedLabel)
 ---
 
 <div

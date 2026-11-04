@@ -3,14 +3,9 @@ import type { VimeoVideoElement } from '@videojs/html/media/vimeo-video'
 
 export type HlsSourceOptions = Pick<HlsSource, 'capRenditionToPlayerSize' | 'engine'>
 
-export const VIDEO_ELEMENT_TAGS = ['hlsjs-video', 'video', 'vimeo-video', 'youtube-video'] as const
+const VIDEO_ELEMENT_TAGS = ['hlsjs-video', 'video', 'vimeo-video', 'youtube-video'] as const
 export type VideoElementTag = (typeof VIDEO_ELEMENT_TAGS)[number]
 export const VIDEO_ELEMENT_SELECTOR = VIDEO_ELEMENT_TAGS.join(', ')
-
-/** Validate a serialized media element name. */
-export function parseVideoElementTag(value: string | undefined): undefined | VideoElementTag {
-	return VIDEO_ELEMENT_TAGS.find((tag) => tag === value)
-}
 
 /**
  * Recognize manifests independently of the hosting service, including signed
@@ -21,7 +16,7 @@ export function isHlsSource(src: string): boolean {
 }
 
 /** Read the server-serialized streaming options. */
-export function parseHlsOptions(json: string | undefined): HlsSourceOptions {
+function parseHlsOptions(json: string | undefined): HlsSourceOptions {
 	if (json === undefined || json === '') {
 		return {}
 	}

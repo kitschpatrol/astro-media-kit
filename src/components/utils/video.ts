@@ -64,9 +64,6 @@ export type Service = keyof ServiceConfig
 /** Services that require API credentials for server-side metadata fetching. */
 export type CredentialService = 'bunny' | 'cloudflare' | 'mux'
 
-/** Services that use client-side embed elements (no credentials needed). */
-export type EmbedService = 'vimeo' | 'youtube'
-
 /**
  * Validates that required credentials are present for the given service. Throws
  * with actionable message naming missing env vars. No-op for embed services
@@ -161,7 +158,7 @@ const YOUTUBE_ID_RE = /^[\w\-]{11}$/v
  * YouTube video IDs are exactly 11 characters: alphanumeric, hyphen,
  * underscore.
  */
-export function youtubeIsValidMediaId(mediaId: string): boolean {
+function youtubeIsValidMediaId(mediaId: string): boolean {
 	return YOUTUBE_ID_RE.test(mediaId)
 }
 
@@ -203,7 +200,7 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 const VIMEO_ID_RE = /^\d+$/v
 
 /** Vimeo video IDs are numeric-only, variable length. */
-export function vimeoIsValidMediaId(mediaId: string): boolean {
+function vimeoIsValidMediaId(mediaId: string): boolean {
 	return VIMEO_ID_RE.test(mediaId)
 }
 
@@ -403,7 +400,7 @@ function inferServiceFromId(mediaId: string): Service | undefined {
 }
 
 /** Resolve a URL into a service type and identifier. */
-function resolveFromUrl(src: string, url: URL): ResolvedSource | undefined {
+function resolveFromUrl(src: string, url: URL): ResolvedSource {
 	const youtubeId = extractYouTubeId(url)
 	if (youtubeId !== undefined && youtubeId !== '') {
 		return { identifier: youtubeId, service: 'youtube' }
@@ -452,9 +449,7 @@ export function resolveVideoSource(src: string, service?: Service): ResolvedSour
 		}
 
 		const resolved = resolveFromUrl(src, url)
-		if (resolved) {
-			return { identifier: resolved.identifier, service: service ?? resolved.service }
-		}
+		return { identifier: resolved.identifier, service: service ?? resolved.service }
 	}
 
 	// Not a URL — try ID pattern matching
@@ -476,12 +471,4 @@ export function resolveVideoSource(src: string, service?: Service): ResolvedSour
 	throw new Error(
 		`Could not infer video service from "${src}". Pass a URL, a recognized service ID, or set the "service" prop explicitly.`,
 	)
-}
-
-/**
- * Check if a service is an embed type (YouTube, Vimeo) that needs no API
- * credentials.
- */
-export function isEmbedService(service: Service): service is EmbedService {
-	return service === 'youtube' || service === 'vimeo'
 }
