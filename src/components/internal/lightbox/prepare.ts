@@ -1,4 +1,5 @@
 import { rendered } from './dom'
+import { refreshImagePreview } from './image-preview'
 import { ratioOf } from './media'
 
 type SavedAttribute = {
@@ -34,6 +35,7 @@ export function prepareImage(subject: Element, width: number) {
 	}
 
 	releasePreparation(subject)
+	refreshImagePreview(subject)
 	const controller = new AbortController()
 	const preparation: Preparation = { attributes: [], controller, image, width }
 	preparations.set(subject, preparation)

@@ -4,6 +4,7 @@ import { previewContext } from './canvas-context'
 import { clonePlaceholder } from './clone-placeholder'
 import { rendered } from './dom'
 import { lengthOf } from './geometry'
+import { copyRetainedImage } from './image-preview'
 import { mirrorVideo, previewSize } from './video-placeholder'
 
 /** A decorative copy, and the subject's box within the item's padding box. */
@@ -25,7 +26,7 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 	// The player's media sits letterboxed in its container; other content keeps its own fit
 	const objectFit = isPlayer ? 'contain' : style.objectFit
 	const frame = { height: box.height, objectFit, width: box.width }
-	let placeholder: HTMLElement | undefined
+	let placeholder: HTMLElement | undefined = copyRetainedImage(subject)
 	if (isPlayer) {
 		placeholder = playerPlaceholder(visible, frame)
 	} else if (
@@ -38,7 +39,7 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 	} else if (
 		visible instanceof HTMLVideoElement ||
 		visible instanceof HTMLCanvasElement ||
-		(visible instanceof HTMLImageElement && !canDrawAtOnce(visible))
+		(placeholder === undefined && visible instanceof HTMLImageElement && !canDrawAtOnce(visible))
 	) {
 		placeholder = snapshot(visible, frame)
 	}

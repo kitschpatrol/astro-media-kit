@@ -34,6 +34,7 @@ const thumbnail = await getImage({ format: 'webp', src: photo, width: 320 })
 			}
 
 			const thumbnail = image.cloneNode() as HTMLImageElement
+			let upgrade: (() => void) | undefined
 			this.#controller = new AbortController()
 			addEventListener(
 				'click',
@@ -57,19 +58,26 @@ const thumbnail = await getImage({ format: 'webp', src: photo, width: 320 })
 
 					const large = new URL(item.href)
 					large.searchParams.set('request', crypto.randomUUID())
-					// Reveal the large candidate at activation, before the document's
-					// normal zoom handler. Keep the loaded thumbnail in the source set.
-					current.srcset = `${thumbnail.srcset}, ${large.href} ${current.getAttribute('width') ?? current.naturalWidth}w`
+					// Begin the cold request after the normal zoom handler captures the
+					// thumbnail, as an automatic size upgrade would during the lift.
+					upgrade = () => {
+						current.srcset = `${thumbnail.srcset}, ${large.href} ${current.getAttribute('width') ?? current.naturalWidth}w`
+					}
 				},
 				{ capture: true, signal: this.#controller.signal },
 			)
 
 			this.#observer = new MutationObserver(() => {
-				if (!Object.hasOwn(item.dataset, 'lifted')) {
-					// A returned img can retain decoded pixels even with no-store. Start
-					// the next opening from a fresh thumbnail after the real image lands.
-					item.querySelector('img')?.replaceWith(thumbnail.cloneNode())
+				if (Object.hasOwn(item.dataset, 'lifted')) {
+					upgrade?.()
+					upgrade = undefined
+					return
 				}
+
+				upgrade = undefined
+				// A returned img can retain decoded pixels even with no-store. Start
+				// the next opening from a fresh thumbnail after the real image lands.
+				item.querySelector('img')?.replaceWith(thumbnail.cloneNode())
 			})
 			this.#observer.observe(item, { attributeFilter: ['data-lifted'], attributes: true })
 		}

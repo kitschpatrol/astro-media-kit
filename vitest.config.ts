@@ -165,6 +165,19 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 							configureServer(server) {
 								server.middlewares.use((request, response, next) => {
 									const url = request.url ?? ''
+									if (url.includes('cold-image')) {
+										response.setHeader('Cache-Control', 'no-store')
+										setTimeout(() => {
+											if (url.includes('failed-image')) {
+												response.statusCode = 404
+												response.end()
+											} else {
+												next()
+											}
+										}, 1800)
+										return
+									}
+
 									if (url.includes('must-revalidate')) {
 										response.setHeader('Cache-Control', 'no-cache')
 										setTimeout(next, 200)

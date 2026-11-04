@@ -3,6 +3,7 @@ import type { Lift, Measurement, Point, Slide } from './types'
 import { releaseControlPreview, retainControlPreview } from './control-preview'
 import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
+import { releaseImagePreview, retainImage, returnImagePreview } from './image-preview'
 import { ratioOf } from './media'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
@@ -35,6 +36,7 @@ export function dropSlides(slides: Slide[]) {
 		slide.lift = undefined
 		const { item } = lift
 		if (isLinkItem(item)) {
+			releaseImagePreview(lift.subject)
 			// A link's media is for the viewer alone: it goes away, and the next
 			// use starts afresh
 			releaseControls(lift.subject)
@@ -65,6 +67,8 @@ export function dropSlides(slides: Slide[]) {
 		for (const image of lift.asyncImages) {
 			image.decoding = 'async'
 		}
+
+		returnImagePreview(lift.subject, item)
 
 		subjects.push(lift.subject)
 	}
@@ -109,6 +113,7 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 
 	const placeholder = isLink ? undefined : createPlaceholder(item, subject)
+	retainImage(subject, slide.layer)
 	slide.lift = {
 		...measurement,
 		asyncImages,

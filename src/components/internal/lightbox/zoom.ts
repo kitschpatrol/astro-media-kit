@@ -1,5 +1,6 @@
 import type { Point, Slide } from './types'
 import { identity, layerStyle, setLayerStyle } from './animation'
+import { refreshImagePreview } from './image-preview'
 
 /** Owns the single zoomed slide, its geometry, and caption interactivity. */
 export class Zoom {
@@ -55,6 +56,10 @@ export class Zoom {
 		}
 
 		const from = slide.layer.getBoundingClientRect()
+		if (slide.lift !== undefined) {
+			refreshImagePreview(slide.lift.subject)
+		}
+
 		const { stage } = slide
 		if (width === undefined) {
 			delete slide.element.dataset.zoomed

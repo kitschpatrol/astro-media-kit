@@ -53,7 +53,8 @@
 	/* Holds the subject's place in the page while it is lifted. A wrapper that
 	   gets its width from its container keeps the subject's aspect ratio, so the
 	   space follows a resize; one sized by its content keeps its measured size */
-	.amk-zoom[data-lifted] {
+	.amk-zoom[data-lifted],
+	.amk-zoom[data-image-returning] {
 		position: relative;
 	}
 
@@ -116,6 +117,7 @@
 	}
 
 	/* The lifted subject fills its frame, whatever its page styles say */
+	.amk-lightbox-image-preview,
 	.amk-lightbox-layer > *,
 	.amk-lightbox-layer > picture > img,
 	.amk-lightbox-layer > .amk-picture > picture,
@@ -136,6 +138,16 @@
 		margin: 0 !important;
 		object-fit: contain !important;
 		transition: none !important;
+	}
+
+	/* Keep one painted image during a source change, including transparent ones. */
+	.amk-lightbox-layer img[data-zoom-image-pending],
+	.amk-zoom img[data-zoom-image-pending] {
+		opacity: 0 !important;
+	}
+
+	.amk-lightbox-image-preview {
+		pointer-events: none !important;
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

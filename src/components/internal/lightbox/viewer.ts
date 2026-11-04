@@ -16,6 +16,7 @@ import {
 	textEntrySelector,
 } from './dom'
 import { lengthOf } from './geometry'
+import { refreshImagePreview } from './image-preview'
 import { canFade, dropSlides, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
@@ -713,6 +714,10 @@ class Viewer {
 		}
 
 		for (const slide of this.#slides) {
+			if (slide.lift !== undefined) {
+				refreshImagePreview(slide.lift.subject)
+			}
+
 			this.#placeCaption(slide)
 		}
 
