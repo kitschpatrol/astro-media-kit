@@ -257,9 +257,21 @@
 	outline-offset: -2px;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+	.amk-button {
+		transition: background-color var(--amk-control-transition-duration, 0.5s) var(--amk-easing);
+	}
+}
+
 @media (hover: hover) {
 	.amk-button:hover {
 		background: var(--amk-control-hover-background);
+	}
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+	.amk-button:hover {
+		transition-duration: var(--amk-control-active-transition-duration, 0s);
 	}
 }
 

@@ -542,6 +542,8 @@ Overrides apply to the current document and refresh on Astro client-side navigat
 
 For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `.amk-video`. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
 
+Video button highlights appear immediately on hover and fade back over `0.5s`, both on the page and in the lightbox. Set `--amk-control-transition-duration` for hover-out and `--amk-control-active-transition-duration` for hover-in (default `0s`) on `.amk-video`. These use `--amk-easing`, which defaults to `cubic-bezier(0.2, 0.8, 0.1, 1)`, and disable motion when reduced motion is requested. They do not change playback idle timing or gallery crossfades.
+
 #### Shared gallery controls
 
 Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:root` in global CSS to style both together. An individual carousel can inherit settings from its surrounding element; the lightbox is appended to `<body>`, so its shared settings need to be global or set on `.amk-lightbox`.

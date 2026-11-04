@@ -561,6 +561,50 @@ it('raises a minimal player to the full bar while lifted, and lowers it again af
 	expect(getComputedStyle(centerPlay).display).not.toBe('none')
 })
 
+it.each([false, true])(
+	'fades video button hover highlights out smoothly, lifted=%s',
+	async (lifted) => {
+		const { item, player } = await mountPlayer()
+		if (lifted) {
+			await openLightbox(item)
+			await liftDone()
+		}
+
+		const button = query(player, '.amk-bar media-play-button')
+		await userEvent.hover(button)
+		expect(getComputedStyle(button).transitionDuration).toBe('0s')
+		expect(getComputedStyle(button).backgroundColor).toBe('rgba(50, 50, 50, 0.7)')
+		await commands.mouseMove(5, 5)
+		const transition = button
+			.getAnimations()
+			.find(
+				(animation) =>
+					animation instanceof CSSTransition && animation.transitionProperty === 'background-color',
+			)
+		expect(transition).toBeDefined()
+		expect(transition!.effect!.getTiming().duration).toBe(500)
+		expect(transition!.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
+		await expect.poll(() => getComputedStyle(button).backgroundColor).toBe('rgba(0, 0, 0, 0)')
+
+		// Theme overrides inherit through the player even when its bar is floated.
+		const video = player.closest<HTMLElement>('.amk-video')!
+		video.style.setProperty('--amk-control-transition-duration', '0.8s')
+		video.style.setProperty('--amk-control-active-transition-duration', '0.1s')
+		expect(getComputedStyle(button).transitionDuration).toBe('0.8s')
+		await userEvent.hover(button)
+		expect(getComputedStyle(button).transitionDuration).toBe('0.1s')
+		await commands.emulateReducedMotion(true)
+		try {
+			expect(getComputedStyle(button).transitionDuration).toBe('0s')
+			await commands.mouseMove(5, 5)
+			expect(getComputedStyle(button).transitionDuration).toBe('0s')
+			expect(getComputedStyle(button).backgroundColor).toBe('rgba(0, 0, 0, 0)')
+		} finally {
+			await commands.emulateReducedMotion(false)
+		}
+	},
+)
+
 it('stands the volume slider up in a popover over the mute button, on hover', async () => {
 	const { player } = await mountPlayer()
 	const popover = query(player, 'media-volume-popover')
