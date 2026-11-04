@@ -14,7 +14,7 @@ import {
 	unwrapImageMetadata,
 } from '../src/components/utils/image'
 
-const valid = { format: 'png', height: 100, src: '/image.png', width: 200 }
+const valid: ImageMetadata = { format: 'png', height: 100, src: '/image.png', width: 200 }
 
 /**
  * An imported image as Astro serves it: `src` is a getter that records a raw
@@ -39,10 +39,13 @@ describe('isImageMetadataObject', () => {
 		expect(isImageMetadataObject({ src: '/test.jpg' })).toBe(true)
 	})
 
-	it('accepts SVG component wrappers with .meta', () => {
-		// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component wrapper
-		const svgComponent = Object.assign(() => {}, { meta: valid })
+	it('accepts SVG components, which carry the metadata as their own properties', () => {
+		// eslint-disable-next-line ts/no-empty-function -- simulates Astro's SVG component
+		const svgComponent = Object.assign(() => {}, valid)
 		expect(isImageMetadataObject(svgComponent)).toBe(true)
+		const unwrapped = unwrapImageMetadata(svgComponent)
+		expect(typeof unwrapped).toBe('object')
+		expect(unwrapped).toEqual(valid)
 	})
 
 	it('rejects non-objects', () => {
@@ -61,16 +64,8 @@ describe('isImageMetadataObject', () => {
 	it('leaves a tracked src getter unread', () => {
 		const { asset, reads } = trackedAsset()
 		expect(isImageMetadataObject(asset)).toBe(true)
-		expect(isImageMetadataObject({ meta: asset })).toBe(true)
 		expect(unwrapImageMetadata(asset)).toBe(asset)
 		expect(reads()).toBe(0)
-	})
-
-	it('rejects SVG wrappers with invalid meta', () => {
-		// eslint-disable-next-line unicorn/no-null -- testing guard against null meta
-		for (const meta of ['not-an-object', null, { notSrc: true }]) {
-			expect(isImageMetadataObject({ meta })).toBe(false)
-		}
 	})
 })
 

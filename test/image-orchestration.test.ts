@@ -630,16 +630,17 @@ describe('resolveSrcToMetadata', () => {
 		const dark = { ...svgMeta, src: '/dark.svg' }
 		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
 			{
-				// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
-				dark: Object.assign(() => {}, { ...dark, meta: dark }),
-				// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
-				light: Object.assign(() => {}, { ...svgMeta, meta: svgMeta }),
+				// eslint-disable-next-line ts/no-empty-function -- simulates Astro's SVG component
+				dark: Object.assign(() => {}, dark),
+				// eslint-disable-next-line ts/no-empty-function -- simulates Astro's SVG component
+				light: Object.assign(() => {}, svgMeta),
 			},
 			undefined,
 			{ componentName: 'Picture', darkDisabled: false },
 		)
-		expect(imageMetadata).toBe(svgMeta)
-		expect(imageMetadataDark).toBe(dark)
+		expect(typeof imageMetadata).toBe('object')
+		expect(imageMetadata).toEqual(svgMeta)
+		expect(imageMetadataDark).toEqual(dark)
 	})
 
 	it('uses explicit srcDark ImageMetadata over the .dark member of the pair', async () => {

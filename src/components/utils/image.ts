@@ -98,40 +98,18 @@ function sourceFilePath(src: ImageMetadata | string): string {
 }
 
 /**
- * Checks if the given source is an ImageMetadata object, including Astro's SVG
- * component wrappers which nest metadata under `.meta`.
+ * Checks if the given source is an ImageMetadata object, or an SVG component,
+ * which is a function with the metadata spread on it.
  */
 export function isImageMetadataObject(src: unknown): src is ImageMetadata {
-	if (src === null || src === undefined) {
+	if (src === null || (typeof src !== 'object' && typeof src !== 'function')) {
 		return false
 	}
 
-	if (typeof src !== 'object' && typeof src !== 'function') {
-		return false
-	}
-
-	if (hasStringSrc(src)) {
-		return true
-	}
-
-	// Astro wraps SVG imports in createSvgComponent in production builds,
-	// placing ImageMetadata under .meta instead of at the top level.
-	return (
-		'meta' in src && typeof src.meta === 'object' && src.meta !== null && hasStringSrc(src.meta)
-	)
-}
-
-/**
- * Whether `value` carries a string `src`, without reading it: Astro serves
- * imported images through a `src` getter that records a raw reference, which
- * keeps the original file in the build output beside its transforms.
- */
-function hasStringSrc(value: unknown): boolean {
-	if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
-		return false
-	}
-
-	const descriptor = Object.getOwnPropertyDescriptor(value, 'src')
+	// Astro serves imported images through a `src` getter that records a raw
+	// reference, which keeps the original file in the build output. Look for
+	// the getter without reading it.
+	const descriptor = Object.getOwnPropertyDescriptor(src, 'src')
 	return (
 		descriptor !== undefined &&
 		(descriptor.get !== undefined || typeof descriptor.value === 'string')
@@ -139,23 +117,16 @@ function hasStringSrc(value: unknown): boolean {
 }
 
 /**
- * Extracts a plain ImageMetadata object from a value, unwrapping Astro's SVG
- * component wrapper if necessary. SVG components are functions with metadata
- * properties spread on them — this extracts just the data as a plain object.
+ * The metadata of a source as a plain object: an SVG component is a function
+ * with the metadata spread on it, which the path helpers cannot take. A plain
+ * object passes through as it is, since copying it would read its tracked `src`
+ * getter.
  */
 export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
-	// Plain object with .src — already correct
-	if (typeof src === 'object' && hasStringSrc(src)) {
+	if (typeof src === 'object' && 'src' in src) {
 		return src
 	}
-	// SVG component function: metadata is spread on the function AND available as .meta
-	// Extract .meta (a plain object) rather than returning the function
 
-	if ('meta' in src) {
-		return (src as unknown as { meta: ImageMetadata }).meta
-	}
-
-	// Fallback: extract known properties into a plain object
 	const { format, height, src: imgSrc, width } = src
 	return { format, height, src: imgSrc, width }
 }
