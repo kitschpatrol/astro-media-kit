@@ -466,7 +466,8 @@
 	height: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
 	opacity: var(--amk-lightbox-icon-opacity, var(--amk-gallery-icon-opacity));
 	transition: opacity
-		var(--amk-lightbox-control-transition-duration, var(--amk-gallery-control-transition-duration));
+		var(--amk-lightbox-control-transition-duration, var(--amk-gallery-control-transition-duration))
+		var(--amk-lightbox-easing);
 }
 
 .amk-lightbox-icon > svg {
@@ -624,7 +625,8 @@
 			var(
 				--amk-lightbox-control-transition-duration,
 				var(--amk-gallery-control-transition-duration)
-			);
+			)
+			var(--amk-lightbox-easing);
 }
 
 .amk-lightbox[data-state='open'] :is(.amk-lightbox-button, .amk-lightbox-caption) {

@@ -58,6 +58,34 @@ it.each(['carousel', 'lightbox'] as const)('preserves the default %s controls', 
 	expect(getComputedStyle(icon).width).toBe('20px')
 })
 
+it('fades lightbox controls back to rest over half a second with the lightbox easing', async () => {
+	const { icon, next, root } = await controls('lightbox')
+	root.style.setProperty('--amk-lightbox-icon-opacity', '0.4')
+	await commands.mouseMove(5, 5)
+	await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
+	await userEvent.hover(next)
+	await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
+	await expect.poll(() => getComputedStyle(next).backgroundColor).toBe('rgba(0, 0, 0, 0.8)')
+	await commands.mouseMove(5, 5)
+	for (const [element, property] of [
+		[icon, 'opacity'],
+		[next, 'background-color'],
+	] as const) {
+		const transition = element
+			.getAnimations()
+			.find(
+				(animation) =>
+					animation instanceof CSSTransition && animation.transitionProperty === property,
+			)
+		expect(transition).toBeDefined()
+		expect(transition!.effect!.getTiming().duration).toBe(500)
+		expect(transition!.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
+	}
+
+	await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
+	await expect.poll(() => getComputedStyle(next).backgroundColor).toBe('rgba(0, 0, 0, 0.6)')
+})
+
 it.each(['carousel', 'lightbox'] as const)(
 	'resolves locally inherited shared defaults and component overrides in the %s',
 	async (kind) => {

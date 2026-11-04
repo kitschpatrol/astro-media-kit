@@ -559,7 +559,7 @@ Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:ro
 | `--amk-gallery-icon-size`                                     | `1.25rem`                   |
 | `--amk-gallery-icon-opacity`                                  | `1`                         |
 | `--amk-gallery-icon-active-opacity`                           | `1`                         |
-| `--amk-gallery-control-transition-duration`                   | `0.15s`                     |
+| `--amk-gallery-control-transition-duration`                   | `0.5s`                      |
 | `--amk-gallery-control-active-transition-duration`            | Resting transition duration |
 
 Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's controls. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. These variables resolve where each control is rendered, so settings inherited from a carousel's ancestor work without aliases.
@@ -589,7 +589,7 @@ For rectangular arrow targets, a smaller close target, icons resting at 40%, imm
 }
 ```
 
-Active styling applies to hover-capable pointers and keyboard focus. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity and transition durations unless their indicator-specific properties override them. Existing SVG replacement slots continue to work with these controls.
+Active styling applies to hover-capable pointers and keyboard focus. Controls fade back to their resting appearance over 0.5 seconds by default. Lightbox icon and background fades use `--amk-lightbox-easing`, matching its other transitions. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity and transition durations unless their indicator-specific properties override them. Existing SVG replacement slots continue to work with these controls.
 
 ### ZoomLink
 
