@@ -142,9 +142,12 @@ export async function cloudflareGetVideoInfo(
 		throw new Error(`${logPrefix} does not have a thumbnail.`)
 	}
 
-	// Generate fallback mp4 link, not available via API
+	// Derive the fallback MP4 from the manifest path, which the API leaves out:
 	// https://community.cloudflare.com/t/include-download-mp4-link-in-api-request-please/539413/8
-	const mp4Url = hlsUrl.replace('/manifest/video.m3u8', '/downloads/default.mp4')
+	// An unfamiliar HLS URL gives no fallback rather than the manifest itself.
+	const mp4Url = hlsUrl.includes('/manifest/video.m3u8')
+		? hlsUrl.replace('/manifest/video.m3u8', '/downloads/default.mp4')
+		: ''
 
 	// Find captions, if available
 	// URL is like this but doesn't work unless the url is signed, which won't be possible AOT

@@ -35,4 +35,28 @@ describe('cloudflareGetVideoInfo', () => {
 			expect(info.mp4Url).toBe(`${base}/downloads/default.mp4${query}`)
 		},
 	)
+
+	it('offers no fallback for an unfamiliar HLS URL', async () => {
+		const mediaId = '81841bee83618bdde9278ab586e3568b'
+		const base = `https://customer-example.cloudflarestream.com/${mediaId}`
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue(
+				Response.json({
+					result: {
+						duration: 10,
+						input: { width: 1920, height: 1080 },
+						meta: { name: 'A clip' },
+						playback: { hls: `${base}/other/stream.m3u8` },
+						readyToStream: true,
+						status: { state: 'ready' },
+						thumbnail: `${base}/thumbnails/thumbnail.jpg`,
+					},
+				}),
+			),
+		)
+
+		const info = await cloudflareGetVideoInfo(mediaId, { accountId: 'account', apiToken: 'token' })
+		expect(info.mp4Url).toBe('')
+	})
 })
