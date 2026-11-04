@@ -2,7 +2,7 @@
 // from the link's template as the link is used, grows out of the link, and goes
 // away again when the viewer closes.
 
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
@@ -200,19 +200,26 @@ it('opens from the keyboard, as the link it is', async () => {
 
 it('warms the image on hover, without showing anything', async () => {
 	const { second } = await mountLinks()
-	// An image no other test has loaded, so that its request is a new one
-	const before = performance.getEntriesByType('resource').length
-
-	await userEvent.hover(second)
-
-	await expect
-		.poll(() =>
-			performance
-				.getEntriesByType('resource')
-				.slice(before)
-				.some((entry) => entry.name.includes('penguin2')),
+	// Another test file may have put the image in the browser's cache, and a
+	// cached image makes no request to observe: Firefox reports none for an
+	// image it already holds. The warm-up decodes a detached copy either way.
+	const decode = vi.spyOn(HTMLImageElement.prototype, 'decode')
+	const warmed = () =>
+		decode.mock.contexts.find(
+			(image): image is HTMLImageElement =>
+				image instanceof HTMLImageElement && image.src.includes('penguin2'),
 		)
-		.toBe(true)
-	expect(document.querySelector('.amk-lightbox img')).toBeNull()
-	expect(isLifted(second)).toBe(false)
+	try {
+		await userEvent.hover(second)
+
+		await expect.poll(warmed).toBeDefined()
+		const image = warmed()!
+		await image.decode()
+		expect(image.isConnected).toBe(false)
+		expect(image.currentSrc).toContain('penguin2')
+		expect(document.querySelector('.amk-lightbox img')).toBeNull()
+		expect(isLifted(second)).toBe(false)
+	} finally {
+		decode.mockRestore()
+	}
 })
