@@ -846,21 +846,72 @@ it('keeps keyboard mute and slider controls working, and dismisses the popup bef
 	await expect.poll(() => viewer().open).toBe(false)
 })
 
-it('uses a rectangular volume popup with fast transitions and respects reduced motion', async () => {
-	const { player } = await mountPlayer()
-	const mute = query(player, 'amk-mute-button')
-	const popover = query(player, 'media-volume-popover')
-	await userEvent.hover(mute)
-	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
-	expect(getComputedStyle(popover).borderRadius).toBe('0px')
-	expect(getComputedStyle(popover).transitionDuration).toBe('0.06s')
-	await commands.emulateReducedMotion(true)
-	try {
-		expect(getComputedStyle(popover).transitionDuration).toBe('0s')
-	} finally {
-		await commands.emulateReducedMotion(false)
-	}
-})
+it.each([false, true])(
+	'fades and slides the volume popup open and closed, lifted=%s',
+	async (lifted) => {
+		const { item, player } = await mountPlayer()
+		if (lifted) {
+			await openLightbox(item)
+			await liftDone()
+		}
+
+		const mute = query(player, 'amk-mute-button')
+		const popover = query(player, 'media-volume-popover')
+		const transitions: Array<{
+			closing: boolean
+			duration: number
+			easing: string | undefined
+			property: string
+		}> = []
+		popover.addEventListener('transitionrun', (event) => {
+			if (event.target !== popover) {
+				return
+			}
+
+			const animation = popover
+				.getAnimations()
+				.find(
+					(animation) =>
+						animation instanceof CSSTransition &&
+						animation.transitionProperty === event.propertyName,
+				)
+			const timing = animation!.effect!.getTiming()
+			transitions.push({
+				closing: Object.hasOwn(popover.dataset, 'endingStyle'),
+				duration: Number(timing.duration),
+				easing: timing.easing,
+				property: event.propertyName,
+			})
+		})
+		await userEvent.hover(mute)
+		await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+		await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
+		expect(getComputedStyle(popover).borderRadius).toBe('0px')
+		await commands.mouseMove(5, 5)
+		await expect.poll(() => popover.matches(':popover-open')).toBe(false)
+		for (const closing of [false, true]) {
+			for (const property of ['opacity', 'transform']) {
+				expect(transitions).toContainEqual({
+					closing,
+					duration: 200,
+					easing: 'cubic-bezier(0.2, 0.8, 0.1, 1)',
+					property,
+				})
+			}
+		}
+
+		player
+			.closest<HTMLElement>('.amk-video')!
+			.style.setProperty('--amk-volume-popover-transition-duration', '0.3s')
+		expect(getComputedStyle(popover).transitionDuration).toBe('0.3s')
+		await commands.emulateReducedMotion(true)
+		try {
+			expect(getComputedStyle(popover).transitionDuration).toBe('0s')
+		} finally {
+			await commands.emulateReducedMotion(false)
+		}
+	},
+)
 
 it.each([true, false])(
 	'toggles Vimeo mute when runtime state differs from defaultMuted=%s',

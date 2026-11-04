@@ -560,8 +560,8 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 
 @media (prefers-reduced-motion: no-preference) {
 	.amk-volume-popover {
-		transition-timing-function: ease-out;
-		transition-duration: 60ms;
+		transition-timing-function: var(--amk-easing);
+		transition-duration: var(--amk-volume-popover-transition-duration, 0.2s);
 		transition-property: opacity, transform;
 	}
 
