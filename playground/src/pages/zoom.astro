@@ -4,6 +4,7 @@ import Picture from 'astro-media-kit/components/Picture.astro'
 import Video from 'astro-media-kit/components/Video.astro'
 import Zoomer from 'astro-media-kit/components/Zoomer.astro'
 import ZoomLink from 'astro-media-kit/components/ZoomLink.astro'
+import ColdZoomImage from '../components/ColdZoomImage.astro'
 import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
@@ -235,6 +236,15 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 			</Image>
 		</div>
 	</div>
+
+	<h2 id="uncached-image">10. Uncached large image</h2>
+	<p class="note">
+		Click this thumbnail to zoom. Its large image takes at least three seconds to arrive, so you can
+		watch the opening animation and loading behavior. Each opening makes a fresh request; hovering
+		does not preload the large image. Close and reopen to repeat, or close before it finishes
+		loading.
+	</p>
+	<ColdZoomImage />
 </Layout>
 
 <style>

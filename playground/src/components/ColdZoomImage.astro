@@ -1,0 +1,99 @@
+---
+import Zoomer from 'astro-media-kit/components/Zoomer.astro'
+import { getImage } from 'astro:assets'
+import photo from '../assets/test.jpeg'
+
+const thumbnail = await getImage({ format: 'webp', src: photo, width: 320 })
+---
+
+<demo-cold-zoom>
+	<Zoomer enabled href="/zoom-cold-image" indicator nativeWidth={photo.width}>
+		<img
+			alt="Green character wearing a purple nightcap and holding a tablet"
+			decoding="async"
+			height={photo.height}
+			loading="lazy"
+			sizes="auto"
+			src={thumbnail.src}
+			srcset={`${thumbnail.src} 320w`}
+			width={photo.width}
+		/>
+	</Zoomer>
+</demo-cold-zoom>
+
+<script>
+	class ColdZoomImage extends HTMLElement {
+		#controller: AbortController | undefined
+		#observer: MutationObserver | undefined
+
+		connectedCallback() {
+			const item = this.querySelector<HTMLAnchorElement>('.amk-zoom')
+			const image = item?.querySelector('img')
+			if (!item || !image) {
+				return
+			}
+
+			const thumbnail = image.cloneNode() as HTMLImageElement
+			this.#controller = new AbortController()
+			addEventListener(
+				'click',
+				(event) => {
+					if (
+						!event.composedPath().includes(item) ||
+						event.button !== 0 ||
+						event.altKey ||
+						event.ctrlKey ||
+						event.metaKey ||
+						event.shiftKey ||
+						Object.hasOwn(item.dataset, 'lifted')
+					) {
+						return
+					}
+
+					const current = item.querySelector('img')
+					if (current === null) {
+						return
+					}
+
+					const large = new URL(item.href)
+					large.searchParams.set('request', crypto.randomUUID())
+					// Reveal the large candidate at activation, before the document's
+					// normal zoom handler. Keep the loaded thumbnail in the source set.
+					current.srcset = `${thumbnail.srcset}, ${large.href} ${current.getAttribute('width') ?? current.naturalWidth}w`
+				},
+				{ capture: true, signal: this.#controller.signal },
+			)
+
+			this.#observer = new MutationObserver(() => {
+				if (!Object.hasOwn(item.dataset, 'lifted')) {
+					// A returned img can retain decoded pixels even with no-store. Start
+					// the next opening from a fresh thumbnail after the real image lands.
+					item.querySelector('img')?.replaceWith(thumbnail.cloneNode())
+				}
+			})
+			this.#observer.observe(item, { attributeFilter: ['data-lifted'], attributes: true })
+		}
+
+		disconnectedCallback() {
+			this.#controller?.abort()
+			this.#observer?.disconnect()
+		}
+	}
+
+	if (customElements.get('demo-cold-zoom') === undefined) {
+		customElements.define('demo-cold-zoom', ColdZoomImage)
+	}
+</script>
+
+<style>
+	demo-cold-zoom {
+		display: block;
+		max-width: 240px;
+	}
+
+	img {
+		width: 100%;
+		max-width: 100%;
+		height: auto;
+	}
+</style>
