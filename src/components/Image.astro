@@ -203,7 +203,7 @@ if (!isRemote && import.meta.env.DEV && isDarkLightImageMetadata(resolvedSource)
 	)
 }
 
-// Astro 7.3.3+ types `widths`/`densities`/`layout` as a discriminated union. Our `Omit<>`-derived
+// Astro types `widths`/`densities`/`layout` as a discriminated union. Our `Omit<>`-derived
 // Props flatten that union, so we cast at the `getImage()` boundary like Astro's own `<Image>` does.
 
 // Handle responsive layout (same as Astro's Image) — shared by both branches.
