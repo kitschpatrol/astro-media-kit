@@ -380,6 +380,16 @@ function extractVimeoId(url: URL): string | undefined {
 	// unlisted video
 	const segments = url.pathname.split('/').filter(Boolean)
 	const [lastSegment, previousSegment] = [segments.at(-1), segments.at(-2)]
+	if (
+		previousSegment !== undefined &&
+		lastSegment !== undefined &&
+		segments.length === 2 &&
+		vimeoIsValidMediaId(previousSegment) &&
+		VIMEO_HASH_REGEX.test(lastSegment)
+	) {
+		return withVimeoHash(previousSegment, lastSegment)
+	}
+
 	if (lastSegment !== undefined && vimeoIsValidMediaId(lastSegment)) {
 		return withVimeoHash(lastSegment, queryHash)
 	}

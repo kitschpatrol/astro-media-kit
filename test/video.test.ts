@@ -232,6 +232,23 @@ describe('resolveVideoSource', () => {
 		})
 
 		it.each([
+			'https://vimeo.com/10184668/1234567890',
+			'https://www.vimeo.com/10184668/1234567890/',
+		])('keeps an all-digit privacy hash separate from the video ID in %s', (src) => {
+			expect(resolveVideoSource(src)).toEqual({
+				identifier: '10184668/1234567890',
+				service: 'vimeo',
+			})
+		})
+
+		it('keeps numeric channel names separate from the video ID', () => {
+			expect(resolveVideoSource('https://vimeo.com/channels/12345678/10184668')).toEqual({
+				identifier: '10184668',
+				service: 'vimeo',
+			})
+		})
+
+		it.each([
 			'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
 			'https://youtube-nocookie.com/embed/dQw4w9WgXcQ',
 			'https://www.youtube.com/watch/?v=dQw4w9WgXcQ',
