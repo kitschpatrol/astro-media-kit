@@ -2,7 +2,6 @@
 import type { InternalVideoProps, VideoElementTag } from './types'
 import { mediaCrossOrigin } from '../utils/media'
 import FallbackLink from './FallbackLink.astro'
-import { getControllerStyle } from './types'
 import VideoControls from './VideoControls.astro'
 import VideoError from './VideoError.astro'
 import VideoMedia from './VideoMedia.astro'
@@ -49,7 +48,17 @@ const hasFullscreen = controls === 'full' && !zoom
 const hasClickToPlay = controls === 'minimal' || controls === 'full'
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
-const containerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
+// The container at the video's intrinsic width and aspect ratio, where known
+const containerStyleParts: string[] = []
+if (intrinsicWidth !== undefined && intrinsicWidth !== 0 && !Number.isNaN(intrinsicWidth)) {
+	containerStyleParts.push(`width: ${String(intrinsicWidth)}px`)
+}
+
+if (aspectRatio !== undefined && aspectRatio !== '') {
+	containerStyleParts.push(`aspect-ratio: ${aspectRatio}`)
+}
+
+const containerStyle = containerStyleParts.length > 0 ? containerStyleParts.join('; ') : undefined
 
 const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 	autoplay: autoPlay || undefined,

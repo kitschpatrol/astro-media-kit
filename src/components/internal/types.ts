@@ -1,25 +1,8 @@
 import type { HlsSourceOptions } from './video-source'
 export type { HlsSourceOptions, VideoElementTag } from './video-source'
 
-/**
- * Builds the inline style string for the player container from video
- * dimensions.
- */
-export function getControllerStyle(
-	intrinsicWidth: number | undefined,
-	aspectRatio: string | undefined,
-): string | undefined {
-	const parts: string[] = []
-	if (intrinsicWidth !== undefined && intrinsicWidth !== 0 && !Number.isNaN(intrinsicWidth)) {
-		parts.push(`width: ${String(intrinsicWidth)}px`)
-	}
-
-	if (aspectRatio !== undefined && aspectRatio !== '') {
-		parts.push(`aspect-ratio: ${aspectRatio}`)
-	}
-
-	return parts.length > 0 ? parts.join('; ') : undefined
-}
+/** The player's control bar layout. */
+export type Controls = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 
 /**
  * Shared props passed from Video.astro to internal sub-components. All service
@@ -34,7 +17,7 @@ export type InternalVideoProps = {
 		src: string
 		srclang: string
 	}>
-	controls: 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
+	controls: Controls
 	hlsOptions: HlsSourceOptions
 	/** Intrinsic video width in pixels, used for native-like sizing. */
 	intrinsicWidth: number | undefined

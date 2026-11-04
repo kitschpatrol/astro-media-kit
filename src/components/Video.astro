@@ -1,7 +1,7 @@
 ---
 import { getSecret } from 'astro:env/server'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
-import type { HlsSourceOptions } from './internal/types'
+import type { Controls, HlsSourceOptions } from './internal/types'
 import type { OembedInfo } from './utils/oembed'
 import type { Service, VideoInfo } from './utils/video'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
@@ -14,8 +14,6 @@ import { fetchOEmbed } from './utils/oembed'
 import { getVideoInfo, readServiceConfig, resolveVideoSource } from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
-
-type Controls = 'full' | 'lightbox' | 'minimal' | 'native' | 'none'
 
 /**
  * Props for the `<Video>` component — unified video player supporting Bunny,
