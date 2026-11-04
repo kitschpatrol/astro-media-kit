@@ -11,6 +11,7 @@
 import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
 import type { getImage, imageConfig } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
+import { isESMImportedImage } from 'astro/assets/utils'
 import * as mime from 'mrmime'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import type { Simplify } from './types'
@@ -137,15 +138,6 @@ export const DEFAULT_FORMATS_RULES: Record<FallbackKey, ImageOutputFormat[]> = {
 	tiff: ['webp'],
 	unknown: ['webp'],
 	webp: ['webp'],
-}
-
-/**
- * Narrow a `src` value to an ESM-imported `ImageMetadata`. Mirrors the check
- * used inside Astro's own `<Picture>` — SVG component functions count as
- * "imported" because they carry a `src` property.
- */
-export function isESMImportedImage(src: ImageMetadata | string): src is ImageMetadata {
-	return typeof src === 'object' || (typeof src === 'function' && 'src' in src)
 }
 
 /**

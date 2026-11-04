@@ -19,6 +19,7 @@ import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
 import { getImage, imageConfig, inferRemoteSize } from 'astro:assets'
+import { isESMImportedImage } from 'astro/assets/utils'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
 import type { FormatRules, FormatsRules, GetImageResult } from './utils/image-orchestration'
@@ -33,7 +34,6 @@ import {
 	extractScopedStyleClass,
 	getMimeType,
 	hashSelector,
-	isESMImportedImage,
 	mergeImageStyle,
 	mergeLayoutDefaults,
 	needsBackgroundDarkVariant,

@@ -11,7 +11,6 @@ import {
 	extractScopedStyleClass,
 	getMimeType,
 	hashSelector,
-	isESMImportedImage,
 	mergeImageStyle,
 	pickFallbackFormat,
 	pickFormats,
@@ -311,23 +310,6 @@ describe('buildBackgroundStyle', () => {
 			isSelector: false,
 		})
 		expect(selector.light).toBe(media.light)
-	})
-})
-
-describe('isESMImportedImage', () => {
-	it('accepts plain ImageMetadata objects', () => {
-		expect(isESMImportedImage(pngMeta)).toBe(true)
-	})
-
-	it('accepts SVG component function wrappers', () => {
-		// eslint-disable-next-line ts/no-empty-function -- simulates Astro SVG component function
-		const svgFn = Object.assign(() => {}, { src: '/img.svg' })
-
-		expect(isESMImportedImage(svgFn as unknown as typeof pngMeta)).toBe(true)
-	})
-
-	it('rejects string paths', () => {
-		expect(isESMImportedImage('/img.png')).toBe(false)
 	})
 })
 
