@@ -9,8 +9,15 @@ const live = new Map<HTMLElement, Carousel>()
 /** Set up every carousel in the page that isn't set up yet. */
 export function setUpCarousels() {
 	for (const root of document.querySelectorAll<HTMLElement>('.amk-carousel')) {
-		if (!live.has(root)) {
+		if (live.has(root)) {
+			continue
+		}
+
+		try {
 			live.set(root, setUp(root))
+		} catch (error) {
+			// One carousel without its parts must not keep the others from working
+			console.warn('[astro-media-kit] Skipping a carousel that could not be set up.', error)
 		}
 	}
 }

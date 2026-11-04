@@ -1,7 +1,7 @@
 // The embedded carousel against the markup the component renders, from the
 // fixture that `test/carousel.test.ts` also builds.
 
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { disposeCarousels, setUpCarousels } from '../../src/components/internal/carousel/carousel'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
@@ -45,6 +45,20 @@ function slideAt(track: HTMLElement): number {
 function currentDot(carousel: HTMLElement): string {
 	return query(carousel, '.amk-carousel-dot[aria-current="true"]').getAttribute('aria-label') ?? ''
 }
+
+it('sets up the other carousels when one is missing its parts', async () => {
+	const warn = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+	try {
+		mount('<div class="amk-carousel"></div>')
+		const { carousel, track } = await mountCarousel()
+		track.scrollLeft = track.clientWidth
+		track.dispatchEvent(new Event('scroll'))
+		expect(currentDot(carousel)).toBe('Slide 2')
+		expect(warn).toHaveBeenCalledOnce()
+	} finally {
+		warn.mockRestore()
+	}
+})
 
 it('stops reacting to a retained track after disposal and can initialize it again', async () => {
 	const { carousel, track } = await mountCarousel()
