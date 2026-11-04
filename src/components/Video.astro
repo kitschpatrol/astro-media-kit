@@ -105,7 +105,9 @@ const {
 	zoomScope,
 } = Astro.props
 
-const zoomerProps = toZoomerProps({ zoom, zoomLevel, zoomPlaceholder, zoomScope })
+// Native controls have no expand button, so the player stays out of galleries
+const zoomEnabled = controls === 'native' ? false : zoom
+const zoomerProps = toZoomerProps({ zoom: zoomEnabled, zoomLevel, zoomPlaceholder, zoomScope })
 
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 
@@ -245,7 +247,7 @@ const sharedProps = {
 	preload,
 	resolvedLabel,
 	videoSrc: videoSrc ?? '',
-	zoom: Boolean(zoom),
+	zoom: Boolean(zoomEnabled),
 } as const
 ---
 
