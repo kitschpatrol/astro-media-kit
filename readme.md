@@ -91,7 +91,7 @@ export default defineConfig({
       // autoImport: true,       // Enabled by default
       // tldraw: false,          // .tldr file support
       // aphex: false,           // Apple Photos imports
-      // removeOriginals: false, // Delete unused original images after build
+      // removeOriginals: false, // Delete originals Astro leaves after build
       // stripExif: false,       // Strip EXIF/XMP metadata from build-output images
       // video: false,           // Secret env schema for video services
       // watermark: false,       // Dev-mode variant label overlay
@@ -856,7 +856,7 @@ mediaKit({
 
 ### Remove originals
 
-For builds that emit full-size originals alongside transformed image variants, enable `removeOriginals` to clean up those originals after the build completes:
+Astro deletes a raster original that only its transforms used, and the kit's components keep that detection intact. Two kinds of original still remain in the build output: SVG originals processed with `image.dangerouslyProcessSVG`, whose source path Astro loses when it builds the SVG component, and any original kept by a raw `src` read whose URL never reaches the output. Enable `removeOriginals` to delete those after the build completes:
 
 ```ts
 mediaKit({

@@ -79,9 +79,11 @@ export type MediaKitConfig = {
 	autoImport?: AutoImportPluginConfig | boolean
 	/**
 	 * Remove unused original images from the build output after Astro has
-	 * finished writing the site. Astro's image pipeline leaves the full-size
-	 * source files in the assets directory even when every reference uses a
-	 * transformed variant.
+	 * finished writing the site. Astro deletes a raster original that only its
+	 * transforms used; this removes the originals it still leaves: SVGs processed
+	 * with `image.dangerouslyProcessSVG`, whose source path Astro loses when it
+	 * builds the SVG component, and any original kept by a raw `src` read whose
+	 * URL never reaches the output.
 	 *
 	 * @default false
 	 */
