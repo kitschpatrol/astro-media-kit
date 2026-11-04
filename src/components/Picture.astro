@@ -328,7 +328,7 @@ if (mergedImageProps.inferSize && isRemoteImageSource(lightSrc)) {
 propagateAstroCidAttributes(mergedImageProps, pictureAttributes)
 
 // Generate optimized images for each format (light variant)
-const originalSrc = isRemote ? lightSrc : await resolveSrc(lightSrc)
+const originalSrc = lightSrc
 
 // Resolve `formats` against the source. `pickFormats` handles the three shapes
 // of `formats`: array (force), object (partial rules merged onto defaults),
@@ -339,17 +339,24 @@ const formats = pickFormats(formatsProp, originalSrc)
 // their own composited image, even if every preferred format is transparent.
 const resultFallbackFormat = pickFallbackFormat(fallbackFormatProp, originalSrc)
 
+// Keep preferred formats and fallbacks on the same transform path.
+async function transformVariant(
+	source: ImageMetadata | string,
+	format: ImageOutputFormat,
+	variantBackground: string | undefined,
+): Promise<GetImageResult> {
+	return getImage({
+		...mergedImageProps,
+		...compositingBackground(format, variantBackground, backgroundDark),
+		densities: imageProps.densities,
+		format,
+		src: source,
+		widths: imageProps.widths,
+	} as UnresolvedImageTransform)
+}
+
 const optimizedImages: GetImageResult[] = await Promise.all(
-	formats.map(async (format) =>
-		getImage({
-			...mergedImageProps,
-			...compositingBackground(format, background, backgroundDark),
-			densities: imageProps.densities,
-			format,
-			src: originalSrc,
-			widths: imageProps.widths,
-		} as UnresolvedImageTransform),
-	),
+	formats.map(async (format) => transformVariant(originalSrc, format, background)),
 )
 
 // Generate optimized images for dark variant when:
@@ -366,37 +373,17 @@ const needsDarkVariant =
 		darkDisabled,
 		isSelector,
 	)
-let optimizedImagesDark: GetImageResult[] | undefined
-if (needsDarkVariant) {
-	const darkBackground = backgroundDark ?? background
-	const originalSrcDark = isRemote
-		? (darkSrc ?? originalSrc)
-		: darkSrc === undefined
-			? originalSrc
-			: await resolveSrc(darkSrc)
-	optimizedImagesDark = await Promise.all(
-		formats.map(async (format) =>
-			getImage({
-				...mergedImageProps,
-				...compositingBackground(format, darkBackground, backgroundDark),
-				densities: imageProps.densities,
-				format,
-				src: originalSrcDark,
-				widths: imageProps.widths,
-			} as UnresolvedImageTransform),
-		),
-	)
-}
+const originalSrcDark = needsDarkVariant ? (darkSrc ?? originalSrc) : undefined
+const darkBackground = backgroundDark ?? background
+const optimizedImagesDark =
+	originalSrcDark === undefined
+		? undefined
+		: await Promise.all(
+				formats.map(async (format) => transformVariant(originalSrcDark, format, darkBackground)),
+			)
 
 // Generate fallback image (always light variant)
-const fallbackImage = await getImage({
-	...mergedImageProps,
-	...compositingBackground(resultFallbackFormat, background, backgroundDark),
-	densities: imageProps.densities,
-	format: resultFallbackFormat,
-	src: originalSrc,
-	widths: imageProps.widths,
-} as UnresolvedImageTransform)
+const fallbackImage = await transformVariant(originalSrc, resultFallbackFormat, background)
 
 // Reading `src` on an imported image records a raw reference that keeps the
 // original file in the build output. The transform's own copy is untracked.
@@ -408,23 +395,10 @@ const hasDarkMode = optimizedImagesDark !== undefined
 
 // Selector mode needs its own <img>. Media mode needs a dark fallback <source>
 // when no preferred format is supported, including an empty formats list.
-let fallbackImageDark: GetImageResult | undefined
-if (hasDarkMode && (isSelector || !formats.includes(resultFallbackFormat))) {
-	const darkBackground = backgroundDark ?? background
-	const originalSrcDark = isRemote
-		? (darkSrc ?? originalSrc)
-		: darkSrc === undefined
-			? originalSrc
-			: await resolveSrc(darkSrc)
-	fallbackImageDark = await getImage({
-		...mergedImageProps,
-		...compositingBackground(resultFallbackFormat, darkBackground, backgroundDark),
-		densities: imageProps.densities,
-		format: resultFallbackFormat,
-		src: originalSrcDark,
-		widths: imageProps.widths,
-	} as UnresolvedImageTransform)
-}
+const fallbackImageDark =
+	originalSrcDark !== undefined && (isSelector || !formats.includes(resultFallbackFormat))
+		? await transformVariant(originalSrcDark, resultFallbackFormat, darkBackground)
+		: undefined
 
 const imgAdditionalAttributes: HTMLAttributes<'img'> = {}
 const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
@@ -554,7 +528,7 @@ if (isSelector && hasDarkMode) {
 				class:list={[pictureAttributes.class, 'amk-picture', selectorClass]}
 			>
 				<picture class="amk-dark">
-					{optimizedImagesDark!.map((image) => (
+					{optimizedImagesDark.map((image) => (
 						<source
 							srcset={srcsetFor(image)}
 							type={getMimeType(image)}
@@ -591,7 +565,7 @@ if (isSelector && hasDarkMode) {
 		) : (
 			<picture {...pictureAttributes}>
 				{hasDarkMode &&
-					optimizedImagesDark!.map((image) => (
+					optimizedImagesDark.map((image) => (
 						<source
 							media="(prefers-color-scheme: dark)"
 							srcset={srcsetFor(image)}
