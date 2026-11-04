@@ -1,10 +1,22 @@
 import { afterEach, expect, it } from 'vitest'
+import { page } from 'vitest/browser'
 import {
 	closeLightbox,
 	openLightbox,
 	prepareLightbox,
 } from '../../src/components/internal/lightbox/lightbox'
-import { boxes, cleanUp, frames, item, mount, query, setUpLightbox, viewer } from './helpers'
+import {
+	boxes,
+	cleanUp,
+	currentLayer,
+	frames,
+	item,
+	liftDone,
+	mount,
+	query,
+	setUpLightbox,
+	viewer,
+} from './helpers'
 
 setUpLightbox()
 afterEach(cleanUp)
@@ -33,12 +45,12 @@ function preview(): HTMLCanvasElement {
 	return query(viewer(), '.amk-lightbox-image-preview', HTMLCanvasElement)
 }
 
-function expectVisibleBitmap() {
+function expectVisibleBitmap(minimumWidth = 480) {
 	const canvas = preview()
 	expect(canvas.width * canvas.height).toBeGreaterThan(0)
 	expect(canvas.width * canvas.height).toBeLessThanOrEqual(1_050_000)
 	// The 160px thumbnail already has a 480px source; keep its available detail.
-	expect(canvas.width).toBeGreaterThanOrEqual(480)
+	expect(canvas.width).toBeGreaterThanOrEqual(minimumWidth)
 	const context = canvas.getContext('2d')!
 	expect(context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data[3]).toBe(255)
 	expect(canvas.getBoundingClientRect().width).toBeGreaterThan(160)
@@ -46,6 +58,68 @@ function expectVisibleBitmap() {
 	expect(canvas.inert).toBe(true)
 	expect(canvas.ariaHidden).toBe('true')
 }
+
+async function responsiveFixture(picture: boolean) {
+	const token = crypto.randomUUID()
+	const source = (width: number) => `/media/tile-${width}.jpg?${token}`
+	const candidates = [480, 960, 2400].map((width) => `${source(width)} ${width}w`).join(', ')
+	const image = `<img alt="Tile" src="${source(480)}" srcset="${candidates}" sizes="auto, 160px" loading="lazy" width="2400" height="2400" style="width:100%;height:auto">`
+	const content = picture
+		? `<picture><source type="image/jpeg" srcset="${candidates}" sizes="160px">${image}</picture>`
+		: image
+	const root = mount(
+		item(content, 'data-level="native" data-native-width="2400" style="width:160px"'),
+	)
+	const box = boxes(root)[0]!
+	const original = query(box, 'img', HTMLImageElement)
+	await expect.poll(() => original.complete && original.naturalWidth > 0).toBe(true)
+	return { box, original }
+}
+
+it.each([false, true])(
+	'loads the native candidate when a touch click zooms a warmed image (picture=%s)',
+	async (picture) => {
+		const { box, original } = await responsiveFixture(picture)
+		box.focus()
+		await openLightbox(box)
+		await expect.poll(() => original.currentSrc).toContain('-960.jpg')
+		const layer = currentLayer()
+		const bounds = layer.getBoundingClientRect()
+		layer.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'touch' }))
+		// Touch opens without the mouse hover that prepares a native candidate.
+		layer.dispatchEvent(
+			new MouseEvent('click', {
+				bubbles: true,
+				clientX: bounds.x + bounds.width / 2,
+				clientY: bounds.y + bounds.height / 2,
+				detail: 1,
+			}),
+		)
+		await liftDone()
+		expect(layer.getBoundingClientRect().width).toBeCloseTo(2400, 0)
+		await expect.poll(() => original.currentSrc).toContain('-2400.jpg')
+		await closeLightbox()
+		expect(original.sizes).toBe('auto, 160px')
+	},
+)
+
+it.each([false, true])(
+	'loads a larger fitted candidate after the warmed viewport enlarges (picture=%s)',
+	async (picture) => {
+		const { box, original } = await responsiveFixture(picture)
+		prepareLightbox(box)
+		await openLightbox(box)
+		await expect.poll(() => original.currentSrc).toContain('-960.jpg')
+		try {
+			await page.viewport(2000, 1400)
+			await expect.poll(() => currentLayer().getBoundingClientRect().width).toBeGreaterThan(960)
+			await expect.poll(() => original.currentSrc).toContain('-2400.jpg')
+		} finally {
+			await closeLightbox()
+			await page.viewport(1280, 800)
+		}
+	},
+)
 
 it.each([false, true])(
 	'zooms the loaded bitmap until an uncached candidate decodes (picture=%s)',
@@ -166,17 +240,22 @@ it('keeps returned pixels visible and supports reopening before the large image 
 })
 
 it('retains the fitted candidate during a later native zoom upgrade', async () => {
-	const { box, original } = await fixture({ picture: true })
-	await openLightbox(box)
-	await expect.poll(() => viewer().querySelector('.amk-lightbox-image-preview')).toBeNull()
-	query(viewer(), '.amk-lightbox-zoom').dispatchEvent(
-		new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
-	)
-	query(viewer(), '.amk-lightbox-zoom').click()
-	await frames()
-	expectVisibleBitmap()
-	expect(getComputedStyle(original).opacity).toBe('0')
-	await expect.poll(() => original.complete && original.currentSrc.includes('-1600.')).toBe(true)
-	await expect.poll(() => viewer().querySelector('.amk-lightbox-image-preview')).toBeNull()
-	expect(getComputedStyle(original).opacity).toBe('1')
+	try {
+		// The fitted image still fits its small candidate; only native zoom needs
+		// the larger, uncached one.
+		await page.viewport(400, 300)
+		const { box, original } = await fixture({ picture: true })
+		await openLightbox(box)
+		await expect.poll(() => viewer().querySelector('.amk-lightbox-image-preview')).toBeNull()
+		query(viewer(), '.amk-lightbox-zoom').click()
+		await frames()
+		expectVisibleBitmap(400)
+		expect(getComputedStyle(original).opacity).toBe('0')
+		await expect.poll(() => original.complete && original.currentSrc.includes('-1600.')).toBe(true)
+		await expect.poll(() => viewer().querySelector('.amk-lightbox-image-preview')).toBeNull()
+		expect(getComputedStyle(original).opacity).toBe('1')
+	} finally {
+		await closeLightbox()
+		await page.viewport(1280, 800)
+	}
 })

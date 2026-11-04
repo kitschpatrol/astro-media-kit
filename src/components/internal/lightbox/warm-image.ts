@@ -38,17 +38,6 @@ export function warmImage(subject: Element, width: number) {
 	prepareImage(picture, width)
 }
 
-/** Apply warmed sizing hints only after the original has left the page. */
-export function useWarmup(subject: Element) {
-	const warmup = warmups.get(subject)
-	if (warmup === undefined) {
-		return
-	}
-
-	prepareImage(subject, warmup.width)
-	releaseWarmup(subject)
-}
-
 /** Release detached decode work and its references when intent ends. */
 export function releaseWarmup(subject: Element) {
 	const warmup = warmups.get(subject)

@@ -1,6 +1,7 @@
 import type { Point, Slide } from './types'
 import { identity, layerStyle, setLayerStyle } from './animation'
 import { refreshImagePreview } from './image-preview'
+import { prepareSlideImage } from './prepare'
 
 /** Owns the single zoomed slide, its geometry, and caption interactivity. */
 export class Zoom {
@@ -40,6 +41,7 @@ export class Zoom {
 		slide.element.querySelector<HTMLElement>('.amk-lightbox-caption')?.removeAttribute('inert')
 		slide.frame.style.removeProperty('--amk-lightbox-zoom-width')
 		setLayerStyle(slide.layer, identity, false)
+		prepareSlideImage(slide)
 		this.#slide = undefined
 		this.#onChange()
 	}
@@ -87,6 +89,8 @@ export class Zoom {
 		if (caption !== null) {
 			caption.inert = width !== undefined
 		}
+
+		prepareSlideImage(slide)
 
 		setLayerStyle(
 			slide.layer,

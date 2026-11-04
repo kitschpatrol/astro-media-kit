@@ -23,7 +23,7 @@ import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion } from './motion'
 import { closeInactiveTooltips, floatControls, hideControls } from './player-controls'
-import { prepareImage } from './prepare'
+import { prepareImage, prepareSlideImage } from './prepare'
 import { containPageScroll, containScrollKey } from './scroll-boundary'
 import { beginVolumes, endVolumes, focusVolumes } from './volume'
 import { Zoom } from './zoom'
@@ -741,6 +741,10 @@ class Viewer {
 				this.#zoom.reset()
 			}
 
+			for (const slide of this.#slides) {
+				prepareSlideImage(slide)
+			}
+
 			// WebKit keeps the old pixel offset, which lands on the wrong slide
 			this.#motion.go(target, 'instant')
 		}
@@ -876,6 +880,7 @@ class Viewer {
 	#lift(slide: Slide, measurement: Measurement) {
 		liftSlide(slide, measurement)
 		this.#placeCaption(slide)
+		prepareSlideImage(slide)
 		if (isLinkItem(measurement.item)) {
 			beginVolumes([measurement.subject], undefined)
 		}

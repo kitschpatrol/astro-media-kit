@@ -1,3 +1,4 @@
+import type { Slide } from './types'
 import { rendered } from './dom'
 import { refreshImagePreview } from './image-preview'
 import { ratioOf } from './media'
@@ -17,6 +18,13 @@ type Preparation = {
 }
 
 const preparations = new WeakMap<Element, Preparation>()
+
+/** Prepare the candidate needed by a lifted image's untransformed frame. */
+export function prepareSlideImage(slide: Slide) {
+	if (slide.lift !== undefined) {
+		prepareImage(slide.lift.subject, slide.frame.offsetWidth)
+	}
+}
 
 /**
  * Warm a responsive image on its original node, leaving picture selection to

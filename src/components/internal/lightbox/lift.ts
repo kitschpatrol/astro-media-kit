@@ -8,7 +8,7 @@ import { ratioOf } from './media'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
 import { releasePreparation } from './prepare'
-import { useWarmup } from './warm-image'
+import { releaseWarmup } from './warm-image'
 
 /**
  * Images and videos crossfade with the preview left on the page. Ordinary HTML
@@ -151,7 +151,7 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		placePlaceholder(item, placeholder, measurement.home, hold !== 'size')
 	}
 
-	useWarmup(subject)
+	releaseWarmup(subject)
 }
 
 /** How a wrapper's space is held while its subject is lifted. */
