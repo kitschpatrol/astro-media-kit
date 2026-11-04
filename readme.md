@@ -428,12 +428,12 @@ Generic oEmbed sources retain the provider's player and do not use the kit's pla
 
 URL formats recognized automatically:
 
-| Service | Formats                                                                  |
-| ------- | ------------------------------------------------------------------------ |
-| YouTube | `youtube.com/watch`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/`, `/v/` |
-| Vimeo   | `vimeo.com/`, `player.vimeo.com/video/`                                  |
-| Local   | Direct file URLs (detected by extension)                                 |
-| oEmbed  | Any other URL (falls back to oEmbed discovery)                           |
+| Service | Formats                                                                   |
+| ------- | ------------------------------------------------------------------------- |
+| YouTube | `youtube.com/watch`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/`, `/v/`  |
+| Vimeo   | `vimeo.com/`, `player.vimeo.com/video/`; an unlisted video keeps its hash |
+| Local   | Direct file URLs (detected by extension)                                  |
+| oEmbed  | Any other URL (falls back to oEmbed discovery)                            |
 
 Local/direct media sources are probed for dimensions at render time. Site-root paths such as `/videos/intro.mp4` are tried under the default `public/` directory first. When probing succeeds, the player reserves the corresponding aspect ratio; if probing fails, the media determines its size after loading. Custom `publicDir` locations are not resolved automatically by this probe. YouTube and Vimeo use oEmbed dimensions to establish an aspect ratio, rather than the source video's pixel resolution.
 

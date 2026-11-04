@@ -289,13 +289,17 @@ export async function getVideoInfo(
 const YOUTUBE_HOSTS = new Set([
 	'm.youtube.com',
 	'music.youtube.com',
+	'www.youtube-nocookie.com',
 	'www.youtube.com',
 	'youtu.be',
+	'youtube-nocookie.com',
 	'youtube.com',
 ])
 
 const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w\-]{11})(?:\/|$)/v
 const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)(?:\/|$)/v
+/** The hash an unlisted Vimeo video's page URL carries after its ID. */
+const VIMEO_HASH_REGEX = /^[\da-f]{8,}$/iv
 
 /** Extracts a YouTube video ID from various YouTube URL formats. */
 function extractYouTubeId(url: URL): string | undefined {
@@ -311,7 +315,7 @@ function extractYouTubeId(url: URL): string | undefined {
 	}
 
 	// /watch?v=ID
-	if (url.pathname === '/watch') {
+	if (url.pathname === '/watch' || url.pathname === '/watch/') {
 		const id = url.searchParams.get('v') ?? undefined
 		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
 	}
@@ -335,18 +339,37 @@ function extractVimeoId(url: URL): string | undefined {
 		return undefined
 	}
 
-	// Player.vimeo.com/video/ID
+	const queryHash = url.searchParams.get('h') ?? undefined
+
+	// Player.vimeo.com/video/ID, with an unlisted video's hash as ?h=
 	if (host === 'player.vimeo.com') {
-		const match = VIMEO_VIDEO_PATH_REGEX.exec(url.pathname)
-		return match?.[1]
+		const id = VIMEO_VIDEO_PATH_REGEX.exec(url.pathname)?.[1]
+		return id === undefined ? undefined : withVimeoHash(id, queryHash)
 	}
 
-	// Vimeo.com/ID or vimeo.com/channels/.../ID
+	// Vimeo.com/ID, vimeo.com/channels/.../ID, or vimeo.com/ID/HASH for an
+	// unlisted video
 	const segments = url.pathname.split('/').filter(Boolean)
-	const lastSegment = segments.at(-1)
-	return lastSegment !== undefined && lastSegment !== '' && vimeoIsValidMediaId(lastSegment)
-		? lastSegment
+	const [lastSegment, previousSegment] = [segments.at(-1), segments.at(-2)]
+	if (lastSegment !== undefined && vimeoIsValidMediaId(lastSegment)) {
+		return withVimeoHash(lastSegment, queryHash)
+	}
+
+	if (lastSegment === undefined || previousSegment === undefined) {
+		return undefined
+	}
+
+	return vimeoIsValidMediaId(previousSegment) && VIMEO_HASH_REGEX.test(lastSegment)
+		? withVimeoHash(previousSegment, lastSegment)
 		: undefined
+}
+
+/**
+ * An unlisted video's identifier keeps its hash, as `ID/HASH`: Vimeo's page
+ * URLs, its oEmbed endpoint, and the player all accept that form.
+ */
+function withVimeoHash(id: string, hash: string | undefined): string {
+	return hash === undefined || hash === '' ? id : `${id}/${hash}`
 }
 
 /** Result of resolving a `src` string into a service and its identifier. */

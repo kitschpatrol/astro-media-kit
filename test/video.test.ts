@@ -219,6 +219,28 @@ describe('resolveVideoSource', () => {
 			})
 		})
 
+		it.each([
+			'https://vimeo.com/10184668/abcdef0123',
+			'https://vimeo.com/10184668?h=abcdef0123',
+			'https://player.vimeo.com/video/10184668?h=abcdef0123',
+		])('keeps the hash of an unlisted Vimeo video in %s', (src) => {
+			expect(resolveVideoSource(src)).toEqual({
+				identifier: '10184668/abcdef0123',
+				service: 'vimeo',
+			})
+		})
+
+		it.each([
+			'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+			'https://youtube-nocookie.com/embed/dQw4w9WgXcQ',
+			'https://www.youtube.com/watch/?v=dQw4w9WgXcQ',
+		])('extracts the YouTube ID from %s', (src) => {
+			expect(resolveVideoSource(src)).toEqual({
+				identifier: 'dQw4w9WgXcQ',
+				service: 'youtube',
+			})
+		})
+
 		it('resolves direct media URL as local', () => {
 			expect(resolveVideoSource('https://example.com/video.mp4')).toEqual({
 				identifier: 'https://example.com/video.mp4',
