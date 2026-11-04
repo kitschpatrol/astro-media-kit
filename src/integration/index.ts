@@ -121,11 +121,13 @@ export type MediaKitConfig = {
 	/**
 	 * Stamp every responsive image variant with its pixel dimensions and encoded
 	 * byte size as a tiled text overlay, for visual debugging of which srcset
-	 * candidate the browser actually loaded. Registers a custom local image
-	 * service that wraps Astro's built-in sharp service.
+	 * candidate the browser actually loaded. Registers a local image service
+	 * wrapping Astro's built-in sharp service as the build-time service, which
+	 * dev and prerendering use. Pages rendered on demand keep the configured
+	 * runtime service.
 	 *
-	 * Intended for dev use — a warning is logged if enabled outside `astro dev`.
-	 * When `false` (the default), the image pipeline is left entirely untouched.
+	 * Intended for dev use — a warning is logged for builds. When `false` (the
+	 * default), the image pipeline is left entirely untouched.
 	 *
 	 * @default false
 	 */
@@ -280,7 +282,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					}
 				}
 			},
-			'astro:config:setup'({ command, logger, updateConfig }) {
+			'astro:config:setup'({ command, config: setupConfig, logger, updateConfig }) {
 				if (videoServices.length > 0) {
 					const envSchemaForService: Record<
 						CredentialService,
@@ -348,11 +350,18 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					)
 				}
 
+				// Dev and prerendering use the build-time service. Pages rendered on
+				// demand keep whichever runtime service is configured, so a watermark
+				// left on never reaches a deployed image endpoint.
+				const { service } = setupConfig.image
 				updateConfig({
 					image: {
 						service: {
-							config: { mediaKitWatermark: watermarkResolved },
-							entrypoint: fileURLToPath(new URL('watermark-image-service.ts', import.meta.url)),
+							build: {
+								config: { mediaKitWatermark: watermarkResolved },
+								entrypoint: fileURLToPath(new URL('watermark-image-service.ts', import.meta.url)),
+							},
+							runtime: 'runtime' in service ? service.runtime : service,
 						},
 					},
 				})

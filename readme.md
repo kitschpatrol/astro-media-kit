@@ -880,7 +880,7 @@ This walks the build output directory recursively and processes `jpg`, `jpeg`, `
 
 ### Watermark (dev)
 
-Stamps processed raster images with their pixel dimensions and encoded byte size as a tiled text overlay, so you can visually confirm which srcset candidate the browser actually loaded. SVG output, animated output, and images below `minDimension` are skipped. Intended for dev use — a warning is logged if enabled outside `astro dev`; the option still stamps build output when enabled.
+Stamps processed raster images with their pixel dimensions and encoded byte size as a tiled text overlay, so you can visually confirm which srcset candidate the browser actually loaded. SVG output, animated output, and images below `minDimension` are skipped. Intended for dev use — a warning is logged for builds; the option still stamps prerendered build output when enabled, while pages rendered on demand keep the configured runtime image service.
 
 ```ts
 mediaKit({
