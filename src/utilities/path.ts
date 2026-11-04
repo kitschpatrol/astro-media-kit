@@ -35,34 +35,6 @@ function posixCwd(): string {
 }
 
 /**
- * Gets the file extension from a path or URL. Returns an empty string if the
- * path or URL is not a valid file path or URL.
- *
- * @param path - The path to get the file extension from.
- *
- * @returns The file extension.
- */
-export function getFileExtension(path: PathLikeInput): string {
-	const plainPath = getPlainPath(path)
-	return nodePath.posix.extname(plainPath)
-}
-
-/**
- * Gets the path without the extension from a path or URL.
- *
- * @param path - The path to get the path without the extension from.
- *
- * @returns The path without the extension.
- */
-export function getPathWithoutExtension(path: PathLikeInput): string {
-	const plainPath = getPlainPath(path)
-	return nodePath.posix.join(
-		nodePath.posix.dirname(plainPath),
-		nodePath.posix.basename(plainPath, nodePath.posix.extname(plainPath)),
-	)
-}
-
-/**
  * Removes Vite's /@fs/ prefix if present, any URL prefix, and any query params.
  * Leaves relative / absolute/ leading / trailing slashes as they are.
  *
@@ -135,14 +107,4 @@ export function stripCwd(path: string): string {
 	return normalized === cwd || normalized.startsWith(`${cwd}/`)
 		? normalized.slice(cwd.length)
 		: normalized
-}
-
-/**
- * Resolves aliases like ~/ to the absolute src path. Must be synced with:
- * astro.config.ts, tsconfig.json, and path.ts
- */
-export function resolveAliases(path: string): string {
-	return path.startsWith('~/')
-		? toPosix(nodePath.resolve(process.cwd(), 'src', path.slice(2)))
-		: path
 }

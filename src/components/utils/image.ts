@@ -171,8 +171,8 @@ export function isRemoteImageSource(src: unknown): src is string {
 
 /**
  * Recognize URLs for Astro's image pipeline, including site-root paths to
- * public assets. Vite filesystem URLs and absolute paths inside the project
- * retain the kit's local-file handling.
+ * public assets and protocol-relative URLs. Vite filesystem URLs and absolute
+ * paths inside the project retain the kit's local-file handling.
  */
 export function isImageUrlSource(src: unknown): src is string {
 	return (

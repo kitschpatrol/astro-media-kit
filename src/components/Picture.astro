@@ -44,7 +44,7 @@ import {
 	resolveSrc,
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
-	warnRemoteIncompatibleProps,
+	warnRemoteLocalSrcDark,
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
 } from './utils/image-orchestration'
@@ -273,9 +273,10 @@ let darkSrc: ImageMetadata | string | undefined
 
 if (isRemote) {
 	const srcDarkIsLocal = srcDarkSource !== undefined && !isImageUrlSource(srcDarkSource)
-	warnRemoteIncompatibleProps('Picture', {
-		srcDarkIsLocal,
-	})
+	if (srcDarkIsLocal) {
+		warnRemoteLocalSrcDark('Picture')
+	}
+
 	warnRemoteMissingDimsOrInferSize('Picture', resolvedSource, {
 		height: imageProps.height,
 		inferSize: imageProps.inferSize,

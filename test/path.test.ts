@@ -1,60 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-	getAbsoluteFilePath,
-	getFileExtension,
-	getPathWithoutExtension,
-	getPublicFilePath,
-	resolveAliases,
-	stripCwd,
-} from '../src/utilities/path'
-
-describe('getFileExtension', () => {
-	it('extracts extension from string path', () => {
-		expect(getFileExtension('/images/photo.png')).toBe('.png')
-		expect(getFileExtension('file.jpg')).toBe('.jpg')
-	})
-
-	it('extracts extension from URL', () => {
-		expect(getFileExtension(new URL('file:///images/photo.png'))).toBe('.png')
-	})
-
-	it('ignores URL query strings and fragments', () => {
-		expect(getFileExtension('https://example.com/photo.jpg?width=800#preview')).toBe('.jpg')
-		expect(getFileExtension('C:\\images\\photo.jpg?import#preview')).toBe('.jpg')
-	})
-
-	it('extracts extension from object with src', () => {
-		expect(getFileExtension({ src: '/images/photo.webp' })).toBe('.webp')
-	})
-
-	it('returns empty string for paths without extension', () => {
-		expect(getFileExtension('/images/photo')).toBe('')
-		expect(getFileExtension('file-without-ext')).toBe('')
-	})
-
-	it('handles dotfiles', () => {
-		expect(getFileExtension('.gitignore')).toBe('')
-		expect(getFileExtension('/path/.env')).toBe('')
-	})
-
-	it('throws for object without src', () => {
-		expect(() => getFileExtension({})).toThrow()
-	})
-})
-
-describe('getPathWithoutExtension', () => {
-	it('strips extension from path', () => {
-		expect(getPathWithoutExtension('/images/photo.png')).toBe('/images/photo')
-	})
-
-	it('handles nested paths', () => {
-		expect(getPathWithoutExtension('/a/b/c/file.test.ts')).toBe('/a/b/c/file.test')
-	})
-
-	it('returns path unchanged if no extension', () => {
-		expect(getPathWithoutExtension('/images/photo')).toBe('/images/photo')
-	})
-})
+import { getAbsoluteFilePath, getPublicFilePath, stripCwd } from '../src/utilities/path'
 
 // Path utilities normalize to POSIX (forward slashes) for cross-platform
 // consistency, so test expectations also use a POSIX-normalized cwd.
@@ -109,24 +54,6 @@ describe('getAbsoluteFilePath', () => {
 	it('strips /@fs/ prefix', () => {
 		const result = getAbsoluteFilePath('/@fs/Users/test/project/src/file.ts')
 		expect(result).toContain('src/file.ts')
-	})
-})
-
-describe('resolveAliases', () => {
-	it('resolves ~/ to src directory', () => {
-		const result = resolveAliases('~/components/Image.astro')
-		expect(result).toContain('src/components/Image.astro')
-		expect(result).toContain(posixCwd)
-	})
-
-	it('leaves non-alias paths unchanged', () => {
-		expect(resolveAliases('/absolute/path')).toBe('/absolute/path')
-		expect(resolveAliases('./relative/path')).toBe('./relative/path')
-		expect(resolveAliases('bare/path')).toBe('bare/path')
-	})
-
-	it('only matches ~/ prefix, not bare ~', () => {
-		expect(resolveAliases('~notAlias')).toBe('~notAlias')
 	})
 })
 
