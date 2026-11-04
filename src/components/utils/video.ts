@@ -64,35 +64,66 @@ export type Service = keyof ServiceConfig
 /** Services that require API credentials for server-side metadata fetching. */
 export type CredentialService = 'bunny' | 'cloudflare' | 'mux'
 
+/** The environment variable behind each credential a service needs. */
+const SERVICE_ENV_VARS = {
+	bunny: {
+		apiAccessKey: 'BUNNY_API_ACCESS_KEY',
+		hostname: 'BUNNY_HOSTNAME',
+		libraryId: 'BUNNY_LIBRARY_ID',
+	},
+	cloudflare: {
+		accountId: 'CLOUDFLARE_STREAM_ACCOUNT_ID',
+		apiToken: 'CLOUDFLARE_STREAM_API_TOKEN',
+	},
+	mux: {
+		accessToken: 'MUX_TOKEN_ID',
+		secret: 'MUX_TOKEN_SECRET',
+	},
+} as const satisfies Record<CredentialService, Record<string, string>>
+
+/**
+ * Read every service's credentials through `read`, such as Astro's `getSecret`.
+ * An unset credential reads as an empty string, which `validateServiceConfig`
+ * reports for the service in use.
+ */
+export function readServiceConfig(read: (name: string) => string | undefined): ServiceConfig {
+	const secret = (name: string) => read(name) ?? ''
+	return {
+		bunny: {
+			apiAccessKey: secret(SERVICE_ENV_VARS.bunny.apiAccessKey),
+			hostname: secret(SERVICE_ENV_VARS.bunny.hostname),
+			libraryId: secret(SERVICE_ENV_VARS.bunny.libraryId),
+		},
+		cloudflare: {
+			accountId: secret(SERVICE_ENV_VARS.cloudflare.accountId),
+			apiToken: secret(SERVICE_ENV_VARS.cloudflare.apiToken),
+		},
+		local: {},
+		mux: {
+			accessToken: secret(SERVICE_ENV_VARS.mux.accessToken),
+			secret: secret(SERVICE_ENV_VARS.mux.secret),
+		},
+		oembed: {},
+		vimeo: {},
+		youtube: {},
+	}
+}
+
 /**
  * Validates that required credentials are present for the given service. Throws
  * with actionable message naming missing env vars. No-op for embed services
  * (YouTube, Vimeo) which need no credentials.
  */
 export function validateServiceConfig(service: Service, config: ServiceConfig): void {
-	const checks: Record<CredentialService, Array<{ envVar: string; value: string }>> = {
-		bunny: [
-			{ envVar: 'BUNNY_API_ACCESS_KEY', value: config.bunny.apiAccessKey },
-			{ envVar: 'BUNNY_HOSTNAME', value: config.bunny.hostname },
-			{ envVar: 'BUNNY_LIBRARY_ID', value: config.bunny.libraryId },
-		],
-		cloudflare: [
-			{ envVar: 'CLOUDFLARE_STREAM_ACCOUNT_ID', value: config.cloudflare.accountId },
-			{ envVar: 'CLOUDFLARE_STREAM_API_TOKEN', value: config.cloudflare.apiToken },
-		],
-		mux: [
-			{ envVar: 'MUX_TOKEN_ID', value: config.mux.accessToken },
-			{ envVar: 'MUX_TOKEN_SECRET', value: config.mux.secret },
-		],
-	}
-
-	if (!Object.hasOwn(checks, service)) {
+	if (!Object.hasOwn(SERVICE_ENV_VARS, service)) {
 		return
 	}
 
-	const missing = checks[service as CredentialService]
-		.filter((c) => c.value === '')
-		.map((c) => c.envVar)
+	const names: Record<string, string> = SERVICE_ENV_VARS[service as CredentialService]
+	const values: Record<string, string> = config[service as CredentialService]
+	const missing = Object.entries(names)
+		.filter(([key]) => values[key] === '')
+		.map(([, name]) => name)
 	if (missing.length > 0) {
 		throw new Error(
 			`Missing env vars for "${service}" video service: ${missing.join(', ')}. Set these as secrets via astro:env or as environment variables.`,

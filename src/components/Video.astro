@@ -3,7 +3,7 @@ import { getSecret } from 'astro:env/server'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
 import type { HlsSourceOptions } from './internal/types'
 import type { OembedInfo } from './utils/oembed'
-import type { Service, ServiceConfig, VideoInfo } from './utils/video'
+import type { Service, VideoInfo } from './utils/video'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
@@ -11,7 +11,7 @@ import InternalOembed from './internal/OEmbed.astro'
 import { isHlsSource } from './internal/video-source'
 import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
-import { getVideoInfo, resolveVideoSource } from './utils/video'
+import { getVideoInfo, readServiceConfig, resolveVideoSource } from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -111,25 +111,7 @@ const zoomerProps = toZoomerProps({ zoom: zoomEnabled, zoomLevel, zoomPlaceholde
 
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 
-const config: ServiceConfig = {
-	bunny: {
-		apiAccessKey: getSecret('BUNNY_API_ACCESS_KEY') ?? '',
-		hostname: getSecret('BUNNY_HOSTNAME') ?? '',
-		libraryId: getSecret('BUNNY_LIBRARY_ID') ?? '',
-	},
-	cloudflare: {
-		accountId: getSecret('CLOUDFLARE_STREAM_ACCOUNT_ID') ?? '',
-		apiToken: getSecret('CLOUDFLARE_STREAM_API_TOKEN') ?? '',
-	},
-	local: {},
-	mux: {
-		accessToken: getSecret('MUX_TOKEN_ID') ?? '',
-		secret: getSecret('MUX_TOKEN_SECRET') ?? '',
-	},
-	oembed: {},
-	vimeo: {},
-	youtube: {},
-}
+const config = readServiceConfig(getSecret)
 
 let videoInfo: undefined | VideoInfo
 let oembedInfo: OembedInfo | undefined

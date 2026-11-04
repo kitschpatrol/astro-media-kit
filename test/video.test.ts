@@ -7,6 +7,7 @@ import {
 	getVideoInfo,
 	isVideoSource,
 	localVideoProbeCandidates,
+	readServiceConfig,
 	resolveVideoSource,
 	validateServiceConfig,
 } from '../src/components/utils/video'
@@ -299,6 +300,25 @@ describe('resolveVideoSource', () => {
 				identifier: 'dQw4w9WgXcQ',
 				service: 'vimeo',
 			})
+		})
+	})
+})
+
+describe('readServiceConfig', () => {
+	it('reads each credential by its environment variable, empty when unset', () => {
+		const environment = new Map([
+			['BUNNY_HOSTNAME', 'vz.b-cdn.net'],
+			['MUX_TOKEN_ID', 'id'],
+			['MUX_TOKEN_SECRET', 'secret'],
+		])
+		expect(readServiceConfig((name) => environment.get(name))).toEqual({
+			bunny: { apiAccessKey: '', hostname: 'vz.b-cdn.net', libraryId: '' },
+			cloudflare: { accountId: '', apiToken: '' },
+			local: {},
+			mux: { accessToken: 'id', secret: 'secret' },
+			oembed: {},
+			vimeo: {},
+			youtube: {},
 		})
 	})
 })
