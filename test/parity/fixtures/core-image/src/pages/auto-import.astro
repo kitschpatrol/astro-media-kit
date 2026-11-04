@@ -1,0 +1,15 @@
+---
+import { Image, Picture } from 'astro-media-kit/components'
+---
+
+<html>
+	<body>
+		<Image alt="Penguin" id="root-image" src="/src/assets/penguin1.jpg" />
+		<Picture
+			alt="Penguin"
+			pictureAttributes={{ id: 'root-picture' }}
+			src="/src/assets/penguin1.jpg"
+		/>
+		<Image alt="Aurora" height={320} id="public-image" src="/media/aurora-480.jpg" width={480} />
+	</body>
+</html>

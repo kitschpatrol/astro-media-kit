@@ -321,7 +321,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				if (autoImportEnabled) {
 					updateConfig({
 						vite: {
-							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs)],
+							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs, setupConfig)],
 						},
 					})
 				}

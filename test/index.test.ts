@@ -1,6 +1,10 @@
 /* eslint-disable ts/naming-convention */
 
-import { describe, expect, it } from 'vitest'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import nodePath from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { transformAstroSource } from '../src/integration/auto-import.ts'
 import { needsBackgroundDarkVariant } from '../src/utilities/dark-variant.ts'
 
@@ -28,7 +32,9 @@ const configWithTldrawDark = {
 
 describe('transformAstroSource', () => {
 	it('preserves public image URLs for Astro rather than importing them as modules', async () => {
-		const source = '<Image src="/images/photo.jpg" alt="Photo" width="300" height="200" />'
+		const source = `---
+---
+<Image src="/images/photo.jpg" alt="Photo" width="300" height="200" />`
 		expect(await transformAstroSource(source, defaultConfig)).toBeUndefined()
 	})
 
@@ -362,6 +368,69 @@ const title = 'Hello'
 			'import __ami_1 from "../assets/sketch.tldr?frame=my-frame&tldr&dark=true&tldr"',
 		)
 		expect(result).toContain('srcDark={__ami_1}')
+	})
+})
+
+describe('auto-import paths in the consumer project', () => {
+	let temporaryDirectory: string
+	let directories: { publicDir: URL; root: URL }
+
+	beforeAll(async () => {
+		temporaryDirectory = await mkdtemp(nodePath.join(tmpdir(), 'astro-media-kit-import-'))
+		const root = nodePath.join(temporaryDirectory, 'site')
+		const publicDirectory = nodePath.join(temporaryDirectory, 'static')
+		await mkdir(nodePath.join(root, 'src', 'assets'), { recursive: true })
+		await mkdir(nodePath.join(publicDirectory, 'src', 'assets'), { recursive: true })
+		await writeFile(nodePath.join(root, 'src', 'assets', 'photo.jpg'), '')
+		await writeFile(nodePath.join(root, 'src', 'assets', 'collision.jpg'), '')
+		await writeFile(nodePath.join(publicDirectory, 'src', 'assets', 'collision.jpg'), '')
+		directories = { publicDir: pathToFileURL(publicDirectory), root: pathToFileURL(root) }
+	})
+
+	afterAll(async () => {
+		await rm(temporaryDirectory, { force: true, recursive: true })
+	})
+
+	it('imports a Vite root path using the configured root rather than the working directory', async () => {
+		const source = `---
+---
+<Image src="/src/assets/photo.jpg" alt="Photo" />`
+		const result = await transformAstroSource(source, defaultConfig, directories)
+		expect(result).toContain('import __ami_0 from "/src/assets/photo.jpg"')
+		expect(result).toContain('src={__ami_0}')
+	})
+
+	it('keeps query parameters on root imports', async () => {
+		const source = `---
+---
+<Image src="/src/assets/photo.jpg?custom" alt="Photo" />`
+		const result = await transformAstroSource(source, defaultConfig, directories)
+		expect(result).toContain('import __ami_0 from "/src/assets/photo.jpg?custom"')
+	})
+
+	it('imports an absolute filesystem path without needing project directories', async () => {
+		const file = nodePath.join(fileURLToPath(directories.root), 'src', 'assets', 'photo.jpg')
+		const source = `---
+---
+<Image src="${file}" alt="Photo" />`
+		const result = await transformAstroSource(source, defaultConfig)
+		expect(result).toContain(`from ${JSON.stringify(file)}`)
+		expect(result).toContain('src={__ami_0}')
+	})
+
+	it('preserves a public URL when the configured public directory and root both contain it', async () => {
+		const source = `---
+---
+<Image src="/src/assets/collision.jpg" alt="Photo" width="300" height="200" />`
+		expect(await transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
+	})
+
+	it('preserves remote and protocol-relative URLs even when their paths resemble imports', async () => {
+		const source = `---
+---
+<Image src="https://example.com/src/assets/photo.jpg" alt="Photo" width="300" height="200" />
+<Image src="//example.com/src/assets/photo.jpg" alt="Photo" width="300" height="200" />`
+		expect(await transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
 	})
 })
 
