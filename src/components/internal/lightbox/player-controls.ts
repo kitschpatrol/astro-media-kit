@@ -271,11 +271,9 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	if (!controls.hasAttribute('popover')) {
 		// Settle a newly floated bar as a hidden popover first. An existing
 		// popover may still be fading out: reopening it reverses that fade.
-		const { transition } = controls.style
-		controls.style.transition = 'none'
-		controls.popover = 'manual'
-		controls.getBoundingClientRect()
-		controls.style.transition = transition
+		withoutTransition(controls, () => {
+			controls.popover = 'manual'
+		})
 	}
 
 	// Sample the destination styling: page-only opacity rules no longer apply.
@@ -358,14 +356,12 @@ export function releaseControls(subject: Element) {
 	const { controls } = bar
 	// Replace the page preview at its current opacity. The active thumbnail
 	// remains faded until restore; inactive thumbnails are already visible.
-	const { transition } = controls.style
-	controls.style.transition = 'none'
-	controls.removeAttribute('popover')
-	clearControlFades(controls)
-	delete controls.dataset.crossfade
-	controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
-	controls.getBoundingClientRect()
-	controls.style.transition = transition
+	withoutTransition(controls, () => {
+		controls.removeAttribute('popover')
+		clearControlFades(controls)
+		delete controls.dataset.crossfade
+		controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
+	})
 	bars.delete(subject)
 }
 
@@ -464,12 +460,23 @@ function dropBackground() {
 }
 
 function setFloatedBackground(strip: HTMLElement, floated: boolean) {
-	const transition = strip.style.getPropertyValue('transition')
-	const priority = strip.style.getPropertyPriority('transition')
-	strip.style.setProperty('transition', 'none', 'important')
-	strip.toggleAttribute('data-floated-background', floated)
-	strip.getBoundingClientRect()
-	strip.style.setProperty('transition', transition, priority)
+	withoutTransition(strip, () => {
+		strip.toggleAttribute('data-floated-background', floated)
+	})
+}
+
+/**
+ * Apply `change` with the element's transitions suppressed, laying out before
+ * they return, so that the change paints at once instead of animating. An
+ * important declaration beats the stylesheet's own important transitions.
+ */
+function withoutTransition(element: HTMLElement, change: () => void) {
+	const transition = element.style.getPropertyValue('transition')
+	const priority = element.style.getPropertyPriority('transition')
+	element.style.setProperty('transition', 'none', 'important')
+	change()
+	element.getBoundingClientRect()
+	element.style.setProperty('transition', transition, priority)
 }
 
 function syncBackground() {
@@ -485,26 +492,23 @@ function syncBackground() {
 
 	// Read the authored surface before suppressing it on the real bar. This also
 	// preserves local player themes and direct background overrides, including gradients.
-	const transition = strip.style.getPropertyValue('transition')
-	const priority = strip.style.getPropertyPriority('transition')
-	strip.style.setProperty('transition', 'none', 'important')
-	delete strip.dataset.floatedBackground
-	const paint = getComputedStyle(strip)
-	element.style.background = paint.background
-	element.style.borderRadius = paint.borderRadius
-	const bounds = strip.getBoundingClientRect()
-	element.style.left = `${bounds.left}px`
-	element.style.width = `${bounds.width}px`
-	element.style.height = `${bounds.height}px`
-	const style = getComputedStyle(controls)
-	element.style.bottom = style.bottom
-	for (const property of ['--amk-duration', '--amk-lightbox-duration', '--amk-lightbox-easing']) {
-		element.style.setProperty(property, style.getPropertyValue(property))
-	}
+	withoutTransition(strip, () => {
+		delete strip.dataset.floatedBackground
+		const paint = getComputedStyle(strip)
+		element.style.background = paint.background
+		element.style.borderRadius = paint.borderRadius
+		const bounds = strip.getBoundingClientRect()
+		element.style.left = `${bounds.left}px`
+		element.style.width = `${bounds.width}px`
+		element.style.height = `${bounds.height}px`
+		const style = getComputedStyle(controls)
+		element.style.bottom = style.bottom
+		for (const property of ['--amk-duration', '--amk-lightbox-duration', '--amk-lightbox-easing']) {
+			element.style.setProperty(property, style.getPropertyValue(property))
+		}
 
-	strip.dataset.floatedBackground = ''
-	strip.getBoundingClientRect()
-	strip.style.setProperty('transition', transition, priority)
+		strip.dataset.floatedBackground = ''
+	})
 }
 
 function hideBackground() {
@@ -561,9 +565,7 @@ async function fadeOut(bar: Bar): Promise<void> {
 
 	// The cells have finished fading; do not start another wrapper exit that
 	// could briefly repaint their background during the shared-surface handoff.
-	const { transition } = bar.controls.style
-	bar.controls.style.transition = 'none'
-	bar.controls.hidePopover()
-	bar.controls.getBoundingClientRect()
-	bar.controls.style.transition = transition
+	withoutTransition(bar.controls, () => {
+		bar.controls.hidePopover()
+	})
 }
