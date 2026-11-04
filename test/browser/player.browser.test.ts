@@ -24,7 +24,6 @@ import {
 	query,
 	settle,
 	setUpLightbox,
-	transitionsDone,
 	viewer,
 } from './helpers'
 
@@ -124,12 +123,17 @@ it('floats the controls again when a closing player is reopened', async () => {
 	expect(viewer().dataset.state).toBe('closing')
 	clickMiddle(layer)
 	await closing
-	await transitionsDone()
+	await liftDone()
 
 	expect(viewer().open).toBe(true)
 	expect(viewer().dataset.state).toBe('open')
-	expect(player.dataset.controls).toBe('lightbox')
+	expect(player.dataset.controls).toBe('full')
 	await expect.poll(() => controls.matches(':popover-open')).toBe(true)
+
+	await closeLightbox()
+	expect(item.contains(player)).toBe(true)
+	expect(player.dataset.controls).toBe('full')
+	expect(controls.hasAttribute('popover')).toBe(false)
 })
 
 it.each(['pointer', 'Enter', 'Space'] as const)(
