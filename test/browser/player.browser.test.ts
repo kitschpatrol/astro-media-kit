@@ -625,6 +625,50 @@ it('stands the volume slider up in a popover over the mute button, on hover', as
 	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(false)
 })
 
+it.each([false, true])(
+	'shrinks the volume track smoothly after hover, lifted=%s',
+	async (lifted) => {
+		const { item, player } = await mountPlayer()
+		if (lifted) {
+			await openLightbox(item)
+			await liftDone()
+		}
+
+		const mute = query(player, 'amk-mute-button')
+		const popover = query(player, 'media-volume-popover')
+		const slider = query(popover, 'media-volume-slider')
+		const track = query(slider, 'media-slider-track')
+		await userEvent.hover(mute)
+		await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
+		const box = slider.getBoundingClientRect()
+		await commands.mouseMove(box.x + box.width / 2, box.y + box.height / 2)
+		await expect.poll(() => getComputedStyle(track).width).toBe('6px')
+		// Keep the popup open while leaving the slider so its shrinking track stays visible.
+		await userEvent.hover(mute)
+		const transition = track
+			.getAnimations()
+			.find(
+				(animation) =>
+					animation instanceof CSSTransition && animation.transitionProperty === 'width',
+			)
+		expect(transition).toBeDefined()
+		expect(transition!.effect!.getTiming().duration).toBe(150)
+		await expect.poll(() => getComputedStyle(track).width).toBe('4px')
+		expect(popover.matches(':popover-open')).toBe(true)
+
+		await commands.emulateReducedMotion(true)
+		try {
+			await commands.mouseMove(box.x + box.width / 2, box.y + box.height / 2)
+			await expect.poll(() => getComputedStyle(track).width).toBe('6px')
+			await userEvent.hover(mute)
+			expect(getComputedStyle(track).width).toBe('4px')
+			expect(track.getAnimations()).toHaveLength(0)
+		} finally {
+			await commands.emulateReducedMotion(false)
+		}
+	},
+)
+
 it('keeps the bar, and the popover, while the pointer rests on them during playback', async () => {
 	const { player } = await mountPlayer()
 	const controls = query(player, '.amk-controls')

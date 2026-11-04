@@ -425,6 +425,10 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	.amk-slider-track {
 		transition: height 0.15s;
 	}
+
+	.amk-volume-slider .amk-slider-track {
+		transition-property: width;
+	}
 }
 
 .amk-slider[data-interactive] .amk-slider-track {
