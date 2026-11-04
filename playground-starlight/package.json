@@ -19,13 +19,13 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.12",
-		"@astrojs/mdx": "^8.1.1",
-		"@astrojs/starlight": "^0.42.7",
+		"@astrojs/mdx": "^8.1.2",
+		"@astrojs/starlight": "^0.42.8",
 		"@types/node": "~24.13.6",
-		"astro": "^7.4.2",
-		"astro-mdx-kit": "~0.7.0",
+		"astro": "^7.4.5",
+		"astro-mdx-kit": "~0.7.1",
 		"astro-media-kit": "link:..",
-		"poptab": "^1.2.2",
+		"poptab": "^1.2.3",
 		"sharp": "^0.35.5",
 		"shx": "^0.4.0"
 	},

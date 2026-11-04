@@ -69,8 +69,8 @@
 	},
 	"dependencies": {
 		"@astrojs/compiler": "4.0.0",
-		"@kitschpatrol/unplugin-aphex": "^0.2.4",
-		"@kitschpatrol/unplugin-tldraw": "^1.1.4",
+		"@kitschpatrol/unplugin-aphex": "^0.2.5",
+		"@kitschpatrol/unplugin-tldraw": "^1.1.5",
 		"@mux/ts": "^16.0.0",
 		"@oscnord/get-video-resolution": "^2.5.0",
 		"@sindresorhus/is": "^8.1.0",
@@ -78,18 +78,18 @@
 		"@videojs/html": "^10.2.0",
 		"@videojs/vimeo-video": "^10.2.0",
 		"@videojs/youtube-video": "^10.2.0",
-		"exiftool-vendored": "^39.0.1",
-		"linkedom": "^0.18.14",
+		"exiftool-vendored": "^39.1.0",
+		"linkedom": "^0.18.15",
 		"mrmime": "^2.0.1",
 		"pretty-bytes": "^7.2.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.12",
-		"@kitschpatrol/shared-config": "^8.14.0",
+		"@kitschpatrol/shared-config": "^8.14.1",
 		"@types/node": "~24.13.6",
 		"@videojs/skills": "github:videojs/skills",
-		"@vitest/browser-playwright": "^5.0.5",
-		"astro": "^7.4.2",
+		"@vitest/browser-playwright": "^5.1.0",
+		"astro": "^7.4.5",
 		"bumpp": "^12.3.0",
 		"cheerio": "^1.2.0",
 		"happy-dom": "^21.0.4",
@@ -99,7 +99,7 @@
 		"sharp": "^0.35.5",
 		"shx": "^0.4.0",
 		"typescript": "~6.0.3",
-		"vitest": "^5.0.5"
+		"vitest": "^5.1.0"
 	},
 	"peerDependencies": {
 		"astro": "^7.3.3"
