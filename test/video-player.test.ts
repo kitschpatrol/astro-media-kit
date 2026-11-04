@@ -81,6 +81,25 @@ describe('video sources', () => {
 })
 
 describe('lifted player controls', () => {
+	it.each(['play', 'pause', 'ended'])('ignores %s events from inactive gallery players', (type) => {
+		vi.useFakeTimers()
+		const root = document.createElement('div')
+		root.innerHTML =
+			'<video-player data-playing><video></video><div class="controls"></div></video-player><video-player><video></video></video-player>'
+		document.body.append(root)
+		const controls = root.querySelector<HTMLElement>('.controls')!
+		const [active, inactive] = root.querySelectorAll('video')
+		const activity = createControlsActivity(root)
+		activity.setControls(controls)
+		vi.advanceTimersByTime(1500)
+		expect(controls.dataset.userInactive).toBe('')
+		inactive!.dispatchEvent(new Event(type))
+		expect(controls.dataset.userInactive).toBe('')
+		active!.dispatchEvent(new Event(type))
+		expect(controls.dataset.userInactive).toBeUndefined()
+		activity.destroy()
+	})
+
 	it('keeps focused controls visible, resumes hiding after blur, and cancels on disposal', () => {
 		vi.useFakeTimers()
 		const root = document.createElement('div')

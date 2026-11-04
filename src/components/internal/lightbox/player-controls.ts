@@ -165,8 +165,17 @@ export function createControlsActivity(root: HTMLElement): {
 		root.addEventListener(event, markActive, { signal })
 	}
 
-	for (const event of ['play', 'pause', 'ended']) {
-		root.addEventListener(event, markActive, { capture: true, signal })
+	const handlePlayback = (event: Event) => {
+		// Neighboring videos can keep playing or finish loading while lifted.
+		// Their events must not wake this bar and restart its idle fade.
+		const player = controls?.closest('video-player')
+		if (player && event.composedPath().includes(player)) {
+			markActive()
+		}
+	}
+
+	for (const type of ['play', 'pause', 'ended']) {
+		root.addEventListener(type, handlePlayback, { capture: true, signal })
 	}
 
 	root.addEventListener(
