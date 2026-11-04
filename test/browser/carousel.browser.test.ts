@@ -4,8 +4,18 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { disposeCarousels, setUpCarousels } from '../../src/components/internal/carousel/carousel'
+import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import { isClickFromDrag } from '../../src/components/internal/lightbox/motion'
-import { activeSlideLabel, cleanUp, mountPage, query, setUpLightbox, viewer } from './helpers'
+import {
+	activeSlideLabel,
+	cleanUp,
+	frames,
+	mount,
+	mountPage,
+	query,
+	setUpLightbox,
+	viewer,
+} from './helpers'
 import '../../src/components/internal/carousel/carousel.css'
 
 setUpLightbox()
@@ -182,3 +192,67 @@ it.each(['ltr', 'rtl'] as const)(
 		expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
 	},
 )
+
+it.each(['ltr', 'rtl'] as const)(
+	'interrupts an in-flight %s carousel glide when the lightbox returns a different slide',
+	async (direction) => {
+		const { carousel, track } = await mountCarousel()
+		carousel.dir = direction
+		carousel.style.setProperty('--amk-carousel-duration', '5s')
+		carousel.style.marginBlockStart = '120vh'
+		disposeCarousels()
+		setUpCarousels()
+		carousel.scrollIntoView({ behavior: 'instant', block: 'center' })
+		await frames()
+		const scroll = { x: window.scrollX, y: window.scrollY }
+		query(carousel, '.amk-carousel-dot[aria-label="Slide 3"]').click()
+		await expect.poll(() => Math.abs(track.scrollLeft)).toBeGreaterThan(0)
+		expect(Object.hasOwn(track.dataset, 'moving')).toBe(true)
+
+		const opening = openLightbox(query(track, '.amk-carousel-slide:nth-child(2) .amk-zoom'))
+		const closing = closeLightbox()
+		await Promise.all([opening, closing])
+		expect(viewer().open).toBe(false)
+		expect(Math.abs(track.scrollLeft)).toBeCloseTo(track.clientWidth, 1)
+		expect(currentDot(carousel)).toBe('Slide 2')
+		expect(Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		// The abandoned spring must not overwrite the return target on its next frame.
+		await frames(5)
+		expect(Math.abs(track.scrollLeft)).toBeCloseTo(track.clientWidth, 1)
+		expect(currentDot(carousel)).toBe('Slide 2')
+		expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
+	},
+)
+
+it('reveals nested page carousels without scrolling their ancestors', async () => {
+	const { carousel, track } = await mountCarousel()
+	carousel.style.width = '400px'
+	const outer = mount(`<div class="amk-carousel" style="width: 600px; margin-top: 120vh">
+		<div class="amk-carousel-viewport"><div class="amk-carousel-track">
+			<div class="amk-carousel-slide">First outer slide</div>
+			<div class="amk-carousel-slide"></div>
+		</div></div>
+	</div>`)
+	const outerTrack = query(outer, '.amk-carousel-track')
+	query(outerTrack, ':scope > .amk-carousel-slide:nth-child(2)').append(carousel)
+	setUpCarousels()
+	outer.scrollIntoView({ behavior: 'instant', block: 'center' })
+	await frames()
+	const scroll = { x: window.scrollX, y: window.scrollY }
+	await expect(
+		openLightbox(query(track, ':scope > .amk-carousel-slide:nth-child(2) .amk-zoom')),
+	).resolves.toBe(true)
+	await closeLightbox()
+	expect(slideAt(track)).toBe(1)
+	expect(slideAt(outerTrack)).toBe(1)
+	expect(currentDot(carousel)).toBe('Slide 2')
+	expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
+})
+
+it('reveals the returned slide when the page carousel has no active controller', async () => {
+	const { track } = await mountCarousel()
+	disposeCarousels()
+	await openLightbox(query(track, '.amk-carousel-slide:nth-child(2) .amk-zoom'))
+	await closeLightbox()
+	expect(slideAt(track)).toBe(1)
+})

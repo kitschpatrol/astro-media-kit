@@ -1247,8 +1247,12 @@ function revealCarouselItem(item: Element) {
 		const track = slide.parentElement
 		if (track?.classList.contains('amk-carousel-track') === true) {
 			const index = [...track.children].indexOf(slide)
-			const direction = track.matches(':dir(rtl)') ? -1 : 1
-			track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
+			const reveal = new CustomEvent('amk-carousel-reveal', { cancelable: true, detail: index })
+			// Let a controller cancel its spring; tracks without one still work.
+			if (track.dispatchEvent(reveal)) {
+				const direction = track.matches(':dir(rtl)') ? -1 : 1
+				track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
+			}
 		}
 
 		slide = track?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined

@@ -96,6 +96,30 @@ function setUp(root: HTMLElement): Carousel {
 	motion.configure(count, 0)
 	update(0)
 
+	// A returning lightbox item takes ownership from any page-carousel glide.
+	track.addEventListener(
+		'amk-carousel-reveal',
+		(event) => {
+			if (
+				event.target !== track ||
+				!(event instanceof CustomEvent) ||
+				typeof event.detail !== 'number' ||
+				!Number.isInteger(event.detail) ||
+				event.detail < 0 ||
+				event.detail >= count
+			) {
+				return
+			}
+
+			event.preventDefault()
+			// Configure stops motion and refreshes both width and reading direction.
+			motion.configure(count, event.detail)
+			width = track.clientWidth
+			update(event.detail)
+		},
+		{ signal },
+	)
+
 	previous?.addEventListener(
 		'click',
 		() => {
