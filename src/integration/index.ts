@@ -342,9 +342,9 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					return
 				}
 
-				if (command !== 'dev') {
+				if (command === 'build') {
 					logger.warn(
-						`watermark enabled outside dev (command: ${command}) — image variants will be stamped in the build output`,
+						'watermark enabled for a build — image variants will be stamped in the build output',
 					)
 				}
 
