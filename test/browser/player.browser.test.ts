@@ -108,6 +108,33 @@ it('lifts the whole player, hides expand, and closes from the lightbox button', 
 	expect(isLifted(item)).toBe(false)
 })
 
+it('keeps zoom cursors off the video toolbar in both zoom states', async () => {
+	const { item, player } = await mountPlayer()
+	item.dataset.level = 'fill'
+	await openLightbox(item)
+	await liftDone()
+	for (const cursor of ['zoom-in', 'zoom-out']) {
+		if (cursor === 'zoom-out') {
+			await userEvent.click(query(viewer(), '.amk-lightbox-zoom'))
+		}
+
+		expect(getComputedStyle(currentLayer()).cursor).toBe(cursor)
+		for (const selector of [
+			'.amk-controls',
+			'.amk-bar',
+			'.amk-time',
+			'media-time',
+			'media-time-separator',
+		]) {
+			expect(getComputedStyle(query(player, selector)).cursor).toBe('default')
+		}
+
+		for (const selector of ['.amk-bar media-play-button', 'amk-mute-button', 'media-time-slider']) {
+			expect(getComputedStyle(query(player, selector)).cursor).toBe('pointer')
+		}
+	}
+})
+
 it('stands its poster in for the player while it is lifted', async () => {
 	const { item } = await mountPlayer()
 	await expect.poll(() => item.querySelector('media-poster[data-visible]')).not.toBeNull()

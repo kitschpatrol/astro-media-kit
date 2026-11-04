@@ -173,6 +173,7 @@
    events itself; only the bar and the centered play button do. */
 .amk-controls {
 	pointer-events: none;
+	cursor: default;
 	position: absolute;
 	inset: 0;
 	display: flex;
