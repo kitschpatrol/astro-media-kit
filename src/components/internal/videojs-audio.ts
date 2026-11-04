@@ -36,12 +36,12 @@ import {
 	VolumePopoverElement,
 	VolumeSliderElement,
 } from '@videojs/html'
-import './videojs-player'
+import { defineElements } from './videojs-player'
 import './videojs-icons'
 
 // Astro can share and reorder script chunks, so registration imports alone
 // cannot guarantee that a part upgrades after its context provider.
-for (const element of [
+defineElements([
 	ControlsElement,
 	ErrorDialogElement,
 	MenuElement,
@@ -77,8 +77,4 @@ for (const element of [
 	TooltipLabelElement,
 	TooltipShortcutElement,
 	VolumePopoverElement,
-]) {
-	if (!customElements.get(element.tagName)) {
-		customElements.define(element.tagName, element)
-	}
-}
+])

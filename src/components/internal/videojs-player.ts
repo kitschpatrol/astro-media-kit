@@ -10,10 +10,21 @@ import { AudioPlayerElement } from '@videojs/html/audio'
 import { VideoPlayerElement } from '@videojs/html/video'
 import './videojs-move'
 
-// Register explicitly: shared chunks may evaluate side-effect registration
-// imports before their importer's dependencies, including this player.
-for (const element of [VideoPlayerElement, AudioPlayerElement, ContainerElement]) {
-	if (!customElements.get(element.tagName)) {
-		customElements.define(element.tagName, element)
+type ElementDefinition = CustomElementConstructor & { readonly tagName: string }
+
+/**
+ * Register the elements that aren't registered yet, in the given order:
+ * providers before their parts, since a part that upgrades first dispatches its
+ * context request into the void.
+ */
+export function defineElements(elements: ElementDefinition[]) {
+	for (const element of elements) {
+		if (!customElements.get(element.tagName)) {
+			customElements.define(element.tagName, element)
+		}
 	}
 }
+
+// Register explicitly: shared chunks may evaluate side-effect registration
+// imports before their importer's dependencies, including this player.
+defineElements([VideoPlayerElement, AudioPlayerElement, ContainerElement])

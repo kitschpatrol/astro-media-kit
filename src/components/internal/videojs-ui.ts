@@ -39,14 +39,14 @@ import {
 	VolumePopoverElement,
 	VolumeSliderElement,
 } from '@videojs/html'
+import { defineElements } from './videojs-player'
 import './videojs-controls'
 import './videojs-mute-button'
-import './videojs-player'
 import './videojs-icons'
 
 // The constructors come from the public API without registration side effects.
 // Providers precede their parts, including controls and tooltip context.
-for (const element of [
+defineElements([
 	ControlsElement,
 	ErrorDialogElement,
 	TimeGroupElement,
@@ -79,8 +79,4 @@ for (const element of [
 	TooltipLabelElement,
 	TooltipShortcutElement,
 	VolumePopoverElement,
-]) {
-	if (!customElements.get(element.tagName)) {
-		customElements.define(element.tagName, element)
-	}
-}
+])
