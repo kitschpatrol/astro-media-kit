@@ -763,17 +763,45 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .amk-controls[popover][data-crossfade-out] {
 	--amk-controls-pointer: none;
 	pointer-events: none;
-	opacity: 0;
+}
+
+.amk-controls[popover] [data-control-fade] {
+	opacity: var(--amk-control-base-opacity, 1) !important;
+	transition: opacity var(--amk-duration);
+}
+
+.amk-controls[popover] [data-control-fade='out'] {
+	opacity: 0 !important;
+}
+
+.amk-controls[popover] [data-control-fade='steady-in'],
+.amk-controls[popover] [data-control-fade='steady-out'],
+.amk-controls[popover] [data-control-fade='frozen'] {
+	transition: none;
+}
+
+.amk-controls[popover] [data-control-fade='steady-out'] {
+	opacity: 0 !important;
+}
+
+.amk-controls[popover] [data-control-fade='frozen'] {
+	opacity: var(--amk-control-fade-opacity) !important;
 }
 
 @starting-style {
 	.amk-controls[popover][data-crossfade]:popover-open {
 		translate: 0 0;
+		opacity: var(--amk-lightbox-drag-opacity, 1);
+	}
+
+	.amk-controls[popover]:popover-open [data-control-fade='in'] {
+		opacity: 0 !important;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.amk-controls[popover][data-crossfade],
+	.amk-controls[popover] [data-control-fade],
 	.amk-controls-background {
 		transition: none;
 	}

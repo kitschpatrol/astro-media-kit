@@ -6,6 +6,14 @@
  * a bar that is hidden until its player goes back to the page.
  */
 
+import {
+	clearControlFades,
+	fadeControls,
+	freezeControlFades,
+	preserveControls,
+	steadyControls,
+} from './control-fade'
+
 type Bar = {
 	activity: ReturnType<typeof createControlsActivity> | undefined
 	controls: HTMLElement
@@ -223,6 +231,14 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	const controls = subject.querySelector<HTMLElement>(':scope video-player .amk-controls')
 	const hasControls =
 		controls !== null && controls.closest<HTMLElement>('video-player')?.dataset.controls !== 'none'
+	const previous = [...bars].find(
+		([other, bar]) =>
+			other !== subject &&
+			bar.controls.matches(':popover-open') &&
+			!Object.hasOwn(bar.controls.dataset, 'crossfadeOut'),
+	)?.[1]
+	const steady = previous === undefined ? new Set<string>() : steadyControls(previous.controls)
+	const outgoing: Bar[] = []
 	let crossfade = false
 	let opacity = 0
 	for (const [other, bar] of bars) {
@@ -236,7 +252,7 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 		closePopups(other)
 		if (isReplacing) {
 			opacity = Math.max(opacity, Number(getComputedStyle(bar.controls).opacity))
-			void fadeOut(bar)
+			outgoing.push(bar)
 		} else {
 			hide(bar)
 		}
@@ -252,23 +268,43 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	bar.exit++
 	delete controls.dataset.crossfadeOut
 	bars.set(subject, bar)
-	if (!controls.matches(':popover-open')) {
-		if (!controls.hasAttribute('popover')) {
-			// Settle a newly floated bar as a hidden popover first. An existing
-			// popover may still be fading out: reopening it reverses that fade.
-			const { transition } = controls.style
-			controls.style.transition = 'none'
-			controls.popover = 'manual'
-			controls.getBoundingClientRect()
-			controls.style.transition = transition
-		}
+	if (!controls.hasAttribute('popover')) {
+		// Settle a newly floated bar as a hidden popover first. An existing
+		// popover may still be fading out: reopening it reverses that fade.
+		const { transition } = controls.style
+		controls.style.transition = 'none'
+		controls.popover = 'manual'
+		controls.getBoundingClientRect()
+		controls.style.transition = transition
+	}
 
+	// Sample the destination styling: page-only opacity rules no longer apply.
+	if (crossfade) {
+		fadeControls(controls, true)
+	} else {
+		clearControlFades(controls)
+	}
+
+	if (!controls.matches(':popover-open')) {
 		controls.showPopover()
 	}
 
 	bar.activity ??= createControlsActivity(viewer)
 	bar.activity.setControls(controls)
 	if (crossfade) {
+		for (const other of outgoing) {
+			fadeControls(other.controls, false)
+		}
+
+		preserveControls(
+			steady,
+			controls,
+			outgoing.map((other) => other.controls),
+		)
+		for (const other of outgoing) {
+			void fadeOut(other)
+		}
+
 		floatBackground(subject, controls, viewer, opacity)
 	} else {
 		dropBackground()
@@ -329,6 +365,7 @@ export function releaseControls(subject?: Element) {
 		const { transition } = controls.style
 		controls.style.transition = 'none'
 		controls.removeAttribute('popover')
+		clearControlFades(controls)
 		delete controls.dataset.crossfade
 		controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
 		controls.getBoundingClientRect()
@@ -395,7 +432,7 @@ async function settleBackground(current: Background, exit: number): Promise<void
 		.values()
 		.flatMap(({ controls }) =>
 			controls
-				.getAnimations()
+				.getAnimations({ subtree: true })
 				.filter(
 					(animation) =>
 						animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
@@ -421,6 +458,13 @@ function dropBackground() {
 		if (strip !== null) {
 			setFloatedBackground(strip, false)
 		}
+
+		if (!controls.matches(':popover-open') || Object.hasOwn(controls.dataset, 'crossfadeOut')) {
+			continue
+		}
+
+		clearControlFades(controls)
+		delete controls.dataset.crossfade
 	}
 }
 
@@ -496,6 +540,7 @@ function hide(bar: Bar) {
 	bar.exit++
 	bar.activity?.destroy()
 	bar.activity = undefined
+	freezeControlFades(bar.controls)
 	delete bar.controls.dataset.crossfadeOut
 	if (bar.controls.matches(':popover-open')) {
 		bar.controls.hidePopover()
@@ -509,13 +554,21 @@ async function fadeOut(bar: Bar): Promise<void> {
 	const exit = ++bar.exit
 	bar.controls.dataset.crossfadeOut = ''
 	const fades = bar.controls
-		.getAnimations()
+		.getAnimations({ subtree: true })
 		.filter(
 			(animation) =>
 				animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
 		)
 	await Promise.allSettled(fades.map(async (animation) => animation.finished))
-	if (exit === bar.exit && bar.controls.matches(':popover-open')) {
-		bar.controls.hidePopover()
+	if (exit !== bar.exit || !bar.controls.matches(':popover-open')) {
+		return
 	}
+
+	// The cells have finished fading; do not start another wrapper exit that
+	// could briefly repaint their background during the shared-surface handoff.
+	const { transition } = bar.controls.style
+	bar.controls.style.transition = 'none'
+	bar.controls.hidePopover()
+	bar.controls.getBoundingClientRect()
+	bar.controls.style.transition = transition
 }

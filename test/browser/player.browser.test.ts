@@ -15,6 +15,7 @@ import {
 	cleanUp,
 	currentLayer,
 	fadeOf,
+	frames,
 	isLifted,
 	liftDone,
 	mount,
@@ -190,6 +191,12 @@ it('crossfades video control strips in place, including a rapid reversal', async
 	item.dataset.gallery = 'strips'
 	otherItem.dataset.gallery = 'strips'
 	otherPlayer.dataset.controls = 'full'
+	const otherVideo = query(otherPlayer, 'video', HTMLVideoElement)
+	await expect.poll(() => otherVideo.readyState).toBeGreaterThan(0)
+	otherVideo.currentTime = 2
+	await expect
+		.poll(() => query(otherPlayer, 'media-time[type="current"]').textContent)
+		.toContain('0:02')
 	mount(`<style>.amk {
 		--amk-duration: 800ms;
 		--amk-control-background: rgb(40 40 40 / 60%);
@@ -217,7 +224,7 @@ it('crossfades video control strips in place, including a rapid reversal', async
 		expect(getComputedStyle(query(controls, '.amk-bar')).backgroundColor).toBe('rgba(0, 0, 0, 0)')
 		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
 		const properties = controls
-			.getAnimations()
+			.getAnimations({ subtree: true })
 			.filter((animation) => animation instanceof CSSTransition)
 			.map((animation) => animation.transitionProperty)
 		expect(properties).toContain('opacity')
@@ -234,7 +241,7 @@ it('crossfades video control strips in place, including a rapid reversal', async
 		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
 		expect(
 			controls
-				.getAnimations()
+				.getAnimations({ subtree: true })
 				.filter((animation) => animation instanceof CSSTransition)
 				.map((animation) => animation.transitionProperty),
 		).not.toContain('translate')
@@ -278,6 +285,148 @@ it('restores ordinary bar painting after a crossfade and leaves stationary contr
 	expect(mutations).toBe(0)
 })
 
+it.each([1, 0.4])(
+	'keeps unchanged buttons at opacity %s while playback positions crossfade',
+	async (opacity) => {
+		const { item, player } = await mountPlayer()
+		const other = query(document, '#video-minimal .amk-zoom')
+		item.dataset.gallery = 'steady-buttons'
+		other.dataset.gallery = 'steady-buttons'
+		const video = query(other, 'video', HTMLVideoElement)
+		await expect.poll(() => video.readyState).toBeGreaterThan(0)
+		video.currentTime = 2
+		await expect
+			.poll(() => query(other, 'media-time[type="current"]').textContent)
+			.toContain('0:02')
+		mount('<style>.amk { --amk-duration: 800ms }</style>')
+		const first = query(player, '.amk-controls')
+		const second = query(other, '.amk-controls')
+		for (const controls of [first, second]) {
+			for (const button of controls.querySelectorAll<HTMLElement>(':scope .amk-bar .amk-button')) {
+				button.style.opacity = String(opacity)
+			}
+		}
+
+		await openLightbox(item)
+		await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(() => second.matches(':popover-open')).toBe(true)
+		const fades = [first, second]
+			.flatMap((controls) => controls.getAnimations({ subtree: true }))
+			.filter(
+				(animation) =>
+					animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
+			)
+		expect(fades.length).toBeGreaterThan(0)
+		for (const fade of fades) {
+			fade.pause()
+		}
+
+		for (const progress of [0.25, 0.5, 0.75]) {
+			for (const fade of fades) {
+				fade.currentTime = Number(fade.effect!.getTiming().duration) * progress
+			}
+
+			await frames()
+			for (const selector of ['.amk-bar media-play-button', 'amk-mute-button']) {
+				expect(getComputedStyle(query(second, selector)).opacity).toBe(String(opacity))
+				expect(getComputedStyle(query(first, selector)).opacity).toBe('0')
+			}
+
+			expect(getComputedStyle(second).opacity).toBe('1')
+			expect(getComputedStyle(query(viewer(), '.amk-controls-background')).opacity).toBe('1')
+		}
+
+		for (const fade of fades) {
+			fade.finish()
+		}
+
+		await expect.poll(() => first.matches(':popover-open')).toBe(false)
+		await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
+		expect(getComputedStyle(query(second, '.amk-bar media-play-button')).opacity).toBe(
+			String(opacity),
+		)
+		await userEvent.click(query(second, '.amk-bar media-play-button'))
+		await expect.poll(() => video.paused).toBe(false)
+		expect(query(player, 'video', HTMLVideoElement).paused).toBe(true)
+	},
+)
+
+it('uses overlay opacity during swaps and restores page-only styling on return', async () => {
+	const { item, player } = await mountPlayer()
+	const other = query(document, '#video-minimal .amk-zoom')
+	item.dataset.gallery = 'scoped-opacity'
+	other.dataset.gallery = 'scoped-opacity'
+	mount(`<style>
+		.amk { --amk-duration: 800ms }
+		.amk-controls:not([popover]) .amk-bar .amk-button { opacity: .4 }
+	</style>`)
+	const first = query(player, '.amk-controls')
+	const second = query(other, '.amk-controls')
+	await openLightbox(item)
+	await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(() => second.matches(':popover-open')).toBe(true)
+	expect(getComputedStyle(query(second, '.amk-bar media-play-button')).opacity).toBe('1')
+	await closeLightbox()
+	for (const controls of [first, second]) {
+		expect(getComputedStyle(query(controls, '.amk-bar media-play-button')).opacity).toBe('0.4')
+	}
+})
+
+it.each(['color', 'size', 'playback', 'opacity'])(
+	'fades buttons whose %s differs instead of treating their icons as unchanged',
+	async (difference) => {
+		const { item, player } = await mountPlayer()
+		const other = query(document, '#video-minimal .amk-zoom')
+		item.dataset.gallery = 'different-buttons'
+		other.dataset.gallery = 'different-buttons'
+		if (difference === 'color' || difference === 'size') {
+			query(other, '.amk').style.setProperty(
+				difference === 'color' ? '--amk-control-color' : '--amk-control-size',
+				difference === 'color' ? '#aaa' : '60px',
+			)
+		} else if (difference === 'playback') {
+			await query(other, 'video', HTMLVideoElement).play()
+		} else {
+			query(other, '.amk-bar media-play-button').style.opacity = '0.4'
+		}
+
+		await expect
+			.poll(() => query(other, '.amk-bar media-play-button').getAttribute('aria-label'))
+			.toBe(difference === 'playback' ? 'Pause' : 'Play')
+		mount('<style>.amk { --amk-duration: 800ms }</style>')
+		const first = query(player, '.amk-controls')
+		const second = query(other, '.amk-controls')
+		await openLightbox(item)
+		await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(() => second.matches(':popover-open')).toBe(true)
+		const fades = [first, second].map((controls) =>
+			fadeOf(query(controls, '.amk-bar media-play-button')),
+		)
+		for (const fade of fades) {
+			expect(fade).toBeDefined()
+			fade!.pause()
+			fade!.currentTime = 400
+		}
+
+		await frames()
+		for (const controls of [first, second]) {
+			expect(
+				Number(getComputedStyle(query(controls, '.amk-bar media-play-button')).opacity),
+			).toBeGreaterThan(0)
+			expect(
+				Number(getComputedStyle(query(controls, '.amk-bar media-play-button')).opacity),
+			).toBeLessThan(difference === 'opacity' && controls === second ? 0.4 : 1)
+		}
+
+		for (const fade of fades) {
+			fade!.finish()
+		}
+	},
+)
+
 it('retains the shared background until a returning idle video finishes its longer fade', async () => {
 	const { item, player } = await mountPlayer()
 	const other = query(document, '#video-minimal .amk-zoom')
@@ -294,7 +443,9 @@ it('retains the shared background until a returning idle video finishes its long
 	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
 	await expect.poll(() => first.matches(':popover-open')).toBe(false)
 	expect(second.matches(':popover-open')).toBe(true)
-	expect(Number(getComputedStyle(second).opacity)).toBeLessThan(1)
+	expect(
+		Number(getComputedStyle(query(second, '.amk-bar media-play-button')).opacity),
+	).toBeLessThan(1)
 	expect(getComputedStyle(query(viewer(), '.amk-controls-background')).opacity).toBe('1')
 	await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
 	expect(getComputedStyle(second).opacity).toBe('1')
@@ -341,6 +492,7 @@ it.each([
 		item.dataset.gallery = 'background'
 		other.dataset.gallery = 'background'
 		second.dataset.gallery = 'background'
+		query(second, '.amk').style.setProperty('--amk-control-color', '#ddd')
 		delete other.dataset.scope
 		await openLightbox(item)
 		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
