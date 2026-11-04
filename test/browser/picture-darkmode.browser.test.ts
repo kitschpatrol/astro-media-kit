@@ -3,6 +3,15 @@ import { cleanUp, mountPage, query } from './helpers'
 
 afterEach(cleanUp)
 
+it('selects the native SVG source when a static build emits no resized variants', async () => {
+	const page = await mountPage('/responsive-svg/')
+	const image = query(page, '#vector-source img', HTMLImageElement)
+	image.loading = 'eager'
+	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
+	expect(image.src.endsWith('.png')).toBe(true)
+	expect(image.currentSrc.endsWith('.svg')).toBe(true)
+})
+
 it('keeps Pictures with different dark selectors independent', async () => {
 	const page = await mountPage('/picture-selectors/')
 	const themes = query(page, '#themes')

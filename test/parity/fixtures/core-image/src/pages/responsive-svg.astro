@@ -15,13 +15,13 @@ const responsive = { alt: 'Responsive penguin', layout: 'constrained' as const, 
 			<Picture {...responsive} formats={['svg']} src={vector} />
 		</div>
 		<div id="fallback-only">
-			<Picture {...responsive} formats={[]} src={vector} />
+			<Picture {...responsive} formats={[]} src={vector} srcDark={vector} />
 		</div>
 		<div id="vector-source">
 			<Picture {...responsive} fallbackFormat="png" formats={['svg']} src={vector} />
 		</div>
 		<div id="vector-fallback">
-			<Picture {...responsive} formats={['webp']} src={vector} />
+			<Picture {...responsive} formats={['webp']} src={vector} srcDark={vector} />
 		</div>
 		<div id="selector-picture">
 			<Picture {...responsive} darkMode=".dark" formats={['svg']} src={vector} srcDark={vector} />

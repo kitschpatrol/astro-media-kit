@@ -13,6 +13,21 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 	})
 
 	it.each([
+		'vector-picture',
+		'vector-source',
+		'vector-fallback',
+		'selector-picture',
+		'fallback-only',
+	])('keeps a usable SVG source without resized variants in %s', async (id) => {
+		const $ = await fx.readHTML('/responsive-svg/')
+		const sources = $(`#${id} source[type="image/svg+xml"]`)
+		expect(sources.length).toBeGreaterThan(0)
+		for (const source of sources) {
+			expect($(source).attr('srcset')).toMatch(/^\/_astro\/.*\.svg$/v)
+		}
+	})
+
+	it.each([
 		'vector-image',
 		'vector-picture',
 		'fallback-only',

@@ -479,21 +479,24 @@ export type SrcsetBuildProps = {
  * Build the srcset attribute value for a `<source>` or `<img>` from a
  * `GetImageResult`. Density-descriptor srcset prepend the base `src` (Astro's
  * `.srcSet.attribute` only carries the variants); width-descriptor srcset use
- * `.srcSet.attribute` directly.
+ * `.srcSet.attribute` directly. Without variants, the base URL remains a valid
+ * source candidate, including SVGs passed through unchanged in a static build.
  */
 export function buildSrcsetAttribute(
 	image: GetImageResult,
 	props: SrcsetBuildProps,
 	useResponsive: boolean,
 ): string {
+	if (image.srcSet.values.length === 0) {
+		return image.src
+	}
+
 	const { densities, widths } = props
 	// Astro discards densities when a responsive layout generates width
 	// descriptors. A bare URL would add an incompatible implicit 1x candidate.
-	if (!useResponsive && (densities !== undefined || widths === undefined)) {
-		return `${image.src}${image.srcSet.values.length > 0 ? `, ${image.srcSet.attribute}` : ''}`
-	}
-
-	return image.srcSet.attribute
+	return !useResponsive && (densities !== undefined || widths === undefined)
+		? `${image.src}, ${image.srcSet.attribute}`
+		: image.srcSet.attribute
 }
 
 /**

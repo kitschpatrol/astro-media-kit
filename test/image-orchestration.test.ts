@@ -460,6 +460,14 @@ function stubImage(
 }
 
 describe('buildSrcsetAttribute', () => {
+	it.each([false, true])(
+		'keeps the base source when the service emits no variants (responsive=%s)',
+		(responsive) => {
+			const image = stubImage({ format: 'svg', src: '/_astro/vector.svg' })
+			expect(buildSrcsetAttribute(image, { widths: [] }, responsive)).toBe('/_astro/vector.svg')
+		},
+	)
+
 	it('prepends base src when densities are set', () => {
 		const img = stubImage({ srcsetAttribute: '/2x.webp 2x', srcsetValues: 1 })
 		expect(buildSrcsetAttribute(img, { densities: [1, 2] }, false)).toBe(
