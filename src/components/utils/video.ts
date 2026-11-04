@@ -12,6 +12,7 @@ import {
 	hasMediaExtension,
 	isDirectMediaUrl,
 	isLocalPath,
+	requestSignal,
 	tryParseUrl,
 } from './media'
 import { muxGetVideoInfo, muxIsValidMediaId } from './mux'
@@ -172,7 +173,7 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 	// aspect ratio. Actual source resolution would require the YouTube
 	// Data API v3 with owner authentication.
 	const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(mediaId)}&format=json`
-	const response = await fetch(url)
+	const response = await fetch(url, { signal: requestSignal() })
 	if (!response.ok) {
 		throw new Error(`YouTube oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
 	}
@@ -212,7 +213,7 @@ async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 	// (e.g. 1920x1080 for 16:9). Actual source resolution would require
 	// the full Vimeo API with authentication.
 	const url = `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${encodeURIComponent(mediaId)}&width=1920`
-	const response = await fetch(url)
+	const response = await fetch(url, { signal: requestSignal() })
 	if (!response.ok) {
 		throw new Error(`Vimeo oEmbed request failed (${String(response.status)}) for "${mediaId}"`)
 	}

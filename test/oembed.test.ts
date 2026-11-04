@@ -65,13 +65,15 @@ describe('fetchOEmbed', () => {
 			)
 			Object.defineProperty(page, 'url', { value: 'https://provider.example/watch/1' })
 			const fetch = vi
-				.fn()
+				.fn<typeof globalThis.fetch>()
 				.mockResolvedValueOnce(page)
 				.mockResolvedValueOnce(Response.json({ html: '<iframe></iframe>' }))
 			vi.stubGlobal('fetch', fetch)
 
 			await fetchOEmbed('https://short.example/1')
-			expect(fetch).toHaveBeenNthCalledWith(2, expected)
+			const [url, init] = fetch.mock.calls[1]!
+			expect(url).toBe(expected)
+			expect(init?.signal).toBeInstanceOf(AbortSignal)
 		},
 	)
 })

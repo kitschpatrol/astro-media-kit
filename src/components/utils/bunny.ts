@@ -1,6 +1,7 @@
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
+import { requestSignal } from './media'
 
 /**
  * Credentials for the Bunny CDN video API. Set via `astro:env` or environment
@@ -109,6 +110,7 @@ async function bunnyApiListVideos(
 				// eslint-disable-next-line ts/naming-convention
 				AccessKey: apiAccessKey,
 			},
+			signal: requestSignal(),
 		},
 	)
 
@@ -136,6 +138,7 @@ async function bunnyApiGetVideo(
 				// eslint-disable-next-line ts/naming-convention
 				AccessKey: apiAccessKey,
 			},
+			signal: requestSignal(),
 		},
 	)
 

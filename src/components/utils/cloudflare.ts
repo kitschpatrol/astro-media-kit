@@ -2,6 +2,7 @@
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
+import { requestSignal } from './media'
 
 /**
  * Credentials for the Cloudflare Stream API. Set via `astro:env` or environment
@@ -95,6 +96,7 @@ async function cloudflareApiGetVideo(
 				// eslint-disable-next-line ts/naming-convention
 				Authorization: `Bearer ${apiToken}`,
 			},
+			signal: requestSignal(),
 		},
 	)
 

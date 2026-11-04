@@ -64,6 +64,14 @@ function extensionOf(src: string): string {
 	return dot === -1 ? '' : path.slice(dot).toLowerCase()
 }
 
+/**
+ * The signal for a metadata or oEmbed request at build time: a provider that
+ * never answers must not stall the build.
+ */
+export function requestSignal(): AbortSignal {
+	return AbortSignal.timeout(15_000)
+}
+
 /** Try to parse a string as an HTTP(S) URL. Returns undefined for non-URLs. */
 export function tryParseUrl(src: string): undefined | URL {
 	if (!HTTP_URL_PATTERN.test(src)) {

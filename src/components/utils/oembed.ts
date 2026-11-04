@@ -1,4 +1,5 @@
 import { parseHTML } from 'linkedom'
+import { requestSignal } from './media'
 
 const WWW_PREFIX_RE = /^www\./v
 
@@ -27,7 +28,7 @@ export type OembedInfo = {
  */
 export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	// Step 1: Fetch the page HTML, following redirects.
-	const pageResponse = await fetch(pageUrl)
+	const pageResponse = await fetch(pageUrl, { signal: requestSignal() })
 	if (!pageResponse.ok) {
 		throw new Error(
 			`Failed to fetch page "${pageUrl}" (${String(pageResponse.status)}). Provide a direct media file URL or set the "service" prop explicitly.`,
@@ -59,7 +60,9 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	// Step 3: Fetch the oEmbed JSON response.
 	const baseHref = document.querySelector('base[href]')?.getAttribute('href') ?? undefined
 	const baseUrl = baseHref === undefined ? canonicalUrl : new URL(baseHref, canonicalUrl)
-	const oembedResponse = await fetch(new URL(endpointUrl, baseUrl).href)
+	const oembedResponse = await fetch(new URL(endpointUrl, baseUrl).href, {
+		signal: requestSignal(),
+	})
 	if (!oembedResponse.ok) {
 		throw new Error(
 			`oEmbed endpoint request failed (${String(oembedResponse.status)}) for "${canonicalUrl}"`,
