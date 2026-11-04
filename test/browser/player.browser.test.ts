@@ -635,15 +635,19 @@ it.each([false, true])(
 		expect(getComputedStyle(button).transitionDuration).toBe('0s')
 		expect(getComputedStyle(button).backgroundColor).toBe('rgba(50, 50, 50, 0.7)')
 		await commands.mouseMove(5, 5)
-		const transition = button
-			.getAnimations()
-			.find(
-				(animation) =>
-					animation instanceof CSSTransition && animation.transitionProperty === 'background-color',
-			)
-		expect(transition).toBeDefined()
-		expect(transition!.effect!.getTiming().duration).toBe(500)
-		expect(transition!.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
+		// The pointer's leave reaches the page a moment after the move resolves
+		const fade = () =>
+			button
+				.getAnimations()
+				.find(
+					(animation): animation is CSSTransition =>
+						animation instanceof CSSTransition &&
+						animation.transitionProperty === 'background-color',
+				)
+		await expect.poll(fade).toBeDefined()
+		const transition = fade()!
+		expect(transition.effect!.getTiming().duration).toBe(500)
+		expect(transition.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
 		await expect.poll(() => getComputedStyle(button).backgroundColor).toBe('rgba(0, 0, 0, 0)')
 
 		// Theme overrides inherit through the player even when its bar is floated.

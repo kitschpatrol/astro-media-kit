@@ -188,8 +188,10 @@ it.each(['carousel', 'lightbox'] as const)(
 		expect(getComputedStyle(icon).transitionDuration).toBe('0s')
 		expect(getComputedStyle(next).backgroundColor).toBe('rgba(0, 0, 0, 0.8)')
 		await commands.mouseMove(5, 5)
-		const fading = icon.getAnimations().find((animation) => animation instanceof CSSTransition)
-		expect(fading).toBeDefined()
+		// The pointer's leave reaches the page a moment after the move resolves
+		await expect
+			.poll(() => icon.getAnimations().find((animation) => animation instanceof CSSTransition))
+			.toBeDefined()
 		expect(getComputedStyle(icon).transitionDuration).toBe('0.4s')
 		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
 	},

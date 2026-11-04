@@ -236,8 +236,7 @@ it.each([
 		expect(hasPixels(shown)).toBe(true)
 
 		viewer().close()
-		await frames()
-		expect(preview.isConnected).toBe(false)
+		await expect.poll(() => preview.isConnected).toBe(false)
 		expect(box.contains(original)).toBe(true)
 	},
 )
