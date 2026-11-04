@@ -65,6 +65,16 @@ function extensionOf(src: string): string {
 }
 
 /**
+ * The `crossorigin` attribute for a media element: `anonymous` for a file on
+ * the page's own origin, and for one with caption tracks, which another origin
+ * has to allow anyway. A plain request keeps a file on another origin playable
+ * without that origin's permission.
+ */
+export function mediaCrossOrigin(src: string, hasCaptions = false): 'anonymous' | undefined {
+	return hasCaptions || tryParseUrl(src) === undefined ? 'anonymous' : undefined
+}
+
+/**
  * The signal for a metadata or oEmbed request at build time: a provider that
  * never answers must not stall the build.
  */

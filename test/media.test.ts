@@ -4,6 +4,7 @@ import {
 	hasMediaExtension,
 	isDirectMediaUrl,
 	isLocalPath,
+	mediaCrossOrigin,
 	tryParseUrl,
 } from '../src/components/utils/media'
 
@@ -81,6 +82,20 @@ describe('isDirectMediaUrl', () => {
 	it('rejects URLs without extensions', () => {
 		expect(isDirectMediaUrl(url('https://example.com/video'))).toBe(false)
 		expect(isDirectMediaUrl(url('https://example.com/'))).toBe(false)
+	})
+})
+
+describe('mediaCrossOrigin', () => {
+	it('requests files on the page origin with CORS', () => {
+		expect(mediaCrossOrigin('/media/loop.mp4')).toBe('anonymous')
+		expect(mediaCrossOrigin('media/loop.mp4')).toBe('anonymous')
+		expect(mediaCrossOrigin('/hls/stream.m3u8')).toBe('anonymous')
+	})
+
+	it('requests files on another origin plainly unless they have captions', () => {
+		expect(mediaCrossOrigin('https://cdn.example/loop.mp4')).toBeUndefined()
+		expect(mediaCrossOrigin('HTTP://cdn.example/loop.mp4')).toBeUndefined()
+		expect(mediaCrossOrigin('https://cdn.example/loop.mp4', true)).toBe('anonymous')
 	})
 })
 

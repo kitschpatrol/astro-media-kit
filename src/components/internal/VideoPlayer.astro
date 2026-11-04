@@ -1,5 +1,6 @@
 ---
 import type { InternalVideoProps, VideoElementTag } from './types'
+import { mediaCrossOrigin } from '../utils/media'
 import FallbackLink from './FallbackLink.astro'
 import { getControllerStyle } from './types'
 import VideoControls from './VideoControls.astro'
@@ -53,7 +54,7 @@ const containerStyle = getControllerStyle(intrinsicWidth, aspectRatio)
 const mediaAttributes: astroHTML.JSX.VideoHTMLAttributes = {
 	autoplay: autoPlay || undefined,
 	class: 'amk-media',
-	crossorigin: 'anonymous',
+	crossorigin: mediaCrossOrigin(videoSrc, captions.length > 0),
 	// No picture-in-picture control is offered, so keep the browser's own
 	// affordance off the HLS element as before.
 	disablepictureinpicture: isHls || undefined,

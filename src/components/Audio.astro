@@ -8,6 +8,7 @@ import AudioPlayer from './internal/AudioPlayer.astro'
 import FallbackLink from './internal/FallbackLink.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
+import { mediaCrossOrigin } from './utils/media'
 import { fetchOEmbed } from './utils/oembed'
 import './internal/amk-audio.css'
 
@@ -92,7 +93,7 @@ const captionProps = await toCaptionProps(
 
 const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 	autoplay: autoPlay || undefined,
-	crossorigin: 'anonymous',
+	crossorigin: mediaCrossOrigin(identifier),
 	loop: loop || undefined,
 	muted: muted || undefined,
 	preload,
