@@ -18,14 +18,14 @@
 import type { ImageMetadata, ImageOutputFormat, UnresolvedImageTransform } from 'astro'
 import type { LocalImageProps } from 'astro:assets'
 import type { HTMLAttributes } from 'astro/types'
-import { getImage, imageConfig } from 'astro:assets'
+import { getImage, imageConfig, inferRemoteSize } from 'astro:assets'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../types'
 import type { PrefixedProps as PrefixedCaptionProps } from './caption-props-map'
 import type { FormatRules, FormatsRules, GetImageResult } from './utils/image-orchestration'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
-import { isImageUrlSource } from './utils/image'
+import { isImageUrlSource, isRemoteImageSource } from './utils/image'
 import {
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
@@ -312,6 +312,15 @@ if (scopedStyleClass !== undefined && scopedStyleClass !== '') {
 
 // Handle responsive layout (same as Astro's Picture)
 const { merged: mergedImageProps, useResponsive } = mergeLayoutDefaults(imageProps, imageConfig)
+
+// Probe a remote size once and thread it through every transform, as Astro's
+// own Picture does: repeated probes of one URL can be rate-limited.
+if (mergedImageProps.inferSize && isRemoteImageSource(lightSrc)) {
+	const remoteSize = await inferRemoteSize(lightSrc)
+	delete mergedImageProps.inferSize
+	mergedImageProps.width ??= remoteSize.width
+	mergedImageProps.height ??= remoteSize.height
+}
 
 // Propagate data-astro-cid-* attributes to picture element
 propagateAstroCidAttributes(mergedImageProps, pictureAttributes)
