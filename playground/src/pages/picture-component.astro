@@ -61,21 +61,21 @@ const { title } = pages.find((p) => p.href === '/picture-component')!
 		</thead>
 		<tbody>
 			<tr>
-				<td>SVG → webp, no bg</td>
+				<td>SVG preserved, no bg</td>
 				<td class="cb">
 					<Picture alt="svg no bg" formats={['svg']} src="../assets/tiger.svg" />
 				</td>
 				<td class="check">Transparent both modes</td>
 			</tr>
 			<tr>
-				<td>SVG → webp, bg only</td>
+				<td>SVG preserved, bg only</td>
 				<td>
 					<Picture alt="svg bg" background="#e8e4d0" formats={['svg']} src="../assets/tiger.svg" />
 				</td>
 				<td class="check">CSS bg both modes</td>
 			</tr>
 			<tr>
-				<td>SVG → webp, bg + bgDark</td>
+				<td>SVG preserved, bg + bgDark</td>
 				<td>
 					<Picture
 						alt="svg bgdark webp"
