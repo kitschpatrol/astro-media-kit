@@ -36,6 +36,14 @@
 		transition-property: none;
 	}
 
+	/* Shrink-wrap the wrapper to media that carries the `amk` class: a player
+	   at its intrinsic width, or an image narrower than its column. The lift
+	   then starts from the visible content, and only the media opens it. */
+	.amk-zoom:has(> .amk) {
+		width: fit-content;
+		max-width: 100%;
+	}
+
 	.amk-zoom[data-zoom-active] {
 		--amk-page-controls-opacity: 0;
 	}

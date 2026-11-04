@@ -26,14 +26,6 @@
 	--amk-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
 }
 
-/* Shrink-wrap the zoom wrapper to its media, which carries the `amk` class:
-   the player at its intrinsic width, or an image narrower than its column. The
-   lift then starts from the visible content, and only the media opens it. */
-.amk-zoom:has(> .amk) {
-	width: fit-content;
-	max-width: 100%;
-}
-
 /* --- Layout --- */
 
 /* The player's inline width would otherwise be the least it can shrink to, so
