@@ -51,6 +51,16 @@ The components work standalone via direct import, or you can use the Astro integ
 
 This library pairs well with [astro-mdx-kit](https://github.com/kitschpatrol/astro-mdx-kit).
 
+## Upgrading from 0.6
+
+Upgrade Astro to **7.4.5 or later within version 7** before updating the kit. The Node.js requirement is unchanged.
+
+- **Image credits:** XMP extraction now belongs to Image and Picture. Enable it with `credit`, and use `creditMediaTypeFallback` when the image has no XMP Label. Standalone Caption no longer accepts `src` or `typeFallback`; supply its `creator`, `organization`, and `type` values directly.
+- **Audio and video credits:** `creditMediaTypeFallback` is no longer an Audio or Video prop. Their defaults are `'audio'` and `'video'`; use `creditMediaType` to override them.
+- **Standalone zoom targets:** Zoomer now lifts its actual child element into the viewer. Its former `src`, `srcset`, `width`, and `height` props are removed. For a text link to an image or video, use [ZoomLink](#zoomlink). For visible content, pass that content as Zoomer's child; `href` supplies a native fallback destination and `nativeWidth` supplies the secondary native zoom width.
+- **Player and lightbox styling:** Video.js replaces Media Chrome, and the lightbox replaces PhotoSwipe. Update selectors targeting `media-controller`, `.pswp`, or `.pswp-zoom` to the new player structure and `.amk-lightbox` / `.amk-zoom` classes. See [Video](#video), [Lightbox](#lightbox), and [MediaTheme](#mediatheme) for the supported controls, classes, icon slots, and CSS properties.
+- **Format rule types:** `FallbackRules` remains available as a deprecated alias of `FormatRules` from `astro-media-kit/components/utils/image-orchestration`. New code should use `FormatRules`.
+
 ## Getting started
 
 <!-- dependencies({ heading: 'Prerequisites' }) -->
@@ -668,7 +678,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 
 Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
 
-The lightbox requires native `<dialog>` and [invoker-command support](https://developer.mozilla.org/en-US/docs/Web/API/HTMLButtonElement/command). It uses [`moveBefore()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore) when available to preserve element state during a lift. Otherwise it falls back to insertion: HTML video playback is preserved, but iframes inside lifted elements reload and player popups restart. Without `sizes="auto"`, an image can keep its page-sized candidate unless hover or focus warmed a larger candidate first. Explicit `sizes` values also continue to control candidate selection unless a warm-up temporarily replaces them.
+The lightbox requires native `<dialog>` and [invoker-command support](https://developer.mozilla.org/en-US/docs/Web/API/HTMLButtonElement/command). It uses [`moveBefore()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore) when available to preserve element state during a lift. Otherwise it falls back to insertion: HTML video playback is preserved, but iframes inside lifted elements reload and player popups restart. While an image is lifted, temporary `sizes` values follow its displayed width when it opens, zooms, or the viewport grows. The browser still selects the matching picture source and responsive candidate; the original sizing hints return when the image lands. Hover and focus warm candidates before opening.
 
 ### Scoped galleries
 
@@ -776,6 +786,8 @@ The `mediaKit()` integration registers Vite plugins in `astro:config:setup`. All
 ### Auto-import
 
 Enabled by default. Parses `.astro` files during development and builds and replaces quoted local asset paths on configured components with ESM import expressions, so Astro's image pipeline can process them. Remote URLs, public image URLs, data URLs, and expression-valued attributes are left alone. This imports image assets, not the components themselves, and does not transform `.md` or `.mdx` files.
+
+Root-relative source paths such as `/src/assets/photo.jpg` are imported when the file exists under Astro's configured `root`. Files in the configured `publicDir` take precedence when both locations contain the same path, so public image URLs retain their normal behavior.
 
 ```ts
 import mediaKit, { imageOnlyImport, tldrawDarkImport } from 'astro-media-kit'

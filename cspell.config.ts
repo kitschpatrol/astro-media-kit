@@ -13,6 +13,7 @@ export default cspellConfig({
 		'labelledby',
 		'librsvg',
 		'oscnord',
+		'pswp',
 		'roledescription',
 		'xlink',
 		'xmpmeta',
