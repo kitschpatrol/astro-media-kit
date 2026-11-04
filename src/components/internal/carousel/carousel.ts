@@ -155,6 +155,7 @@ function setUp(root: HTMLElement): Carousel {
 		'keydown',
 		(event) => {
 			if (
+				event.defaultPrevented ||
 				event.altKey ||
 				event.ctrlKey ||
 				event.metaKey ||

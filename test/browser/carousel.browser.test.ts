@@ -141,6 +141,39 @@ it('steps with the arrow keys, Home and End', async () => {
 	await expect.poll(() => slideAt(track)).toBe(0)
 })
 
+it('leaves a consumed arrow key to a control inside a slide', async () => {
+	const { carousel, track } = await mountCarousel()
+	const control = document.createElement('button')
+	control.textContent = 'Custom control'
+	control.addEventListener('keydown', (event) => {
+		event.preventDefault()
+	})
+	query(carousel, '.amk-carousel-slide').append(control)
+	control.focus()
+	await userEvent.keyboard('{ArrowRight}')
+	await frames()
+	expect(slideAt(track)).toBe(0)
+	expect(Object.hasOwn(track.dataset, 'moving')).toBe(false)
+})
+
+it('moves only the inner carousel when its keyboard handler consumes an arrow key', async () => {
+	const { carousel, track } = await mountCarousel()
+	const outer = mount(`<div class="amk-carousel" style="width: 600px">
+		<div class="amk-carousel-viewport"><div class="amk-carousel-track">
+			<div class="amk-carousel-slide"></div>
+			<div class="amk-carousel-slide">Second outer slide</div>
+		</div></div>
+	</div>`)
+	const outerTrack = query(outer, '.amk-carousel-track')
+	query(outerTrack, ':scope > .amk-carousel-slide').append(carousel)
+	setUpCarousels()
+	query(carousel, '.amk-carousel-next').focus()
+	await userEvent.keyboard('{ArrowRight}')
+	await expect.poll(() => slideAt(track)).toBe(1)
+	expect(slideAt(outerTrack)).toBe(0)
+	expect(Object.hasOwn(outerTrack.dataset, 'moving')).toBe(false)
+})
+
 it('drags with the mouse without opening the lightbox, and opens it on a click', async () => {
 	const { track } = await mountCarousel()
 	const box = track.getBoundingClientRect()
