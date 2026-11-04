@@ -174,7 +174,7 @@ export function isRemoteImageSource(src: unknown): src is string {
  * public assets and protocol-relative URLs. Vite filesystem URLs and absolute
  * paths inside the project retain the kit's local-file handling.
  */
-export function isImageUrlSource(src: unknown): src is string {
+export function isImageUrlSource(src: unknown): boolean {
 	return (
 		isRemoteImageSource(src) ||
 		(typeof src === 'string' &&
@@ -199,13 +199,14 @@ export function isDarkLightImageMetadata(src: unknown): src is DarkLightImageMet
 // Helpers
 
 /** Probe a file given as a path, naming the path that was tried when it fails. */
-async function probeImageFile(source: string): Promise<ImageMetadata> {
+async function probeImageFile(source: ImageMetadataLike | string): Promise<ImageMetadata> {
+	const given = typeof source === 'string' ? source : source.src
 	const filePath = getAbsoluteFilePath(source)
 	try {
 		return await probeImageMetadata(filePath)
 	} catch (error) {
 		throw new Error(
-			`Could not read the image "${source}" at "${filePath}": ${error instanceof Error ? error.message : String(error)}. ` +
+			`Could not read the image "${given}" at "${filePath}": ${error instanceof Error ? error.message : String(error)}. ` +
 				'A path resolves against the working directory. Import the image as a module instead, or pass an absolute path.',
 			{ cause: error },
 		)
