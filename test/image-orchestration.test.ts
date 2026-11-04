@@ -10,6 +10,7 @@ import {
 	DEFAULT_IMAGE_OUTPUT_FORMAT_RULES,
 	extractScopedStyleClass,
 	getMimeType,
+	hashSelector,
 	isESMImportedImage,
 	mergeImageStyle,
 	pickFallbackFormat,
@@ -570,6 +571,17 @@ describe('warnWidthsWithoutSizes', () => {
 		warnWidthsWithoutSizes('/img.png', { widths: [] }, false, 'Picture')
 		expect(spy).not.toHaveBeenCalled()
 		spy.mockRestore()
+	})
+})
+
+const SELECTOR_HASH = /^[\da-f]{12}$/v
+
+describe('hashSelector', () => {
+	it('gives one class per selector, the same in every build', async () => {
+		const hash = await hashSelector('.dark')
+		expect(hash).toMatch(SELECTOR_HASH)
+		expect(await hashSelector('.dark')).toBe(hash)
+		expect(await hashSelector("[data-theme='dark']")).not.toBe(hash)
 	})
 })
 

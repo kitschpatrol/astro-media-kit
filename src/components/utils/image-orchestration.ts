@@ -396,6 +396,17 @@ export function pickFormats(
 	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
 }
 
+/**
+ * A short, stable hash of a selector, for a class that scopes its rules: the
+ * same selector gives the same class in every build.
+ */
+export async function hashSelector(selector: string): Promise<string> {
+	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(selector))
+	return Array.from(new Uint8Array(digest, 0, 6), (byte) =>
+		byte.toString(16).padStart(2, '0'),
+	).join('')
+}
+
 const SCOPED_STYLE_CLASS_REGEX = /\bastro-\w{8}\b/v
 
 /**

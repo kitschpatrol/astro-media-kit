@@ -32,6 +32,7 @@ import {
 	compositingBackground,
 	extractScopedStyleClass,
 	getMimeType,
+	hashSelector,
 	isESMImportedImage,
 	mergeImageStyle,
 	mergeLayoutDefaults,
@@ -530,10 +531,10 @@ const srcsetFor = (image: GetImageResult): string =>
 let selectorStyle: string | undefined
 let selectorClass: string | undefined
 if (isSelector && hasDarkMode) {
-	// Scope each pair independently, and group selector lists before appending
+	// Scope each selector's pairs, and group selector lists before appending
 	// the descendant. Otherwise a selector from another Picture can toggle this
 	// pair, or a comma-separated selector can hide the theme container itself.
-	selectorClass = `amk-picture-${crypto.randomUUID()}`
+	selectorClass = `amk-picture-${await hashSelector(darkMode)}`
 	selectorStyle = `<style>.${selectorClass}>picture.amk-dark{display:none}:is(${darkMode}) .${selectorClass}>picture.amk-dark{display:block}:is(${darkMode}) .${selectorClass}>picture.amk-light{display:none}</style>`
 }
 ---
