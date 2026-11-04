@@ -9,6 +9,9 @@ export type Props = {
 }
 
 const { attributes, label } = Astro.props
+// The scripted player starts only after attachment, so it receives startup
+// errors and cannot autoplay alongside the native fallback without JavaScript.
+const { src, ...playerAttributes } = attributes
 const uid = `amk-audio-${crypto.randomUUID()}`
 // Adapted from the Video.js 10.2.0 HTML audio skin source (Apache-2.0).
 // https://shadcn.videojs.org/r/html/audio.json
@@ -27,7 +30,7 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 		data-theme="default"
 	>
 		{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- Audio has no visual content requiring a caption track */}
-		<audio {...attributes} />
+		<audio {...playerAttributes} data-src={src} />
 		<media-error-dialog class="audio-dialog-root">
 			<media-dialog-backdrop class="audio-dialog-backdrop"></media-dialog-backdrop>
 			<media-dialog-popup class="audio-dialog-popup">

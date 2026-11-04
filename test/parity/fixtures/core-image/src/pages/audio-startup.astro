@@ -1,0 +1,19 @@
+---
+import { Audio } from 'astro-media-kit/components'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Audio startup errors</title>
+	</head>
+	<body>
+		<section id="missing">
+			<Audio label="Missing audio" preload="auto" service="local" src="/media/missing-audio.wav" />
+		</section>
+		<section id="playable">
+			<Audio autoPlay label="Playable audio" loop muted service="local" src="/media/silence.wav" />
+		</section>
+	</body>
+</html>

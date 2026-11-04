@@ -2,14 +2,14 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createControlsActivity } from '../src/components/internal/lightbox/player-controls'
-import { isHlsSource, setVideoSourceWhenReady } from '../src/components/internal/video-source'
+import { isHlsSource, setMediaSourceWhenReady } from '../src/components/internal/video-source'
 afterEach(() => {
 	vi.useRealTimers()
 	document.body.replaceChildren()
 })
 
-describe('video sources', () => {
-	it('initializes new HLS players after navigation without reloading the current page twice', async () => {
+describe('media sources', () => {
+	it('initializes HLS and audio after navigation without reloading the current page twice', async () => {
 		customElements.define(
 			'hlsjs-video',
 			class extends HTMLElement {
@@ -22,22 +22,30 @@ describe('video sources', () => {
 				}
 			},
 		)
-		document.body.innerHTML = '<hlsjs-video data-src="/first.m3u8"></hlsjs-video>'
+		document.body.innerHTML =
+			'<hlsjs-video data-src="/first.m3u8"></hlsjs-video><audio data-src="/first.wav"></audio>'
 		await import('../src/components/internal/videojs-media')
 		const first = document.querySelector('hlsjs-video')!
 		await vi.waitFor(() => expect(first.getAttribute('src')).toBe('/first.m3u8'))
+		const audio = document.querySelector('audio')!
+		expect(audio.getAttribute('src')).toBe('/first.wav')
 		const assignment = vi.spyOn(first, 'setAttribute')
+		const audioAssignment = vi.spyOn(audio, 'setAttribute')
 		document.dispatchEvent(new Event('astro:page-load'))
 		await Promise.resolve()
 		expect(assignment).not.toHaveBeenCalled()
+		expect(audioAssignment).not.toHaveBeenCalled()
 		document.dispatchEvent(new Event('astro:before-swap'))
-		document.body.innerHTML = '<hlsjs-video data-src="/second.m3u8"></hlsjs-video>'
+		document.body.innerHTML =
+			'<hlsjs-video data-src="/second.m3u8"></hlsjs-video><audio data-src="/second.wav"></audio>'
 		document.dispatchEvent(new Event('astro:page-load'))
 		await vi.waitFor(() =>
 			expect(document.querySelector('hlsjs-video')?.getAttribute('src')).toBe('/second.m3u8'),
 		)
+		expect(document.querySelector('audio')?.getAttribute('src')).toBe('/second.wav')
 		document.dispatchEvent(new Event('astro:before-swap'))
 		assignment.mockRestore()
+		audioAssignment.mockRestore()
 	})
 
 	it('recognizes local and signed HLS manifests independently of their host', () => {
@@ -52,32 +60,35 @@ describe('video sources', () => {
 		expect(isHlsSource('https://cdn.example/clip.mp4?name=clip.m3u8')).toBe(false)
 	})
 
-	it('waits for player attachment before loading media, and can cancel that wait', () => {
-		const player = document.createElement('video-player')
-		const video = document.createElement('video')
-		player.append(video)
-		const listeners = new Set<() => void>()
-		const store = {
-			subscribe(listener: () => void) {
-				listeners.add(listener)
-				return () => listeners.delete(listener)
-			},
-			target: undefined as HTMLElement | undefined,
-		}
-		Object.defineProperty(player, 'store', { value: store })
-		const cancel = setVideoSourceWhenReady(video, '/cancelled.mp4')
-		cancel()
-		expect(listeners.size).toBe(0)
-		setVideoSourceWhenReady(video, '/clip.mp4')
-		expect(video.hasAttribute('src')).toBe(false)
-		store.target = video
-		for (const listener of listeners) {
-			listener()
-		}
+	it.each(['audio', 'video'])(
+		'waits for %s attachment before loading, and can cancel that wait',
+		(kind) => {
+			const player = document.createElement(`${kind}-player`)
+			const media = document.createElement(kind)
+			player.append(media)
+			const listeners = new Set<() => void>()
+			const store = {
+				subscribe(listener: () => void) {
+					listeners.add(listener)
+					return () => listeners.delete(listener)
+				},
+				target: undefined as HTMLElement | undefined,
+			}
+			Object.defineProperty(player, 'store', { value: store })
+			const cancel = setMediaSourceWhenReady(media, '/cancelled.mp4')
+			cancel()
+			expect(listeners.size).toBe(0)
+			setMediaSourceWhenReady(media, '/clip.mp4')
+			expect(media.hasAttribute('src')).toBe(false)
+			store.target = media
+			for (const listener of listeners) {
+				listener()
+			}
 
-		expect(video.getAttribute('src')).toBe('/clip.mp4')
-		expect(listeners.size).toBe(0)
-	})
+			expect(media.getAttribute('src')).toBe('/clip.mp4')
+			expect(listeners.size).toBe(0)
+		},
+	)
 })
 
 describe('lifted player controls', () => {

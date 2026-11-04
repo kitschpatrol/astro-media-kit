@@ -38,6 +38,7 @@ import {
 } from '@videojs/html'
 import { defineElements } from './videojs-player'
 import './videojs-icons'
+import './videojs-media'
 
 // Astro can share and reorder script chunks, so registration imports alone
 // cannot guarantee that a part upgrades after its context provider.

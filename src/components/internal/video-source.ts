@@ -68,7 +68,7 @@ function configureVimeoMute(element: VimeoVideoElement): void {
 }
 
 /** Wait for attachment so startup errors reach the player and its error dialog. */
-export function setVideoSourceWhenReady(
+export function setMediaSourceWhenReady(
 	element: HTMLElement,
 	src: string,
 	options?: string,
@@ -77,7 +77,7 @@ export function setVideoSourceWhenReady(
 		HTMLElement & {
 			store: { subscribe: (listener: () => void) => () => void; target: unknown }
 		}
-	>('video-player')
+	>('audio-player, video-player')
 	if (!player || Boolean(player.store.target)) {
 		setVideoSource(element, src, options)
 		return () => {
