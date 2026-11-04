@@ -125,16 +125,29 @@ it.each(['hover', 'focus'] as const)(
 		if (interaction === 'focus') {
 			opener.blur()
 		} else {
-			await userEvent.hover(query(fixture, '#default'))
+			await userEvent.hover(query(fixture, '#default .amk-zoom'))
 		}
 
 		expect(style.transitionDuration).toBe('0.25s')
-		expect(
-			indicator
-				.getAnimations()
-				.filter((animation) => animation instanceof CSSTransition)
-				.map((animation) => animation.transitionProperty),
-		).toEqual(expect.arrayContaining(['color', 'background-color']))
+		const transitions = indicator
+			.getAnimations()
+			.filter((animation) => animation instanceof CSSTransition)
+		const properties = transitions.map((animation) => animation.transitionProperty)
+		// Native background-color transitions can flash a stale composited fill in Chromium.
+		expect(properties).not.toContain('background-color')
+		expect(properties).toEqual(
+			expect.arrayContaining(['color', '--amk-zoom-indicator-painted-background']),
+		)
+		const background = transitions.find(
+			(animation) => animation.transitionProperty === '--amk-zoom-indicator-painted-background',
+		)!
+		expect(background.effect!.getTiming().duration).toBe(250)
+		background.pause()
+		background.currentTime = 125
+		// The registered color must interpolate, preserving the public background styling.
+		expect(style.backgroundColor).not.toBe('rgb(0, 0, 0)')
+		expect(style.backgroundColor).not.toBe('rgb(255, 255, 255)')
+		background.play()
 		await expect.poll(() => style.color).toBe('rgb(0, 0, 0)')
 		await expect.poll(() => style.backgroundColor).toBe('rgb(255, 255, 255)')
 	},

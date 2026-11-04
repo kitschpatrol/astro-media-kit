@@ -1,3 +1,12 @@
+/* Keep the fill on the paint path with the icon color. Chromium can briefly
+   replay a stale fill when a composited background-color transition ends.
+   https://issues.chromium.org/issues/574705530 */
+@property --amk-zoom-indicator-painted-background {
+	inherits: false;
+	initial-value: transparent;
+	syntax: '<color>';
+}
+
 @layer amk-lightbox {
 	.amk-zoom[data-zoom-indicator] {
 		position: relative;
@@ -13,6 +22,8 @@
 	}
 
 	.amk-zoom-indicator {
+		--amk-zoom-indicator-painted-background: var(--amk-zoom-indicator-background, transparent);
+
 		pointer-events: none;
 		position: absolute;
 		inset: var(--amk-zoom-indicator-inset, auto 0.75rem 0.75rem auto);
@@ -23,7 +34,7 @@
 		line-height: 1;
 		color: var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4));
 		opacity: var(--amk-zoom-indicator-opacity, var(--amk-gallery-icon-opacity, 1));
-		background-color: var(--amk-zoom-indicator-background, transparent);
+		background-color: var(--amk-zoom-indicator-painted-background);
 		filter: opacity(var(--amk-page-controls-opacity, 1));
 		transition-property: none;
 	}
@@ -35,15 +46,16 @@
 	}
 
 	.amk-zoom:focus-visible > .amk-zoom-indicator {
+		--amk-zoom-indicator-painted-background: var(
+			--amk-zoom-indicator-active-background,
+			var(--amk-zoom-indicator-background, transparent)
+		);
+
 		color: var(
 			--amk-zoom-indicator-active-color,
 			var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4))
 		);
 		opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
-		background-color: var(
-			--amk-zoom-indicator-active-background,
-			var(--amk-zoom-indicator-background, transparent)
-		);
 	}
 
 	.amk-zoom[data-lifted] > .amk-zoom-indicator {
@@ -53,15 +65,16 @@
 
 	@media (hover: hover) {
 		.amk-zoom:hover > .amk-zoom-indicator {
+			--amk-zoom-indicator-painted-background: var(
+				--amk-zoom-indicator-active-background,
+				var(--amk-zoom-indicator-background, transparent)
+			);
+
 			color: var(
 				--amk-zoom-indicator-active-color,
 				var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4))
 			);
 			opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
-			background-color: var(
-				--amk-zoom-indicator-active-background,
-				var(--amk-zoom-indicator-background, transparent)
-			);
 		}
 	}
 
@@ -71,7 +84,7 @@
 				--amk-zoom-indicator-transition-duration,
 				var(--amk-gallery-control-transition-duration, 150ms)
 			);
-			transition-property: color, background-color, opacity;
+			transition-property: color, --amk-zoom-indicator-painted-background, opacity;
 		}
 
 		.amk-zoom:focus-visible > .amk-zoom-indicator {
