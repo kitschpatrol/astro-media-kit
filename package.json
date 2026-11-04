@@ -36,6 +36,7 @@
 		"**/*.css",
 		"./src/components/internal/carousel/index.ts",
 		"./src/components/internal/lightbox/index.ts",
+		"./src/components/internal/lightbox/control-preview.ts",
 		"./src/components/internal/videojs-controls.ts",
 		"./src/components/internal/videojs-media.ts",
 		"./src/components/internal/videojs-move.ts",
