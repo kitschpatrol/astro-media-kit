@@ -18,6 +18,7 @@ import { opaqueFormats } from '../../utilities/dark-variant'
 import {
 	isDarkLightImageMetadata,
 	isImageMetadataObject,
+	isImageUrlSource,
 	resolveImageSource,
 	unwrapImageMetadata,
 } from './image'
@@ -200,6 +201,12 @@ export async function resolveSrcToMetadata(
 ): Promise<{ imageMetadata: ImageMetadata; imageMetadataDark: ImageMetadata | undefined }> {
 	assertNotRelativePath(src, options.componentName)
 	assertNotRelativePath(srcDarkSource, options.componentName)
+	if (isImageUrlSource(srcDarkSource)) {
+		throw new Error(
+			`${options.componentName} received a URL for \`srcDark\` ("${srcDarkSource}") with a local \`src\`. ` +
+				'A dark variant must match its light source: pass two local images, or two URLs.',
+		)
+	}
 
 	let imageMetadata: ImageMetadata
 	let imageMetadataDark: ImageMetadata | undefined

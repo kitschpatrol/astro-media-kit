@@ -25,12 +25,12 @@ export async function resolveImageSource(
 ): Promise<DarkLightImageMetadata | ImageMetadata> {
 	const lightMetadata = isImageMetadataObject(src)
 		? unwrapImageMetadata(src)
-		: await probeImageMetadata(getAbsoluteFilePath(src))
+		: await probeImageFile(src)
 
 	if (srcDark !== undefined) {
 		const darkMetadata = isImageMetadataObject(srcDark)
 			? unwrapImageMetadata(srcDark)
-			: await probeImageMetadata(getAbsoluteFilePath(srcDark))
+			: await probeImageFile(srcDark)
 
 		assertLightDarkImageParity(lightMetadata, darkMetadata)
 		return { dark: darkMetadata, light: lightMetadata }
@@ -154,7 +154,7 @@ export function isRemoteImageSource(src: unknown): src is string {
  * public assets. Vite filesystem URLs and absolute paths inside the project
  * retain the kit's local-file handling.
  */
-export function isImageUrlSource(src: unknown): boolean {
+export function isImageUrlSource(src: unknown): src is string {
 	return (
 		isRemoteImageSource(src) ||
 		(typeof src === 'string' &&
@@ -177,6 +177,20 @@ export function isDarkLightImageMetadata(src: unknown): src is DarkLightImageMet
 }
 
 // Helpers
+
+/** Probe a file given as a path, naming the path that was tried when it fails. */
+async function probeImageFile(source: string): Promise<ImageMetadata> {
+	const filePath = getAbsoluteFilePath(source)
+	try {
+		return await probeImageMetadata(filePath)
+	} catch (error) {
+		throw new Error(
+			`Could not read the image "${source}" at "${filePath}": ${error instanceof Error ? error.message : String(error)}. ` +
+				'A path resolves against the working directory. Import the image as a module instead, or pass an absolute path.',
+			{ cause: error },
+		)
+	}
+}
 
 function assertLightDarkImageParity(light: ImageMetadata, dark: ImageMetadata): void {
 	if (light.format !== dark.format) {

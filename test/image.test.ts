@@ -10,6 +10,7 @@ import {
 	isImageMetadataObject,
 	isImageUrlSource,
 	isRemoteImageSource,
+	resolveImageSource,
 	unwrapImageMetadata,
 } from '../src/components/utils/image'
 
@@ -109,6 +110,14 @@ describe('isRemoteImageSource', () => {
 			expect(isRemoteImageSource(input)).toBe(false)
 		}
 		/* eslint-enable unicorn/no-null */
+	})
+})
+
+describe('resolveImageSource', () => {
+	it('names the path it tried for an unreadable file', async () => {
+		await expect(resolveImageSource('missing/photo.png')).rejects.toThrow(
+			`Could not read the image "missing/photo.png" at "${process.cwd().replaceAll('\\', '/')}/missing/photo.png"`,
+		)
 	})
 })
 

@@ -574,6 +574,15 @@ describe('warnWidthsWithoutSizes', () => {
 })
 
 describe('resolveSrcToMetadata', () => {
+	it.each(['https://example.com/dark.png', '/images/dark.png'])(
+		'rejects the URL dark variant %s for a local source',
+		async (srcDark) => {
+			await expect(
+				resolveSrcToMetadata(pngMeta, srcDark, { componentName: 'Picture', darkDisabled: false }),
+			).rejects.toThrow('Picture received a URL for `srcDark`')
+		},
+	)
+
 	it('picks .light from a DarkLight pair when no srcDark is given', async () => {
 		const dark = { ...pngMeta, src: '/dark.png' }
 		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
