@@ -1,29 +1,45 @@
 ---
 import Zoomer from 'astro-media-kit/components/Zoomer.astro'
 import { getImage } from 'astro:assets'
+import darkPhoto from '../assets/test-dark.jpeg'
 import photo from '../assets/test.jpeg'
 
-const thumbnail = await getImage({ format: 'webp', src: photo, width: 320 })
+type Props = {
+	dark?: boolean
+	zoom?: boolean | string
+}
+
+const { dark = false, zoom = true } = Astro.props
+const source = dark ? darkPhoto : photo
+const thumbnail = await getImage({ format: 'webp', src: source, width: 320 })
 ---
 
 <demo-cold-zoom>
-	<Zoomer enabled href="/zoom-cold-image" indicator nativeWidth={photo.width}>
+	<Zoomer
+		enabled={zoom}
+		href={dark ? '/zoom-cold-image?variant=dark' : '/zoom-cold-image'}
+		indicator
+		nativeWidth={source.width}
+	>
 		<img
-			alt="Green character wearing a purple nightcap and holding a tablet"
+			alt={
+				dark
+					? 'Dark version of a green character wearing a purple nightcap and holding a tablet'
+					: 'Green character wearing a purple nightcap and holding a tablet'
+			}
 			decoding="async"
-			height={photo.height}
+			height={source.height}
 			loading="lazy"
 			sizes="auto"
 			src={thumbnail.src}
 			srcset={`${thumbnail.src} 320w`}
-			width={photo.width}
+			width={source.width}
 		/>
 	</Zoomer>
 </demo-cold-zoom>
 
 <script>
 	class ColdZoomImage extends HTMLElement {
-		#controller: AbortController | undefined
 		#observer: MutationObserver | undefined
 
 		connectedCallback() {
@@ -34,56 +50,34 @@ const thumbnail = await getImage({ format: 'webp', src: photo, width: 320 })
 			}
 
 			const thumbnail = image.cloneNode() as HTMLImageElement
-			let upgrade: (() => void) | undefined
-			this.#controller = new AbortController()
-			addEventListener(
-				'click',
-				(event) => {
-					if (
-						!event.composedPath().includes(item) ||
-						event.button !== 0 ||
-						event.altKey ||
-						event.ctrlKey ||
-						event.metaKey ||
-						event.shiftKey ||
-						Object.hasOwn(item.dataset, 'lifted')
-					) {
-						return
-					}
-
-					const current = item.querySelector('img')
-					if (current === null) {
-						return
-					}
-
-					const large = new URL(item.href)
-					large.searchParams.set('request', crypto.randomUUID())
-					// Begin the cold request after the normal zoom handler captures the
-					// thumbnail, as an automatic size upgrade would during the lift.
-					upgrade = () => {
-						current.srcset = `${thumbnail.srcset}, ${large.href} ${current.getAttribute('width') ?? current.naturalWidth}w`
-					}
-				},
-				{ capture: true, signal: this.#controller.signal },
-			)
-
+			let current = image
+			let lifted = false
 			this.#observer = new MutationObserver(() => {
-				if (Object.hasOwn(item.dataset, 'lifted')) {
-					upgrade?.()
-					upgrade = undefined
+				const next = Object.hasOwn(item.dataset, 'lifted')
+				if (next === lifted) {
 					return
 				}
 
-				upgrade = undefined
+				lifted = next
+				if (lifted) {
+					const large = new URL(item.href)
+					large.searchParams.set('request', crypto.randomUUID())
+					// Start after the viewer captures the thumbnail, including when a
+					// neighboring gallery item is lifted without a click of its own.
+					current.srcset = `${thumbnail.srcset}, ${large.href} ${current.getAttribute('width') ?? current.naturalWidth}w`
+					return
+				}
+
 				// A returned img can retain decoded pixels even with no-store. Start
 				// the next opening from a fresh thumbnail after the real image lands.
-				item.querySelector('img')?.replaceWith(thumbnail.cloneNode())
+				const replacement = thumbnail.cloneNode() as HTMLImageElement
+				current.replaceWith(replacement)
+				current = replacement
 			})
 			this.#observer.observe(item, { attributeFilter: ['data-lifted'], attributes: true })
 		}
 
 		disconnectedCallback() {
-			this.#controller?.abort()
 			this.#observer?.disconnect()
 		}
 	}

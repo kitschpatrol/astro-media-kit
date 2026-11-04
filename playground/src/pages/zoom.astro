@@ -245,6 +245,16 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		repeat, or close before it finishes loading.
 	</p>
 	<ColdZoomImage />
+
+	<h3>Uncached gallery</h3>
+	<p class="note">
+		Open either thumbnail, then swipe between them while their large versions load. Both start fresh
+		on each opening and take at least three seconds to arrive.
+	</p>
+	<div class="grid">
+		<ColdZoomImage zoom="uncached" />
+		<ColdZoomImage dark zoom="uncached" />
+	</div>
 </Layout>
 
 <style>
