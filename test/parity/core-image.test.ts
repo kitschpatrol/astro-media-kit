@@ -12,6 +12,45 @@ describe('parity: Image / Picture with local images (SSG)', () => {
 		fx = await buildFixture('core-image')
 	})
 
+	it.each([
+		'vector-image',
+		'vector-picture',
+		'fallback-only',
+		'vector-source',
+		'vector-fallback',
+		'selector-picture',
+	])('avoids automatic sizes for native SVG output in %s', async (id) => {
+		const $ = await fx.readHTML('/responsive-svg/')
+		const images = $(`#${id} img, #${id} source`)
+		expect(images.length).toBeGreaterThan(0)
+		for (const element of images) {
+			const sizes = $(element).attr('sizes')!
+			expect(sizes).not.toMatch(/^auto(?:,|$)/v)
+			expect(sizes).toContain('300px')
+			expect(sizes).toContain('100vw')
+		}
+	})
+
+	it.each(['explicit-image', 'explicit-picture'])(
+		'preserves caller sizing for native SVG output in %s',
+		async (id) => {
+			const $ = await fx.readHTML('/responsive-svg/')
+			for (const element of $(`#${id} img, #${id} source`)) {
+				expect($(element).attr('sizes')).toBe('auto, 50vw')
+			}
+		},
+	)
+
+	it.each(['rasterized-image', 'rasterized-picture', 'raster-image'])(
+		'keeps automatic sizes for raster output in %s',
+		async (id) => {
+			const $ = await fx.readHTML('/responsive-svg/')
+			for (const element of $(`#${id} img, #${id} source`)) {
+				expect($(element).attr('sizes')).toMatch(/^auto, /v)
+			}
+		},
+	)
+
 	it('Picture - responsive layouts discard densities without mixing srcset descriptors', async () => {
 		const $ = await fx.readHTML('/picture-responsive-densities/')
 		const source = $('picture source')

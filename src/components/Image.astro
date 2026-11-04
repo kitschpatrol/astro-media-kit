@@ -294,6 +294,7 @@ const {
 const resolvedSizes = resolveSizesAttribute(
 	imageProps.sizes ?? undefined,
 	typeof imgAttributes.sizes === 'string' ? imgAttributes.sizes : undefined,
+	image.options.format !== 'svg',
 )
 if (resolvedSizes !== undefined) {
 	imgAttributes.sizes = resolvedSizes

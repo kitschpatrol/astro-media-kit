@@ -426,7 +426,13 @@ const sourceAdditionalAttributes: HTMLAttributes<'source'> = {}
 // candidate from a width-descriptor srcset.
 const fallbackSizes =
 	typeof fallbackImage.attributes.sizes === 'string' ? fallbackImage.attributes.sizes : undefined
-const effectiveSizes = resolveSizesAttribute(imageProps.sizes ?? undefined, fallbackSizes)
+// All source branches share sizing hints. Include the fallback when avoiding
+// Safari's SVG painting bug, even when a preferred source is a raster format.
+const effectiveSizes = resolveSizesAttribute(
+	imageProps.sizes ?? undefined,
+	fallbackSizes,
+	!formats.includes('svg') && resultFallbackFormat !== 'svg',
+)
 if (effectiveSizes !== undefined && effectiveSizes !== '') {
 	sourceAdditionalAttributes.sizes = effectiveSizes
 }

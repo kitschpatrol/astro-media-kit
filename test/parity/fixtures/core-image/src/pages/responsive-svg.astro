@@ -1,0 +1,45 @@
+---
+import { Image, Picture } from 'astro-media-kit/components'
+import raster from '../assets/penguin1.jpg'
+import vector from '../assets/penguin3.svg'
+
+const responsive = { alt: 'Responsive penguin', layout: 'constrained' as const, width: 300 }
+---
+
+<html>
+	<body>
+		<div id="vector-image">
+			<Image {...responsive} src={vector} />
+		</div>
+		<div id="vector-picture">
+			<Picture {...responsive} formats={['svg']} src={vector} />
+		</div>
+		<div id="fallback-only">
+			<Picture {...responsive} formats={[]} src={vector} />
+		</div>
+		<div id="vector-source">
+			<Picture {...responsive} fallbackFormat="png" formats={['svg']} src={vector} />
+		</div>
+		<div id="vector-fallback">
+			<Picture {...responsive} formats={['webp']} src={vector} />
+		</div>
+		<div id="selector-picture">
+			<Picture {...responsive} darkMode=".dark" formats={['svg']} src={vector} srcDark={vector} />
+		</div>
+		<div id="explicit-image">
+			<Image {...responsive} sizes="auto, 50vw" src={vector} />
+		</div>
+		<div id="explicit-picture">
+			<Picture {...responsive} formats={['svg']} sizes="auto, 50vw" src={vector} />
+		</div>
+		<div id="rasterized-image">
+			<Image {...responsive} format="webp" src={vector} />
+		</div>
+		<div id="rasterized-picture">
+			<Picture {...responsive} fallbackFormat="webp" formats={['webp']} src={vector} />
+		</div>
+		<div id="raster-image">
+			<Image {...responsive} src={raster} />
+		</div>
+	</body>
+</html>

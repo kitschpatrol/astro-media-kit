@@ -500,18 +500,21 @@ export function buildSrcsetAttribute(
  * Resolve the final `sizes` attribute value. When the user supplied `sizes`,
  * it's passed through unchanged. When Astro auto-generated `sizes` (responsive
  * layout without an explicit user value), the result is prefixed with `"auto,
- * "` so lazy-loaded images can use the browser's auto-sizes behavior. Returns
- * `undefined` when no sizes value is present.
+ * "` so lazy-loaded images can use the browser's auto-sizes behavior. Native
+ * SVG output opts out: Safari 27 distorts SVG painting with automatic sizes.
+ * https://bugs.webkit.org/show_bug.cgi?id=324661 Returns `undefined` when no
+ * sizes value is present.
  */
 export function resolveSizesAttribute(
 	userSizes: string | undefined,
 	sizes: string | undefined,
+	allowAuto = true,
 ): string | undefined {
 	if (sizes === undefined) {
 		return undefined
 	}
 
-	return userSizes === undefined ? `auto, ${sizes}` : sizes
+	return userSizes === undefined && allowAuto ? `auto, ${sizes}` : sizes
 }
 
 /** Resolve the MIME `type` attribute for a `<source>` element. */
