@@ -181,6 +181,8 @@ class Viewer {
 		const isOpening = this.#state === 'opening'
 		const generation = ++this.#generation
 		hideControls()
+		// A reopen floats the controls again, as a hand-over does
+		this.#activeSubject = undefined
 		// Escape or a close command can interrupt a held drag. Commit its
 		// backdrop opacity before enabling the closing transition.
 		this.#dialog.getAnimations()

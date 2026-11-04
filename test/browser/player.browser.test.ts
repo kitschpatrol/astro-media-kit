@@ -13,6 +13,7 @@ import '../../src/components/internal/amk-video.css'
 import {
 	boxes,
 	cleanUp,
+	clickMiddle,
 	currentLayer,
 	fadeOf,
 	frames,
@@ -23,6 +24,7 @@ import {
 	query,
 	settle,
 	setUpLightbox,
+	transitionsDone,
 	viewer,
 } from './helpers'
 
@@ -106,6 +108,28 @@ it('lifts the whole player, hides expand, and closes from the lightbox button', 
 	expect(item.contains(player)).toBe(true)
 	expect(controls.hasAttribute('popover')).toBe(false)
 	expect(isLifted(item)).toBe(false)
+})
+
+it('floats the controls again when a closing player is reopened', async () => {
+	const { item, player } = await mountPlayer()
+	await openLightbox(item)
+	await liftDone()
+	const controls = query(player, '.amk-controls')
+	expect(controls.matches(':popover-open')).toBe(true)
+	const layer = currentLayer()
+
+	// Closing hides the bar at once; a click on the returning player turns the
+	// close around, and the bar must float with it
+	const closing = closeLightbox()
+	expect(viewer().dataset.state).toBe('closing')
+	clickMiddle(layer)
+	await closing
+	await transitionsDone()
+
+	expect(viewer().open).toBe(true)
+	expect(viewer().dataset.state).toBe('open')
+	expect(player.dataset.controls).toBe('lightbox')
+	await expect.poll(() => controls.matches(':popover-open')).toBe(true)
 })
 
 it.each(['pointer', 'Enter', 'Space'] as const)(
