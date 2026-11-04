@@ -9,6 +9,7 @@ import {
 	isInPlayer,
 	isItem,
 	isLinkItem,
+	isNativeLink,
 	isWithin,
 	itemSelector,
 	rendered,
@@ -855,8 +856,7 @@ class Viewer {
 				!isItem(item) ||
 				Object.hasOwn(item.dataset, 'zoomInteractive') ||
 				subjectOf(item) === undefined ||
-				(item instanceof HTMLAnchorElement &&
-					(item.hasAttribute('download') || (item.target !== '' && item.target !== '_self'))) ||
+				isNativeLink(item) ||
 				!item.checkVisibility() ||
 				!isInside(point, item.getBoundingClientRect())
 			) {

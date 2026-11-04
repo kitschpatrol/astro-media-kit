@@ -323,55 +323,50 @@ export function hideControls() {
 }
 
 /**
- * Put a bar back in its player, at the player's own control level. Its page
- * wrapper owns the visibility fade; an inactive item replaces an already
- * visible control preview. Release one subject, or every bar when omitted.
+ * Put a subject's bar back in its player, at the player's own control level.
+ * Its page wrapper owns the visibility fade; an inactive item replaces an
+ * already visible control preview.
  */
-export function releaseControls(subject?: Element) {
-	if (background !== undefined && (subject === undefined || background.subject === subject)) {
+export function releaseControls(subject: Element) {
+	if (background?.subject === subject) {
 		dropBackground()
 	}
 
-	for (const [each, level] of levels) {
-		if (subject !== undefined && each !== subject) {
-			continue
-		}
-
-		const player = each.querySelector<HTMLElement>(':scope video-player')
+	const level = levels.get(subject)
+	if (level !== undefined) {
+		const player = subject.querySelector<HTMLElement>(':scope video-player')
 		if (player !== null) {
 			player.dataset.controls = level
 			delete player.dataset.inLightbox
 		}
 
-		const active = gestures.get(each) ?? []
+		const active = gestures.get(subject) ?? []
 		for (const gesture of active) {
 			gesture.removeAttribute('disabled')
 		}
 
-		gestures.delete(each)
-
-		levels.delete(each)
+		gestures.delete(subject)
+		levels.delete(subject)
 	}
 
-	for (const [each, bar] of bars) {
-		if (subject !== undefined && each !== subject) {
-			continue
-		}
-
-		hide(bar)
-		const { controls } = bar
-		// Replace the page preview at its current opacity. The active thumbnail
-		// remains faded until restore; inactive thumbnails are already visible.
-		const { transition } = controls.style
-		controls.style.transition = 'none'
-		controls.removeAttribute('popover')
-		clearControlFades(controls)
-		delete controls.dataset.crossfade
-		controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
-		controls.getBoundingClientRect()
-		controls.style.transition = transition
-		bars.delete(each)
+	const bar = bars.get(subject)
+	if (bar === undefined) {
+		return
 	}
+
+	hide(bar)
+	const { controls } = bar
+	// Replace the page preview at its current opacity. The active thumbnail
+	// remains faded until restore; inactive thumbnails are already visible.
+	const { transition } = controls.style
+	controls.style.transition = 'none'
+	controls.removeAttribute('popover')
+	clearControlFades(controls)
+	delete controls.dataset.crossfade
+	controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
+	controls.getBoundingClientRect()
+	controls.style.transition = transition
+	bars.delete(subject)
 }
 
 function floatBackground(

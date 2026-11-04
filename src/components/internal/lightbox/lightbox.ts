@@ -2,6 +2,7 @@ import {
 	interactiveSelector,
 	isItem,
 	isLinkItem,
+	isNativeLink,
 	isWithin,
 	itemSelector,
 	rendered,
@@ -263,14 +264,6 @@ function itemOf(target: EventTarget | undefined): HTMLElement | undefined {
 	const item =
 		target instanceof Element ? (target.closest<HTMLElement>(itemSelector) ?? undefined) : undefined
 	return isItem(item) ? item : undefined
-}
-
-/** Whether a link leaves clicks to the browser: a download, or another target. */
-function isNativeLink(item: HTMLElement): boolean {
-	return (
-		item instanceof HTMLAnchorElement &&
-		(item.hasAttribute('download') || (item.target !== '' && item.target !== '_self'))
-	)
 }
 
 function isOrdinaryClick(event: MouseEvent): boolean {

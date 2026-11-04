@@ -5,7 +5,7 @@ export const itemSelector = '.amk-zoom'
  * A text link `<ZoomLink>` renders, whose media is in a `<template>` inside it,
  * for the viewer alone.
  */
-export const linkSelector = '.amk-zoom-link'
+const linkSelector = '.amk-zoom-link'
 
 /** The media of each link item that is in use, from a warm-up to a lift. */
 const instances = new WeakMap<HTMLElement, Element>()
@@ -94,7 +94,7 @@ export function captionOf(item: HTMLElement): Element | undefined {
  * kept from a hover that warms it to the lift that shows it. Released once it
  * has gone, for a fresh one next time.
  */
-export function instanceOf(item: HTMLElement): Element | undefined {
+function instanceOf(item: HTMLElement): Element | undefined {
 	let instance = instances.get(item)
 	if (instance === undefined) {
 		const content = templateOf(item)?.content.firstElementChild
@@ -149,6 +149,14 @@ export function isItem(node: EventTarget | undefined): node is HTMLElement {
 /** Whether `item` is a text link, whose media isn't in the page. */
 export function isLinkItem(item: Element): boolean {
 	return item.matches(linkSelector)
+}
+
+/** Whether a link leaves clicks to the browser: a download, or another target. */
+export function isNativeLink(item: HTMLElement): boolean {
+	return (
+		item instanceof HTMLAnchorElement &&
+		(item.hasAttribute('download') || (item.target !== '' && item.target !== '_self'))
+	)
 }
 
 /**

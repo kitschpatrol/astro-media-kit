@@ -19,7 +19,7 @@ export type Fit = 'contain' | 'cover' | 'fill'
  * pre-transform pixels, because `clip-path` applies before `translate` and
  * `scale`. Assumes `transform-origin: 0 0` on the layer.
  */
-export type FrameTransform = {
+type FrameTransform = {
 	insetBottom: number
 	insetRight: number
 	insetX: number
@@ -31,7 +31,7 @@ export type FrameTransform = {
 }
 
 /** The transform that leaves the layer exactly over the frame. */
-export const identityTransform: FrameTransform = {
+const identityTransform: FrameTransform = {
 	insetBottom: 0,
 	insetRight: 0,
 	insetX: 0,

@@ -8,7 +8,7 @@ import { copyRetainedImage } from './image-preview'
 import { mirrorVideo, previewSize } from './video-placeholder'
 
 /** A decorative copy, and the subject's box within the item's padding box. */
-export type Placeholder = { box: Box; element: HTMLElement }
+type Placeholder = { box: Box; element: HTMLElement }
 
 const disposers = new WeakMap<HTMLElement, () => void>()
 
