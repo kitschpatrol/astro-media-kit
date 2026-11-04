@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { userEvent } from 'vitest/browser'
 import { waitForFrame } from './frame'
 
 it('reports an audio startup failure even when the player scripts arrive late', async () => {
@@ -48,18 +49,32 @@ it('plays only the native audio fallback when JavaScript is disabled', async () 
 	const frame = document.createElement('iframe')
 	frame.sandbox.add('allow-same-origin')
 	frame.src = '/audio-startup/index.html'
-	document.body.append(frame)
+	const playButton = document.createElement('button')
+	playButton.textContent = 'Play native audio'
+	document.body.append(frame, playButton)
 	try {
 		await waitForFrame(frame, 'audio-startup')
 		const root = frame.contentDocument!
 		const original = root.querySelector<HTMLAudioElement>(':scope #playable audio-player audio')!
 		const fallback = root.querySelector<HTMLAudioElement>(':scope #playable noscript audio')!
 		expect(fallback.controls).toBe(true)
-		await fallback.play()
+		// Give the same-origin child a trusted gesture, independent of autoplay
+		// permission or any interactions in earlier tests.
+		const playback = new Promise<void>((resolve, reject) => {
+			playButton.addEventListener(
+				'click',
+				() => {
+					void fallback.play().then(resolve).catch(reject)
+				},
+				{ once: true },
+			)
+		})
+		await Promise.all([playback, userEvent.click(playButton)])
 		await expect.poll(() => fallback.currentTime).toBeGreaterThan(0)
 		expect(original.currentSrc).toBe('')
 		expect(original.paused).toBe(true)
 	} finally {
 		frame.remove()
+		playButton.remove()
 	}
 })
