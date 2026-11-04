@@ -219,7 +219,7 @@ importers:
         specifier: ~24.13.6
         version: 24.13.6
       '@videojs/skills':
-        specifier: github:videojs/skills
+        specifier: github:videojs/skills#66afaeb4508f324b0b554700d52cb6a5a7a5b14c
         version: https://codeload.github.com/videojs/skills/tar.gz/66afaeb4508f324b0b554700d52cb6a5a7a5b14c
       '@vitest/browser-playwright':
         specifier: ^5.1.0
