@@ -59,7 +59,7 @@ Upgrade Astro to **7.4.5 or later within version 7** before updating the kit. Th
 - **Audio and video credits:** `creditMediaTypeFallback` is no longer an Audio or Video prop. Their defaults are `'audio'` and `'video'`; use `creditMediaType` to override them.
 - **Standalone zoom targets:** Zoomer now lifts its actual child element into the viewer. Its former `src`, `srcset`, `width`, and `height` props are removed. For a text link to an image or video, use [ZoomLink](#zoomlink). For visible content, pass that content as Zoomer's child; `href` supplies a native fallback destination and `nativeWidth` supplies the secondary native zoom width.
 - **Player and lightbox styling:** Video.js replaces Media Chrome, and the lightbox replaces PhotoSwipe. Update selectors targeting `media-controller`, `.pswp`, or `.pswp-zoom` to the new player structure and `.amk-lightbox` / `.amk-zoom` classes. See [Video](#video), [Lightbox](#lightbox), and [MediaTheme](#mediatheme) for the supported controls, classes, icon slots, and CSS properties.
-- **Format rule types:** `FallbackRules` remains available as a deprecated alias of `FormatRules` from `astro-media-kit/components/utils/image-orchestration`. New code should use `FormatRules`.
+- **Format rule types:** The deprecated `FallbackRules` alias is removed. Use `FormatRules` from `astro-media-kit/components/utils/image-orchestration`.
 
 ## Getting started
 

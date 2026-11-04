@@ -57,13 +57,6 @@ export type FallbackKey = 'unknown' | ImageInputFormat
 export type FormatRules = Simplify<Partial<Record<FallbackKey, ImageOutputFormat>>>
 
 /**
- * @deprecated Use `FormatRules`. Retained for existing imports from
- *   `astro-media-kit/components/utils/image-orchestration`.
- * @public
- */
-export type FallbackRules = FormatRules
-
-/**
  * Per-input-format `<source>` output overrides for `<Picture>`'s `formats`
  * prop. Same key set as `FormatRules`. Each value is a list of output formats;
  * one `<source>` element is emitted per entry, in order. Merged on top of
