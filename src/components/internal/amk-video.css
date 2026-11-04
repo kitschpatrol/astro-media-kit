@@ -726,6 +726,32 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 }
 
 /* Moving between two videos exchanges their bars at the same screen position. */
+.amk-controls[popover] .amk-bar[data-floated-background] {
+	background: transparent !important;
+}
+
+/* One surface stays behind both bars during a swap. Fading two translucent
+   backgrounds independently would briefly change their combined coverage. */
+.amk-controls-background {
+	pointer-events: none;
+	position: fixed;
+	inset: auto 0 0;
+	translate: 0 100%;
+	opacity: 0;
+	transition:
+		opacity var(--amk-duration),
+		translate var(--amk-lightbox-duration) var(--amk-lightbox-easing);
+}
+
+.amk-controls-background[data-visible] {
+	translate: 0 0;
+	opacity: var(--amk-lightbox-drag-opacity, 1);
+}
+
+.amk-controls-background[data-user-inactive] {
+	opacity: 0;
+}
+
 .amk-controls[popover][data-crossfade] {
 	translate: 0 0;
 	transition:
@@ -747,12 +773,13 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.amk-controls[popover][data-crossfade] {
+	.amk-controls[popover][data-crossfade],
+	.amk-controls-background {
 		transition: none;
 	}
 }
 
-.amk-lightbox[data-dismissing] .amk-controls[popover] {
+.amk-lightbox[data-dismissing] :is(.amk-controls[popover], .amk-controls-background) {
 	transition: none;
 }
 

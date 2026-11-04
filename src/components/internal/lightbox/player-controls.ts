@@ -12,6 +12,17 @@ type Bar = {
 	exit: number
 }
 
+type Background = {
+	controls: HTMLElement
+	element: HTMLElement
+	exit: number
+	observer: ResizeObserver
+	subject: Element
+}
+
+/** One surface under the independently fading bars, so their alpha never stacks. */
+let background: Background | undefined
+
 /** A Video.js popup, which closes on request. */
 type Popup = Element & { close?: (reason?: string) => void }
 
@@ -131,18 +142,22 @@ export function createControlsActivity(root: HTMLElement): {
 		}
 
 		delete controls.dataset.userInactive
+		setBackgroundInactive(controls, false)
 		timer = setTimeout(() => {
 			// A popup of the controls, such as the volume popover, counts as
 			// hovering them, as it is in the DOM
 			if (
-				controls &&
-				controls.closest('video-player')?.hasAttribute('data-playing') !== false &&
-				!controls.matches(':hover, :has([data-popup]:hover)') &&
-				!controls.contains(document.activeElement) &&
-				pointers.size === 0
+				!controls ||
+				controls.closest('video-player')?.hasAttribute('data-playing') === false ||
+				controls.matches(':hover, :has([data-popup]:hover)') ||
+				controls.contains(document.activeElement) ||
+				pointers.size > 0
 			) {
-				controls.dataset.userInactive = ''
+				return
 			}
+
+			controls.dataset.userInactive = ''
+			setBackgroundInactive(controls, true)
 		}, 1500)
 	}
 
@@ -200,6 +215,7 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	const hasControls =
 		controls !== null && controls.closest<HTMLElement>('video-player')?.dataset.controls !== 'none'
 	let crossfade = false
+	let opacity = 0
 	for (const [other, bar] of bars) {
 		if (other === subject) {
 			continue
@@ -210,6 +226,7 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 		bar.controls.toggleAttribute('data-crossfade', isReplacing)
 		closePopups(other)
 		if (isReplacing) {
+			opacity = Math.max(opacity, Number(getComputedStyle(bar.controls).opacity))
 			void fadeOut(bar)
 		} else {
 			hide(bar)
@@ -217,6 +234,7 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 	}
 
 	if (!hasControls) {
+		hideBackground()
 		return
 	}
 
@@ -241,6 +259,11 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 
 	bar.activity ??= createControlsActivity(viewer)
 	bar.activity.setControls(controls)
+	if (crossfade) {
+		floatBackground(subject, controls, viewer, opacity)
+	} else {
+		dropBackground()
+	}
 }
 
 /** Send every floated bar away, with the popups it holds, as the viewer closes. */
@@ -250,6 +273,8 @@ export function hideControls() {
 		delete bar.controls.dataset.crossfade
 		hide(bar)
 	}
+
+	hideBackground()
 }
 
 /**
@@ -258,6 +283,10 @@ export function hideControls() {
  * visible control preview. Release one subject, or every bar when omitted.
  */
 export function releaseControls(subject?: Element) {
+	if (background !== undefined && (subject === undefined || background.subject === subject)) {
+		dropBackground()
+	}
+
 	for (const [each, level] of levels) {
 		if (subject !== undefined && each !== subject) {
 			continue
@@ -292,9 +321,157 @@ export function releaseControls(subject?: Element) {
 		controls.style.transition = 'none'
 		controls.removeAttribute('popover')
 		delete controls.dataset.crossfade
+		controls.querySelector('[data-floated-background]')?.removeAttribute('data-floated-background')
 		controls.getBoundingClientRect()
 		controls.style.transition = transition
 		bars.delete(each)
+	}
+}
+
+function floatBackground(
+	subject: Element,
+	controls: HTMLElement,
+	viewer: HTMLElement,
+	opacity: number,
+) {
+	const strip = controls.querySelector<HTMLElement>('.amk-bar')
+	if (strip === null) {
+		hideBackground()
+		return
+	}
+
+	if (background === undefined) {
+		const element = document.createElement('div')
+		element.className = 'amk-controls-background'
+		element.ariaHidden = 'true'
+		element.inert = true
+		// Take over the existing bar's paint in the same frame, without another fade.
+		element.style.transition = 'none'
+		element.style.opacity = String(opacity)
+		element.dataset.visible = ''
+		// Below every control popover, but above the media and below viewer buttons.
+		viewer.insertBefore(element, viewer.querySelector('.amk-lightbox-button'))
+		background = {
+			controls,
+			element,
+			exit: 0,
+			observer: new ResizeObserver(syncBackground),
+			subject,
+		}
+	}
+
+	background.observer.disconnect()
+	background.controls = controls
+	background.subject = subject
+	background.observer.observe(strip)
+	syncBackground()
+	for (const bar of bars.values()) {
+		const other = bar.controls.querySelector<HTMLElement>('.amk-bar')
+		if (other !== null) {
+			setFloatedBackground(other, true)
+		}
+	}
+
+	background.element.getBoundingClientRect()
+	background.element.style.removeProperty('transition')
+	background.element.style.removeProperty('opacity')
+	background.element.dataset.visible = ''
+	delete background.element.dataset.userInactive
+	void settleBackground(background, ++background.exit)
+}
+
+/** Restore ordinary bar painting once the overlapping controls have settled. */
+async function settleBackground(current: Background, exit: number): Promise<void> {
+	const barsFading = bars
+		.values()
+		.flatMap(({ controls }) =>
+			controls
+				.getAnimations()
+				.filter(
+					(animation) =>
+						animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
+				),
+		)
+	const fades = [...current.element.getAnimations(), ...barsFading]
+	await Promise.allSettled(fades.map(async (animation) => animation.finished))
+	if (background === current && current.exit === exit) {
+		dropBackground()
+	}
+}
+
+function dropBackground() {
+	if (background === undefined) {
+		return
+	}
+
+	background.observer.disconnect()
+	background.element.remove()
+	background = undefined
+	for (const { controls } of bars.values()) {
+		const strip = controls.querySelector<HTMLElement>('.amk-bar')
+		if (strip !== null) {
+			setFloatedBackground(strip, false)
+		}
+	}
+}
+
+function setFloatedBackground(strip: HTMLElement, floated: boolean) {
+	const transition = strip.style.getPropertyValue('transition')
+	const priority = strip.style.getPropertyPriority('transition')
+	strip.style.setProperty('transition', 'none', 'important')
+	strip.toggleAttribute('data-floated-background', floated)
+	strip.getBoundingClientRect()
+	strip.style.setProperty('transition', transition, priority)
+}
+
+function syncBackground() {
+	if (background === undefined) {
+		return
+	}
+
+	const { controls, element } = background
+	const strip = controls.querySelector<HTMLElement>('.amk-bar')
+	if (strip === null) {
+		return
+	}
+
+	// Read the authored surface before suppressing it on the real bar. This also
+	// preserves local player themes and direct background overrides, including gradients.
+	const transition = strip.style.getPropertyValue('transition')
+	const priority = strip.style.getPropertyPriority('transition')
+	strip.style.setProperty('transition', 'none', 'important')
+	delete strip.dataset.floatedBackground
+	const paint = getComputedStyle(strip)
+	element.style.background = paint.background
+	element.style.borderRadius = paint.borderRadius
+	const bounds = strip.getBoundingClientRect()
+	element.style.left = `${bounds.left}px`
+	element.style.width = `${bounds.width}px`
+	element.style.height = `${bounds.height}px`
+	const style = getComputedStyle(controls)
+	element.style.bottom = style.bottom
+	for (const property of ['--amk-duration', '--amk-lightbox-duration', '--amk-lightbox-easing']) {
+		element.style.setProperty(property, style.getPropertyValue(property))
+	}
+
+	strip.dataset.floatedBackground = ''
+	strip.getBoundingClientRect()
+	strip.style.setProperty('transition', transition, priority)
+}
+
+function hideBackground() {
+	if (background === undefined) {
+		return
+	}
+
+	delete background.element.dataset.visible
+	background.observer.disconnect()
+	void settleBackground(background, ++background.exit)
+}
+
+function setBackgroundInactive(controls: HTMLElement, inactive: boolean) {
+	if (background?.controls === controls) {
+		background.element.toggleAttribute('data-user-inactive', inactive)
 	}
 }
 

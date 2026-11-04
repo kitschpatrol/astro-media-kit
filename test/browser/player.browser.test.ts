@@ -138,11 +138,15 @@ it('keeps the floated controls visible while they are used, and hides them when 
 		setTimeout(resolve, 2300)
 	})
 	expect(Object.hasOwn(controls.dataset, 'userInactive')).toBe(false)
+	expect(viewer().querySelector('.amk-controls-background')).toBeNull()
 
 	viewer().focus()
 	await expect
 		.poll(() => Object.hasOwn(controls.dataset, 'userInactive'), { timeout: 4000 })
 		.toBe(true)
+	await expect.poll(() => getComputedStyle(controls).opacity).toBe('0')
+	query(controls, 'media-play-button').focus()
+	await expect.poll(() => getComputedStyle(controls).opacity).toBe('1')
 })
 
 it('slides its control bar up as it lifts, and away again as it lands', async () => {
@@ -186,16 +190,31 @@ it('crossfades video control strips in place, including a rapid reversal', async
 	item.dataset.gallery = 'strips'
 	otherItem.dataset.gallery = 'strips'
 	otherPlayer.dataset.controls = 'full'
-	mount('<style>.amk { --amk-duration: 800ms; }</style>')
+	mount(`<style>.amk {
+		--amk-duration: 800ms;
+		--amk-control-background: rgb(40 40 40 / 60%);
+		--amk-control-size: 56px;
+	}</style>`)
 	await openLightbox(item)
 	const first = query(player, '.amk-controls')
 	const second = query(otherPlayer, '.amk-controls')
 	await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+	expect(viewer().querySelector('.amk-controls-background')).toBeNull()
 	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
 	await expect.poll(() => second.matches(':popover-open')).toBe(true)
+	const background = query(viewer(), '.amk-controls-background')
+	await expect.poll(() => getComputedStyle(background).opacity).toBe('1')
+	expect(background.inert).toBe(true)
+	expect(background.ariaHidden).toBe('true')
+	expect(getComputedStyle(background).backgroundColor).toBe('rgba(40, 40, 40, 0.6)')
+	expect(background.getBoundingClientRect().height).toBe(56)
 	expect(first.matches(':popover-open')).toBe(true)
 	expect(getComputedStyle(query(first, '.amk-bar')).pointerEvents).toBe('none')
+	expect(query(viewer(), '.amk-controls-background')).toBe(background)
+	expect(getComputedStyle(background).opacity).toBe('1')
+	expect(background.getAnimations()).toHaveLength(0)
 	for (const controls of [first, second]) {
+		expect(getComputedStyle(query(controls, '.amk-bar')).backgroundColor).toBe('rgba(0, 0, 0, 0)')
 		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
 		const properties = controls
 			.getAnimations()
@@ -208,6 +227,9 @@ it('crossfades video control strips in place, including a rapid reversal', async
 	await userEvent.click(query(viewer(), '.amk-lightbox-previous'))
 	await expect.poll(() => Object.hasOwn(first.dataset, 'crossfadeOut')).toBe(false)
 	expect(Object.hasOwn(second.dataset, 'crossfadeOut')).toBe(true)
+	expect(query(viewer(), '.amk-controls-background')).toBe(background)
+	expect(getComputedStyle(background).opacity).toBe('1')
+	expect(background.getAnimations()).toHaveLength(0)
 	for (const controls of [first, second]) {
 		expect(controls.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
 		expect(
@@ -221,7 +243,91 @@ it('crossfades video control strips in place, including a rapid reversal', async
 	await closeLightbox()
 	expect(Object.hasOwn(first.dataset, 'crossfade')).toBe(false)
 	expect(Object.hasOwn(second.dataset, 'crossfade')).toBe(false)
+	expect(viewer().querySelector('.amk-controls-background')).toBeNull()
+	expect(getComputedStyle(query(first, '.amk-bar')).backgroundColor).toBe('rgba(40, 40, 40, 0.6)')
 })
+
+it('restores ordinary bar painting after a crossfade and leaves stationary controls untouched', async () => {
+	const { item } = await mountPlayer()
+	const other = query(document, '#video-minimal .amk-zoom')
+	item.dataset.gallery = 'settled-background'
+	other.dataset.gallery = 'settled-background'
+	const controls = query(other, '.amk-controls')
+	const strip = query(controls, '.amk-bar')
+	strip.style.background = 'rgb(80 80 80 / 40%)'
+	strip.style.transition = 'background 1s'
+	await openLightbox(item)
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(() => controls.matches(':popover-open')).toBe(true)
+	await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
+	expect(getComputedStyle(strip).backgroundColor).toBe('rgba(80, 80, 80, 0.4)')
+	expect(getComputedStyle(controls).opacity).toBe('1')
+	expect(strip.getAnimations()).toHaveLength(0)
+	let mutations = 0
+	const observer = new MutationObserver((records) => {
+		mutations += records.length
+	})
+	observer.observe(strip, {
+		attributeFilter: ['style', 'data-floated-background'],
+		attributes: true,
+	})
+	await new Promise((resolve) => {
+		setTimeout(resolve, 300)
+	})
+	observer.disconnect()
+	expect(mutations).toBe(0)
+})
+
+it('retains the shared background until a returning idle video finishes its longer fade', async () => {
+	const { item, player } = await mountPlayer()
+	const other = query(document, '#video-minimal .amk-zoom')
+	item.dataset.gallery = 'idle-background'
+	other.dataset.gallery = 'idle-background'
+	const first = query(player, '.amk-controls')
+	const second = query(other, '.amk-controls')
+	first.style.setProperty('--amk-duration', '100ms')
+	second.style.setProperty('--amk-duration', '1s')
+	await query(other, 'video', HTMLVideoElement).play()
+	await openLightbox(item)
+	await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
+	second.dataset.userInactive = ''
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(() => first.matches(':popover-open')).toBe(false)
+	expect(second.matches(':popover-open')).toBe(true)
+	expect(Number(getComputedStyle(second).opacity)).toBeLessThan(1)
+	expect(getComputedStyle(query(viewer(), '.amk-controls-background')).opacity).toBe('1')
+	await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
+	expect(getComputedStyle(second).opacity).toBe('1')
+})
+
+it.each([
+	['#first .amk-zoom', 'Home', 'next'],
+	['#video-zoom-only .amk-zoom', 'End', 'previous'],
+])(
+	'hides the shared background for %s and restores it once on return',
+	async (selector, away, back) => {
+		const { item } = await mountPlayer()
+		const other = query(document, selector)
+		const second = query(document, '#video-minimal .amk-zoom')
+		item.dataset.gallery = 'background'
+		other.dataset.gallery = 'background'
+		second.dataset.gallery = 'background'
+		delete other.dataset.scope
+		await openLightbox(item)
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(() => viewer().querySelector('.amk-controls-background')).not.toBeNull()
+		const background = query(viewer(), '.amk-controls-background')
+		await userEvent.keyboard(`{${away}}`)
+		await expect
+			.poll(() => !background.isConnected || getComputedStyle(background).opacity === '0')
+			.toBe(true)
+		await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
+		await userEvent.click(query(viewer(), `.amk-lightbox-${back}`))
+		await expect.poll(() => viewer().querySelector('.amk-controls-background')).toBeNull()
+		await closeLightbox()
+		expect(viewer().querySelector('.amk-controls-background')).toBeNull()
+	},
+)
 
 it('switches video control strips without motion when reduced motion is requested', async () => {
 	const { item, player } = await mountPlayer()
@@ -240,6 +346,7 @@ it('switches video control strips without motion when reduced motion is requeste
 		expect(second.getBoundingClientRect().bottom).toBeCloseTo(window.innerHeight, 0)
 		expect(first.getAnimations()).toHaveLength(0)
 		expect(second.getAnimations()).toHaveLength(0)
+		expect(viewer().querySelector('.amk-controls-background')).toBeNull()
 	} finally {
 		await commands.emulateReducedMotion(false)
 	}
