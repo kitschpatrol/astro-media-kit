@@ -647,24 +647,18 @@ In the viewer:
 
 The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk-lightbox` cascade layer so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
 
-| Property                                  | Default                           |
-| ----------------------------------------- | --------------------------------- |
-| `--amk-lightbox-backdrop`                 | `rgb(0 0 0 / 28.7%)`              |
-| `--amk-lightbox-duration`                 | `0.4s` (`0s` with reduced motion) |
-| `--amk-lightbox-open-fade-duration`       | `0.3s` (`0s` with reduced motion) |
-| `--amk-lightbox-close-fade-duration`      | `0.3s` (`0s` with reduced motion) |
-| `--amk-lightbox-carousel-duration`        | `0.4s` (`0s` with reduced motion) |
-| `--amk-lightbox-easing`                   | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
-| `--amk-lightbox-gutter`                   | `clamp(0.75rem, 5vmin, 4rem)`     |
-| `--amk-lightbox-caption-width`            | `min(20rem, 30vw)`                |
-| `--amk-lightbox-control-size`             | `2.75rem`                         |
-| `--amk-lightbox-control-color`            | `#f4f4f4`                         |
-| `--amk-lightbox-control-background`       | `rgb(0 0 0 / 60%)`                |
-| `--amk-lightbox-control-hover-background` | `rgb(0 0 0 / 80%)`                |
-| `--amk-lightbox-control-radius`           | `50%`                             |
-| `--amk-lightbox-icon-size`                | `1.25rem`                         |
+| Property                             | Default                           |
+| ------------------------------------ | --------------------------------- |
+| `--amk-lightbox-backdrop`            | `rgb(0 0 0 / 28.7%)`              |
+| `--amk-lightbox-duration`            | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-open-fade-duration`  | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-close-fade-duration` | `0.3s` (`0s` with reduced motion) |
+| `--amk-lightbox-carousel-duration`   | `0.4s` (`0s` with reduced motion) |
+| `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
+| `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
+| `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
 
-`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling comes from the [shared gallery controls](#shared-gallery-controls) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
 
 Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
 
