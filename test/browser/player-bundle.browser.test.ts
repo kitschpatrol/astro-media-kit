@@ -57,8 +57,8 @@ it.each(['zoom', 'zoom-hls'])(
 					.poll(() => root.querySelector<HTMLDialogElement>('.amk-lightbox')?.open)
 					.toBe(false)
 				await expect.poll(() => mute.getAttribute('aria-label')).toBe('Unmute')
-				// The gallery restores its original level over a 250 ms fade.
-				await expect.poll(() => media.volume).toBe(1)
+				// A level set in the viewer is the one the gallery comes back to
+				await expect.poll(() => media.volume).toBe(0.4)
 			}
 		} finally {
 			frame.remove()
