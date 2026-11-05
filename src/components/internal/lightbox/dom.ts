@@ -28,7 +28,6 @@ const regions = [
 
 /** Controls with their own click, drag, and keyboard behavior. */
 const controls = [
-	'[role="button"]',
 	'[role="slider"]',
 	'button',
 	'input',
@@ -39,11 +38,14 @@ const controls = [
 	'[contenteditable]:not([contenteditable="false"])',
 ]
 
+/** What an item itself is: a link to its fallback, or a button around content. */
+const openers = ['a[href]', '[role="button"]']
+
 /**
  * Elements that keep their own click and keyboard behavior when they sit inside
  * an item or a lifted subject, such as a player's controls or links.
  */
-export const interactiveSelector = [...regions, 'a[href]', ...controls].join(',')
+export const interactiveSelector = [...regions, ...openers, ...controls].join(',')
 
 /**
  * Interactive regions, where a clearly vertical drag can still dismiss the
@@ -52,11 +54,14 @@ export const interactiveSelector = [...regions, 'a[href]', ...controls].join(','
 export const regionSelector = regions.join(',')
 
 /**
- * Controls, which keep every press, drag included. An item's own fallback link
- * gives its presses to a drag of the carousel it sits in; the click that ends a
- * drag never opens it.
+ * Controls, which keep every press, drag included. An item itself gives its
+ * presses to a drag of the carousel it sits in; the click that ends a drag
+ * never opens it.
  */
-export const controlSelector = ['a[href]:not(.amk-zoom)', ...controls].join(',')
+export const controlSelector = [
+	...openers.map((selector) => `${selector}:not(${itemSelector})`),
+	...controls,
+].join(',')
 
 /** Elements that use the arrow keys themselves. */
 export const arrowKeySelector = [
