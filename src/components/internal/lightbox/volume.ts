@@ -1,16 +1,19 @@
 /**
  * Audio across a gallery: while the viewer shows one item, media playing in the
  * others fades to silence, and comes back as the carousel reaches it, to the
- * level it had when the gallery was first opened. Everything returns to that
- * level when the viewer closes. Media that isn't playing is left alone.
+ * level it had when the gallery was first opened, or to one set since in the
+ * viewer. Everything returns to that level when the viewer closes. Media that
+ * isn't playing is left alone.
  */
 
 /** A native media element, or a Video.js media element, which mirrors its API. */
-type MediaLike = { paused: boolean; volume: number }
+type MediaLike = EventTarget & { paused: boolean; volume: number }
 
 type Tracked = {
+	/** Releases the listener that follows levels set by hand. */
+	controller: AbortController
 	frame: number | undefined
-	/** The volume when the gallery was first opened. */
+	/** The volume to come back to. */
 	level: number
 }
 
@@ -18,6 +21,9 @@ type Tracked = {
 const fadeDuration = 250
 
 const tracked = new Map<MediaLike, Tracked>()
+
+/** The media in the item on show, whose sound the viewer leaves alone. */
+let heard = new Set<MediaLike>()
 
 /**
  * Remember the level of every media element in `roots`, unless it is already
@@ -28,7 +34,7 @@ export function beginVolumes(roots: Element[], active: Element | undefined) {
 	for (const root of roots) {
 		for (const media of mediaIn(root)) {
 			if (!tracked.has(media)) {
-				tracked.set(media, { frame: undefined, level: media.volume })
+				tracked.set(media, track(media))
 			}
 		}
 	}
@@ -43,7 +49,7 @@ export function beginVolumes(roots: Element[], active: Element | undefined) {
  * is playing away.
  */
 export function focusVolumes(active: Element) {
-	const heard = new Set(mediaIn(active))
+	heard = new Set(mediaIn(active))
 	for (const [media, entry] of tracked) {
 		if (heard.has(media)) {
 			fade(media, entry, entry.level)
@@ -55,11 +61,32 @@ export function focusVolumes(active: Element) {
 
 /** Bring every tracked media element back to its level, and forget it. */
 export function endVolumes() {
+	heard = new Set()
 	for (const [media, entry] of tracked) {
 		fade(media, entry, entry.level, () => {
+			entry.controller.abort()
 			tracked.delete(media)
 		})
 	}
+}
+
+/**
+ * Start tracking `media` at its current level. A level the user sets while it
+ * is the one heard, between fades, is the one to come back to from then on.
+ */
+function track(media: MediaLike): Tracked {
+	const controller = new AbortController()
+	const entry: Tracked = { controller, frame: undefined, level: media.volume }
+	media.addEventListener(
+		'volumechange',
+		() => {
+			if (entry.frame === undefined && heard.has(media)) {
+				entry.level = media.volume
+			}
+		},
+		{ signal: controller.signal },
+	)
+	return entry
 }
 
 /**
