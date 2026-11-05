@@ -430,7 +430,7 @@ export class CarouselMotion {
 			const velocity = velocityOf(drag.samples, drag.distanceY, event.timeStamp)
 			const distance = Math.abs(drag.distanceY)
 			const threshold = Math.min(160, this.#track.clientHeight * 0.2)
-			this.#ignoreClick(true)
+			this.#ignoreClick(event.type !== 'pointercancel')
 			this.#options.onDismissEnd(
 				event.type === 'pointerup' &&
 					(distance >= threshold ||
@@ -464,8 +464,9 @@ export class CarouselMotion {
 			)
 		}
 
-		// The click that ends a drag is not a click on the content
-		this.#ignoreClick(true)
+		// The click that ends a drag is not a click on the content. None follows
+		// a drag the browser cancelled, so the next click is a click again
+		this.#ignoreClick(event.type !== 'pointercancel')
 	}
 
 	readonly #handlePointermove = (event: PointerEvent) => {

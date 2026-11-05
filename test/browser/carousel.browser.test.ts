@@ -9,7 +9,9 @@ import { isClickFromDrag } from '../../src/components/internal/lightbox/motion'
 import {
 	activeSlideLabel,
 	cleanUp,
+	clickMiddle,
 	frames,
+	middleOf,
 	mount,
 	mountPage,
 	query,
@@ -191,6 +193,33 @@ it('drags with the mouse without opening the lightbox, and opens it on a click',
 	await userEvent.click(query(track, '.amk-carousel-slide:nth-child(2) .amk-zoom'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	expect(activeSlideLabel()).toBe('2 of 3')
+})
+
+it('lets the next click open the lightbox after the browser cancels a drag', async () => {
+	const { track } = await mountCarousel()
+	const middle = middleOf(track)
+	let pointerId = 0
+	track.addEventListener(
+		'pointerdown',
+		(event) => {
+			pointerId = event.pointerId
+		},
+		{ once: true },
+	)
+	try {
+		await commands.mouseDown(middle.x, middle.y)
+		await commands.mouseMove(middle.x - 100, middle.y)
+		await expect.poll(() => Object.hasOwn(track.dataset, 'dragging')).toBe(true)
+		track.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId }))
+		await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+
+		clickMiddle(query(track, '.amk-carousel-slide:nth-child(1) .amk-zoom'))
+
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+		expect(activeSlideLabel()).toBe('1 of 3')
+	} finally {
+		await commands.mouseUp()
+	}
 })
 
 it('clips the slides at its edges as the track is pulled past an end', async () => {
