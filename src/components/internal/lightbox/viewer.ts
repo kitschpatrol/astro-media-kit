@@ -570,7 +570,12 @@ class Viewer {
 	}
 
 	readonly #handleCommand = (event: Event) => {
-		if (event.target !== this.#dialog || !this.#isNavigable || !(event instanceof CommandEvent)) {
+		if (
+			typeof CommandEvent === 'undefined' ||
+			event.target !== this.#dialog ||
+			!this.#isNavigable ||
+			!(event instanceof CommandEvent)
+		) {
 			return
 		}
 
