@@ -854,7 +854,7 @@ it('opens the volume popover from the floated bar too, and keeps it open', async
 
 	await userEvent.hover(mute)
 
-	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
 	await settle(400)
 	expect(popover.matches(':popover-open')).toBe(true)
 	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
@@ -875,7 +875,7 @@ it('keeps the volume popover working after a trip through the lightbox', async (
 	await commands.mouseMove(5, 5)
 	await userEvent.hover(query(player, 'amk-mute-button'))
 
-	await expect.poll(() => Object.hasOwn(popover.dataset, 'open')).toBe(true)
+	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
 	await settle(400)
 	expect(popover.matches(':popover-open')).toBe(true)
 	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
@@ -904,6 +904,7 @@ it.each(['inline', 'lifted', 'returned'])(
 			const wasMuted = video.muted
 			await userEvent.click(mute)
 			await expect.poll(() => video.muted, { message: phase }).toBe(!wasMuted)
+			await expect.poll(() => popover.matches(':popover-open')).toBe(true)
 			await settle(200)
 			expect(popover.matches(':popover-open')).toBe(true)
 			expect(mute.getAttribute('aria-expanded')).toBe('true')

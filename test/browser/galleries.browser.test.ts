@@ -7,6 +7,7 @@ import {
 	block,
 	boxes,
 	cleanUp,
+	close,
 	currentLayer,
 	currentStage,
 	gallery,
@@ -694,10 +695,3 @@ describe('galleries', () => {
 		expect(isLifted(items[0]!)).toBe(false)
 	})
 })
-
-/** Ask the viewer to close and wait until it has. */
-async function close(): Promise<void> {
-	const dialog = viewer()
-	dialog.requestClose()
-	await expect.poll(() => dialog.open).toBe(false)
-}
