@@ -388,33 +388,24 @@ function extractVimeoId(url: URL): string | undefined {
 	const segments = url.pathname.split('/').filter(Boolean)
 	const [lastSegment, previousSegment] = [segments.at(-1), segments.at(-2)]
 	if (
-		previousSegment !== undefined &&
-		VIMEO_COLLECTION_SEGMENTS.has(previousSegment.toLowerCase())
+		lastSegment === undefined ||
+		(previousSegment !== undefined && VIMEO_COLLECTION_SEGMENTS.has(previousSegment.toLowerCase()))
 	) {
 		return undefined
 	}
 
+	// An all-digit hash reads as a video ID after a channel name, so it counts
+	// as a hash only when the ID and it make up the whole path
 	if (
 		previousSegment !== undefined &&
-		lastSegment !== undefined &&
-		segments.length === 2 &&
 		vimeoIsValidMediaId(previousSegment) &&
-		VIMEO_HASH_REGEX.test(lastSegment)
+		VIMEO_HASH_REGEX.test(lastSegment) &&
+		(!vimeoIsValidMediaId(lastSegment) || segments.length === 2)
 	) {
 		return withVimeoHash(previousSegment, lastSegment)
 	}
 
-	if (lastSegment !== undefined && vimeoIsValidMediaId(lastSegment)) {
-		return withVimeoHash(lastSegment, queryHash)
-	}
-
-	if (lastSegment === undefined || previousSegment === undefined) {
-		return undefined
-	}
-
-	return vimeoIsValidMediaId(previousSegment) && VIMEO_HASH_REGEX.test(lastSegment)
-		? withVimeoHash(previousSegment, lastSegment)
-		: undefined
+	return vimeoIsValidMediaId(lastSegment) ? withVimeoHash(lastSegment, queryHash) : undefined
 }
 
 /**
