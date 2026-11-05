@@ -7,6 +7,8 @@
 		--amk-gallery-control-background: rgb(0 0 0 / 60%);
 		--amk-gallery-control-hover-background: rgb(0 0 0 / 80%);
 		--amk-gallery-control-radius: 50%;
+		--amk-gallery-control-inset: 0.75rem;
+		--amk-gallery-control-block-position: 50%;
 		--amk-gallery-icon-size: 1.25rem;
 		--amk-gallery-icon-opacity: 1;
 		--amk-gallery-icon-active-opacity: 1;

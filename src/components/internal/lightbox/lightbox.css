@@ -195,6 +195,67 @@
    Tailwind's preflight) can't strip them, while class selectors on the page
    still override them */
 .amk-lightbox {
+	/* Each control setting is read here, once: this component's own value, else
+	   the shared gallery value, inherited or set on this element */
+	--amk-lightbox-resolved-control-width: var(
+		--amk-lightbox-control-width,
+		var(
+			--amk-lightbox-control-size,
+			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+		)
+	);
+	--amk-lightbox-resolved-control-height: var(
+		--amk-lightbox-control-height,
+		var(
+			--amk-lightbox-control-size,
+			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+		)
+	);
+	--amk-lightbox-resolved-control-radius: var(
+		--amk-lightbox-control-radius,
+		var(--amk-gallery-control-radius)
+	);
+	--amk-lightbox-resolved-control-color: var(
+		--amk-lightbox-control-color,
+		var(--amk-gallery-control-color)
+	);
+	--amk-lightbox-resolved-control-background: var(
+		--amk-lightbox-control-background,
+		var(--amk-gallery-control-background)
+	);
+	--amk-lightbox-resolved-control-hover-background: var(
+		--amk-lightbox-control-hover-background,
+		var(--amk-gallery-control-hover-background)
+	);
+	--amk-lightbox-resolved-control-inset: var(
+		--amk-lightbox-control-inset,
+		var(--amk-gallery-control-inset)
+	);
+	--amk-lightbox-resolved-control-block-position: var(
+		--amk-lightbox-control-block-position,
+		var(--amk-gallery-control-block-position)
+	);
+	--amk-lightbox-resolved-control-transition-duration: var(
+		--amk-lightbox-control-transition-duration,
+		var(--amk-gallery-control-transition-duration)
+	);
+	--amk-lightbox-resolved-control-active-transition-duration: var(
+		--amk-lightbox-control-active-transition-duration,
+		var(
+			--amk-gallery-control-active-transition-duration,
+			var(--amk-lightbox-resolved-control-transition-duration)
+		)
+	);
+	--amk-lightbox-resolved-icon-size: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
+	--amk-lightbox-resolved-icon-opacity: var(
+		--amk-lightbox-icon-opacity,
+		var(--amk-gallery-icon-opacity)
+	);
+	--amk-lightbox-resolved-icon-active-opacity: var(
+		--amk-lightbox-icon-active-opacity,
+		var(--amk-gallery-icon-active-opacity)
+	);
+
 	/* Lifted subjects keep the page's colors; the controls set their own */
 	color: inherit;
 }
@@ -446,35 +507,22 @@
 	position: absolute;
 	display: grid;
 	place-items: center;
-	width: var(
-		--amk-lightbox-control-width,
-		var(
-			--amk-lightbox-control-size,
-			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
-		)
-	);
-	height: var(
-		--amk-lightbox-control-height,
-		var(
-			--amk-lightbox-control-size,
-			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
-		)
-	);
+	width: var(--amk-lightbox-resolved-control-width);
+	height: var(--amk-lightbox-resolved-control-height);
 	padding: 0;
 	border: 0;
-	border-radius: var(--amk-lightbox-control-radius, var(--amk-gallery-control-radius));
-	color: var(--amk-lightbox-control-color, var(--amk-gallery-control-color));
-	background: var(--amk-lightbox-control-background, var(--amk-gallery-control-background));
+	border-radius: var(--amk-lightbox-resolved-control-radius);
+	color: var(--amk-lightbox-resolved-control-color);
+	background: var(--amk-lightbox-resolved-control-background);
 }
 
 .amk-lightbox-icon {
 	pointer-events: none;
 	display: block;
-	width: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
-	height: var(--amk-lightbox-icon-size, var(--amk-gallery-icon-size));
-	opacity: var(--amk-lightbox-icon-opacity, var(--amk-gallery-icon-opacity));
-	transition: opacity
-		var(--amk-lightbox-control-transition-duration, var(--amk-gallery-control-transition-duration))
+	width: var(--amk-lightbox-resolved-icon-size);
+	height: var(--amk-lightbox-resolved-icon-size);
+	opacity: var(--amk-lightbox-resolved-icon-opacity);
+	transition: opacity var(--amk-lightbox-resolved-control-transition-duration)
 		var(--amk-lightbox-easing);
 }
 
@@ -510,36 +558,11 @@
 .amk-lightbox-zoom {
 	inset: var(
 		--amk-lightbox-zoom-inset,
-		max(
-				env(safe-area-inset-top),
-				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
-			)
-			max(
-				env(safe-area-inset-right),
-				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
-			)
-			auto auto
+		max(env(safe-area-inset-top), var(--amk-lightbox-resolved-control-inset))
+			max(env(safe-area-inset-right), var(--amk-lightbox-resolved-control-inset)) auto auto
 	);
-	width: var(
-		--amk-lightbox-zoom-width,
-		var(
-			--amk-lightbox-control-width,
-			var(
-				--amk-lightbox-control-size,
-				var(--amk-gallery-control-width, var(--amk-gallery-control-size))
-			)
-		)
-	);
-	height: var(
-		--amk-lightbox-zoom-height,
-		var(
-			--amk-lightbox-control-height,
-			var(
-				--amk-lightbox-control-size,
-				var(--amk-gallery-control-height, var(--amk-gallery-control-size))
-			)
-		)
-	);
+	width: var(--amk-lightbox-zoom-width, var(--amk-lightbox-resolved-control-width));
+	height: var(--amk-lightbox-zoom-height, var(--amk-lightbox-resolved-control-height));
 }
 
 /* State belongs to the button, independent of the supplied icon artwork. */
@@ -551,41 +574,16 @@
 .amk-lightbox-close {
 	inset: var(
 		--amk-lightbox-close-inset,
-		max(
-				env(safe-area-inset-top),
-				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
-			)
-			auto auto
-			max(
-				env(safe-area-inset-left),
-				var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
-			)
+		max(env(safe-area-inset-top), var(--amk-lightbox-resolved-control-inset)) auto auto
+			max(env(safe-area-inset-left), var(--amk-lightbox-resolved-control-inset))
 	);
-	width: var(
-		--amk-lightbox-close-width,
-		var(
-			--amk-lightbox-control-width,
-			var(
-				--amk-lightbox-control-size,
-				var(--amk-gallery-control-width, var(--amk-gallery-control-size))
-			)
-		)
-	);
-	height: var(
-		--amk-lightbox-close-height,
-		var(
-			--amk-lightbox-control-height,
-			var(
-				--amk-lightbox-control-size,
-				var(--amk-gallery-control-height, var(--amk-gallery-control-size))
-			)
-		)
-	);
+	width: var(--amk-lightbox-close-width, var(--amk-lightbox-resolved-control-width));
+	height: var(--amk-lightbox-close-height, var(--amk-lightbox-resolved-control-height));
 }
 
 .amk-lightbox-previous,
 .amk-lightbox-next {
-	top: var(--amk-lightbox-control-block-position, var(--amk-gallery-control-block-position, 50%));
+	top: var(--amk-lightbox-resolved-control-block-position);
 	translate: 0 -50%;
 }
 
@@ -593,7 +591,7 @@
 	inset-inline-start: max(
 		env(safe-area-inset-left),
 		env(safe-area-inset-right),
-		var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+		var(--amk-lightbox-resolved-control-inset)
 	);
 }
 
@@ -601,7 +599,7 @@
 	inset-inline-end: max(
 		env(safe-area-inset-left),
 		env(safe-area-inset-right),
-		var(--amk-lightbox-control-inset, var(--amk-gallery-control-inset, 0.75rem))
+		var(--amk-lightbox-resolved-control-inset)
 	);
 }
 
@@ -629,11 +627,7 @@
 	opacity: 0;
 	transition:
 		opacity var(--amk-lightbox-duration) var(--amk-lightbox-easing),
-		background-color
-			var(
-				--amk-lightbox-control-transition-duration,
-				var(--amk-gallery-control-transition-duration)
-			)
+		background-color var(--amk-lightbox-resolved-control-transition-duration)
 			var(--amk-lightbox-easing);
 }
 
@@ -652,71 +646,27 @@
 
 @media (hover: hover) {
 	.amk-lightbox-button:not([aria-disabled='true']):hover {
-		background: var(
-			--amk-lightbox-control-hover-background,
-			var(--amk-gallery-control-hover-background)
-		);
+		background: var(--amk-lightbox-resolved-control-hover-background);
 		transition-duration:
-			var(--amk-lightbox-duration),
-			var(
-				--amk-lightbox-control-active-transition-duration,
-				var(
-					--amk-gallery-control-active-transition-duration,
-					var(
-						--amk-lightbox-control-transition-duration,
-						var(--amk-gallery-control-transition-duration)
-					)
-				)
-			);
+			var(--amk-lightbox-duration), var(--amk-lightbox-resolved-control-active-transition-duration);
 	}
 
 	.amk-lightbox-button:not([aria-disabled='true']):hover .amk-lightbox-icon {
-		opacity: var(--amk-lightbox-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
-		transition-duration: var(
-			--amk-lightbox-control-active-transition-duration,
-			var(
-				--amk-gallery-control-active-transition-duration,
-				var(
-					--amk-lightbox-control-transition-duration,
-					var(--amk-gallery-control-transition-duration)
-				)
-			)
-		);
+		opacity: var(--amk-lightbox-resolved-icon-active-opacity);
+		transition-duration: var(--amk-lightbox-resolved-control-active-transition-duration);
 	}
 }
 
 /* Keyboard focus receives the same active treatment as a pointer hover. */
 .amk-lightbox-button:not([aria-disabled='true']):focus-visible {
-	background: var(
-		--amk-lightbox-control-hover-background,
-		var(--amk-gallery-control-hover-background)
-	);
+	background: var(--amk-lightbox-resolved-control-hover-background);
 	transition-duration:
-		var(--amk-lightbox-duration),
-		var(
-			--amk-lightbox-control-active-transition-duration,
-			var(
-				--amk-gallery-control-active-transition-duration,
-				var(
-					--amk-lightbox-control-transition-duration,
-					var(--amk-gallery-control-transition-duration)
-				)
-			)
-		);
+		var(--amk-lightbox-duration), var(--amk-lightbox-resolved-control-active-transition-duration);
 }
 
 .amk-lightbox-button:not([aria-disabled='true']):focus-visible .amk-lightbox-icon {
-	opacity: var(--amk-lightbox-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
-	transition-duration: var(
-		--amk-lightbox-control-active-transition-duration,
-		var(
-			--amk-gallery-control-active-transition-duration,
-			var(
-				--amk-lightbox-control-transition-duration,
-				var(--amk-gallery-control-transition-duration)
-			)
-		)
-	);
+	opacity: var(--amk-lightbox-resolved-icon-active-opacity);
+	transition-duration: var(--amk-lightbox-resolved-control-active-transition-duration);
 }
 
 @media (prefers-reduced-motion: reduce) {

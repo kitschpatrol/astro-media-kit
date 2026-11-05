@@ -6,6 +6,67 @@
 .amk-carousel {
 	--amk-carousel-duration: 0.4s;
 
+	/* Each control setting is read here, once: this component's own value, else
+	   the shared gallery value, inherited or set on this element */
+	--amk-carousel-resolved-control-width: var(
+		--amk-carousel-control-width,
+		var(
+			--amk-carousel-control-size,
+			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
+		)
+	);
+	--amk-carousel-resolved-control-height: var(
+		--amk-carousel-control-height,
+		var(
+			--amk-carousel-control-size,
+			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
+		)
+	);
+	--amk-carousel-resolved-control-radius: var(
+		--amk-carousel-control-radius,
+		var(--amk-gallery-control-radius)
+	);
+	--amk-carousel-resolved-control-color: var(
+		--amk-carousel-control-color,
+		var(--amk-gallery-control-color)
+	);
+	--amk-carousel-resolved-control-background: var(
+		--amk-carousel-control-background,
+		var(--amk-gallery-control-background)
+	);
+	--amk-carousel-resolved-control-hover-background: var(
+		--amk-carousel-control-hover-background,
+		var(--amk-gallery-control-hover-background)
+	);
+	--amk-carousel-resolved-control-inset: var(
+		--amk-carousel-control-inset,
+		var(--amk-gallery-control-inset)
+	);
+	--amk-carousel-resolved-control-block-position: var(
+		--amk-carousel-control-block-position,
+		var(--amk-gallery-control-block-position)
+	);
+	--amk-carousel-resolved-control-transition-duration: var(
+		--amk-carousel-control-transition-duration,
+		var(--amk-gallery-control-transition-duration)
+	);
+	--amk-carousel-resolved-control-active-transition-duration: var(
+		--amk-carousel-control-active-transition-duration,
+		var(
+			--amk-gallery-control-active-transition-duration,
+			var(--amk-carousel-resolved-control-transition-duration)
+		)
+	);
+	--amk-carousel-resolved-icon-size: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
+	--amk-carousel-resolved-icon-opacity: var(
+		--amk-carousel-icon-opacity,
+		var(--amk-gallery-icon-opacity)
+	);
+	--amk-carousel-resolved-icon-active-opacity: var(
+		--amk-carousel-icon-active-opacity,
+		var(--amk-gallery-icon-active-opacity)
+	);
+
 	position: relative;
 }
 
@@ -79,41 +140,27 @@
 .amk-carousel-button {
 	cursor: pointer;
 	position: absolute;
-	top: var(--amk-carousel-control-block-position, var(--amk-gallery-control-block-position, 50%));
+	top: var(--amk-carousel-resolved-control-block-position);
 	translate: 0 -50%;
 	display: grid;
 	place-items: center;
-	width: var(
-		--amk-carousel-control-width,
-		var(
-			--amk-carousel-control-size,
-			var(--amk-gallery-control-width, var(--amk-gallery-control-size))
-		)
-	);
-	height: var(
-		--amk-carousel-control-height,
-		var(
-			--amk-carousel-control-size,
-			var(--amk-gallery-control-height, var(--amk-gallery-control-size))
-		)
-	);
+	width: var(--amk-carousel-resolved-control-width);
+	height: var(--amk-carousel-resolved-control-height);
 	padding: 0;
 	border: 0;
-	border-radius: var(--amk-carousel-control-radius, var(--amk-gallery-control-radius));
-	color: var(--amk-carousel-control-color, var(--amk-gallery-control-color));
-	background: var(--amk-carousel-control-background, var(--amk-gallery-control-background));
-	transition: background-color
-		var(--amk-carousel-control-transition-duration, var(--amk-gallery-control-transition-duration));
+	border-radius: var(--amk-carousel-resolved-control-radius);
+	color: var(--amk-carousel-resolved-control-color);
+	background: var(--amk-carousel-resolved-control-background);
+	transition: background-color var(--amk-carousel-resolved-control-transition-duration);
 }
 
 .amk-carousel-icon {
 	pointer-events: none;
 	display: block;
-	width: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
-	height: var(--amk-carousel-icon-size, var(--amk-gallery-icon-size));
-	opacity: var(--amk-carousel-icon-opacity, var(--amk-gallery-icon-opacity));
-	transition: opacity
-		var(--amk-carousel-control-transition-duration, var(--amk-gallery-control-transition-duration));
+	width: var(--amk-carousel-resolved-icon-size);
+	height: var(--amk-carousel-resolved-icon-size);
+	opacity: var(--amk-carousel-resolved-icon-opacity);
+	transition: opacity var(--amk-carousel-resolved-control-transition-duration);
 }
 
 .amk-carousel-icon > svg {
@@ -144,43 +191,22 @@
 
 @media (hover: hover) {
 	.amk-carousel-button:not([aria-disabled='true']):hover {
-		background: var(
-			--amk-carousel-control-hover-background,
-			var(--amk-gallery-control-hover-background)
-		);
-		transition-duration: var(
-			--amk-carousel-control-active-transition-duration,
-			var(
-				--amk-gallery-control-active-transition-duration,
-				var(
-					--amk-carousel-control-transition-duration,
-					var(--amk-gallery-control-transition-duration)
-				)
-			)
-		);
+		background: var(--amk-carousel-resolved-control-hover-background);
+		transition-duration: var(--amk-carousel-resolved-control-active-transition-duration);
 	}
 
 	.amk-carousel-button:not([aria-disabled='true']):hover .amk-carousel-icon {
-		opacity: var(--amk-carousel-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
-		transition-duration: var(
-			--amk-carousel-control-active-transition-duration,
-			var(
-				--amk-gallery-control-active-transition-duration,
-				var(
-					--amk-carousel-control-transition-duration,
-					var(--amk-gallery-control-transition-duration)
-				)
-			)
-		);
+		opacity: var(--amk-carousel-resolved-icon-active-opacity);
+		transition-duration: var(--amk-carousel-resolved-control-active-transition-duration);
 	}
 }
 
 .amk-carousel-previous {
-	inset-inline-start: var(--amk-carousel-control-inset, var(--amk-gallery-control-inset, 0.75rem));
+	inset-inline-start: var(--amk-carousel-resolved-control-inset);
 }
 
 .amk-carousel-next {
-	inset-inline-end: var(--amk-carousel-control-inset, var(--amk-gallery-control-inset, 0.75rem));
+	inset-inline-end: var(--amk-carousel-resolved-control-inset);
 }
 
 .amk-carousel:dir(rtl) .amk-carousel-icon {
@@ -237,34 +263,13 @@
 
 /* Keyboard focus receives the same active treatment as a pointer hover. */
 .amk-carousel-button:not([aria-disabled='true']):focus-visible {
-	background: var(
-		--amk-carousel-control-hover-background,
-		var(--amk-gallery-control-hover-background)
-	);
-	transition-duration: var(
-		--amk-carousel-control-active-transition-duration,
-		var(
-			--amk-gallery-control-active-transition-duration,
-			var(
-				--amk-carousel-control-transition-duration,
-				var(--amk-gallery-control-transition-duration)
-			)
-		)
-	);
+	background: var(--amk-carousel-resolved-control-hover-background);
+	transition-duration: var(--amk-carousel-resolved-control-active-transition-duration);
 }
 
 .amk-carousel-button:not([aria-disabled='true']):focus-visible .amk-carousel-icon {
-	opacity: var(--amk-carousel-icon-active-opacity, var(--amk-gallery-icon-active-opacity));
-	transition-duration: var(
-		--amk-carousel-control-active-transition-duration,
-		var(
-			--amk-gallery-control-active-transition-duration,
-			var(
-				--amk-carousel-control-transition-duration,
-				var(--amk-gallery-control-transition-duration)
-			)
-		)
-	);
+	opacity: var(--amk-carousel-resolved-icon-active-opacity);
+	transition-duration: var(--amk-carousel-resolved-control-active-transition-duration);
 }
 
 @media (prefers-reduced-motion: reduce) {

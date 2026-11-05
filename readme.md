@@ -566,7 +566,7 @@ Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:ro
 | `--amk-gallery-control-transition-duration`                   | `0.5s`                      |
 | `--amk-gallery-control-active-transition-duration`            | Resting transition duration |
 
-Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's controls. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. These variables resolve where each control is rendered, so settings inherited from a carousel's ancestor work without aliases.
+Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's controls. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. Each component reads these variables on its root, so set them on `:root`, on an ancestor of a carousel, or on `.amk-lightbox` or `.amk-carousel`, not on individual buttons.
 
 Component-specific properties are optional overrides rather than populated defaults. If your own CSS reads one directly, include the shared fallback, such as `var(--amk-lightbox-control-size, var(--amk-gallery-control-size))`.
 
