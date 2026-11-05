@@ -3,11 +3,10 @@ import type { InternalVideoProps } from './types'
 
 export type Props = {
 	controls: InternalVideoProps['controls']
-	floating?: boolean
 	zoom?: boolean
 }
 
-const { controls, floating = false, zoom = false } = Astro.props
+const { controls, zoom = false } = Astro.props
 // A minimal player that can zoom gets the full bar as well, hidden on the page
 // and shown by the lightbox, which gives the player its own control level
 const hasBar = controls === 'full' || controls === 'lightbox' || (controls === 'minimal' && zoom)
@@ -16,7 +15,7 @@ const hasFullscreen =
 const uid = `amk-${crypto.randomUUID()}`
 ---
 
-<media-controls data-interactive="" visibility={floating ? 'always' : undefined}>
+<media-controls data-interactive="">
 	<media-controls-content class="amk-controls">
 		{controls === 'minimal' && (
 			<media-play-button class="amk-button amk-center-play">
