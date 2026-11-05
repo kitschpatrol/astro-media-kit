@@ -1,8 +1,8 @@
-// Utilities
+export type { BunnyConfig } from './components/utils/bunny'
+export type { CloudflareConfig } from './components/utils/cloudflare'
 export { isImageMetadataObject, resolveImageSource } from './components/utils/image'
-// Types
-export type { Service, ServiceConfig, VideoInfo } from './components/utils/video'
-// Integration
+export type { MuxConfig } from './components/utils/mux'
+export type { CredentialService, Service, ServiceConfig, VideoInfo } from './components/utils/video'
 export { default } from './integration/index'
 export type { AphexConfig } from './integration/index'
 export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './integration/index'

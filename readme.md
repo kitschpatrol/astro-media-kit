@@ -919,6 +919,8 @@ Exported from `astro-media-kit`:
 - **`MediaType`** — `'animation' | 'audio' | 'diagram' | 'illustration' | 'image' | 'photo' | 'render' | 'screenshot' | 'video'`
 - **`Service`** — `'bunny' | 'cloudflare' | 'local' | 'mux' | 'oembed' | 'vimeo' | 'youtube'`
 - **`ServiceConfig`** — Maps each video service name to its configuration type.
+- **`CredentialService`** — `'bunny' | 'cloudflare' | 'mux'`, the services that need credentials.
+- **`BunnyConfig`**, **`CloudflareConfig`**, **`MuxConfig`** — Credential shapes for those services.
 - **`VideoInfo`** — Normalized video metadata (dimensions, duration, URLs, captions).
 - **`MediaKitConfig`** — Options accepted by the `mediaKit()` integration function.
 - **`AphexConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
