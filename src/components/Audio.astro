@@ -8,7 +8,7 @@ import AudioPlayer from './internal/AudioPlayer.astro'
 import FallbackLink from './internal/FallbackLink.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
-import { mediaCrossOrigin } from './utils/media'
+import { mediaCrossOrigin, tryParseUrl } from './utils/media'
 import { fetchOEmbed } from './utils/oembed'
 import './internal/amk-audio.css'
 
@@ -76,7 +76,7 @@ let fetchError: string | undefined
 
 if (resolvedService === 'soundcloud') {
 	embedUrl = buildSoundCloudEmbedUrl(identifier, { autoPlay })
-	soundcloudPageUrl = identifier.startsWith('http') ? identifier : embedUrl
+	soundcloudPageUrl = tryParseUrl(identifier) === undefined ? embedUrl : identifier
 } else if (resolvedService === 'oembed') {
 	try {
 		oembedInfo = await fetchOEmbed(identifier)

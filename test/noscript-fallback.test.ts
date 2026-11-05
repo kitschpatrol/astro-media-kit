@@ -96,6 +96,8 @@ describe('noscript fallback server markup', () => {
 		const byUrl = fallbackOf($, '#soundcloud-url')!('a')
 		expect(byUrl.attr('href')).toBe('https://soundcloud.com/kitschpatrol/drona')
 		expect(byUrl.text().trim()).toBe('Listen on SoundCloud')
+		const byUppercaseUrl = fallbackOf($, '#soundcloud-uppercase')!('a')
+		expect(byUppercaseUrl.attr('href')).toBe('HTTPS://soundcloud.com/kitschpatrol/drona')
 		const byId = fallbackOf($, '#soundcloud-id')!('a')
 		expect(byId.attr('href')).toBe($('#soundcloud-id iframe').attr('src'))
 		expect(byId.attr('href')).toContain('https://w.soundcloud.com/player/?')
