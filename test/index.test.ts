@@ -255,10 +255,17 @@ import img from '../assets/test.jpeg'
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('returns undefined when no frontmatter present', async () => {
+	it('adds frontmatter to hold the imports when the file has none', async () => {
 		const source = '<Image src="../assets/test.jpeg" alt="No frontmatter" />'
 		const result = await transformAstroSource(source, defaultConfig)
-		expect(result).toBeUndefined()
+		expect(result).toBe(
+			'---\nimport __ami_0 from "../assets/test.jpeg"\n---\n\n<Image src={__ami_0} alt="No frontmatter" />',
+		)
+	})
+
+	it('leaves a file without frontmatter alone when nothing is imported', async () => {
+		const source = '<Image src="/images/photo.jpg" alt="Public" width="300" height="200" />'
+		expect(await transformAstroSource(source, defaultConfig)).toBeUndefined()
 	})
 
 	it('handles custom component names', async () => {

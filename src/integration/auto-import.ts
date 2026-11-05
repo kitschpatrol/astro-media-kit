@@ -212,18 +212,17 @@ function walkNodes(node: Node, visitor: (node: Node) => void): void {
 
 /**
  * Collect imports from a single component node, mutating its attributes in
- * place. Returns true if any attributes were modified.
+ * place.
  */
 function processComponent(
 	node: ComponentNode,
 	entries: ResolvedEntry[],
 	imports: Map<string, ImportEntry>,
 	directories: ImportDirectories | undefined,
-): boolean {
+): void {
 	// Read the original attributes: an earlier entry may already have rewritten
 	// the source prop to an import expression.
 	const attributes = node.attributes.map((attribute) => ({ ...attribute }))
-	let modified = false
 	const orderedEntries = [
 		...entries.filter((entry) => !entry.transform),
 		...entries.filter((entry) => entry.transform),
@@ -255,11 +254,7 @@ function processComponent(
 		} else {
 			node.attributes.push(makeExpressionAttribute(entry.toProp, importEntry.name))
 		}
-
-		modified = true
 	}
-
-	return modified
 }
 
 function getOrCreateImport(imports: Map<string, ImportEntry>, importPath: string): ImportEntry {
@@ -305,7 +300,6 @@ async function transformWithEntries(
 
 	let frontmatterNode: FrontmatterNode | undefined
 	const imports = new Map<string, ImportEntry>()
-	let modified = false
 
 	walkNodes(ast, (node) => {
 		if (is.frontmatter(node)) {
@@ -317,17 +311,22 @@ async function transformWithEntries(
 		}
 
 		const entries = componentEntries[node.name]
-		if (entries && processComponent(node, entries, imports, directories)) {
-			modified = true
+		if (entries) {
+			processComponent(node, entries, imports, directories)
 		}
 	})
 
-	// eslint-disable-next-line ts/no-unnecessary-condition -- frontmatterNode is assigned inside the walkNodes callback; TS narrowing doesn't track callback writes.
-	if (!frontmatterNode || !modified) {
+	// Every rewritten attribute refers to an import, so none means no change
+	if (imports.size === 0) {
 		return undefined
 	}
 
-	// Append import statements to frontmatter
+	// A file without frontmatter gets one to hold the imports
+	if (frontmatterNode === undefined) {
+		frontmatterNode = { type: 'frontmatter', value: '\n' }
+		ast.children.unshift(frontmatterNode)
+	}
+
 	const importStatements = Array.from(
 		imports.values(),
 		(entry) => `import ${entry.name} from ${JSON.stringify(entry.path)}`,
