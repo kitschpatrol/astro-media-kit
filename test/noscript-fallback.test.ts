@@ -34,6 +34,12 @@ describe('noscript fallback server markup', () => {
 		expect(fallbackOf($, '#local-native')).toBeUndefined()
 	})
 
+	it('ships no script for a page whose only player is a native-controls file', async () => {
+		const $ = await fixture.readHTML('/video-native-local/')
+		expect($('video[src="/media/loop.mp4"][controls]')).toHaveLength(1)
+		expect($('script')).toHaveLength(0)
+	})
+
 	it('falls back from a native-controls HLS element to its stream and MP4', async () => {
 		const $ = await fixture.readHTML('/noscript-fallback/')
 		const fallback = fallbackOf($, '#hls-native')!

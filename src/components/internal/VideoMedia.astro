@@ -29,9 +29,10 @@ const controls = native || undefined
 const hlsOptionsJson = Object.keys(hlsOptions).length > 0 ? JSON.stringify(hlsOptions) : undefined
 ---
 
-<script>
+{/* A native video element takes its source directly, and needs no script */}
+{(element !== 'video' || !native) && <script>
 	import './videojs-media'
-</script>
+</script>}
 
 {element === 'hlsjs-video' && <script>
 	import './videojs-player'

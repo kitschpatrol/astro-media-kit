@@ -1,0 +1,30 @@
+---
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>A native-controls local video</title>
+	</head>
+	<body>
+		<VideoPlayer
+			aspectRatio="16 / 9"
+			autoPlay={false}
+			captions={[]}
+			controls="native"
+			element="video"
+			fallbackUrl="/media/loop.mp4"
+			hlsOptions={{}}
+			intrinsicWidth={640}
+			loop={false}
+			muted={true}
+			posterUrl="/media/loop-poster.jpg"
+			preload="metadata"
+			resolvedLabel="Native video"
+			videoSrc="/media/loop.mp4"
+			zoom={false}
+		/>
+	</body>
+</html>
