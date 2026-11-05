@@ -15,22 +15,22 @@ export type CloudflareConfig = {
 	apiToken: string
 }
 
-// GPT-generated type based on
-// Imperfect
-// https://developers.cloudflare.com/api/operations/stream-videos-retrieve-video-details
+// The fields this adapter reads, from
+// https://developers.cloudflare.com/api/resources/stream/methods/get/
+// which marks the objects below optional
 type CloudflareGetVideoResponse = {
 	allowedOrigins: string[] // Lists the origins allowed to display the video, use * for wildcard subdomains
 	clippedFrom: unknown // The media item from which this video was clipped (structure unknown), null if not clipped
 	created: string // The date and time the media item was created, in <date-time> format
 	creator: null | string // A user-defined identifier for the media creator, max 64 characters
 	duration: number // The duration of the video in seconds, -1 means unknown
-	input: {
+	input?: {
 		width: number // The width of the source video in pixels
 		height: number // The height of the source video in pixels
 	}
 	maxDurationSeconds: null | number
 	maxSizeBytes: null | number // The size of the media item in bytes
-	meta: {
+	meta?: {
 		filename?: string
 		filetype?: string
 		name?: string
@@ -38,12 +38,12 @@ type CloudflareGetVideoResponse = {
 		type?: string
 	}
 	modified: string // The date and time the media item was created, in <date-time> format
-	playback: {
+	playback?: {
 		dash?: string // DASH Media Presentation Description for the video
 		hls?: string // The HLS manifest for the video
 	}
 	preview?: string // The video's preview page URI, omitted until encoding is complete
-	publicDetails: {
+	publicDetails?: {
 		// eslint-disable-next-line ts/naming-convention
 		channel_link: string
 		logo: string
@@ -123,16 +123,17 @@ export async function cloudflareGetVideoInfo(
 
 	const videoInfo = await cloudflareApiGetVideo(config.accountId, mediaId, config.apiToken)
 
-	const logPrefix =
-		videoInfo.meta.name === undefined || videoInfo.meta.name === ''
-			? `Cloudflare video with id "${mediaId}"`
-			: `Cloudflare video "${videoInfo.meta.name}" with id "${mediaId}"`
+	const name = videoInfo.meta?.name
+	const hasName = name !== undefined && name !== ''
+	const logPrefix = hasName
+		? `Cloudflare video "${name}" with id "${mediaId}"`
+		: `Cloudflare video with id "${mediaId}"`
 
 	if (!videoInfo.readyToStream || videoInfo.status.state !== 'ready') {
 		throw new Error(`${logPrefix} is not ready to stream. Try again in a bit.`)
 	}
 
-	const hlsUrl = videoInfo.playback.hls
+	const hlsUrl = videoInfo.playback?.hls
 
 	if (hlsUrl === undefined) {
 		throw new Error(`${logPrefix} does not have an HLS URL.`)
@@ -142,6 +143,12 @@ export async function cloudflareGetVideoInfo(
 
 	if (posterUrl === undefined) {
 		throw new Error(`${logPrefix} does not have a thumbnail.`)
+	}
+
+	const { input } = videoInfo
+
+	if (input === undefined) {
+		throw new Error(`${logPrefix} does not report its dimensions.`)
 	}
 
 	// Derive the fallback MP4 from the manifest path, which the API leaves out:
@@ -158,12 +165,12 @@ export async function cloudflareGetVideoInfo(
 	return {
 		captions: [], // TODO unsupported — signed URLs required for VTT access
 		duration: videoInfo.duration,
-		height: videoInfo.input.height,
+		height: input.height,
 		hlsUrl,
 		mp4Url,
 		posterUrl,
-		title: videoInfo.meta.name ?? videoInfo.publicDetails.title,
-		width: videoInfo.input.width,
+		title: hasName ? name : videoInfo.publicDetails?.title,
+		width: input.width,
 	}
 }
 
