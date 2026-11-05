@@ -984,6 +984,8 @@ class Viewer {
 	async #reopen(slide: Slide) {
 		const generation = ++this.#generation
 		this.#state = 'opening'
+		// A player's bar floats again from the start, as it does when opening
+		this.#activate()
 		await this.#expand(slide, generation)
 	}
 
