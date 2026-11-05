@@ -424,17 +424,16 @@ function floatBackground(
 
 /** Restore ordinary bar painting once the overlapping controls have settled. */
 async function settleBackground(current: Background, exit: number): Promise<void> {
-	const barsFading = bars
-		.values()
-		.flatMap(({ controls }) =>
-			controls
-				.getAnimations({ subtree: true })
-				.filter(
-					(animation) =>
-						animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
-				),
-		)
-	const fades = [...current.element.getAnimations(), ...barsFading]
+	const fades = current.element.getAnimations()
+	for (const { controls } of bars.values()) {
+		const animations = controls.getAnimations({ subtree: true })
+		for (const animation of animations) {
+			if (animation instanceof CSSTransition && animation.transitionProperty === 'opacity') {
+				fades.push(animation)
+			}
+		}
+	}
+
 	await Promise.allSettled(fades.map(async (animation) => animation.finished))
 	if (background === current && current.exit === exit) {
 		dropBackground()
