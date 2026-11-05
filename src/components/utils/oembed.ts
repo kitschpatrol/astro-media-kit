@@ -106,11 +106,12 @@ function toPixels(value: number | string | undefined): number {
 }
 
 /**
- * Sanitizes oEmbed provider HTML: adds a missing `title` attribute on iframes
- * (for accessibility), removes deprecated attributes (`frameborder`,
- * `scrolling`), and lowercases non-standard attribute names.
+ * Tidies oEmbed provider HTML without making it safe: it is trusted as the
+ * provider returned it. Iframes get a missing `title` attribute (for
+ * accessibility), lose the deprecated `frameborder` and `scrolling` attributes,
+ * and have their attribute names lowercased.
  */
-export function sanitizeEmbedHtml(html: string, title: string): string {
+export function normalizeEmbedHtml(html: string, title: string): string {
 	const deprecatedAttributes = new Set(['frameborder', 'scrolling'])
 
 	// Wrap in a full document — linkedom only wires `document.body` to the

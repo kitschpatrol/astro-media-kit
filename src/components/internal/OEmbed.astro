@@ -1,5 +1,5 @@
 ---
-import { sanitizeEmbedHtml } from '../utils/oembed'
+import { normalizeEmbedHtml } from '../utils/oembed'
 import FallbackLink from './FallbackLink.astro'
 import './amk-oembed.css'
 
@@ -25,7 +25,7 @@ const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
 // Provider HTML with a title on its iframes, deprecated attributes removed,
 // and attribute names lowercased
-const resolvedHtml = sanitizeEmbedHtml(html, resolvedLabel)
+const resolvedHtml = normalizeEmbedHtml(html, resolvedLabel)
 ---
 
 <div

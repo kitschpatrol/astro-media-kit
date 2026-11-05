@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchOEmbed, sanitizeEmbedHtml } from '../src/components/utils/oembed'
+import { fetchOEmbed, normalizeEmbedHtml } from '../src/components/utils/oembed'
 
 /**
  * Answer the page request, landing on `pageUrl`, with a link to an oEmbed
@@ -78,16 +78,16 @@ describe('fetchOEmbed', () => {
 	)
 })
 
-describe('sanitizeEmbedHtml', () => {
+describe('normalizeEmbedHtml', () => {
 	it('preserves the embed content (regression: linkedom fragment parsing returned an empty body)', () => {
 		const html = '<iframe src="https://embed.ted.com/talks/x" width="560" height="315"></iframe>'
-		const result = sanitizeEmbedHtml(html, 'A talk')
+		const result = normalizeEmbedHtml(html, 'A talk')
 		expect(result).toContain('<iframe')
 		expect(result).toContain('src="https://embed.ted.com/talks/x"')
 	})
 
 	it('adds a title to iframes that lack one', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://example.com/embed"></iframe>',
 			'My video',
 		)
@@ -95,7 +95,7 @@ describe('sanitizeEmbedHtml', () => {
 	})
 
 	it('keeps an existing iframe title', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://example.com/embed" title="Original"></iframe>',
 			'Fallback',
 		)
@@ -104,7 +104,7 @@ describe('sanitizeEmbedHtml', () => {
 	})
 
 	it('removes deprecated frameborder and scrolling attributes', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://example.com/embed" title="T" frameborder="0" scrolling="no"></iframe>',
 			'T',
 		)
@@ -114,7 +114,7 @@ describe('sanitizeEmbedHtml', () => {
 	})
 
 	it('lowercases non-standard attribute names', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://example.com/embed" title="T" allowFullScreen="true"></iframe>',
 			'T',
 		)
@@ -123,7 +123,7 @@ describe('sanitizeEmbedHtml', () => {
 	})
 
 	it('preserves surrounding non-iframe content', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://example.com/embed" title="T"></iframe><p>Attribution</p>',
 			'T',
 		)
@@ -132,11 +132,11 @@ describe('sanitizeEmbedHtml', () => {
 
 	it('passes through markup with no iframes', () => {
 		const html = '<blockquote class="tweet">Some quote</blockquote>'
-		expect(sanitizeEmbedHtml(html, 'T')).toBe(html)
+		expect(normalizeEmbedHtml(html, 'T')).toBe(html)
 	})
 
 	it('handles multiple iframes', () => {
-		const result = sanitizeEmbedHtml(
+		const result = normalizeEmbedHtml(
 			'<iframe src="https://a.example/1" frameborder="0"></iframe><iframe src="https://a.example/2" frameborder="0"></iframe>',
 			'T',
 		)
