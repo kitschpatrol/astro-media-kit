@@ -36,7 +36,7 @@ export type VideoInfo = {
 	hlsUrl: string
 	/** Fallback MP4 URL. Empty string when unavailable. */
 	mp4Url: string
-	/** Poster/thumbnail image URL. */
+	/** Poster/thumbnail image URL. Empty string for local files. */
 	posterUrl: string
 	/** Video title from the service, if available. */
 	title: string | undefined
@@ -148,7 +148,7 @@ export function localVideoProbeCandidates(src: string): string[] {
 	return src.startsWith('/') ? [getPublicFilePath(src), src] : [src]
 }
 
-async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo> {
+async function localGetVideoInfo(src: string): Promise<VideoInfo> {
 	let width = 0
 	let height = 0
 	let duration = -1
@@ -181,7 +181,7 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 		height,
 		hlsUrl: '',
 		mp4Url: '',
-		posterUrl: poster,
+		posterUrl: '',
 		title: undefined,
 		width,
 	}
@@ -280,8 +280,6 @@ export async function getVideoInfo(
 	mediaIdOrTitle: string,
 	service: Service,
 	config: ServiceConfig,
-	/** Poster URL — only used by the 'local' service. */
-	poster = '',
 ): Promise<VideoInfo> {
 	switch (service) {
 		case 'bunny': {
@@ -295,7 +293,7 @@ export async function getVideoInfo(
 		}
 
 		case 'local': {
-			return localGetVideoInfo(mediaIdOrTitle, poster)
+			return localGetVideoInfo(mediaIdOrTitle)
 		}
 
 		case 'mux': {

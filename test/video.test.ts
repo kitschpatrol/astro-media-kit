@@ -45,15 +45,15 @@ describe('localVideoProbeCandidates', () => {
 describe('local video dimensions', () => {
 	it('probes a site-root-relative source from the public directory', async () => {
 		vi.spyOn(process, 'cwd').mockReturnValue(nodePath.join(import.meta.dirname, '../playground'))
-		const info = await getVideoInfo('/test.mp4', 'local', localOnlyConfig, '/poster.jpg')
+		const info = await getVideoInfo('/test.mp4', 'local', localOnlyConfig)
 		expect(info.width).toBeGreaterThan(0)
 		expect(info.height).toBeGreaterThan(0)
 		expect(info.duration).toBeGreaterThan(0)
-		expect(info.posterUrl).toBe('/poster.jpg')
+		expect(info.posterUrl).toBe('')
 	})
 
 	it('falls back to zero dimensions when nothing resolves', async () => {
-		const info = await getVideoInfo('/missing.mp4', 'local', localOnlyConfig, '')
+		const info = await getVideoInfo('/missing.mp4', 'local', localOnlyConfig)
 		expect(info.width).toBe(0)
 		expect(info.height).toBe(0)
 		expect(info.duration).toBe(-1)

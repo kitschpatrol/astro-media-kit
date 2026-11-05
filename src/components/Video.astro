@@ -62,7 +62,7 @@ export type Props = Omit<PrefixedCaptionProps, 'creditMediaTypeFallback'> &
 		 * @default true
 		 */
 		muted?: boolean | undefined
-		/** Poster image URL. Overrides the service-provided thumbnail. */
+		/** Poster image URL, in place of the thumbnail the service returns. */
 		poster?: string | undefined
 		/**
 		 * Preload behavior hint.
@@ -124,7 +124,7 @@ if (resolvedService === 'oembed') {
 	}
 } else {
 	try {
-		videoInfo = await getVideoInfo(identifier, resolvedService, config, poster ?? '')
+		videoInfo = await getVideoInfo(identifier, resolvedService, config)
 	} catch (error) {
 		fetchError = `[astro-media-kit] Video "${identifier}" (${resolvedService}) failed to load: ${error instanceof Error ? error.message : String(error)}`
 		console.error(fetchError)
@@ -199,12 +199,9 @@ if (capQualityToSize !== undefined) {
 const fallbackUrl =
 	videoInfo === undefined || videoInfo.mp4Url === '' ? (videoSrc ?? '') : videoInfo.mp4Url
 
-const posterUrl =
-	resolvedService === 'local'
-		? (poster ?? undefined)
-		: resolvedService === 'oembed'
-			? oembedInfo?.thumbnailUrl
-			: videoInfo?.posterUrl
+// An explicit poster replaces the service's thumbnail; local files have none
+const serviceThumbnail = oembedInfo?.thumbnailUrl ?? videoInfo?.posterUrl
+const posterUrl = poster ?? (serviceThumbnail === '' ? undefined : serviceThumbnail)
 
 // Map service to the media element rendered by the player.
 const videoElementMap = {
@@ -240,7 +237,7 @@ const sharedProps = {
 					href={identifier}
 					html={oembedInfo.html}
 					linkLabel={`Watch on ${oembedInfo.providerName}`}
-					posterUrl={oembedInfo.thumbnailUrl}
+					posterUrl={posterUrl}
 					resolvedLabel={resolvedLabel}
 					slot="media-component"
 				/>
