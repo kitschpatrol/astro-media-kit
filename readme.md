@@ -645,6 +645,8 @@ In the viewer:
 - A figure's caption is copied beside the content when there is room, and below it otherwise. The caption on the page stays where it is.
 - Transitions can be turned around partway, and a click on another item while the viewer opens or closes opens that item instead.
 
+The viewer's control labels and slide announcements, and the carousel's button and slide labels, are in English only.
+
 The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk-lightbox` cascade layer so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
 
 | Property                             | Default                           |
