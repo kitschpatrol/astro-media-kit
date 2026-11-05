@@ -3,6 +3,7 @@ import Mux from '@mux/ts'
 // Future services will take a similar shape
 // Must export *Config and *GetVideoInfo
 import type { VideoInfo } from './video'
+import { requestSignal } from './media'
 
 /**
  * Credentials for the Mux Video API. Set via `astro:env` or environment
@@ -48,7 +49,7 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 		video: { assets },
 	} = new Mux({ tokenId: config.accessToken, tokenSecret: config.secret })
 
-	const video = await assets.retrieve(mediaId)
+	const video = await assets.retrieve(mediaId, { signal: requestSignal() })
 
 	const logPrefix = `Mux video with id "${mediaId}"`
 

@@ -155,7 +155,7 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 
 	for (const candidate of localVideoProbeCandidates(src)) {
 		try {
-			const info = await getVideoResolution(candidate)
+			const info = await getVideoResolution(candidate, { signal: requestSignal() })
 			width = info.width
 			height = info.height
 			if (info.duration !== undefined) {
@@ -163,9 +163,15 @@ async function localGetVideoInfo(src: string, poster: string): Promise<VideoInfo
 			}
 
 			break
-		} catch {
-			// Try the next candidate. If none resolves, the dimensions stay zero
-			// (no aspect ratio) and the player sizes itself from the media.
+		} catch (error) {
+			// A file missing at one path may be at the next. A URL has no next, so
+			// its failure is reported. Either way the dimensions stay zero (no
+			// aspect ratio) and the player sizes itself from the media.
+			if (tryParseUrl(candidate) !== undefined) {
+				console.warn(
+					`[astro-media-kit] Could not read the dimensions of "${candidate}": ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
 		}
 	}
 

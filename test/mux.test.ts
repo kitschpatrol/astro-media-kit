@@ -2,7 +2,9 @@ import type { Asset } from '@mux/ts/resources/video/assets'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { muxGetVideoInfo } from '../src/components/utils/mux'
 
-const { retrieve } = vi.hoisted(() => ({ retrieve: vi.fn() }))
+const { retrieve } = vi.hoisted(() => ({
+	retrieve: vi.fn<(assetId: string, options?: { signal?: AbortSignal }) => Promise<unknown>>(),
+}))
 
 vi.mock('@mux/ts', () => ({
 	default: class {
@@ -40,6 +42,9 @@ describe('muxGetVideoInfo', () => {
 		})
 		const info = await muxGetVideoInfo(mediaId, config)
 		expect(info.mp4Url).toBe('https://stream.mux.com/playback/1080p.mp4')
+		const [assetId, options] = retrieve.mock.calls[0]!
+		expect(assetId).toBe(mediaId)
+		expect(options?.signal).toBeInstanceOf(AbortSignal)
 	})
 
 	it('supports legacy aggregate readiness and skips audio-only files', async () => {
