@@ -1,3 +1,4 @@
+import type { ImageInputFormat } from 'astro'
 import { describe, expect, it, vi } from 'vitest'
 import type { GetImageResult } from '../src/components/utils/image-orchestration'
 import {
@@ -349,6 +350,16 @@ describe('propagateAstroCidAttrs', () => {
 		const to: Record<string, unknown> = { keep: 'this' }
 		propagateAstroCidAttributes(from, to)
 		expect(to).toEqual({ keep: 'this' })
+	})
+})
+
+describe('format rule lookups', () => {
+	it('fall back to the unknown rule for a probed format outside the table', () => {
+		const heic = { ...pngMeta, format: 'heic' as ImageInputFormat }
+		expect(pickFallbackFormat(undefined, heic)).toBe(DEFAULT_FALLBACK_RULES.unknown)
+		expect(pickImageFormat(undefined, heic)).toBe(DEFAULT_IMAGE_OUTPUT_FORMAT_RULES.unknown)
+		expect(pickFormats(undefined, heic)).toEqual(DEFAULT_FORMATS_RULES.unknown)
+		expect(pickFormats({ unknown: ['avif'] }, heic)).toEqual(['avif'])
 	})
 })
 

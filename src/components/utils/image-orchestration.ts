@@ -307,6 +307,15 @@ export function mergeImageStyle(
 }
 
 /**
+ * The rule for a source's input format. URLs, and probed formats outside the
+ * table, take the `unknown` entry.
+ */
+function ruleFor<T>(rules: Record<FallbackKey, T>, source: ImageMetadata | string): T {
+	const format: string = isESMImportedImage(source) ? source.format : 'unknown'
+	return Object.hasOwn(rules, format) ? rules[format as FallbackKey] : rules.unknown
+}
+
+/**
  * Pick the `<img>` fallback format. Handles all three shapes accepted by
  * `<Picture>`'s `fallbackFormat` prop:
  *
@@ -327,7 +336,7 @@ export function pickFallbackFormat(
 	}
 
 	const rules = { ...DEFAULT_FALLBACK_RULES, ...fallbackFormat }
-	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
+	return ruleFor(rules, resolvedSrc)
 }
 
 /**
@@ -352,7 +361,7 @@ export function pickImageFormat(
 	}
 
 	const rules = { ...DEFAULT_IMAGE_OUTPUT_FORMAT_RULES, ...format }
-	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
+	return ruleFor(rules, resolvedSrc)
 }
 
 /**
@@ -377,7 +386,7 @@ export function pickFormats(
 	}
 
 	const rules = { ...DEFAULT_FORMATS_RULES, ...formats }
-	return rules[isESMImportedImage(resolvedSrc) ? resolvedSrc.format : 'unknown']
+	return ruleFor(rules, resolvedSrc)
 }
 
 /**
