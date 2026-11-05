@@ -282,7 +282,6 @@ class Viewer {
 			this.#slides.map((slide) => this.#rootOf(slide)),
 			this.#rootOf(this.#slides[index]!),
 		)
-		this.#updateControls()
 
 		// Show, lift, and lay out in one task: a video left without a layout box
 		// across tasks can stall or skip in WebKit
@@ -294,7 +293,9 @@ class Viewer {
 		document.addEventListener('keydown', this.#handleKeydown)
 		document.addEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
 		this.#lift(this.#slides[index]!, current)
-		this.#activate()
+		// With the dialog shown and the slide's media in it, so that the status
+		// region announces the slide, by name
+		this.#updateControls()
 		this.#width = this.#track.clientWidth
 		this.#height = this.#track.clientHeight
 		this.#motion.configure(this.#slides.length, index)

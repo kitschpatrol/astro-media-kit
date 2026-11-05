@@ -55,6 +55,19 @@ it('tells screen readers which slide is current, with its caption or media name'
 	expect(status.textContent).toBe('2 of 2, A tile')
 })
 
+it('names the opening slide by its media when it has no caption', async () => {
+	const fixture = mount(`
+		${item(
+			'<img src="/media/tile-480.jpg" width="2400" height="2400" alt="A tile" style="display: block; width: 240px; height: auto" />',
+			'data-gallery="opening"',
+		)}
+		${item(block('b'), 'data-gallery="opening"')}`)
+	await query(fixture, 'img', HTMLImageElement).decode()
+	await openLightbox(boxes(fixture)[0]!)
+
+	expect(query(viewer(), '.amk-lightbox-status').textContent).toBe('1 of 2, A tile')
+})
+
 it('keeps the arrows hidden while a lone item takes over from another', async () => {
 	const fixture = mount(`${item(block('a'))}${item(block('b'))}`)
 	const [a, b] = boxes(fixture)
