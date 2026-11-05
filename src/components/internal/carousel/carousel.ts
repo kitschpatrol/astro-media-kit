@@ -6,8 +6,20 @@ type Carousel = { dispose: () => void }
 
 const live = new Map<HTMLElement, Carousel>()
 
-/** Set up every carousel in the page that isn't set up yet. */
+/**
+ * Set up every carousel in the page that isn't set up yet, and stop those whose
+ * roots have left the page.
+ */
 export function setUpCarousels() {
+	for (const [root, carousel] of live) {
+		if (root.isConnected) {
+			continue
+		}
+
+		carousel.dispose()
+		live.delete(root)
+	}
+
 	for (const root of document.querySelectorAll<HTMLElement>('.amk-carousel')) {
 		if (live.has(root)) {
 			continue
