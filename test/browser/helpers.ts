@@ -268,11 +268,21 @@ export function middleOf(element: Element): { x: number; y: number } {
 	return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
-/** Click the middle of where `element` is drawn now, even mid-transition. */
+/**
+ * Click the middle of where `element` is drawn now, even mid-transition. The
+ * click can be prevented, as a real one can, so a link's own navigation waits
+ * on the handlers.
+ */
 export function clickMiddle(element: Element) {
 	const { x, y } = middleOf(element)
 	element.dispatchEvent(
-		new MouseEvent('click', { bubbles: true, clientX: x, clientY: y, detail: 1 }),
+		new MouseEvent('click', {
+			bubbles: true,
+			cancelable: true,
+			clientX: x,
+			clientY: y,
+			detail: 1,
+		}),
 	)
 }
 
@@ -282,7 +292,13 @@ export function clickMiddle(element: Element) {
  */
 export function clickViewerAt({ x, y }: { x: number; y: number }) {
 	viewer().dispatchEvent(
-		new MouseEvent('click', { bubbles: true, clientX: x, clientY: y, detail: 1 }),
+		new MouseEvent('click', {
+			bubbles: true,
+			cancelable: true,
+			clientX: x,
+			clientY: y,
+			detail: 1,
+		}),
 	)
 }
 
