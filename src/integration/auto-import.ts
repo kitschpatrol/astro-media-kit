@@ -53,6 +53,31 @@ type ResolvedEntry = {
 	transform?: (path: string) => string | undefined
 }
 
+function resolveEntry(entry: AutoImportEntry): ResolvedEntry {
+	if (typeof entry === 'string') {
+		return { fromProp: entry, toProp: entry }
+	}
+
+	return {
+		fromProp: entry.from,
+		toProp: entry.to,
+		...(entry.shouldImport && { shouldImport: entry.shouldImport }),
+		...(entry.transform && { transform: entry.transform }),
+	}
+}
+
+/** Each component's entries, normalized from the shapes the config accepts. */
+function resolveComponentEntries(
+	components: Record<string, AutoImportConfig>,
+): Record<string, ResolvedEntry[]> {
+	return Object.fromEntries(
+		Object.entries(components).map(([name, config]) => [
+			name,
+			(Array.isArray(config) ? config : [config]).map((entry) => resolveEntry(entry)),
+		]),
+	)
+}
+
 /**
  * Configuration for the auto-import Vite plugin.
  */
@@ -252,16 +277,29 @@ function getOrCreateImport(imports: Map<string, ImportEntry>, importPath: string
  *
  * Parses the AST with `@astrojs/compiler`, modifies component attributes
  * in-place (replacing quoted string props with expression references to
- * generated imports), then serializes the modified AST back to source. Pass the
- * resolved project directories to distinguish Vite root imports from public
- * URLs; the integration supplies them automatically.
+ * generated imports), then serializes the modified AST back to source.
+ *
+ * @param source - The `.astro` file's source.
+ * @param components - Component names mapped to their auto-import entries, as
+ *   the integration's `autoImport.components` option takes them.
+ * @param directories - Astro's resolved `root` and `publicDir`, which tell Vite
+ *   root imports from public URLs; the integration supplies them
+ *   automatically.
  *
  * @returns The transformed source, or `undefined` if no changes were needed.
  */
 export async function transformAstroSource(
 	source: string,
-	componentConfigs: Record<string, ResolvedEntry[]>,
+	components: Record<string, AutoImportConfig>,
 	directories?: ImportDirectories,
+): Promise<string | undefined> {
+	return transformWithEntries(source, resolveComponentEntries(components), directories)
+}
+
+async function transformWithEntries(
+	source: string,
+	componentEntries: Record<string, ResolvedEntry[]>,
+	directories: ImportDirectories | undefined,
 ): Promise<string | undefined> {
 	const { ast } = await parse(source)
 
@@ -278,7 +316,7 @@ export async function transformAstroSource(
 			return
 		}
 
-		const entries = componentConfigs[node.name]
+		const entries = componentEntries[node.name]
 		if (entries && processComponent(node, entries, imports, directories)) {
 			modified = true
 		}
@@ -307,9 +345,10 @@ export async function transformAstroSource(
  * compiler transforms it to JavaScript.
  */
 export function vitePluginMediaKitAutoImport(
-	componentConfigs: Record<string, ResolvedEntry[]>,
+	components: Record<string, AutoImportConfig>,
 	directories: ImportDirectories,
 ) {
+	const componentEntries = resolveComponentEntries(components)
 	return {
 		enforce: 'pre' as const,
 		async load(id: string) {
@@ -318,7 +357,7 @@ export function vitePluginMediaKitAutoImport(
 			}
 
 			const source = await readFile(id, 'utf8')
-			const result = await transformAstroSource(source, componentConfigs, directories)
+			const result = await transformWithEntries(source, componentEntries, directories)
 			if (result === undefined) {
 				return
 			}

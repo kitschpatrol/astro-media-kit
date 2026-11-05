@@ -12,8 +12,8 @@ const TLDRAW_EXTENSION_REGEX = /\.tldr(?:\?|$)/v
 
 // Default config: Image and Picture both auto-import 'src'
 const defaultConfig = {
-	Image: [{ fromProp: 'src', toProp: 'src' }],
-	Picture: [{ fromProp: 'src', toProp: 'src' }],
+	Image: 'src',
+	Picture: 'src',
 }
 
 // Config with .tldr dark mode transform on Picture
@@ -23,11 +23,8 @@ const tldrawDarkTransform = (path: string) =>
 		: undefined
 
 const configWithTldrawDark = {
-	Image: [{ fromProp: 'src', toProp: 'src' }],
-	Picture: [
-		{ fromProp: 'src', toProp: 'src' },
-		{ fromProp: 'src', toProp: 'srcDark', transform: tldrawDarkTransform },
-	],
+	Image: 'src',
+	Picture: ['src', { from: 'src', to: 'srcDark', transform: tldrawDarkTransform }],
 }
 
 describe('transformAstroSource', () => {
@@ -42,9 +39,9 @@ describe('transformAstroSource', () => {
 		const config = {
 			ZoomLink: [
 				{
-					fromProp: 'src',
+					from: 'src',
 					shouldImport: (path: string) => !path.endsWith('.mp4'),
-					toProp: 'src',
+					to: 'src',
 				},
 			],
 		}
@@ -89,8 +86,8 @@ import { Image } from 'astro-media-kit'
 		// Config that auto-imports both src and srcDark
 		const config = {
 			Picture: [
-				{ fromProp: 'src', toProp: 'src' },
-				{ fromProp: 'srcDark', toProp: 'srcDark' },
+				{ from: 'src', to: 'src' },
+				{ from: 'srcDark', to: 'srcDark' },
 			],
 		}
 		const result = await transformAstroSource(source, config)
@@ -108,8 +105,8 @@ const light = importedImage
 <Picture src=${expression} srcDark="../assets/dark.png" />`
 		const result = await transformAstroSource(source, {
 			Picture: [
-				{ fromProp: 'src', toProp: 'src' },
-				{ fromProp: 'srcDark', toProp: 'srcDark' },
+				{ from: 'src', to: 'src' },
+				{ from: 'srcDark', to: 'srcDark' },
 			],
 		})
 		expect(result).toContain('src={light}')
@@ -123,8 +120,8 @@ const light = importedImage
 <Picture src="../assets/light.png" sketch="../assets/drawing.tldr" />`
 		const result = await transformAstroSource(source, {
 			Picture: [
-				{ fromProp: 'src', toProp: 'src' },
-				{ fromProp: 'sketch', toProp: 'srcDark', transform: tldrawDarkTransform },
+				{ from: 'src', to: 'src' },
+				{ from: 'sketch', to: 'srcDark', transform: tldrawDarkTransform },
 			],
 		})
 		expect(result).toContain('import __ami_1 from "../assets/drawing.tldr?dark=true&tldr"')
@@ -135,7 +132,7 @@ const light = importedImage
 ---
 <Picture src="../assets/drawing.tldr" />`
 		const result = await transformAstroSource(source, {
-			Picture: [{ fromProp: 'src', toProp: 'src', transform: tldrawDarkTransform }],
+			Picture: [{ from: 'src', to: 'src', transform: tldrawDarkTransform }],
 		})
 		expect(result).toContain('import __ami_0 from "../assets/drawing.tldr?dark=true&tldr"')
 		expect(result).toContain('src={__ami_0}')
@@ -146,7 +143,7 @@ const light = importedImage
 ---
 <Picture src="../assets/drawing.tldr" />`
 		const result = await transformAstroSource(source, {
-			Picture: [{ fromProp: 'src', toProp: 'srcDark', transform: tldrawDarkTransform }],
+			Picture: [{ from: 'src', to: 'srcDark', transform: tldrawDarkTransform }],
 		})
 		expect(result).toContain('src="../assets/drawing.tldr"')
 		expect(result).toContain('srcDark={__ami_0}')
@@ -159,7 +156,7 @@ const light = importedImage
 <Picture source="../assets/light.png" src=${expression} />`
 		expect(
 			await transformAstroSource(source, {
-				Picture: [{ fromProp: 'source', toProp: 'src' }],
+				Picture: [{ from: 'source', to: 'src' }],
 			}),
 		).toBeUndefined()
 	})
@@ -172,9 +169,9 @@ const light = importedImage
 			await transformAstroSource(source, {
 				Picture: [
 					{
-						fromProp: 'src',
+						from: 'src',
 						shouldImport: () => false,
-						toProp: 'srcDark',
+						to: 'srcDark',
 						transform: tldrawDarkTransform,
 					},
 				],
@@ -269,7 +266,7 @@ import img from '../assets/test.jpeg'
 ---
 <MyImage src="../assets/test.jpeg" alt="Custom" />
 `
-		const config = { MyImage: [{ fromProp: 'src', toProp: 'src' }] }
+		const config = { MyImage: [{ from: 'src', to: 'src' }] }
 		const result = await transformAstroSource(source, config)
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 		expect(result).toContain('src={__ami_0}')

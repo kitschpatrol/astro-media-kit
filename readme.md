@@ -906,7 +906,7 @@ Exported from `astro-media-kit`:
 - **`resolveImageSource(src, srcDark?)`** — Resolve a local string path, `ImageMetadata`, or `ImageMetadataLike` (optionally plus a dark counterpart) to `ImageMetadata` or `DarkLightImageMetadata`. Enforces format/width/height parity when a dark counterpart is provided. Does not fetch remote URLs.
 - **`probeImageMetadata(filePath)`** — Read a local image file and return its `ImageMetadata` (dimensions, format) using Astro's `imageMetadata` utility. Local files only.
 - **`isImageMetadataObject(src)`** — Type guard that recognizes image-like values by a string `src`, including Astro's SVG-component wrapper form. It does not validate dimensions or format.
-- **`transformAstroSource(source, options)`** — Auto-import transform used by the integration. Exported for custom tooling.
+- **`transformAstroSource(source, components, directories?)`** — The auto-import transform the integration applies to `.astro` source, for custom tooling. `components` maps component names to auto-import entries as the `autoImport.components` option does; `directories` supplies Astro's resolved `root` and `publicDir` to tell root imports from public URLs. Resolves to the transformed source, or `undefined` when nothing changed.
 - **`tldrawDarkImport`** — An `AutoImportEntry` that generates a `srcDark` import for `.tldr` files.
 - **`imageOnlyImport`** — An `AutoImportEntry` that imports `src` unless it is a video source, for `ZoomLink`.
 

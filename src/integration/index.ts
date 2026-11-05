@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { CredentialService, Service } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
-import type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
+import type { AutoImportConfig, AutoImportPluginConfig } from './auto-import'
 import type { TldrawConfig } from './tldraw'
 import type { ResolvedWatermarkConfig } from './watermark-image-service'
 import { vitePluginMediaKitAphex } from './aphex'
@@ -149,29 +149,6 @@ const DEFAULT_COMPONENT_CONFIGS: Record<string, AutoImportConfig> = {
 	ZoomLink: imageOnlyImport,
 }
 
-function resolveAutoImportEntry(entry: AutoImportEntry): {
-	fromProp: string
-	shouldImport?: (path: string) => boolean
-	toProp: string
-	transform?: (path: string) => string | undefined
-} {
-	if (typeof entry === 'string') {
-		return { fromProp: entry, toProp: entry }
-	}
-
-	return {
-		fromProp: entry.from,
-		toProp: entry.to,
-		...(entry.shouldImport && { shouldImport: entry.shouldImport }),
-		...(entry.transform && { transform: entry.transform }),
-	}
-}
-
-function resolveAutoImportEntries(config: AutoImportConfig) {
-	const entries = Array.isArray(config) ? config : [config]
-	return entries.map((entry) => resolveAutoImportEntry(entry))
-}
-
 /**
  * Resolve a `boolean | { enabled?: boolean } | undefined` toggle config to a
  * single enabled boolean. Default applies when the value is `undefined`; an
@@ -204,18 +181,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 
 	const autoImportEnabled = isToggleEnabled(config?.autoImport, true)
 	const autoImportObject = typeof config?.autoImport === 'object' ? config.autoImport : undefined
-	const rawComponentConfigs = autoImportObject?.components ?? DEFAULT_COMPONENT_CONFIGS
-	const resolvedComponentConfigs: Record<
-		string,
-		Array<{
-			fromProp: string
-			toProp: string
-			transform?: (path: string) => string | undefined
-		}>
-	> = {}
-	for (const [name, entries] of Object.entries(rawComponentConfigs)) {
-		resolvedComponentConfigs[name] = resolveAutoImportEntries(entries)
-	}
+	const componentConfigs = autoImportObject?.components ?? DEFAULT_COMPONENT_CONFIGS
 
 	const tldrawEnabled = isToggleEnabled(config?.tldraw, false)
 	const tldrawConfig: TldrawConfig = typeof config?.tldraw === 'object' ? config.tldraw : {}
@@ -321,7 +287,7 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 				if (autoImportEnabled) {
 					updateConfig({
 						vite: {
-							plugins: [vitePluginMediaKitAutoImport(resolvedComponentConfigs, setupConfig)],
+							plugins: [vitePluginMediaKitAutoImport(componentConfigs, setupConfig)],
 						},
 					})
 				}
