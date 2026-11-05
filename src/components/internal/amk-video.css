@@ -3,13 +3,9 @@
    styles of their own, so everything visual lives here. Rules are prefixed
    with `.amk` (the wrapper class) or `.amk-` (component classes) for scope
    protection, and the floated bar reuses the `.amk-` component classes.
-
-   Dropped from the media-chrome version, deliberately: the rule that hid
-   mute/volume when the audio-track list was "unavailable" (which meant the
-   track-selection API was missing or there was a single track, not that the
-   media was silent) and the iOS volume rule. Video.js hides its mute button
-   and volume slider itself, from `mutedAvailability` / `volumeAvailability`,
-   via the native `hidden` attribute (see the last rule in this file). */
+   Video.js hides its mute button and volume slider itself, from
+   `mutedAvailability` / `volumeAvailability`, via the native `hidden`
+   attribute (see the last rule in this file). */
 
 /* Defaults on the root, in a layer, so that a page's own value wins wherever
    it is set: on the root, on an element around the player, or on the player.
