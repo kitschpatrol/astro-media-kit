@@ -926,7 +926,7 @@ Exported from `astro-media-kit`:
 - **`AphexConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
 - **`AutoImportConfig`**, **`AutoImportEntry`**, **`AutoImportPluginConfig`** — Types for the auto-import feature's component mapping.
 
-Component prop types are exported from `astro-media-kit/components`: **`AudioProps`**, **`CaptionProps`**, **`CarouselProps`**, **`ImageProps`**, **`PictureProps`**, **`VideoProps`**, and **`ZoomLinkProps`**. **`MediaIconName`** is also exported there for icon overrides.
+Component prop types are exported from `astro-media-kit/components`: **`AudioProps`**, **`CaptionProps`**, **`CarouselProps`**, **`ImageProps`**, **`PictureProps`**, **`VideoProps`**, **`ZoomerProps`**, and **`ZoomLinkProps`**. **`FormatRules`** and **`FormatsRules`**, the per-input-format object forms of `format`, `fallbackFormat`, and `formats`, are exported there too, as is **`MediaIconName`** for icon overrides.
 
 ## Development notes
 
