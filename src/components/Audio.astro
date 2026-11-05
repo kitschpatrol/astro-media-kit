@@ -54,7 +54,6 @@ const {
 	credit,
 	creditMediaType,
 	creditOrganization,
-	// eslint-disable-next-line unicorn/prefer-default-parameters -- untyped MDX callers can pass null, which a destructuring default would not replace
 	label,
 	loop = false,
 	muted = false,
@@ -64,8 +63,6 @@ const {
 } = Astro.props
 
 const { identifier, service: resolvedService } = resolveAudioSource(src, service)
-
-const resolvedLabel = label ?? 'Audio'
 
 let oembedInfo: OembedInfo | undefined
 let embedUrl = ''
@@ -85,6 +82,8 @@ if (resolvedService === 'soundcloud') {
 		console.error(fetchError)
 	}
 }
+
+const resolvedLabel = label ?? oembedInfo?.title ?? 'Audio'
 
 const captionProps = await toCaptionProps(
 	{ credit, creditMediaType, creditOrganization },
