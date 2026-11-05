@@ -47,7 +47,11 @@ export function dropSlides(slides: Slide[]) {
 			continue
 		}
 
-		closePopups(lift.subject)
+		// A popup still on its way out can't be carried by a move in this task
+		if (closePopups(lift.subject)) {
+			refreshPopups(lift.subject)
+		}
+
 		if (!move(item, lift.subject, lift.nextSibling)) {
 			refreshPopups(lift.subject)
 		}
@@ -125,7 +129,11 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
 	const hold = isLink ? '' : holdOf(item, subject, measurement.wrapper)
 	item.dataset.lifted = hold
-	closePopups(subject)
+	// A popup still on its way out can't be carried by a move in this task
+	if (closePopups(subject)) {
+		refreshPopups(subject)
+	}
+
 	if (!move(slide.layer, subject)) {
 		refreshPopups(subject)
 	}

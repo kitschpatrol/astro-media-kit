@@ -112,7 +112,8 @@ export function refreshPopups(subject: Element) {
 /**
  * Wait for the popups in a player's controls to finish closing and leave the
  * top layer, which Video.js takes a few frames over, reflecting each step on
- * the next.
+ * the next. One that takes longer, as under a slow transition, is replaced with
+ * a fresh copy rather than moved.
  */
 export async function settlePopups(subject: Element): Promise<void> {
 	const isUnsettled = () => subject.querySelector(`${popupSelector}, :popover-open`) !== null
@@ -120,6 +121,10 @@ export async function settlePopups(subject: Element): Promise<void> {
 		await new Promise((resolve) => {
 			requestAnimationFrame(resolve)
 		})
+	}
+
+	if (isUnsettled()) {
+		refreshPopups(subject)
 	}
 }
 
