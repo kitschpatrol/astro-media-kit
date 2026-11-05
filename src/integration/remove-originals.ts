@@ -63,7 +63,7 @@ function decodeReferenceText(text: string): string {
 async function findReferencedOriginals(
 	directory: URL,
 	originals: string[],
-	serverDirectory: undefined | URL,
+	serverDirectory: URL,
 	requireServerOutput: boolean,
 ): Promise<Set<string>> {
 	const remainingKeys = new Set(originals.map((file) => referenceKey(file)))
@@ -111,42 +111,36 @@ async function findReferencedOriginals(
 
 async function referenceEntries(
 	directory: URL,
-	serverDirectory: undefined | URL,
+	serverDirectory: URL,
 	requireServerOutput: boolean,
 ): Promise<Dirent[]> {
 	let entries = await readdir(directory, { recursive: true, withFileTypes: true })
-	if (requireServerOutput && serverDirectory === undefined) {
-		throw new Error('The server output directory is unavailable.')
-	}
-
-	if (
-		requireServerOutput &&
-		serverDirectory !== undefined &&
-		containsDirectory(directory, serverDirectory)
-	) {
-		const serverStatus = await stat(serverDirectory)
-		if (!serverStatus.isDirectory()) {
-			throw new Error('The server output path is not a directory.')
-		}
-	}
-
-	if (serverDirectory !== undefined && !containsDirectory(directory, serverDirectory)) {
-		try {
-			const serverEntries = await readdir(serverDirectory, { recursive: true, withFileTypes: true })
-			// A custom server root can contain the client output. Its recursive
-			// listing already covers the client files, so do not scan those twice.
-			entries = containsDirectory(serverDirectory, directory)
-				? serverEntries
-				: [...entries, ...serverEntries]
-		} catch (error) {
-			if (
-				requireServerOutput ||
-				!(error instanceof Error) ||
-				!('code' in error) ||
-				error.code !== 'ENOENT'
-			) {
-				throw error
+	if (containsDirectory(directory, serverDirectory)) {
+		if (requireServerOutput) {
+			const serverStatus = await stat(serverDirectory)
+			if (!serverStatus.isDirectory()) {
+				throw new Error('The server output path is not a directory.')
 			}
+		}
+
+		return entries
+	}
+
+	try {
+		const serverEntries = await readdir(serverDirectory, { recursive: true, withFileTypes: true })
+		// A custom server root can contain the client output. Its recursive
+		// listing already covers the client files, so do not scan those twice.
+		entries = containsDirectory(serverDirectory, directory)
+			? serverEntries
+			: [...entries, ...serverEntries]
+	} catch (error) {
+		if (
+			requireServerOutput ||
+			!(error instanceof Error) ||
+			!('code' in error) ||
+			error.code !== 'ENOENT'
+		) {
+			throw error
 		}
 	}
 

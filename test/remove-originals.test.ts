@@ -167,8 +167,16 @@ describe('findUnusedOriginals', () => {
 	})
 })
 
+/**
+ * A resolved config whose server output sits beside the client output, as
+ * Astro's does.
+ */
+function configFor(root: string): AstroConfig {
+	const config = { build: { assets: '_astro', server: pathToFileURL(`${root}/server/`) } }
+	return config as AstroConfig
+}
+
 describe('removeOriginalImages', () => {
-	const config = { build: { assets: '_astro' } }
 	const logError = vi.fn()
 	const logger = { error: logError, info: vi.fn() } as unknown as AstroIntegrationLogger
 
@@ -176,7 +184,7 @@ describe('removeOriginalImages', () => {
 		const root = await mkdtemp(path.join(tmpdir(), 'amk-originals-'))
 		try {
 			await expect(
-				removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger),
+				removeOriginalImages(pathToFileURL(`${root}/`), configFor(root), logger),
 			).resolves.toBeUndefined()
 		} finally {
 			await rm(root, { force: true, recursive: true })
@@ -192,7 +200,7 @@ describe('removeOriginalImages', () => {
 			await mkdir(path.join(assets, 'photo.ABCDEFGH_variant.webp'))
 			await writeFile(path.join(assets, 'other.ABCDEFGH.jpg'), 'original')
 			await writeFile(path.join(assets, 'other.ABCDEFGH_variant.webp'), 'variant')
-			await removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger)
+			await removeOriginalImages(pathToFileURL(`${root}/`), configFor(root), logger)
 			const remaining = await readdir(assets)
 			expect(remaining.toSorted()).toEqual([
 				'other.ABCDEFGH_variant.webp',
@@ -256,7 +264,7 @@ describe('removeOriginalImages', () => {
 			await writeFile(pagePath, content)
 			await removeOriginalImages(
 				pathToFileURL(`${root}/`),
-				{ ...config, base: '/docs', site: 'https://example.com' } as AstroConfig,
+				{ ...configFor(root), base: '/docs', site: 'https://example.com' },
 				logger,
 			)
 			const remaining = await readdir(assets)
@@ -280,7 +288,7 @@ describe('removeOriginalImages', () => {
 			await writeFile(path.join(root, 'index.html'), '<img src="/_astro/photo.ABCDEFGH.jpg">')
 			const read = vi.spyOn(fileSystem, 'readFile').mockRejectedValueOnce(new Error('Read failed'))
 			try {
-				await removeOriginalImages(pathToFileURL(`${root}/`), config as AstroConfig, logger)
+				await removeOriginalImages(pathToFileURL(`${root}/`), configFor(root), logger)
 			} finally {
 				read.mockRestore()
 			}
@@ -324,7 +332,7 @@ describe('removeOriginalImages', () => {
 					await removeOriginalImages(
 						pathToFileURL(`${client}/`),
 						{
-							build: { ...config.build, server: pathToFileURL(`${server}/`) },
+							build: { assets: '_astro', server: pathToFileURL(`${server}/`) },
 							output: 'server',
 						} as AstroConfig,
 						logger,
@@ -361,7 +369,7 @@ describe('removeOriginalImages', () => {
 			await removeOriginalImages(
 				pathToFileURL(`${client}/`),
 				{
-					build: { ...config.build, server: pathToFileURL(`${root}/${serverPath}/`) },
+					build: { assets: '_astro', server: pathToFileURL(`${root}/${serverPath}/`) },
 					output,
 				} as AstroConfig,
 				logger,
