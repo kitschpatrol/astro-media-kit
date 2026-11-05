@@ -59,6 +59,9 @@ describe('isImageMetadataObject', () => {
 	it('rejects objects without valid src', () => {
 		expect(isImageMetadataObject({ format: 'png', height: 100, width: 200 })).toBe(false)
 		expect(isImageMetadataObject({ src: 42 })).toBe(false)
+		expect(() =>
+			unwrapImageMetadata({ format: 'png', height: 100, width: 200 } as ImageMetadata),
+		).toThrow('must carry a string `src`')
 	})
 
 	it('leaves a tracked src getter unread', () => {
@@ -75,11 +78,10 @@ describe('isImageUrlSource', () => {
 		expect(isImageUrlSource('/images/photo.jpg')).toBe(true)
 	})
 
-	it('retains metadata and project filesystem sources', () => {
+	it('retains metadata and relative paths', () => {
 		expect(isImageUrlSource(valid)).toBe(false)
-		expect(isImageUrlSource(`${process.cwd().replaceAll('\\', '/')}/src/photo.jpg`)).toBe(false)
-		expect(isImageUrlSource('/@fs/project/photo.jpg')).toBe(false)
 		expect(isImageUrlSource('../assets/photo.jpg')).toBe(false)
+		expect(isImageUrlSource('photo.jpg')).toBe(false)
 	})
 })
 
@@ -109,10 +111,18 @@ describe('isRemoteImageSource', () => {
 })
 
 describe('resolveImageSource', () => {
-	it('names the path it tried for an unreadable file', async () => {
-		await expect(resolveImageSource('missing/photo.png')).rejects.toThrow(
-			`Could not read the image "missing/photo.png" at "${process.cwd().replaceAll('\\', '/')}/missing/photo.png"`,
-		)
+	it('returns the light metadata alone', () => {
+		expect(resolveImageSource(valid)).toBe(valid)
+	})
+
+	it('pairs a dark variant that matches the light source', () => {
+		const dark = { ...valid, src: '/dark.png' }
+		expect(resolveImageSource(valid, dark)).toEqual({ dark, light: valid })
+	})
+
+	it('rejects a dark variant with another format or size', () => {
+		expect(() => resolveImageSource(valid, { ...valid, format: 'jpg' })).toThrow('same format')
+		expect(() => resolveImageSource(valid, { ...valid, width: 1 })).toThrow('same dimensions')
 	})
 })
 

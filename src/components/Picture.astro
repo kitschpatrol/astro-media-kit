@@ -177,8 +177,8 @@ export type Props = Omit<LocalImageProps, 'height' | 'src' | 'width'> &
 		pictureAttributes?: HTMLAttributes<'picture'> | undefined
 		/**
 		 * Astro image metadata, an import promise, or a public/remote image URL.
-		 * Also accepts local filesystem paths and `{ dark, light }` metadata
-		 * pairs.
+		 * Also accepts `{ dark, light }` metadata pairs. Any other string is a path
+		 * on disk, which only the integration's auto-import transform resolves.
 		 *
 		 * Astro `<Picture>` built-in (widened by media-kit).
 		 *
@@ -286,14 +286,10 @@ if (isRemote) {
 	darkSrc =
 		darkDisabled || typeof srcDarkSource !== 'string' || srcDarkIsLocal ? undefined : srcDarkSource
 } else {
-	const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
-		resolvedSource,
-		srcDarkSource,
-		{
-			componentName: 'Picture',
-			darkDisabled,
-		},
-	)
+	const { imageMetadata, imageMetadataDark } = resolveSrcToMetadata(resolvedSource, srcDarkSource, {
+		componentName: 'Picture',
+		darkDisabled,
+	})
 	lightSrc = imageMetadata
 	darkSrc = imageMetadataDark
 }

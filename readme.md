@@ -128,7 +128,7 @@ import hero from '../assets/hero.jpg'
 
 A clean superset of Astro's `<Image>`: Astro's image props pass through to `getImage()`, and the component adds captions, XMP credit extraction, lightbox zoom, and background styling.
 
-Accepts Astro's imported `ImageMetadata`, import promises, public image URLs such as `/images/photo.jpg`, and remote `http(s)` URLs. Also accepts `ImageMetadataLike`, a `{ dark, light }` pair, and absolute filesystem paths inside the project. Relative strings beginning with `./` or `../` require the integration's auto-import transform; otherwise import the image yourself.
+Accepts Astro's imported `ImageMetadata`, import promises, public image URLs such as `/images/photo.jpg`, and remote `http(s)` URLs. Also accepts `ImageMetadataLike` and a `{ dark, light }` pair. Any other string is a path on disk, which only the integration's auto-import transform turns into an import; otherwise import the image yourself.
 
 The `{ dark, light }` pair is permitted for symmetry with the `<Picture>` component, but note that `<Image>` uses the light variant _only_ and emits a dev warning if `dark` is defined. Use `<Picture>` instead for full dark mode support.
 
@@ -725,7 +725,7 @@ When a creator or organization is present and credits are enabled, these are ren
 
 If the `Label` tag is missing or extraction is not applicable, `creditMediaTypeFallback` is used (defaults to `'image'`).
 
-XMP extraction only runs on local image assets passed as metadata or filesystem paths. Public and remote image URL strings skip extraction; manual values still work. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`.
+XMP extraction only runs on local image assets passed as metadata. Public and remote image URL strings skip extraction; manual values still work. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`.
 
 ## Video services
 
@@ -903,7 +903,7 @@ See the [Video services](#video-services) section above.
 
 Exported from `astro-media-kit`:
 
-- **`resolveImageSource(src, srcDark?)`** — Resolve a local string path, `ImageMetadata`, or `ImageMetadataLike` (optionally plus a dark counterpart) to `ImageMetadata` or `DarkLightImageMetadata`. Enforces format/width/height parity when a dark counterpart is provided. Does not fetch remote URLs.
+- **`resolveImageSource(src, srcDark?)`** — Resolve `ImageMetadata` or `ImageMetadataLike` (optionally plus a dark counterpart) to `ImageMetadata` or `DarkLightImageMetadata`, unwrapping Astro's SVG component form. Enforces format/width/height parity when a dark counterpart is provided.
 - **`probeImageMetadata(filePath)`** — Read a local image file and return its `ImageMetadata` (dimensions, format) using Astro's `imageMetadata` utility. Local files only.
 - **`isImageMetadataObject(src)`** — Type guard that recognizes image-like values by a string `src`, including Astro's SVG-component wrapper form. It does not validate dimensions or format.
 - **`transformAstroSource(source, components, directories?)`** — The auto-import transform the integration applies to `.astro` source, for custom tooling. `components` maps component names to auto-import entries as the `autoImport.components` option does; `directories` supplies Astro's resolved `root` and `publicDir` to tell root imports from public URLs. Resolves to the transformed source, or `undefined` when nothing changed.

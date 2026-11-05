@@ -2,7 +2,7 @@ import type { ImageInputFormat } from 'astro'
 import { describe, expect, it, vi } from 'vitest'
 import type { GetImageResult } from '../src/components/utils/image-orchestration'
 import {
-	assertNotRelativePath,
+	assertNotStringPath,
 	buildBackgroundStyle,
 	buildSrcsetAttribute,
 	compositingBackground,
@@ -32,6 +32,7 @@ const webpMeta = { format: 'webp' as const, height: 100, src: '/img.webp', width
 const imageRelativePathError = /Image received a relative string path/v
 const pictureRelativePathError = /Picture received a relative string path/v
 const relativePathError = /relative string path/v
+const imageStringPathError = /Image received a string path "photo.png"/v
 
 const noop = (): void => undefined
 
@@ -363,28 +364,28 @@ describe('format rule lookups', () => {
 	})
 })
 
-describe('assertNotRelativePath', () => {
+describe('assertNotStringPath', () => {
 	it('throws on ./ and ../ paths', () => {
 		expect(() => {
-			assertNotRelativePath('./foo.png', 'Image')
+			assertNotStringPath('./foo.png', 'Image')
 		}).toThrow(imageRelativePathError)
 		expect(() => {
-			assertNotRelativePath('../bar.png', 'Picture')
+			assertNotStringPath('../bar.png', 'Picture')
 		}).toThrow(pictureRelativePathError)
 	})
 
-	it('accepts absolute paths', () => {
+	it('throws on every other string', () => {
 		expect(() => {
-			assertNotRelativePath('/abs/foo.png', 'Image')
-		}).not.toThrow()
+			assertNotStringPath('photo.png', 'Image')
+		}).toThrow(imageStringPathError)
 	})
 
 	it('accepts non-string values', () => {
 		expect(() => {
-			assertNotRelativePath(undefined, 'Image')
+			assertNotStringPath(undefined, 'Image')
 		}).not.toThrow()
 		expect(() => {
-			assertNotRelativePath(pngMeta, 'Image')
+			assertNotStringPath(pngMeta, 'Image')
 		}).not.toThrow()
 	})
 })
@@ -581,16 +582,16 @@ describe('hashSelector', () => {
 describe('resolveSrcToMetadata', () => {
 	it.each(['https://example.com/dark.png', '/images/dark.png'])(
 		'rejects the URL dark variant %s for a local source',
-		async (srcDark) => {
-			await expect(
+		(srcDark) => {
+			expect(() =>
 				resolveSrcToMetadata(pngMeta, srcDark, { componentName: 'Picture', darkDisabled: false }),
-			).rejects.toThrow('Picture received a URL for `srcDark`')
+			).toThrow('Picture received a URL for `srcDark`')
 		},
 	)
 
-	it('picks .light from a DarkLight pair when no srcDark is given', async () => {
+	it('picks .light from a DarkLight pair when no srcDark is given', () => {
 		const dark = { ...pngMeta, src: '/dark.png' }
-		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
+		const { imageMetadata, imageMetadataDark } = resolveSrcToMetadata(
 			{ dark, light: pngMeta },
 			undefined,
 			{ componentName: 'Picture', darkDisabled: false },
@@ -599,9 +600,9 @@ describe('resolveSrcToMetadata', () => {
 		expect(imageMetadataDark).toBe(dark)
 	})
 
-	it('drops the .dark variant when darkDisabled is true', async () => {
+	it('drops the .dark variant when darkDisabled is true', () => {
 		const dark = { ...pngMeta, src: '/dark.png' }
-		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
+		const { imageMetadata, imageMetadataDark } = resolveSrcToMetadata(
 			{ dark, light: pngMeta },
 			undefined,
 			{ componentName: 'Image', darkDisabled: true },
@@ -610,8 +611,8 @@ describe('resolveSrcToMetadata', () => {
 		expect(imageMetadataDark).toBeUndefined()
 	})
 
-	it('returns just imageMetadata for a plain ImageMetadata input', async () => {
-		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(pngMeta, undefined, {
+	it('returns just imageMetadata for a plain ImageMetadata input', () => {
+		const { imageMetadata, imageMetadataDark } = resolveSrcToMetadata(pngMeta, undefined, {
 			componentName: 'Image',
 			darkDisabled: true,
 		})
@@ -619,9 +620,17 @@ describe('resolveSrcToMetadata', () => {
 		expect(imageMetadataDark).toBeUndefined()
 	})
 
-	it('unwraps SVG component imports in a DarkLight pair', async () => {
+	it('treats an empty srcDark as no dark variant', () => {
+		const { imageMetadataDark } = resolveSrcToMetadata(pngMeta, '', {
+			componentName: 'Picture',
+			darkDisabled: false,
+		})
+		expect(imageMetadataDark).toBeUndefined()
+	})
+
+	it('unwraps SVG component imports in a DarkLight pair', () => {
 		const dark = { ...svgMeta, src: '/dark.svg' }
-		const { imageMetadata, imageMetadataDark } = await resolveSrcToMetadata(
+		const { imageMetadata, imageMetadataDark } = resolveSrcToMetadata(
 			{
 				// eslint-disable-next-line ts/no-empty-function -- simulates Astro's SVG component
 				dark: Object.assign(() => {}, dark),
@@ -636,32 +645,40 @@ describe('resolveSrcToMetadata', () => {
 		expect(imageMetadataDark).toEqual(dark)
 	})
 
-	it('uses explicit srcDark ImageMetadata over the .dark member of the pair', async () => {
+	it('uses explicit srcDark ImageMetadata over the .dark member of the pair', () => {
 		const dark = { ...pngMeta, src: '/pair-dark.png' }
 		const explicitDark = { ...pngMeta, src: '/explicit-dark.png' }
-		const { imageMetadataDark } = await resolveSrcToMetadata(
-			{ dark, light: pngMeta },
-			explicitDark,
-			{ componentName: 'Picture', darkDisabled: false },
-		)
+		const { imageMetadataDark } = resolveSrcToMetadata({ dark, light: pngMeta }, explicitDark, {
+			componentName: 'Picture',
+			darkDisabled: false,
+		})
 		expect(imageMetadataDark).toBe(explicitDark)
 	})
 
-	it('throws on relative string src', async () => {
-		await expect(
+	it('throws on relative string src', () => {
+		expect(() =>
 			resolveSrcToMetadata('./foo.png', undefined, {
 				componentName: 'Image',
 				darkDisabled: true,
 			}),
-		).rejects.toThrow(relativePathError)
+		).toThrow(relativePathError)
 	})
 
-	it('throws on relative string srcDark', async () => {
-		await expect(
+	it('throws on a string src that is not a URL', () => {
+		expect(() =>
+			resolveSrcToMetadata('photo.png', undefined, {
+				componentName: 'Image',
+				darkDisabled: true,
+			}),
+		).toThrow(imageStringPathError)
+	})
+
+	it('throws on relative string srcDark', () => {
+		expect(() =>
 			resolveSrcToMetadata(pngMeta, '../dark.png', {
 				componentName: 'Picture',
 				darkDisabled: false,
 			}),
-		).rejects.toThrow(relativePathError)
+		).toThrow(relativePathError)
 	})
 })

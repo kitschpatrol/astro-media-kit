@@ -1,42 +1,32 @@
 import type { ImageMetadata } from 'astro'
 import { exiftool } from 'exiftool-vendored'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
-import { probeImageMetadata } from '../../utilities/image-probe'
 import { getAbsoluteFilePath } from '../../utilities/path'
 import { tryParseUrl } from './media'
 
 /**
  * Resolves an image source to ImageMetadata, with optional dark mode variant.
  *
- * Accepts either an already-resolved ImageMetadata object or an absolute file
- * path string. When given a string, probes the file for dimensions and format.
+ * Unwraps Astro's SVG component form, and pairs a dark counterpart with the
+ * light source once the two are known to share a format and dimensions.
  *
- * Consuming projects should prefer passing imported ImageMetadata objects (the
- * standard Astro pattern) rather than string paths.
+ * @param src - ImageMetadata for the image
+ * @param srcDark - Optional ImageMetadata for the dark theme variant
  *
- * @param src - ImageMetadata object or absolute file path to the image
- * @param srcDark - Optional path or ImageMetadata for the dark theme variant
- *
- * @returns Promise resolving to ImageMetadata or a { dark, light } pair
+ * @returns ImageMetadata or a { dark, light } pair
  */
-export async function resolveImageSource(
-	src: ImageMetadata | ImageMetadataLike | string,
-	srcDark?: ImageMetadata | ImageMetadataLike | string,
-): Promise<DarkLightImageMetadata | ImageMetadata> {
-	const lightMetadata = isImageMetadataObject(src)
-		? unwrapImageMetadata(src)
-		: await probeImageFile(src)
-
-	if (srcDark !== undefined) {
-		const darkMetadata = isImageMetadataObject(srcDark)
-			? unwrapImageMetadata(srcDark)
-			: await probeImageFile(srcDark)
-
-		assertLightDarkImageParity(lightMetadata, darkMetadata)
-		return { dark: darkMetadata, light: lightMetadata }
+export function resolveImageSource(
+	src: ImageMetadata | ImageMetadataLike,
+	srcDark?: ImageMetadata | ImageMetadataLike,
+): DarkLightImageMetadata | ImageMetadata {
+	const lightMetadata = unwrapImageMetadata(src)
+	if (srcDark === undefined) {
+		return lightMetadata
 	}
 
-	return lightMetadata
+	const darkMetadata = unwrapImageMetadata(srcDark)
+	assertLightDarkImageParity(lightMetadata, darkMetadata)
+	return { dark: darkMetadata, light: lightMetadata }
 }
 
 /**
@@ -120,10 +110,16 @@ export function isImageMetadataObject(src: unknown): src is ImageMetadata {
  * The metadata of a source as a plain object: an SVG component is a function
  * with the metadata spread on it, which the path helpers cannot take. A plain
  * object passes through as it is, since copying it would read its tracked `src`
- * getter.
+ * getter. A value without a string `src` is not image metadata and is refused.
  */
-export function unwrapImageMetadata(src: ImageMetadata): ImageMetadata {
-	if (typeof src === 'object' && 'src' in src) {
+export function unwrapImageMetadata(src: ImageMetadata | ImageMetadataLike): ImageMetadata {
+	if (!isImageMetadataObject(src)) {
+		throw new TypeError(
+			'An image source must carry a string `src`. Import the image and pass its metadata.',
+		)
+	}
+
+	if (typeof src === 'object') {
 		return src
 	}
 
@@ -141,18 +137,11 @@ export function isRemoteImageSource(src: unknown): src is string {
 }
 
 /**
- * Recognize URLs for Astro's image pipeline, including site-root paths to
- * public assets and protocol-relative URLs. Vite filesystem URLs and absolute
- * paths inside the project retain the kit's local-file handling.
+ * Recognize URLs for Astro's image pipeline: remote `http(s)` URLs, site-root
+ * paths to public assets, and protocol-relative URLs.
  */
 export function isImageUrlSource(src: unknown): boolean {
-	return (
-		isRemoteImageSource(src) ||
-		(typeof src === 'string' &&
-			src.startsWith('/') &&
-			!src.startsWith('/@fs/') &&
-			!src.startsWith(`${process.cwd().replaceAll('\\', '/')}/`))
-	)
+	return isRemoteImageSource(src) || (typeof src === 'string' && src.startsWith('/'))
 }
 
 /**
@@ -165,23 +154,6 @@ export function isDarkLightImageMetadata(src: unknown): src is DarkLightImageMet
 
 	const candidate = src as Record<string, unknown>
 	return isImageMetadataObject(candidate.light) && isImageMetadataObject(candidate.dark)
-}
-
-// Helpers
-
-/** Probe a file given as a path, naming the path that was tried when it fails. */
-async function probeImageFile(source: ImageMetadataLike | string): Promise<ImageMetadata> {
-	const given = typeof source === 'string' ? source : source.src
-	const filePath = getAbsoluteFilePath(source)
-	try {
-		return await probeImageMetadata(filePath)
-	} catch (error) {
-		throw new Error(
-			`Could not read the image "${given}" at "${filePath}": ${error instanceof Error ? error.message : String(error)}. ` +
-				'A path resolves against the working directory. Import the image as a module instead, or pass an absolute path.',
-			{ cause: error },
-		)
-	}
 }
 
 function assertLightDarkImageParity(light: ImageMetadata, dark: ImageMetadata): void {

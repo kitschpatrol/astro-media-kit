@@ -121,8 +121,9 @@ export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'>
 		inferSize?: boolean
 		/**
 		 * Astro image metadata, an import promise, or a public/remote image URL.
-		 * Also accepts local filesystem paths and `{ dark, light }` metadata pairs
-		 * (only `.light` is used; use `<Picture>` for dark-mode image sources).
+		 * Also accepts `{ dark, light }` metadata pairs (only `.light` is used; use
+		 * `<Picture>` for dark-mode image sources). Any other string is a path on
+		 * disk, which only the integration's auto-import transform resolves.
 		 *
 		 * Astro `<Image>` built-in (widened by media-kit).
 		 *
@@ -226,7 +227,7 @@ if (isRemote) {
 	imageMetadataSrc = resolvedSource
 	captionSrc = undefined
 } else {
-	const { imageMetadata } = await resolveSrcToMetadata(resolvedSource, undefined, {
+	const { imageMetadata } = resolveSrcToMetadata(resolvedSource, undefined, {
 		componentName: 'Image',
 		darkDisabled: true,
 	})

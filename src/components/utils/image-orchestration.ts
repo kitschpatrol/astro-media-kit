@@ -2,10 +2,10 @@
  * Shared orchestration helpers for the `<Image>` and `<Picture>` components.
  *
  * Both components resolve a user-supplied source (ImageMetadata / DarkLight
- * pair / string path) into optimized image variants via Astro's `getImage()`.
- * This module consolidates the non-template pieces of that pipeline: src
- * resolution, layout defaults, background compositing, transparency-aware
- * fallback-format selection, srcset/mime building, and dev-only warnings.
+ * pair / URL) into optimized image variants via Astro's `getImage()`. This
+ * module consolidates the non-template pieces of that pipeline: src resolution,
+ * layout defaults, background compositing, transparency-aware fallback-format
+ * selection, srcset/mime building, and dev-only warnings.
  */
 
 import type { ImageInputFormat, ImageMetadata, ImageOutputFormat } from 'astro'
@@ -16,13 +16,7 @@ import * as mime from 'mrmime'
 import type { DarkLightImageMetadata, ImageMetadataLike } from '../../types'
 import type { Simplify } from './types'
 import { opaqueFormats } from '../../utilities/dark-variant'
-import {
-	isDarkLightImageMetadata,
-	isImageMetadataObject,
-	isImageUrlSource,
-	resolveImageSource,
-	unwrapImageMetadata,
-} from './image'
+import { isDarkLightImageMetadata, isImageUrlSource, unwrapImageMetadata } from './image'
 
 /**
  * Result type returned by Astro's `getImage()` — not directly importable from
@@ -37,7 +31,7 @@ export type ImageConfig = typeof imageConfig
  * Key for `DEFAULT_FALLBACK_RULES` / `DEFAULT_FORMATS_RULES` and the object
  * forms of `<Picture>`'s `fallbackFormat` and `formats` props. Covers every
  * `ImageInputFormat` plus `'unknown'` for sources whose format can't be
- * inferred (raw string paths, remote URLs).
+ * inferred (URLs).
  *
  * `apng` (Astro ≥ 7.2.5) is importable only for use with plain `<img>` —
  * Astro's image service rejects it to avoid stripping animation, so its rule
@@ -48,11 +42,10 @@ export type FallbackKey = 'unknown' | ImageInputFormat
 /**
  * Per-input-format single-output overrides used by props that resolve to one
  * output format per source: `<Image>`'s `format` and `<Picture>`'s
- * `fallbackFormat`. Keyed by `ImageInputFormat`, plus `'unknown'` for remote
- * URLs and raw string sources whose format can't be probed at build time.
- * Merged on top of a defaults table (`DEFAULT_IMAGE_OUTPUT_FORMAT_RULES` or
- * `DEFAULT_FALLBACK_RULES`), so passing `{ webp: 'webp' }` overrides one entry
- * without restating the rest.
+ * `fallbackFormat`. Keyed by `ImageInputFormat`, plus `'unknown'` for URLs,
+ * whose format can't be probed at build time. Merged on top of a defaults table
+ * (`DEFAULT_IMAGE_OUTPUT_FORMAT_RULES` or `DEFAULT_FALLBACK_RULES`), so passing
+ * `{ webp: 'webp' }` overrides one entry without restating the rest.
  */
 export type FormatRules = Simplify<Partial<Record<FallbackKey, ImageOutputFormat>>>
 
@@ -156,35 +149,40 @@ export async function resolveSrc<
 }
 
 /**
- * Throw a descriptive error when a consumer passes a relative string path.
- * Relative paths only resolve through the `mediaKit()` integration's
- * auto-import transform; a raw relative string here means either the
- * integration isn't registered or the user meant to import the asset as an ES
- * module.
+ * Throw a descriptive error when a consumer passes a string that is not a URL.
+ * A path on disk reaches a component only through the `mediaKit()`
+ * integration's auto-import transform, or as an ES module import; a raw string
+ * here means either the integration isn't registered or the user meant to
+ * import the asset.
  */
-export function assertNotRelativePath(path: unknown, componentName: string): void {
-	if (typeof path === 'string' && (path.startsWith('./') || path.startsWith('../'))) {
-		throw new Error(
-			`${componentName} received a relative string path "${path}". ` +
-				'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
-				'or import the image and pass the ImageMetadata object directly.',
-		)
+export function assertNotStringPath<T>(
+	path: T,
+	componentName: string,
+): asserts path is Exclude<T, string> {
+	if (typeof path !== 'string') {
+		return
 	}
+
+	const kind =
+		path.startsWith('./') || path.startsWith('../') ? 'relative string path' : 'string path'
+	throw new Error(
+		`${componentName} received a ${kind} "${path}". ` +
+			'Add the mediaKit() integration to your astro.config to enable auto-importing, ' +
+			'or import the image and pass the ImageMetadata object directly.',
+	)
 }
 
 /**
  * Resolve a user-supplied `src` (and optional `srcDark` override) down to
- * concrete `ImageMetadata`. Handles the three input shapes both components
- * accept: `{ dark, light }` pairs, ESM-imported `ImageMetadata` objects, and
- * absolute string paths.
+ * concrete `ImageMetadata`. Handles the two input shapes both components
+ * accept: `{ dark, light }` pairs and ESM-imported `ImageMetadata` objects.
  */
-export async function resolveSrcToMetadata(
+export function resolveSrcToMetadata(
 	src: DarkLightImageMetadata | ImageMetadata | ImageMetadataLike | string,
 	srcDarkSource: ImageMetadata | ImageMetadataLike | string | undefined,
 	options: { componentName: string; darkDisabled: boolean },
-): Promise<{ imageMetadata: ImageMetadata; imageMetadataDark: ImageMetadata | undefined }> {
-	assertNotRelativePath(src, options.componentName)
-	assertNotRelativePath(srcDarkSource, options.componentName)
+): { imageMetadata: ImageMetadata; imageMetadataDark: ImageMetadata | undefined } {
+	assertNotStringPath(src, options.componentName)
 	if (typeof srcDarkSource === 'string' && isImageUrlSource(srcDarkSource)) {
 		throw new Error(
 			`${options.componentName} received a URL for \`srcDark\` ("${srcDarkSource}") with a local \`src\`. ` +
@@ -192,40 +190,19 @@ export async function resolveSrcToMetadata(
 		)
 	}
 
-	let imageMetadata: ImageMetadata
-	let imageMetadataDark: ImageMetadata | undefined
+	const srcDark = srcDarkSource === '' ? undefined : srcDarkSource
+	assertNotStringPath(srcDark, options.componentName)
+	const explicitDark = srcDark === undefined ? undefined : unwrapImageMetadata(srcDark)
 
 	if (isDarkLightImageMetadata(src)) {
-		imageMetadata = unwrapImageMetadata(src.light)
-		if (srcDarkSource !== undefined && srcDarkSource !== '') {
-			imageMetadataDark = isImageMetadataObject(srcDarkSource)
-				? unwrapImageMetadata(srcDarkSource)
-				: ((await resolveImageSource(srcDarkSource)) as ImageMetadata)
-		} else if (!options.darkDisabled) {
-			imageMetadataDark = unwrapImageMetadata(src.dark)
-		}
-	} else if (isImageMetadataObject(src)) {
-		imageMetadata = unwrapImageMetadata(src)
-		if (srcDarkSource !== undefined && srcDarkSource !== '') {
-			imageMetadataDark = isImageMetadataObject(srcDarkSource)
-				? unwrapImageMetadata(srcDarkSource)
-				: ((await resolveImageSource(srcDarkSource)) as ImageMetadata)
-		}
-	} else {
-		const resolved =
-			srcDarkSource === undefined || srcDarkSource === ''
-				? await resolveImageSource(src)
-				: await resolveImageSource(src, srcDarkSource)
-
-		if (isDarkLightImageMetadata(resolved)) {
-			imageMetadata = resolved.light
-			imageMetadataDark = options.darkDisabled ? undefined : resolved.dark
-		} else {
-			imageMetadata = resolved
+		return {
+			imageMetadata: unwrapImageMetadata(src.light),
+			imageMetadataDark:
+				explicitDark ?? (options.darkDisabled ? undefined : unwrapImageMetadata(src.dark)),
 		}
 	}
 
-	return { imageMetadata, imageMetadataDark }
+	return { imageMetadata: unwrapImageMetadata(src), imageMetadataDark: explicitDark }
 }
 
 /**
@@ -322,8 +299,7 @@ function ruleFor<T>(rules: Record<FallbackKey, T>, source: ImageMetadata | strin
  * - `string` (`ImageOutputFormat`) — forces that format for every source,
  *   matching Astro's built-in `fallbackFormat` semantics.
  * - `FormatRules` object — merged on top of `DEFAULT_FALLBACK_RULES`, then looked
- *   up by the source's input format (or `'unknown'` for raw strings / remote
- *   URLs).
+ *   up by the source's input format (or `'unknown'` for URLs).
  * - `undefined` — same as passing an empty object: falls through to
  *   `DEFAULT_FALLBACK_RULES`, which mirrors Astro's per-format behavior.
  */
@@ -347,8 +323,7 @@ export function pickFallbackFormat(
  *   matching Astro's built-in `format` semantics (the value is forwarded to the
  *   image service as-is).
  * - `FormatRules` object — merged on top of `DEFAULT_IMAGE_OUTPUT_FORMAT_RULES`,
- *   then looked up by the source's input format (or `'unknown'` for raw strings
- *   / remote URLs).
+ *   then looked up by the source's input format (or `'unknown'` for URLs).
  * - `undefined` — falls through to `DEFAULT_IMAGE_OUTPUT_FORMAT_RULES`, which
  *   mirrors Astro's `baseService` default (SVG → SVG, everything else → WebP).
  */
@@ -371,8 +346,7 @@ export function pickImageFormat(
  * - `ImageOutputFormat[]` — forces that list for every source, matching Astro's
  *   built-in `formats` semantics.
  * - `FormatsRules` object — merged on top of `DEFAULT_FORMATS_RULES`, then looked
- *   up by the source's input format (or `'unknown'` for raw strings / remote
- *   URLs).
+ *   up by the source's input format (or `'unknown'` for URLs).
  * - `undefined` — same as passing an empty object: falls through to
  *   `DEFAULT_FORMATS_RULES`, which mirrors Astro's `['webp']` default for every
  *   input.
