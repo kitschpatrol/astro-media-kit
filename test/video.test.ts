@@ -249,6 +249,22 @@ describe('resolveVideoSource', () => {
 		})
 
 		it.each([
+			'https://www.youtube.com/embed/videoseries?list=PLabcdef',
+			'https://vimeo.com/showcase/1234567',
+			'https://vimeo.com/event/1234567',
+			'https://vimeo.com/album/1234567',
+		])('does not take a playlist, showcase, or event for a video in %s', (src) => {
+			expect(resolveVideoSource(src)).toEqual({ identifier: src, service: 'oembed' })
+		})
+
+		it('extracts the video ID from a video inside a showcase', () => {
+			expect(resolveVideoSource('https://vimeo.com/showcase/1234567/video/10184668')).toEqual({
+				identifier: '10184668',
+				service: 'vimeo',
+			})
+		})
+
+		it.each([
 			'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
 			'https://youtube-nocookie.com/embed/dQw4w9WgXcQ',
 			'https://www.youtube.com/watch/?v=dQw4w9WgXcQ',

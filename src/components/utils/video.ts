@@ -353,17 +353,20 @@ function extractYouTubeId(url: URL): string | undefined {
 		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
 	}
 
-	// /embed/ID, /shorts/ID, /live/ID, /v/ID
+	// /embed/ID, /shorts/ID, /live/ID, /v/ID. An embedded playlist has
+	// `videoseries` in place of an ID.
 	const pathMatch = YOUTUBE_PATH_ID_REGEX.exec(url.pathname)
 	if (pathMatch) {
 		const id = pathMatch[1]
-		return id !== undefined && id !== '' && youtubeIsValidMediaId(id) ? id : undefined
+		return id !== undefined && id !== 'videoseries' && youtubeIsValidMediaId(id) ? id : undefined
 	}
 
 	return undefined
 }
 
 const VIMEO_HOSTS = new Set(['player.vimeo.com', 'vimeo.com', 'www.vimeo.com'])
+/** Path segments before a number that names a Vimeo collection or event. */
+const VIMEO_COLLECTION_SEGMENTS = new Set(['album', 'event', 'showcase'])
 
 /** Extracts a Vimeo video ID from various Vimeo URL formats. */
 function extractVimeoId(url: URL): string | undefined {
@@ -384,6 +387,13 @@ function extractVimeoId(url: URL): string | undefined {
 	// unlisted video
 	const segments = url.pathname.split('/').filter(Boolean)
 	const [lastSegment, previousSegment] = [segments.at(-1), segments.at(-2)]
+	if (
+		previousSegment !== undefined &&
+		VIMEO_COLLECTION_SEGMENTS.has(previousSegment.toLowerCase())
+	) {
+		return undefined
+	}
+
 	if (
 		previousSegment !== undefined &&
 		lastSegment !== undefined &&

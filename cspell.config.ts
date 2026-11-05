@@ -14,6 +14,7 @@ export default cspellConfig({
 		'librsvg',
 		'oscnord',
 		'roledescription',
+		'videoseries',
 		'xlink',
 		'xmpmeta',
 		'youtu',
