@@ -217,7 +217,7 @@ export function currentStage(): HTMLElement {
 	return query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-stage')
 }
 
-/** Wait until no animation in the viewer is running. */
+/** Wait until no animation in the viewer is running, and its end is rendered. */
 export async function transitionsDone(): Promise<void> {
 	await expect
 		.poll(() =>
@@ -226,11 +226,15 @@ export async function transitionsDone(): Promise<void> {
 				.every((a) => a.playState !== 'running'),
 		)
 		.toBe(true)
+	// WebKit reports a transition finished before the frame that applies its
+	// end, and geometry read in between is the previous frame's
+	await frames(1)
 }
 
 /**
- * Wait until the current subject's lift has settled, leaving any animation the
- * lifted content runs on its own, such as a player's spinner, out of it.
+ * Wait until the current subject's lift has settled, and its end is rendered,
+ * leaving any animation the lifted content runs on its own, such as a player's
+ * spinner, out of it.
  */
 export async function liftDone(timeout = 1000): Promise<void> {
 	await expect
@@ -242,6 +246,8 @@ export async function liftDone(timeout = 1000): Promise<void> {
 			{ timeout },
 		)
 		.toBe(true)
+	// WebKit's geometry lags a finished transition by a frame, as in transitionsDone
+	await frames(1)
 }
 
 /** Click the current subject at a fraction of its size, and return that point. */
