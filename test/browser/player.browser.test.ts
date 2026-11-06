@@ -809,7 +809,8 @@ it('closes the volume popover before the player lifts', async () => {
 	await userEvent.click(query(player, '[data-zoom-open]'))
 
 	await expect.poll(() => viewer().dataset.state).toBe('open')
-	expect(Object.hasOwn(popover.dataset, 'open')).toBe(false)
+	// A popover still fading out when the lift comes is swapped for a closed copy
+	expect(Object.hasOwn(query(player, 'media-volume-popover').dataset, 'open')).toBe(false)
 	expect(currentLayer().contains(player)).toBe(true)
 })
 
