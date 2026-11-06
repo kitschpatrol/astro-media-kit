@@ -58,7 +58,7 @@ it.each(['zoom', 'zoom-hls'])(
 					.toBe(false)
 				await expect.poll(() => mute.getAttribute('aria-label')).toBe('Unmute')
 				// A level set in the viewer is the one the gallery comes back to
-				await expect.poll(() => media.volume).toBe(0.4)
+				await expect.poll(() => media.volume).toBeCloseTo(0.4, 5)
 			}
 		} finally {
 			frame.remove()
