@@ -221,7 +221,7 @@ describe('getCreditFromXmpTags', () => {
 			expect(await getCreditFromXmpTags(missing)).toEqual(empty)
 			expect(await getCreditFromXmpTags(missing)).toEqual(empty)
 			expect(warn).toHaveBeenCalledOnce()
-			expect(warn.mock.calls[0]?.[0]).toContain(missing)
+			expect(warn.mock.calls[0]?.[0]).toContain(missing.replaceAll(path.sep, '/'))
 		} finally {
 			warn.mockRestore()
 		}
