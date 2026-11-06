@@ -9,6 +9,7 @@ export default eslintConfig(
 			'playground-starlight/**/*.mdx',
 			// Astro code blocks in markdown aren't part of any tsconfig program
 			'**/*.md/*.astro',
+			'**/changelog.md',
 		],
 		type: 'lib',
 	},

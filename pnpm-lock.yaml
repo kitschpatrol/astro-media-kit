@@ -212,6 +212,9 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.12
         version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2(prettier@3.9.10))(prettier@3.9.10)(typescript@6.0.3)
+      '@kitschpatrol/chagent':
+        specifier: 0.4.0
+        version: 0.4.0(bumpp@12.3.0)
       '@kitschpatrol/shared-config':
         specifier: ^8.14.1
         version: 8.14.1(@pnpm/logger@1100.0.0)(@types/estree@1.0.10)(@types/node@24.13.6)(@types/unist@3.0.3)(@typescript-eslint/utils@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(jiti@2.7.0)(mdast-util-from-markdown@2.1.0(supports-color@10.2.2))(mdast-util-mdx@3.0.0(supports-color@10.2.2))(micromark-util-types@2.0.3)(postcss-html@2.0.0(postcss@8.5.32))(remark-parse@11.0.0(supports-color@10.2.2))(stylelint-order@8.1.2(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(supports-color@10.2.2)(svelte@5.57.3(@typescript-eslint/types@8.72.1))(typescript@6.0.3)(vitest@5.1.0)
@@ -1663,6 +1666,16 @@ packages:
     cpu: [arm64]
     os: [darwin]
     hasBin: true
+
+  '@kitschpatrol/chagent@0.4.0':
+    resolution: {integrity: sha512-qOH2lhy5M04LE47WuXbi/N9bTeKXA4ZgGHGDm3z6iutCMk7m//M7/mjibiwRDBa/wiV9bqrRhq7Nj3iY4Jaqdg==}
+    engines: {node: ^24.16.0 || >=26.3.0}
+    hasBin: true
+    peerDependencies:
+      bumpp: '>=12.3.0'
+    peerDependenciesMeta:
+      bumpp:
+        optional: true
 
   '@kitschpatrol/cspell-config@8.14.1':
     resolution: {integrity: sha512-Tpz7fNSA5JVS9ppvxtt0HJHqfHYvywA6ouCrlYR2BGTvfUpCjqEGQSR47ypSA2AC/eulGtewjdnpkzdRsCV5eg==}
@@ -9467,6 +9480,22 @@ snapshots:
     transitivePeerDependencies:
       - electron
       - supports-color
+
+  '@kitschpatrol/chagent@0.4.0(bumpp@12.3.0)':
+    dependencies:
+      '@clack/prompts': 1.8.1
+      '@types/node': 24.13.6
+      cosmiconfig: 10.0.1
+      cross-spawn: 7.0.6
+      lognow: 0.8.8
+      semver: 7.8.6
+      yaml: 2.9.1
+      yargs: 18.2.0
+      zod: 4.6.7
+    optionalDependencies:
+      bumpp: 12.3.0
+    transitivePeerDependencies:
+      - electron
 
   '@kitschpatrol/cspell-config@8.14.1(@types/node@24.13.6)(typescript@6.0.3)':
     dependencies:

@@ -65,7 +65,7 @@
 		"init": "pnpm -C playground run init",
 		"lint": "ksc lint",
 		"prepare": "pnpm build",
-		"release": "bumpp --commit 'Release: %s' && pnpm build && pnpm publish --otp $(op item get npm --otp)",
+		"release": "bumpp --commit 'Release: %s' --all --execute 'chagent --root-changelog package --skip-package playground* test/parity/fixtures/*' && pnpm build && pnpm publish --otp $(op item get npm --otp)",
 		"test": "vitest run"
 	},
 	"dependencies": {
@@ -86,6 +86,7 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.12",
+		"@kitschpatrol/chagent": "0.4.0",
 		"@kitschpatrol/shared-config": "^8.14.1",
 		"@types/node": "~24.13.6",
 		"@videojs/skills": "github:videojs/skills#66afaeb4508f324b0b554700d52cb6a5a7a5b14c",
