@@ -171,7 +171,7 @@ export function playerItem(content: string, attributes = ''): string {
 
 /** The wrapper `<Zoomer>` renders with a fallback link. */
 export function link(href: string, content: string, attributes = ''): string {
-	return `<a class="amk-zoom" href="${href}" ${attributes}>${content}</a>`
+	return `<a class="amk-zoom" href="${href}" aria-haspopup="dialog" ${attributes}>${content}</a>`
 }
 
 /** A plain colored box to lift, labeled for identification. */
