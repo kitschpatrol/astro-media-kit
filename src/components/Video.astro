@@ -11,7 +11,12 @@ import InternalOembed from './internal/OEmbed.astro'
 import { isHlsSource } from './internal/video-source'
 import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
-import { getVideoInfo, readServiceConfig, resolveVideoSource } from './utils/video'
+import {
+	getVideoInfo,
+	readServiceConfig,
+	resolveVideoSource,
+	validateServiceConfig,
+} from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
 
@@ -110,6 +115,9 @@ const zoomerProps = toZoomerProps({ zoom: zoomEnabled, zoomLevel, zoomPlaceholde
 const { identifier, service: resolvedService } = resolveVideoSource(src, service)
 
 const config = readServiceConfig(getSecret)
+// Missing credentials are a configuration error, which fails the render, not a
+// provider failure to render around
+validateServiceConfig(resolvedService, config)
 
 let videoInfo: undefined | VideoInfo
 let oembedInfo: OembedInfo | undefined
