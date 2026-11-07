@@ -374,8 +374,17 @@ class Viewer {
 		this.#zoom.reset()
 
 		// Closing returns focus to whatever opened the viewer. After navigating,
-		// the item now showing is the better place to continue from
-		if (hasNavigated && current?.item.isConnected === true && current.item.tabIndex >= 0) {
+		// the item now showing is the better place to continue from. A pointer
+		// opened the viewer with nothing focused, and gets nothing focused back:
+		// a key pressed in the viewer would otherwise light the item's focus ring
+		const wasFocusOpened =
+			document.activeElement !== null && document.activeElement !== document.body
+		if (
+			hasNavigated &&
+			wasFocusOpened &&
+			current?.item.isConnected === true &&
+			current.item.tabIndex >= 0
+		) {
 			current.item.focus({ preventScroll: true })
 		}
 	}

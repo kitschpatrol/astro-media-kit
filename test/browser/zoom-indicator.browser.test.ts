@@ -3,7 +3,16 @@ import { commands, userEvent } from 'vitest/browser'
 import videoStyles from '../../src/components/internal/amk-video.css?inline'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import { installZoomIndicators } from '../../src/components/internal/zoom-indicator'
-import { cleanUp, close, mount, mountPage, query, setUpLightbox, viewer } from './helpers'
+import {
+	activeSlideLabel,
+	cleanUp,
+	close,
+	mount,
+	mountPage,
+	query,
+	setUpLightbox,
+	viewer,
+} from './helpers'
 
 setUpLightbox()
 installZoomIndicators()
@@ -202,6 +211,39 @@ it('activates instantly like the player controls and removes transitions with re
 	} finally {
 		await commands.emulateReducedMotion(false)
 	}
+})
+
+it('leaves a mouse-opened item without keyboard-visible focus after Escape', async () => {
+	const fixture = await mountPage('/zoom-indicator/')
+	const items = ['#builtin', '#custom', '#selector'].map((selector) =>
+		query(fixture, `${selector} .amk-zoom`),
+	)
+	for (const item of items) {
+		item.dataset.gallery = 'indicators'
+	}
+
+	await userEvent.click(items[0]!)
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(items[0]!.matches(':focus-visible')).toBe(false)
+
+	// After navigating with the mouse, the item landed on is left alone too
+	await userEvent.click(items[1]!)
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(activeSlideLabel).toBe('3 of 3')
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(items[2]!.matches(':focus-visible')).toBe(false)
+
+	// A keyboard opener keeps its focus restoration
+	items[0]!.focus()
+	await userEvent.keyboard('{Enter}')
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(document.activeElement).toBe(items[0])
 })
 
 it('keeps custom decorations inert', async () => {

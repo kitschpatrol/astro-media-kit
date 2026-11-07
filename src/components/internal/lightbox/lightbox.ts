@@ -156,6 +156,13 @@ function handleClick(event: MouseEvent) {
 	if (item !== undefined) {
 		if (!isWithin(event, interactiveSelector, item) && !isNativeLink(item)) {
 			event.preventDefault()
+			// As with the opener button: a pointer-opened dialog must not restore
+			// keyboard-visible focus to the item after Escape, which would leave
+			// its indicator in the active state
+			if (event.detail > 0) {
+				item.blur()
+			}
+
 			void openLightbox(item)
 		}
 
