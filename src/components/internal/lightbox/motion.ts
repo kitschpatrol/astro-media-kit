@@ -431,12 +431,17 @@ export class CarouselMotion {
 	}
 
 	/**
-	 * A touch or wheel takes over from any navigation underway. A glide it
-	 * interrupts leaves the track between slides with snapping off, so the
-	 * realign settles it, once the touch lifts or the wheel goes quiet.
+	 * A touch or a wheel along the track takes over from any navigation underway.
+	 * A glide it interrupts leaves the track between slides with snapping off, so
+	 * the realign settles it, once the touch lifts or the wheel goes quiet. A
+	 * wheel across the track scrolls the page or a zoomed stage, and leaves a
+	 * glide alone.
 	 */
 	readonly #handleGesture = (event: TouchEvent | WheelEvent) => {
-		if (!this.#options.canNavigate() || (event instanceof WheelEvent && event.ctrlKey)) {
+		if (
+			!this.#options.canNavigate() ||
+			(event instanceof WheelEvent && (event.ctrlKey || !isAlongTrack(event)))
+		) {
 			return
 		}
 
@@ -460,7 +465,7 @@ export class CarouselMotion {
 		}
 
 		if (event.type === 'wheel' && (wasCustom || this.#realignTimer !== undefined)) {
-			// A vertical wheel can interrupt a glide without producing scrollend.
+			// A wheel that interrupts a glide need not scroll, so no scrollend follows
 			this.#scheduleRealign()
 		}
 	}
@@ -500,12 +505,12 @@ export class CarouselMotion {
 	readonly #handlePointermove = (event: PointerEvent) => {
 		if (event.buttons === 0) {
 			this.#isPressSeen = false
+			this.#endUnreleased(event)
 		} else if (
 			this.#drag === undefined &&
 			!this.#isPressSeen &&
 			event.buttons === 1 &&
 			event.target instanceof HTMLMediaElement &&
-			this.#endUnreleased(event)
 			event.target.controls
 		) {
 			// Firefox's native media controls keep the press itself, so a drag
@@ -734,6 +739,13 @@ export class CarouselMotion {
 
 function clamp(index: number, count: number): number {
 	return Math.min(Math.max(index, 0), count - 1)
+}
+
+/** Whether a wheel moves mostly along the track, as a shifted vertical one does. */
+function isAlongTrack(event: WheelEvent): boolean {
+	const x = event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX
+	const y = event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY
+	return x !== 0 && Math.abs(x) >= Math.abs(y)
 }
 
 /** Whether a press landed on one of `element`'s own scrollbars. */
