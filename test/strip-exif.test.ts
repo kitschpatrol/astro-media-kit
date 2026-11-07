@@ -21,6 +21,7 @@ const silentLogger = {
 describe('stripExifFromImages', () => {
 	let root: string
 	let jpegPath: string
+	let wideGamutPath: string
 	let nestedPngPath: string
 	let textPath: string
 	const textContents = 'hello\n'
@@ -35,6 +36,15 @@ describe('stripExifFromImages', () => {
 			.withExif({ IFD0: { Copyright: 'Test', ImageDescription: 'Should be stripped' } })
 			.jpeg()
 			.toFile(jpegPath)
+
+		wideGamutPath = path.join(root, 'wide-gamut.jpg')
+		await sharp({
+			create: { background: { r: 255, g: 0, b: 0 }, channels: 3, height: 8, width: 8 },
+		})
+			.withExif({ IFD0: { Copyright: 'Wide gamut' } })
+			.withIccProfile('p3')
+			.jpeg()
+			.toFile(wideGamutPath)
 
 		const nested = path.join(root, 'nested')
 		await mkdir(nested)
@@ -59,6 +69,12 @@ describe('stripExifFromImages', () => {
 	it('strips EXIF from a top-level JPEG', async () => {
 		const { exif } = await sharp(jpegPath).metadata()
 		expect(exif).toBeUndefined()
+	})
+
+	it('keeps the ICC color profile while stripping the other metadata', async () => {
+		const { exif, icc } = await sharp(wideGamutPath).metadata()
+		expect(exif).toBeUndefined()
+		expect(icc).toBeDefined()
 	})
 
 	it('recurses into subdirectories and strips EXIF from a nested PNG', async () => {
