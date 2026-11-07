@@ -1,20 +1,16 @@
 allowBuilds:
   esbuild: true
   puppeteer: true
-  unrs-resolver: true
 ignoreWorkspaceRootCheck: true
 minimumReleaseAgeExclude:
-  - '@kitschpatrol/chagent@0.4.0'
-  - '@kitschpatrol/cspell-config@8.14.0'
-  - '@kitschpatrol/eslint-config@8.14.0'
-  - '@kitschpatrol/knip-config@8.14.0'
-  - '@kitschpatrol/mdat-config@8.14.0'
-  - '@kitschpatrol/prettier-config@8.14.0'
-  - '@kitschpatrol/remark-config@8.14.0'
-  - '@kitschpatrol/repo-config@8.14.0'
-  - '@kitschpatrol/shared-config@8.14.0'
-  - '@kitschpatrol/stylelint-config@8.14.0'
-  - '@kitschpatrol/typescript-config@8.14.0'
+  - '@kitschpatrol/chagent@0.5.0'
+packageExtensions:
+  # astro2tsx pins @emnapi/core but leaves @emnapi/runtime to peer resolution,
+  # which picks rolldown's 2.0 beta and crashes the 1.x core on load.
+  # Keep in step with its @emnapi/core pin; remove once it declares the runtime.
+  '@astrojs/astro2tsx':
+    dependencies:
+      '@emnapi/runtime': 1.11.3
 packages:
   - .
   - playground

@@ -72,37 +72,37 @@
 		"@astrojs/compiler-rs": "^0.5.2",
 		"@kitschpatrol/unplugin-aphex": "^0.2.5",
 		"@kitschpatrol/unplugin-tldraw": "^1.1.5",
-		"@mux/ts": "^16.0.0",
+		"@mux/ts": "^16.1.0",
 		"@oscnord/get-video-resolution": "^2.5.0",
 		"@sindresorhus/is": "^8.1.0",
 		"@videojs/hlsjs-video": "^10.3.0",
 		"@videojs/html": "^10.3.0",
 		"@videojs/vimeo-video": "^10.3.0",
 		"@videojs/youtube-video": "^10.3.0",
-		"exiftool-vendored": "^39.1.0",
+		"exiftool-vendored": "^39.1.1",
 		"linkedom": "^0.18.15",
 		"mrmime": "^2.0.1",
 		"pretty-bytes": "^7.2.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.12",
-		"@kitschpatrol/chagent": "0.4.0",
+		"@kitschpatrol/chagent": "0.5.0",
 		"@kitschpatrol/shared-config": "^8.14.1",
 		"@types/node": "~24.13.6",
 		"@videojs/skills": "github:videojs/skills#66afaeb4508f324b0b554700d52cb6a5a7a5b14c",
 		"@vitest/browser-playwright": "^5.1.0",
-		"astro": "^7.4.5",
+		"astro": "^7.4.7",
 		"bumpp": "^12.3.0",
 		"cheerio": "^1.2.0",
 		"happy-dom": "^21.0.4",
-		"playwright": "1.64.1",
+		"playwright": "1.65.0",
 		"sharp": "^0.35.5",
 		"shx": "^0.4.0",
 		"typescript": "~6.0.3",
 		"vitest": "^5.1.0"
 	},
 	"peerDependencies": {
-		"astro": "^7.4.5",
+		"astro": "^7.4.7",
 		"sharp": "^0.35.4"
 	},
 	"peerDependenciesMeta": {
@@ -110,7 +110,7 @@
 			"optional": true
 		}
 	},
-	"packageManager": "pnpm@12.16.1",
+	"packageManager": "pnpm@12.18.0",
 	"engines": {
 		"node": "^24.16.0 || >=26.3.0"
 	}
