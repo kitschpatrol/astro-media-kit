@@ -35,7 +35,7 @@ describe('zoom server markup', () => {
 		const link = $('#first a.amk-zoom').first()
 		expect(link.attr('role')).toBeUndefined()
 		expect(link.attr('tabindex')).toBeUndefined()
-		expect(link.attr('aria-haspopup')).toBeUndefined()
+		expect(link.attr('aria-haspopup')).toBe('dialog')
 		const image = $('#first a.amk-zoom').last()
 		expect(image.attr('data-level')).toBeUndefined()
 		expect(image.attr('data-placeholder')).toBeUndefined()

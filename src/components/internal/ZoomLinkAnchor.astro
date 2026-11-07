@@ -56,7 +56,12 @@ if (wrapper === null && import.meta.env.DEV) {
 		</a>
 	)
 ) : (
-	<a class:list={['amk-zoom', 'amk-zoom-link', className]} href={href} {...attributes}>
+	<a
+		aria-haspopup="dialog"
+		class:list={['amk-zoom', 'amk-zoom-link', className]}
+		href={href}
+		{...attributes}
+	>
 		<slot name="text" />
 		<template set:html={content} />
 	</a>

@@ -66,7 +66,7 @@ const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim
 
 {isEnabled ? (
 	<TAG
-		aria-haspopup={isButton ? 'dialog' : undefined}
+		aria-haspopup={interactive ? undefined : 'dialog'}
 		class="amk-zoom"
 		data-gallery={gallery}
 		data-href={hasHref && !isLink ? href : undefined}
