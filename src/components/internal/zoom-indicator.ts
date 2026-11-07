@@ -11,7 +11,7 @@ function disposeIndicators() {
 function setUpIndicators() {
 	disposeIndicators()
 	disposeTheme = subscribeMediaIconTheme(
-		document.querySelectorAll<HTMLElement>('.amk-zoom-indicator[data-amk-icon="zoom-indicator"]'),
+		document.querySelectorAll<HTMLElement>('.amk-zoom-indicator[data-amk-icon="expand"]'),
 	)
 }
 

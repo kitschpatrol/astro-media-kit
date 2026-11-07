@@ -7,6 +7,10 @@
 	syntax: '<color>';
 }
 
+/* The indicator is the video player's expand button on an image: the same
+   artwork, size, colors, and hover timing, read from the same `--amk-control-*`
+   properties, flush with the bottom-right corner. Indicator-specific properties
+   override those; opacity follows the shared gallery icons. */
 @layer amk-lightbox {
 	.amk-zoom[data-zoom-indicator] {
 		position: relative;
@@ -22,17 +26,20 @@
 	}
 
 	.amk-zoom-indicator {
-		--amk-zoom-indicator-painted-background: var(--amk-zoom-indicator-background, transparent);
+		--amk-zoom-indicator-painted-background: var(
+			--amk-zoom-indicator-background,
+			var(--amk-control-background, rgb(20 20 20 / 70%))
+		);
 
 		pointer-events: none;
 		position: absolute;
-		inset: var(--amk-zoom-indicator-inset, auto 0.75rem 0.75rem auto);
+		inset: var(--amk-zoom-indicator-inset, auto 0 0 auto);
 		display: grid;
 		place-items: center;
-		width: var(--amk-zoom-indicator-size, var(--amk-gallery-icon-size, 1.25rem));
-		height: var(--amk-zoom-indicator-size, var(--amk-gallery-icon-size, 1.25rem));
+		width: var(--amk-zoom-indicator-size, var(--amk-control-size, 44px));
+		height: var(--amk-zoom-indicator-size, var(--amk-control-size, 44px));
 		line-height: 1;
-		color: var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4));
+		color: var(--amk-zoom-indicator-color, var(--amk-control-color, #fff));
 		opacity: var(--amk-zoom-indicator-opacity, var(--amk-gallery-icon-opacity, 1));
 		background-color: var(--amk-zoom-indicator-painted-background);
 		filter: opacity(var(--amk-page-controls-opacity, 1));
@@ -41,19 +48,21 @@
 
 	.amk-zoom-indicator > svg {
 		display: block;
-		width: 100%;
-		height: 100%;
+		width: var(--amk-zoom-indicator-icon-size, var(--amk-icon-size, 24px));
+		height: var(--amk-zoom-indicator-icon-size, var(--amk-icon-size, 24px));
 	}
 
+	/* Omitted active colors keep the resting colors set for the indicator; the
+	   defaults follow the player's hover background. */
 	.amk-zoom:focus-visible > .amk-zoom-indicator {
 		--amk-zoom-indicator-painted-background: var(
 			--amk-zoom-indicator-active-background,
-			var(--amk-zoom-indicator-background, transparent)
+			var(--amk-zoom-indicator-background, var(--amk-control-hover-background, rgb(50 50 50 / 70%)))
 		);
 
 		color: var(
 			--amk-zoom-indicator-active-color,
-			var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4))
+			var(--amk-zoom-indicator-color, var(--amk-control-color, #fff))
 		);
 		opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
 	}
@@ -67,12 +76,15 @@
 		.amk-zoom:hover > .amk-zoom-indicator {
 			--amk-zoom-indicator-painted-background: var(
 				--amk-zoom-indicator-active-background,
-				var(--amk-zoom-indicator-background, transparent)
+				var(
+					--amk-zoom-indicator-background,
+					var(--amk-control-hover-background, rgb(50 50 50 / 70%))
+				)
 			);
 
 			color: var(
 				--amk-zoom-indicator-active-color,
-				var(--amk-zoom-indicator-color, var(--amk-gallery-control-color, #f4f4f4))
+				var(--amk-zoom-indicator-color, var(--amk-control-color, #fff))
 			);
 			opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
 		}
@@ -80,9 +92,10 @@
 
 	@media (prefers-reduced-motion: no-preference) {
 		.amk-zoom-indicator {
+			transition-timing-function: var(--amk-easing, cubic-bezier(0.2, 0.8, 0.1, 1));
 			transition-duration: var(
 				--amk-zoom-indicator-transition-duration,
-				var(--amk-gallery-control-transition-duration, 150ms)
+				var(--amk-control-transition-duration, 0.5s)
 			);
 			transition-property: color, --amk-zoom-indicator-painted-background, opacity;
 		}
@@ -90,13 +103,7 @@
 		.amk-zoom:focus-visible > .amk-zoom-indicator {
 			transition-duration: var(
 				--amk-zoom-indicator-active-transition-duration,
-				var(
-					--amk-gallery-control-active-transition-duration,
-					var(
-						--amk-zoom-indicator-transition-duration,
-						var(--amk-gallery-control-transition-duration, 150ms)
-					)
-				)
+				var(--amk-control-active-transition-duration, 0s)
 			);
 		}
 
@@ -104,13 +111,7 @@
 			.amk-zoom:hover > .amk-zoom-indicator {
 				transition-duration: var(
 					--amk-zoom-indicator-active-transition-duration,
-					var(
-						--amk-gallery-control-active-transition-duration,
-						var(
-							--amk-zoom-indicator-transition-duration,
-							var(--amk-gallery-control-transition-duration, 150ms)
-						)
-					)
+					var(--amk-control-active-transition-duration, 0s)
 				);
 			}
 		}

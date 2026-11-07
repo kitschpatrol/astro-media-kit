@@ -1,3 +1,5 @@
+import { fullscreenEnterIcon } from '@videojs/html/icons'
+import { load } from 'cheerio'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './parity/helpers/build-fixture'
 
@@ -18,9 +20,18 @@ describe('image zoom indicators', () => {
 		expect(indicator.hasClass('amk-zoom-indicator')).toBe(true)
 		expect(indicator.attr('aria-hidden')).toBe('true')
 		expect(indicator.is('[inert]')).toBe(true)
-		expect(indicator.attr('data-amk-icon')).toBe('zoom-indicator')
+		expect(indicator.attr('data-amk-icon')).toBe('expand')
 		expect(indicator.find('svg').attr('focusable')).toBe('false')
 		expect($('img[zoomIndicator], img[indicator]')).toHaveLength(0)
+	})
+
+	it("draws the video player's expand artwork by default", async () => {
+		const $ = await fixture.readHTML('/zoom-indicator/')
+		const indicator = $('#builtin .amk-zoom-indicator svg')
+		const expand = load(fullscreenEnterIcon)('svg')
+		expect(indicator.attr('viewBox')).toBe(expand.attr('viewBox'))
+		expect(indicator.attr('fill')).toBe(expand.attr('fill'))
+		expect(indicator.find('path').attr('d')).toBe(expand.find('path').attr('d'))
 	})
 
 	it('automatically enables a per-image slot and keeps it out of the caption and theme targets', async () => {

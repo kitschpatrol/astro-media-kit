@@ -26,21 +26,16 @@ import Layout from '../layouts/Layout.astro'
 		<svg fill="none" slot="icon-next" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 			<path d="m9 5 7 7-7 7" />
 		</svg>
-		<svg
-			fill="none"
-			slot="icon-zoom-indicator"
-			stroke="currentColor"
-			stroke-width="2"
-			viewBox="0 0 24 24"
-		>
+		<svg fill="none" slot="icon-expand" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 			<path d="M12 3v18M3 12h18" />
 		</svg>
 	</MediaTheme>
 	<h1>Media theme</h1>
 	<p class="note">
 		One MediaTheme supplies outlined play and pause icons to both players, a close icon to the
-		lightbox, navigation arrows to both galleries, and a plus to image indicators. One set of
-		gallery variables supplies the rectangular targets, colors, and opacity transitions.
+		lightbox, navigation arrows to both galleries, and an expand icon to the video players and image
+		indicators. One set of gallery variables supplies the rectangular targets, colors, and opacity
+		transitions.
 	</p>
 	<h2>Audio</h2>
 	<Audio src="/test.mp3" />

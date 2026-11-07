@@ -58,18 +58,42 @@ it.each([false, true])(
 	},
 )
 
+it('matches the video expand button by default, flush with the bottom-right corner', async () => {
+	const fixture = await mountPage('/zoom-indicator/')
+	const opener = query(fixture, '#builtin .amk-zoom')
+	const indicator = query(opener, '.amk-zoom-indicator')
+	const style = getComputedStyle(indicator)
+	expect(style.width).toBe('44px')
+	expect(style.height).toBe('44px')
+	expect(style.color).toBe('rgb(255, 255, 255)')
+	expect(style.backgroundColor).toBe('rgba(20, 20, 20, 0.7)')
+	expect(style.borderRadius).toBe('0px')
+	const icon = getComputedStyle(query(indicator, 'svg'))
+	expect(icon.width).toBe('24px')
+	expect(icon.height).toBe('24px')
+	const image = query(opener, 'img').getBoundingClientRect()
+	const corner = indicator.getBoundingClientRect()
+	expect(corner.right).toBeCloseTo(image.right, 1)
+	expect(corner.bottom).toBeCloseTo(image.bottom, 1)
+	await userEvent.hover(opener)
+	const canHover = matchMedia('(hover: hover)').matches
+	expect(style.backgroundColor).toBe(canHover ? 'rgba(50, 50, 50, 0.7)' : 'rgba(20, 20, 20, 0.7)')
+	expect(style.transitionDuration).toBe(canHover ? '0s' : '0.5s')
+})
+
 it('supports size, color, corner positioning, and shared idle/active styling', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
 	const section = query(fixture, '#builtin')
 	section.style.cssText =
-		'--amk-zoom-indicator-size: 28px; --amk-zoom-indicator-color: rgb(200 20 30); --amk-zoom-indicator-inset: 5px auto auto 7px; --amk-gallery-icon-opacity: .4; --amk-gallery-icon-active-opacity: 1; --amk-gallery-control-transition-duration: 250ms; --amk-gallery-control-active-transition-duration: 0ms;'
+		'--amk-zoom-indicator-size: 28px; --amk-zoom-indicator-icon-size: 16px; --amk-zoom-indicator-color: rgb(200 20 30); --amk-zoom-indicator-inset: 5px auto auto 7px; --amk-gallery-icon-opacity: .4; --amk-gallery-icon-active-opacity: 1; --amk-control-transition-duration: 250ms; --amk-control-active-transition-duration: 0ms; --amk-control-background: rgb(1 2 3); --amk-control-hover-background: rgb(4 5 6);'
 	const indicator = query(section, '.amk-zoom-indicator')
 	const opener = query(section, '.amk-zoom')
 	const style = getComputedStyle(indicator)
 	expect(style.width).toBe('28px')
 	expect(style.height).toBe('28px')
+	expect(getComputedStyle(query(indicator, 'svg')).width).toBe('16px')
 	expect(style.color).toBe('rgb(200, 20, 30)')
-	expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+	expect(style.backgroundColor).toBe('rgb(1, 2, 3)')
 	expect(style.top).toBe('5px')
 	expect(style.left).toBe('7px')
 	expect(style.pointerEvents).toBe('none')
@@ -80,7 +104,7 @@ it('supports size, color, corner positioning, and shared idle/active styling', a
 	expect(style.opacity).toBe(canHover ? '1' : '0.4')
 	expect(style.transitionDuration).toBe(canHover ? '0s' : '0.25s')
 	expect(style.color).toBe('rgb(200, 20, 30)')
-	expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+	expect(style.backgroundColor).toBe(canHover ? 'rgb(4, 5, 6)' : 'rgb(1, 2, 3)')
 
 	await userEvent.hover(query(fixture, '#default'))
 	opener.focus()
@@ -153,7 +177,7 @@ it.each(['hover', 'focus'] as const)(
 	},
 )
 
-it('inherits the rest duration for active states and removes transitions with reduced motion', async () => {
+it('activates instantly like the player controls and removes transitions with reduced motion', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
 	const section = query(fixture, '#builtin')
 	section.style.cssText =
@@ -161,7 +185,8 @@ it('inherits the rest duration for active states and removes transitions with re
 	const indicator = query(section, '.amk-zoom-indicator')
 	const opener = query(section, '.amk-zoom')
 	await userEvent.hover(opener)
-	expect(getComputedStyle(indicator).transitionDuration).toBe('0.25s')
+	const canHover = matchMedia('(hover: hover)').matches
+	expect(getComputedStyle(indicator).transitionDuration).toBe(canHover ? '0s' : '0.25s')
 	section.style.setProperty('--amk-zoom-indicator-active-transition-duration', '1200ms')
 	await commands.emulateReducedMotion(true)
 	try {

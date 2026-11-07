@@ -18,7 +18,10 @@ export type Props = {
 	 * link to the content to go to.
 	 */
 	href?: string | undefined
-	/** Decorative corner indicator; the `indicator` slot overrides its artwork. */
+	/**
+	 * Decorative corner indicator: the video player's expand button, as the
+	 * `expand` icon; the `indicator` slot overrides its artwork.
+	 */
 	indicator?: boolean | undefined
 	/**
 	 * The content runs its own controls, such as a video player: the wrapper is
@@ -82,19 +85,14 @@ const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim
 			<span
 				aria-hidden="true"
 				class="amk-zoom-indicator"
-				data-amk-icon={hasCustomIndicator ? undefined : 'zoom-indicator'}
+				data-amk-icon={hasCustomIndicator ? undefined : 'expand'}
 				inert
 			>
 				{hasCustomIndicator ? (
 					<Fragment set:html={customIndicator} />
 				) : (
-					<svg aria-hidden="true" fill="none" focusable="false" viewBox="0 0 24 24">
-						<path
-							d="M12 4v16M4 12h16"
-							stroke="currentColor"
-							stroke-linecap="round"
-							stroke-width="2"
-						/>
+					<svg aria-hidden="true" fill="currentColor" focusable="false" viewBox="0 0 18 18">
+						<path d="M9.57 3.617A1 1 0 0 0 8.646 3H4c-.552 0-1 .449-1 1v4.646a.996.996 0 0 0 1.001 1 1 1 0 0 0 .706-.293l4.647-4.647a1 1 0 0 0 .216-1.089m4.812 4.812a1 1 0 0 0-1.089.217l-4.647 4.647a.998.998 0 0 0 .708 1.706H14c.552 0 1-.449 1-1V9.353a1 1 0 0 0-.618-.924" />
 					</svg>
 				)}
 			</span>

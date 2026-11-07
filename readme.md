@@ -263,7 +263,7 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 
 ### Image zoom indicators
 
-`Image` and `Picture` can display a decorative corner indicator when zoom is enabled. Add `zoomIndicator` to show the built-in plus, or supply a `zoom-indicator` slot for custom artwork:
+`Image` and `Picture` can display a decorative corner indicator when zoom is enabled. Add `zoomIndicator` to show the built-in indicator, which matches the video player's expand button: the same artwork, size, and colors, flush with the bottom-right corner of the image. Supply a `zoom-indicator` slot for custom artwork:
 
 ```astro
 <Image src={photo} alt="Mountain lake" zoom zoomIndicator />
@@ -278,26 +278,27 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 
 A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. The active lightbox item's indicator fades out on the page. Moving to another item fades the previous thumbnail's indicator back in and the newly active thumbnail's indicator out; other thumbnails retain their indicators. Closing the lightbox restores the active thumbnail's indicator. These fades follow the lightbox's opening/closing fade durations independently of hover styling, and respect reduced motion. Indicators stay out of the lightbox itself.
 
-To replace the built-in artwork across a page, add `<YourPlusIcon slot="icon-zoom-indicator" />` to `MediaTheme`. Individual `zoom-indicator` slots take precedence over that shared icon. As with other `MediaTheme` icons, the shared replacement requires JavaScript; per-image slots and the built-in plus render on the server.
+To replace the built-in artwork across a page, add `<YourExpandIcon slot="icon-expand" />` to `MediaTheme`, which also replaces the video player's expand button. Individual `zoom-indicator` slots take precedence over that shared icon. As with other `MediaTheme` icons, the shared replacement requires JavaScript; per-image slots and the built-in artwork render on the server.
 
 Set these variables in global CSS or on an ancestor of the image:
 
-| Property                                          | Default                                    |
-| ------------------------------------------------- | ------------------------------------------ |
-| `--amk-zoom-indicator-size`                       | Shared gallery icon size                   |
-| `--amk-zoom-indicator-color`                      | Shared gallery control color               |
-| `--amk-zoom-indicator-active-color`               | Resting indicator color                    |
-| `--amk-zoom-indicator-background`                 | `transparent`                              |
-| `--amk-zoom-indicator-active-background`          | Resting indicator background               |
-| `--amk-zoom-indicator-inset`                      | `auto 0.75rem 0.75rem auto` (bottom right) |
-| `--amk-zoom-indicator-opacity`                    | Shared gallery resting icon opacity        |
-| `--amk-zoom-indicator-active-opacity`             | Shared gallery active icon opacity         |
-| `--amk-zoom-indicator-transition-duration`        | Shared gallery transition duration         |
-| `--amk-zoom-indicator-active-transition-duration` | Shared gallery active transition duration  |
+| Property                                          | Default                                                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `--amk-zoom-indicator-size`                       | Video control size (`--amk-control-size`, `44px`)                                           |
+| `--amk-zoom-indicator-icon-size`                  | Video icon size (`--amk-icon-size`, `24px`)                                                 |
+| `--amk-zoom-indicator-color`                      | Video control color (`--amk-control-color`, `#fff`)                                         |
+| `--amk-zoom-indicator-active-color`               | Resting indicator color                                                                     |
+| `--amk-zoom-indicator-background`                 | Video control background (`--amk-control-background`)                                       |
+| `--amk-zoom-indicator-active-background`          | `--amk-zoom-indicator-background` when set, else the video hover background                 |
+| `--amk-zoom-indicator-inset`                      | `auto 0 0 auto` (flush bottom right)                                                        |
+| `--amk-zoom-indicator-opacity`                    | Shared gallery resting icon opacity                                                         |
+| `--amk-zoom-indicator-active-opacity`             | Shared gallery active icon opacity                                                          |
+| `--amk-zoom-indicator-transition-duration`        | Video control transition duration (`--amk-control-transition-duration`, `0.5s`)             |
+| `--amk-zoom-indicator-active-transition-duration` | Video control active transition duration (`--amk-control-active-transition-duration`, `0s`) |
 
-The inset accepts CSS shorthand in top/right/bottom/left order: for a top-left indicator, use `0.75rem auto auto 0.75rem`. Custom SVGs should use `currentColor` to follow the color setting. Background properties accept CSS colors. Color, background, and opacity follow hover and keyboard focus, use the existing resting/active transition durations, and disable cosmetic transitions with reduced motion.
+The inset accepts CSS shorthand in top/right/bottom/left order: for a top-left indicator with some breathing room, use `0.75rem auto auto 0.75rem`. Custom SVGs should use `currentColor` to follow the color setting. Background properties accept CSS colors. Color, background, and opacity follow hover and keyboard focus, use the resting/active transition durations with the player's `--amk-easing`, and disable cosmetic transitions with reduced motion.
 
-For a black plus on a white background that reverses immediately on hover or keyboard focus and fades back afterward:
+For a black indicator on a white background that reverses immediately on hover or keyboard focus and fades back afterward:
 
 ```css
 :root {
@@ -312,7 +313,7 @@ For a black plus on a white background that reverses immediately on hover or key
 }
 ```
 
-Indicator opacity affects both the artwork and its background. Set both opacity values to `1` for an opaque tile, including when shared gallery icons rest at a lower opacity. Omitted active colors retain the resting colors; the default background remains transparent.
+Indicator opacity affects both the artwork and its background. Set both opacity values to `1` for an opaque tile, including when shared gallery icons rest at a lower opacity. Omitted active colors retain the resting colors you set; otherwise the indicator takes the video controls' resting and hover backgrounds.
 
 ### Recommended defaults
 
@@ -522,19 +523,18 @@ import CloseIcon from '../icons/CloseIcon.astro'
 <slot />
 ```
 
-| Slots                                                    | Used by                                                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                  |
-| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                 |
-| `icon-spinner`                                           | Video and local audio buffering indicators                                            |
-| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                |
-| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                      |
-| `icon-expand`                                            | Video's on-page lightbox opener; defaults to the fullscreen-enter artwork             |
-| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon |
-| `icon-check`                                             | Local audio's selected playback-speed indicator                                       |
-| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts         |
-| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                        |
-| `icon-zoom-indicator`                                    | Opted-in Image and Picture corner indicators                                          |
+| Slots                                                    | Used by                                                                                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                                                           |
+| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                                                          |
+| `icon-spinner`                                           | Video and local audio buffering indicators                                                                                     |
+| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                                                         |
+| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                                                               |
+| `icon-expand`                                            | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to the fullscreen-enter artwork |
+| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                          |
+| `icon-check`                                             | Local audio's selected playback-speed indicator                                                                                |
+| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                  |
+| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                                                                 |
 
 Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG throw during rendering, which happens at build time for static pages.
 
@@ -593,7 +593,7 @@ For rectangular arrow targets, a smaller close target, icons resting at 40%, imm
 }
 ```
 
-Active styling applies to hover-capable pointers and keyboard focus. Controls fade back to their resting appearance over 0.5 seconds by default. Lightbox icon and background fades use `--amk-lightbox-easing`, matching its other transitions. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity and transition durations unless their indicator-specific properties override them. Existing SVG replacement slots continue to work with these controls.
+Active styling applies to hover-capable pointers and keyboard focus. Controls fade back to their resting appearance over 0.5 seconds by default. Lightbox icon and background fades use `--amk-lightbox-easing`, matching its other transitions. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity unless their indicator-specific properties override it; their size, colors, and transitions follow the video control properties instead. Existing SVG replacement slots continue to work with these controls.
 
 ### ZoomLink
 

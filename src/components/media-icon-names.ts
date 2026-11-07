@@ -19,7 +19,6 @@ export const mediaIconNames = [
 	'next',
 	'zoom-in',
 	'zoom-out',
-	'zoom-indicator',
 ] as const
 
 export type MediaIconName = (typeof mediaIconNames)[number]
