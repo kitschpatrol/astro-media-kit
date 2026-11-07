@@ -423,7 +423,7 @@ import { Video } from 'astro-media-kit/components'
 
 `capQualityToSize` and `initialBandwidth` apply to the hls.js engine for HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs); native HLS playback ignores them. `initialBandwidth` is in bits per second. `poster` replaces the thumbnail a service returns; local files have no thumbnail of their own. `<Video>` does not extract XMP metadata — use `credit`, `creditMediaType`, and `creditOrganization` for manual credits.
 
-Generic oEmbed sources retain the provider's player and do not use the kit's playback controls, autoplay/mute/loop/preload settings, HLS settings, or lightbox zoom; their `poster` shows only in the fallback link without JavaScript. Set `service="oembed"` to use discovery for a recognized provider such as YouTube or Vimeo; the full source URL is preserved. The page must advertise a JSON oEmbed discovery endpoint that returns embed HTML, which is trusted as the provider returns it. Video metadata and oEmbed requests run during rendering; provider and network failures are logged, shown inline in development, and omitted from the production page. Missing credentials and unrecognizable sources throw instead, so a build without its secrets fails rather than silently omitting its videos.
+Generic oEmbed sources retain the provider's player and do not use the kit's playback controls, autoplay/mute/loop/preload settings, HLS settings, or lightbox zoom; their `poster` shows only in the fallback link without JavaScript, and only when the provider reports the embed's dimensions. Set `service="oembed"` to use discovery for a recognized provider such as YouTube or Vimeo; the full source URL is preserved. The page must advertise a JSON oEmbed discovery endpoint that returns embed HTML, which is trusted as the provider returns it. Treat `src` as author-controlled: the kit fetches whatever URL it names during rendering and injects the HTML that comes back, so never build it from request data on a server-rendered page. Video metadata and oEmbed requests run during rendering; provider and network failures are logged, shown inline in development, and omitted from the production page. Missing credentials and unrecognizable sources throw instead, so a build without its secrets fails rather than silently omitting its videos.
 
 `controls` selects the player's control bar layout: `'full'` shows play, mute with a volume popup, a time slider and display, captions when present, and either native fullscreen or a lightbox expand button when `zoom` is enabled. `'minimal'` shows a large play button and, with `zoom`, an expand button; it gains the full playback bar without native fullscreen in the lightbox. `'lightbox'` shows the playback bar without fullscreen or expand buttons. `'native'` skips the Video.js UI and uses the underlying element's controls: the service's iframe controls for YouTube/Vimeo, or browser controls for local files and HLS; it has no lightbox opener. `'none'` hides playback controls, retaining an expand button with `zoom` and dismissible playback errors. On the page, full and minimal players toggle playback when their video surface is clicked or tapped; only the expand button opens the lightbox. In the lightbox, the video surface supports dragging, playback uses the toolbar when available, and the lightbox's close button replaces the expand button. Minimal players never offer native fullscreen. In minimal and none modes, the on-page expand button appears only on hover or keyboard focus, even while paused.
 
@@ -436,9 +436,9 @@ URL formats recognized automatically:
 | Local   | Direct file URLs (detected by extension)                                  |
 | oEmbed  | Any other URL (falls back to oEmbed discovery)                            |
 
-Local/direct media sources are probed for dimensions at render time. Site-root paths such as `/videos/intro.mp4` are tried under the default `public/` directory first. When probing succeeds, the player reserves the corresponding aspect ratio; if probing fails, the media determines its size after loading. Custom `publicDir` locations are not resolved automatically by this probe. YouTube and Vimeo use oEmbed dimensions to establish an aspect ratio, rather than the source video's pixel resolution.
+Local and direct media sources are probed for dimensions at render time: a local file is read from disk, and a remote direct URL is range-requested, so a server that ignores `Range` sends the whole file once per build. Site-root paths such as `/videos/intro.mp4` are tried under the default `public/` directory first. When probing succeeds, the player reserves the corresponding aspect ratio; if probing fails, the media determines its size after loading. Custom `publicDir` locations are not resolved automatically by this probe. YouTube and Vimeo use oEmbed dimensions to establish an aspect ratio, rather than the source video's pixel resolution.
 
-Playback is built on [Video.js 10](https://videojs.org). Bunny, Cloudflare, and Mux stream HLS through `@videojs/hlsjs-video`, YouTube and Vimeo play through `@videojs/youtube-video` and `@videojs/vimeo-video`, direct `.m3u8` URLs use the HLS adapter, and other local files use the native `<video>` element. The control bar is composed from Video.js UI components, with a poster, a buffering indicator, tooltips, touch-to-reveal controls that fade away when the player is idle unless the pointer is over the bar, and the usual keyboard shortcuts when the player is focused (Space or K to play, M to mute, arrow keys to seek and change volume, C for captions, and F for native fullscreen with full controls and no lightbox zoom). Paused videos keep their playback controls visible. During playback, controls hide after 1.5 seconds of inactivity, while hovering the bar, an open popup, or keyboard focus keeps them usable. On-page controls fade without sliding; a playing video reveals them only while the pointer is over the player or its controls. Controls adapt to narrow containers, and playback failures display a dismissible message with a direct video link. Video players and lightboxes support Astro client-side navigation. Opening or closing the lightbox preserves external caption tracks and the selected caption language. Set `--media-accent-color` on a wrapping element to tint the slider fills.
+Playback is built on [Video.js 10](https://videojs.org). Bunny, Cloudflare, and Mux stream HLS through `@videojs/hlsjs-video`, YouTube and Vimeo play through `@videojs/youtube-video` and `@videojs/vimeo-video`, direct `.m3u8` URLs use the HLS adapter, and other local files use the native `<video>` element. The control bar is composed from Video.js UI components, with a poster, a buffering indicator, tooltips, touch-to-reveal controls that fade away when the player is idle unless the pointer is over the bar, and the usual keyboard shortcuts when the player is focused (Space or K to play, M to mute, the left and right arrows or J and L to seek, the up and down arrows to change volume, C for captions, and F for native fullscreen with full controls and no lightbox zoom). Paused videos keep their playback controls visible. During playback, controls hide after 1.5 seconds of inactivity, while hovering the bar, an open popup, or keyboard focus keeps them usable. On-page controls fade without sliding; a playing video reveals them only while the pointer is over the player or its controls. Controls adapt to narrow containers, and playback failures display a dismissible message with a direct video link. Video players and lightboxes support Astro client-side navigation. Opening or closing the lightbox preserves external caption tracks and the selected caption language. Set `--media-accent-color` on a wrapping element to tint the slider fills.
 
 ### Audio
 
@@ -455,26 +455,26 @@ import { Audio } from 'astro-media-kit/components'
 
 #### Audio Props
 
-| Prop                 | Type                                  | Default      |
-| -------------------- | ------------------------------------- | ------------ |
-| `src`                | `string`                              | —            |
-| `service`            | `'local' \| 'oembed' \| 'soundcloud'` | inferred     |
-| `autoPlay`           | `boolean`                             | `false`      |
-| `muted`              | `boolean`                             | `false`      |
-| `loop`               | `boolean`                             | `false`      |
-| `preload`            | `'auto' \| 'metadata' \| 'none'`      | `'metadata'` |
-| `label`              | `string`                              | `'Audio'`    |
-| `credit`             | `boolean \| string`                   | `false`      |
-| `creditMediaType`    | `MediaType`                           | `'audio'`    |
-| `creditOrganization` | `string`                              | —            |
+| Prop                 | Type                                  | Default                        |
+| -------------------- | ------------------------------------- | ------------------------------ |
+| `src`                | `string`                              | —                              |
+| `service`            | `'local' \| 'oembed' \| 'soundcloud'` | inferred                       |
+| `autoPlay`           | `boolean`                             | `false`                        |
+| `muted`              | `boolean`                             | `false`                        |
+| `loop`               | `boolean`                             | `false`                        |
+| `preload`            | `'auto' \| 'metadata' \| 'none'`      | `'metadata'`                   |
+| `label`              | `string`                              | provider title, else `'Audio'` |
+| `credit`             | `boolean \| string`                   | `false`                        |
+| `creditMediaType`    | `MediaType`                           | `'audio'`                      |
+| `creditOrganization` | `string`                              | —                              |
 
-Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. Its skin stylesheet is requested only when a local audio player renders. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
+Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. When the player is focused, Space or K plays, M mutes, the left and right arrows or J and L seek, the up and down arrows change the volume, 0 through 9, Home, and End jump to a position, and `<` and `>` change the speed. Its skin stylesheet is requested only when a local audio player renders. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
 
 `autoPlay`, `muted`, `loop`, and `preload` configure local audio; SoundCloud receives only `autoPlay`, while generic oEmbed uses the provider's embed settings. Numeric SoundCloud track IDs are inferred automatically. Generic oEmbed requires a page advertising a JSON discovery endpoint that returns embed HTML. As with Video, oEmbed failures are logged and shown inline only in development.
 
 ### Carousel
 
-Each top-level child element becomes a slide. Scripts, styles, stylesheet links, and inert templates stay outside the slide track. Navigation buttons, swiping, dragging, and arrow-key navigation are available when there is more than one slide. Dots and on-page captions are optional.
+Each top-level child element becomes a slide. Scripts, styles, stylesheet links, and inert templates stay outside the slide track. Navigation buttons, swiping, dragging, and keyboard navigation with the arrow keys, Home, and End are available when there is more than one slide. Dots and on-page captions are optional.
 
 ```astro
 ---
@@ -500,7 +500,7 @@ import second from '../assets/second.jpg'
 | `label`              | `string`  | `'Carousel'`                 |
 | `class`, `className` | `string`  | — (`class` takes precedence) |
 
-The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping.
+The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping. Set `--amk-carousel-duration` (default `0.4s`, `0s` with reduced motion) on the carousel or an ancestor to time its glide.
 
 ### MediaTheme
 
@@ -540,7 +540,7 @@ Use `currentColor` in your SVGs to follow the control color. The kit sizes each 
 
 Overrides apply to the current document and refresh on Astro client-side navigation. `MediaTheme` emits inert template content, so it adds no layout box and can also sit inside a Carousel without becoming a slide. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
 
-For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, and `--amk-icon-size` on `:root`, on any element around the player, or on `.amk-video` itself. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
+For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, `--amk-icon-size`, `--amk-font-size`, `--amk-slider-track-height`, `--amk-slider-track`, `--amk-slider-buffer`, `--amk-slider-fill`, and `--amk-duration` (the control bar's own fade) on `:root`, on any element around the player, or on `.amk-video` itself. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
 
 Video button highlights appear immediately on hover and fade back over `0.5s`, both on the page and in the lightbox. Set `--amk-control-transition-duration` for hover-out and `--amk-control-active-transition-duration` for hover-in (default `0s`) on `.amk-video`. These use `--amk-easing`, which defaults to `cubic-bezier(0.2, 0.8, 0.1, 1)`, and disable motion when reduced motion is requested. They do not change playback idle timing or gallery crossfades.
 
@@ -745,7 +745,7 @@ The current service adapters have these additional requirements:
 
 - **Bunny:** the video must be ready and have MP4 fallback encoding enabled. The MP4 fallback uses the highest available resolution at or below 720p, or the smallest available resolution when all are higher. Title search selects the first returned match.
 - **Mux:** pass an asset ID, not a playback ID. The asset must be ready, have exactly one video track, a playback ID (a public one is preferred when there are several), and ready static MP4 renditions.
-- **Cloudflare:** the video must be ready and have an HLS URL and thumbnail. The MP4 fallback URL is derived from the HLS URL without checking its availability; caption metadata is not currently loaded.
+- **Cloudflare:** the video must be ready and report its input dimensions, an HLS URL, and a thumbnail. The MP4 fallback URL is derived from the HLS URL without checking its availability; caption metadata is not currently loaded.
 
 The adapters do not generate signed playback tokens.
 
