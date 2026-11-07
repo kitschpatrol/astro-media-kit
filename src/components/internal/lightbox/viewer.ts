@@ -870,6 +870,8 @@ class Viewer {
 		let found: HTMLElement | undefined
 		for (const item of document.querySelectorAll<HTMLElement>(itemSelector)) {
 			if (
+			// A link's media is instantiated to look for it, so that comes last,
+			// for the item under the point alone
 				!isItem(item) ||
 				Object.hasOwn(item.dataset, 'zoomInteractive') ||
 				subjectOf(item) === undefined ||
