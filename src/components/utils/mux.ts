@@ -77,8 +77,12 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 		throw new Error(`${logPrefix} does not have a width or height value.`)
 	}
 
-	// For HLS URL
-	const playbackId = video.playback_ids?.at(0)?.id
+	// For HLS URL. A public ID plays without a token; a signed one is listed
+	// first just as often.
+	const playbackIds = video.playback_ids ?? []
+	const playbackId = (
+		playbackIds.find((playback) => playback.policy === 'public') ?? playbackIds.at(0)
+	)?.id
 	if (playbackId === undefined || playbackId === '') {
 		throw new Error(`${logPrefix} does not have a playback ID.`)
 	}
