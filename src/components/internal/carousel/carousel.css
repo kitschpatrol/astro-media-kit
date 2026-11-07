@@ -6,6 +6,10 @@
 .amk-carousel {
 	--amk-carousel-duration: 0.4s;
 
+	/* Captions stay in the page for the lightbox to copy, shown only on request.
+	   The nearest carousel decides, so a nested one can differ from its parent */
+	--amk-carousel-caption-display: none;
+
 	/* Each control setting is read here, once: this component's own value, else
 	   the shared gallery value, inherited or set on this element */
 	--amk-carousel-resolved-control-width: var(
@@ -132,9 +136,12 @@
 	height: auto;
 }
 
-/* Captions stay in the page for the lightbox to copy, shown only on request */
-.amk-carousel:not([data-captions]) .amk-carousel-slide figcaption {
-	display: none;
+.amk-carousel[data-captions] {
+	--amk-carousel-caption-display: block;
+}
+
+.amk-carousel-slide figcaption {
+	display: var(--amk-carousel-caption-display);
 }
 
 .amk-carousel-button {
