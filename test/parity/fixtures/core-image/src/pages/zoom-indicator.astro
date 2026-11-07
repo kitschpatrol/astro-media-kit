@@ -59,6 +59,10 @@ const layouts = ['none', 'fixed', 'constrained', 'full-width'] as const
 				zoomIndicator
 			/>
 		</section>
+		<section id="stretched">
+			<Image alt="Stretched row" src={penguin} width={300} zoom zoomIndicator />
+			<div class="stretched-neighbor" />
+		</section>
 		{layouts.map((layout) => (
 			<Fragment>
 				<section class="layout-pair" data-component="image" data-layout={layout}>
@@ -130,5 +134,14 @@ const layouts = ['none', 'fixed', 'constrained', 'full-width'] as const
 
 	.layout-host figure {
 		margin: 0;
+	}
+
+	#stretched {
+		display: grid;
+		grid-template-columns: 300px minmax(0, 1fr);
+	}
+
+	.stretched-neighbor {
+		height: 1200px;
 	}
 </style>

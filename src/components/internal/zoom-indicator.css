@@ -12,10 +12,19 @@
    properties, flush with the bottom-right corner. Indicator-specific properties
    override those; opacity follows the shared gallery icons. */
 @layer amk-lightbox {
+	/* Hug the media in both axes, so the corner is the media's even where a
+	   grid or flex row would stretch the wrapper. */
 	.amk-zoom[data-zoom-indicator] {
 		position: relative;
 		width: fit-content;
 		max-width: 100%;
+		height: fit-content;
+	}
+
+	/* A lifted placeholder's height comes from its aspect ratio, which only an
+	   automatic height takes. */
+	.amk-zoom[data-zoom-indicator][data-lifted='ratio'] {
+		height: auto;
 	}
 
 	.amk-zoom[data-zoom-indicator] > img,

@@ -90,6 +90,17 @@ it('matches the video expand button by default, flush with the bottom-right corn
 	expect(style.transitionDuration).toBe(canHover ? '0s' : '0.5s')
 })
 
+it('stays on the image where a grid row stretches the wrapper', async () => {
+	const fixture = await mountPage('/zoom-indicator/')
+	const section = query(fixture, '#stretched')
+	const opener = query(section, '.amk-zoom')
+	const image = query(opener, 'img').getBoundingClientRect()
+	const corner = query(opener, '.amk-zoom-indicator').getBoundingClientRect()
+	expect(section.getBoundingClientRect().height).toBeGreaterThan(image.height + 100)
+	expect(corner.right).toBeCloseTo(image.right, 1)
+	expect(corner.bottom).toBeCloseTo(image.bottom, 1)
+})
+
 it('supports size, color, corner positioning, and shared idle/active styling', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
 	const section = query(fixture, '#builtin')
