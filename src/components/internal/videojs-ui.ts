@@ -1,9 +1,9 @@
 /**
  * Registers the Video.js custom elements and icons composed by
  * VideoPlayer.astro, whose original player also travels into the lightbox.
- * Register the UI after the player and container. Importing registration entry
- * points lets shared Astro chunks register controls before their context
- * providers, leaving those controls disconnected from player state.
+ * Registered after the player and container, from the constructors, so a shared
+ * Astro chunk never registers an element twice, and the order stays the same on
+ * every page.
  */
 import {
 	BufferingIndicatorElement,
@@ -45,7 +45,8 @@ import './videojs-mute-button'
 import './videojs-icons'
 
 // The constructors come from the public API without registration side effects.
-// Providers precede their parts, including controls and tooltip context.
+// Providers precede their parts, including controls and tooltip context, as a
+// stable order; Video.js 10.3 also delivers context to parts connected first.
 defineElements([
 	ControlsElement,
 	ErrorDialogElement,
