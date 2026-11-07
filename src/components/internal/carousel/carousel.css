@@ -76,7 +76,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.amk-carousel {
-		--amk-carousel-duration: 0s;
+		--amk-carousel-duration: 0s !important;
 	}
 }
 
