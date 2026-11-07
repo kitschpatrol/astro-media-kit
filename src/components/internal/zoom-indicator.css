@@ -67,8 +67,9 @@
 		opacity: var(--amk-zoom-indicator-active-opacity, var(--amk-gallery-icon-active-opacity, 1));
 	}
 
-	.amk-zoom[data-lifted] > .amk-zoom-indicator {
-		/* The thumbnail preview is appended after the indicator. */
+	.amk-zoom:is([data-lifted], [data-image-returning]) > .amk-zoom-indicator {
+		/* The thumbnail preview, and the cover a returned image keeps while its
+		   larger candidate decodes, are appended after the indicator. */
 		z-index: 1;
 	}
 
