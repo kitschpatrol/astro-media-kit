@@ -1,7 +1,7 @@
 ---
 import type { MediaType } from '../types'
 
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 
 // Re-export PrefixedProps so it remains importable from `./Caption.astro`.
 // The type itself lives in `./caption-props-map` because astro-eslint-parser
