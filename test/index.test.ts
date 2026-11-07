@@ -28,14 +28,14 @@ const configWithTldrawDark = {
 }
 
 describe('transformAstroSource', () => {
-	it('preserves public image URLs for Astro rather than importing them as modules', async () => {
+	it('preserves public image URLs for Astro rather than importing them as modules', () => {
 		const source = `---
 ---
 <Image src="/images/photo.jpg" alt="Photo" width="300" height="200" />`
-		expect(await transformAstroSource(source, defaultConfig)).toBeUndefined()
+		expect(transformAstroSource(source, defaultConfig)).toBeUndefined()
 	})
 
-	it('leaves values an entry declines as they are', async () => {
+	it('leaves values an entry declines as they are', () => {
 		const config = {
 			ZoomLink: [
 				{
@@ -49,36 +49,36 @@ describe('transformAstroSource', () => {
 ---
 <ZoomLink src="../assets/a.jpg">a</ZoomLink>
 <ZoomLink src="/media/clip.mp4">b</ZoomLink>`
-		const result = await transformAstroSource(source, config)
+		const result = transformAstroSource(source, config)
 		expect(result).toContain('import __ami_0 from "../assets/a.jpg"')
 		expect(result).toContain('<ZoomLink src={__ami_0}>')
 		expect(result).toContain('<ZoomLink src="/media/clip.mp4">')
 		expect(result).not.toContain('clip.mp4"\n')
 	})
 
-	it('injects import and rewrites src for Image', async () => {
+	it('injects import and rewrites src for Image', () => {
 		const source = `---
 import { Image } from 'astro-media-kit'
 ---
 <Image src="../assets/test.jpeg" alt="Blep" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 		expect(result).toContain('src={__ami_0}')
 		expect(result).not.toContain('src="../assets/test.jpeg"')
 	})
 
-	it('injects import and rewrites src for Picture', async () => {
+	it('injects import and rewrites src for Picture', () => {
 		const source = `---
 ---
 <Picture src="../assets/photo.png" alt="Photo" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain('import __ami_0 from "../assets/photo.png"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('handles srcDark attribute', async () => {
+	it('handles srcDark attribute', () => {
 		const source = `---
 ---
 <Picture src="../assets/light.png" srcDark="../assets/dark.png" alt="Theme" />
@@ -90,20 +90,20 @@ import { Image } from 'astro-media-kit'
 				{ from: 'srcDark', to: 'srcDark' },
 			],
 		}
-		const result = await transformAstroSource(source, config)
+		const result = transformAstroSource(source, config)
 		expect(result).toContain('import __ami_0 from "../assets/light.png"')
 		expect(result).toContain('import __ami_1 from "../assets/dark.png"')
 		expect(result).toContain('src={__ami_0}')
 		expect(result).toContain('srcDark={__ami_1}')
 	})
 
-	it('imports secondary props when the first prop is already an expression', async () => {
+	it('imports secondary props when the first prop is already an expression', () => {
 		const expression = '{light}'
 		const source = `---
 const light = importedImage
 ---
 <Picture src=${expression} srcDark="../assets/dark.png" />`
-		const result = await transformAstroSource(source, {
+		const result = transformAstroSource(source, {
 			Picture: [
 				{ from: 'src', to: 'src' },
 				{ from: 'srcDark', to: 'srcDark' },
@@ -114,11 +114,11 @@ const light = importedImage
 		expect(result).toContain('import __ami_0 from "../assets/dark.png"')
 	})
 
-	it('derives each import from its configured source prop', async () => {
+	it('derives each import from its configured source prop', () => {
 		const source = `---
 ---
 <Picture src="../assets/light.png" sketch="../assets/drawing.tldr" />`
-		const result = await transformAstroSource(source, {
+		const result = transformAstroSource(source, {
 			Picture: [
 				{ from: 'src', to: 'src' },
 				{ from: 'sketch', to: 'srcDark', transform: tldrawDarkTransform },
@@ -127,46 +127,46 @@ const light = importedImage
 		expect(result).toContain('import __ami_1 from "../assets/drawing.tldr?dark=true&tldr"')
 	})
 
-	it('applies transforms that replace their source prop', async () => {
+	it('applies transforms that replace their source prop', () => {
 		const source = `---
 ---
 <Picture src="../assets/drawing.tldr" />`
-		const result = await transformAstroSource(source, {
+		const result = transformAstroSource(source, {
 			Picture: [{ from: 'src', to: 'src', transform: tldrawDarkTransform }],
 		})
 		expect(result).toContain('import __ami_0 from "../assets/drawing.tldr?dark=true&tldr"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('supports a transform without a separate primary import', async () => {
+	it('supports a transform without a separate primary import', () => {
 		const source = `---
 ---
 <Picture src="../assets/drawing.tldr" />`
-		const result = await transformAstroSource(source, {
+		const result = transformAstroSource(source, {
 			Picture: [{ from: 'src', to: 'srcDark', transform: tldrawDarkTransform }],
 		})
 		expect(result).toContain('src="../assets/drawing.tldr"')
 		expect(result).toContain('srcDark={__ami_0}')
 	})
 
-	it('preserves an explicit expression when remapping a prop', async () => {
+	it('preserves an explicit expression when remapping a prop', () => {
 		const expression = '{customImage}'
 		const source = `---
 ---
 <Picture source="../assets/light.png" src=${expression} />`
 		expect(
-			await transformAstroSource(source, {
+			transformAstroSource(source, {
 				Picture: [{ from: 'source', to: 'src' }],
 			}),
 		).toBeUndefined()
 	})
 
-	it('honors shouldImport on derived entries', async () => {
+	it('honors shouldImport on derived entries', () => {
 		const source = `---
 ---
 <Picture src="../assets/drawing.tldr" />`
 		expect(
-			await transformAstroSource(source, {
+			transformAstroSource(source, {
 				Picture: [
 					{
 						from: 'src',
@@ -179,19 +179,19 @@ const light = importedImage
 		).toBeUndefined()
 	})
 
-	it('deduplicates imports for same path', async () => {
+	it('deduplicates imports for same path', () => {
 		const source = `---
 ---
 <Image src="../assets/test.jpeg" alt="First" />
 <Image src="../assets/test.jpeg" alt="Second" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBeDefined()
 		const importCount = (result!.match(/import __ami_0/gv) ?? []).length
 		expect(importCount).toBe(1)
 	})
 
-	it('skips expression attributes (curly braces)', async () => {
+	it('skips expression attributes (curly braces)', () => {
 		// Interpolated so the braces aren't mistaken for a missing-`$` template typo
 		const expressionAttribute = '{img}'
 		const source = `---
@@ -199,49 +199,49 @@ import img from '../assets/test.jpeg'
 ---
 <Image src=${expressionAttribute} alt="Already imported" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBeUndefined()
 	})
 
-	it('skips HTTP URLs', async () => {
+	it('skips HTTP URLs', () => {
 		const source = `---
 ---
 <Image src="https://example.com/photo.jpg" alt="Remote" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBeUndefined()
 	})
 
-	it('skips data URIs', async () => {
+	it('skips data URIs', () => {
 		const source = `---
 ---
 <Image src="data:image/png;base64,abc123" alt="Data" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBeUndefined()
 	})
 
-	it('does not touch non-target components', async () => {
+	it('does not touch non-target components', () => {
 		const source = `---
 ---
 <img src="../assets/test.jpeg" alt="Plain HTML" />
 <video src="../assets/video.mp4" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBeUndefined()
 	})
 
-	it('handles single-quoted attributes', async () => {
+	it('handles single-quoted attributes', () => {
 		const source = `---
 ---
 <Image src='../assets/test.jpeg' alt="Test" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('handles multiline component tags', async () => {
+	it('handles multiline component tags', () => {
 		const source = `---
 ---
 <Picture
@@ -250,123 +250,123 @@ import img from '../assets/test.jpeg'
 	creator="Someone"
 />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain('import __ami_0 from "../assets/photo.png"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('adds frontmatter to hold the imports when the file has none', async () => {
+	it('adds frontmatter to hold the imports when the file has none', () => {
 		const source = '<Image src="../assets/test.jpeg" alt="No frontmatter" />'
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toBe(
 			'---\nimport __ami_0 from "../assets/test.jpeg"\n---\n\n<Image src={__ami_0} alt="No frontmatter" />',
 		)
 	})
 
-	it('leaves a file without frontmatter alone when nothing is imported', async () => {
+	it('leaves a file without frontmatter alone when nothing is imported', () => {
 		const source = '<Image src="/images/photo.jpg" alt="Public" width="300" height="200" />'
-		expect(await transformAstroSource(source, defaultConfig)).toBeUndefined()
+		expect(transformAstroSource(source, defaultConfig)).toBeUndefined()
 	})
 
-	it('handles custom component names', async () => {
+	it('handles custom component names', () => {
 		const source = `---
 ---
 <MyImage src="../assets/test.jpeg" alt="Custom" />
 `
 		const config = { MyImage: [{ from: 'src', to: 'src' }] }
-		const result = await transformAstroSource(source, config)
+		const result = transformAstroSource(source, config)
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('preserves existing frontmatter content', async () => {
+	it('preserves existing frontmatter content', () => {
 		const source = `---
 import { Image } from 'astro-media-kit'
 const title = 'Hello'
 ---
 <Image src="../assets/test.jpeg" alt="Test" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain("import { Image } from 'astro-media-kit'")
 		expect(result).toContain("const title = 'Hello'")
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 	})
 
-	it('handles multiple different images', async () => {
+	it('handles multiple different images', () => {
 		const source = `---
 ---
 <Image src="../assets/one.jpeg" alt="One" />
 <Picture src="../assets/two.png" alt="Two" />
 `
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain('import __ami_0 from "../assets/one.jpeg"')
 		expect(result).toContain('import __ami_1 from "../assets/two.png"')
 		expect(result).toContain('src={__ami_0}')
 		expect(result).toContain('src={__ami_1}')
 	})
 
-	it('auto-generates srcDark for .tldr src on Picture via transform', async () => {
+	it('auto-generates srcDark for .tldr src on Picture via transform', () => {
 		const source = `---
 ---
 <Picture src="../assets/sketch.tldr" alt="Sketch" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
 		expect(result).toContain('import __ami_1 from "../assets/sketch.tldr?dark=true&tldr"')
 		expect(result).toContain('src={__ami_0}')
 		expect(result).toContain('srcDark={__ami_1}')
 	})
 
-	it('does not auto-generate srcDark for .tldr on Image (no transform configured)', async () => {
+	it('does not auto-generate srcDark for .tldr on Image (no transform configured)', () => {
 		const source = `---
 ---
 <Image src="../assets/sketch.tldr" alt="Sketch" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
 		expect(result).not.toContain('dark=true')
 		expect(result).not.toContain('srcDark')
 	})
 
-	it('replaces existing srcDark when present on component with transform', async () => {
+	it('replaces existing srcDark when present on component with transform', () => {
 		const source = `---
 ---
 <Picture src="../assets/sketch.tldr" srcDark="../assets/custom-dark.tldr" alt="Sketch" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
 		expect(result).toContain('import __ami_1 from "../assets/custom-dark.tldr"')
 		expect(result).toContain('srcDark={__ami_1}')
 	})
 
-	it('does not auto-generate srcDark for non-.tldr files on Picture', async () => {
+	it('does not auto-generate srcDark for non-.tldr files on Picture', () => {
 		const source = `---
 ---
 <Picture src="../assets/photo.png" alt="Photo" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/photo.png"')
 		expect(result).not.toContain('srcDark')
 	})
 
-	it('does not insert srcDark when srcDark={false} (expression attribute)', async () => {
+	it('does not insert srcDark when srcDark={false} (expression attribute)', () => {
 		// Interpolated so the braces aren't mistaken for a missing-`$` template typo
 		const expressionAttribute = '{false}'
 		const source = `---
 ---
 <Picture src="../assets/sketch.tldr" srcDark=${expressionAttribute} alt="Sketch" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr"')
 		expect(result).not.toContain('srcDark={__ami')
 	})
 
-	it('auto-generates srcDark for .tldr with existing query params', async () => {
+	it('auto-generates srcDark for .tldr with existing query params', () => {
 		const source = `---
 ---
 <Picture src="../assets/sketch.tldr?frame=my-frame&tldr" alt="Sketch" />
 `
-		const result = await transformAstroSource(source, configWithTldrawDark)
+		const result = transformAstroSource(source, configWithTldrawDark)
 		expect(result).toContain('import __ami_0 from "../assets/sketch.tldr?frame=my-frame&tldr"')
 		expect(result).toContain(
 			'import __ami_1 from "../assets/sketch.tldr?frame=my-frame&tldr&dark=true&tldr"',
@@ -395,46 +395,46 @@ describe('auto-import paths in the consumer project', () => {
 		await rm(temporaryDirectory, { force: true, recursive: true })
 	})
 
-	it('imports a Vite root path using the configured root rather than the working directory', async () => {
+	it('imports a Vite root path using the configured root rather than the working directory', () => {
 		const source = `---
 ---
 <Image src="/src/assets/photo.jpg" alt="Photo" />`
-		const result = await transformAstroSource(source, defaultConfig, directories)
+		const result = transformAstroSource(source, defaultConfig, directories)
 		expect(result).toContain('import __ami_0 from "/src/assets/photo.jpg"')
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('keeps query parameters on root imports', async () => {
+	it('keeps query parameters on root imports', () => {
 		const source = `---
 ---
 <Image src="/src/assets/photo.jpg?custom" alt="Photo" />`
-		const result = await transformAstroSource(source, defaultConfig, directories)
+		const result = transformAstroSource(source, defaultConfig, directories)
 		expect(result).toContain('import __ami_0 from "/src/assets/photo.jpg?custom"')
 	})
 
-	it('imports an absolute filesystem path without needing project directories', async () => {
+	it('imports an absolute filesystem path without needing project directories', () => {
 		const file = nodePath.join(fileURLToPath(directories.root), 'src', 'assets', 'photo.jpg')
 		const source = `---
 ---
 <Image src="${file}" alt="Photo" />`
-		const result = await transformAstroSource(source, defaultConfig)
+		const result = transformAstroSource(source, defaultConfig)
 		expect(result).toContain(`from ${JSON.stringify(file)}`)
 		expect(result).toContain('src={__ami_0}')
 	})
 
-	it('preserves a public URL when the configured public directory and root both contain it', async () => {
+	it('preserves a public URL when the configured public directory and root both contain it', () => {
 		const source = `---
 ---
 <Image src="/src/assets/collision.jpg" alt="Photo" width="300" height="200" />`
-		expect(await transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
+		expect(transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
 	})
 
-	it('preserves remote and protocol-relative URLs even when their paths resemble imports', async () => {
+	it('preserves remote and protocol-relative URLs even when their paths resemble imports', () => {
 		const source = `---
 ---
 <Image src="https://example.com/src/assets/photo.jpg" alt="Photo" width="300" height="200" />
 <Image src="//example.com/src/assets/photo.jpg" alt="Photo" width="300" height="200" />`
-		expect(await transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
+		expect(transformAstroSource(source, defaultConfig, directories)).toBeUndefined()
 	})
 })
 
