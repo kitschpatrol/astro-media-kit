@@ -248,7 +248,7 @@ it('hides captions unless asked, leaving them to the lightbox', async () => {
 })
 
 it.each(['ltr', 'rtl'] as const)(
-	'advances only the %s page carousel after navigating in the lightbox',
+	'moves only the %s page carousel along with the lightbox, and leaves it there',
 	async (direction) => {
 		const { carousel, track } = await mountCarousel()
 		carousel.dir = direction
@@ -260,6 +260,16 @@ it.each(['ltr', 'rtl'] as const)(
 		await expect.poll(() => viewer().dataset.state).toBe('open')
 		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
 		await expect.poll(activeSlideLabel).toBe('2 of 3')
+		// The page carousel follows while the viewer is open
+		await expect.poll(() => slideAt(track)).toBe(1)
+		await expect.poll(() => currentDot(carousel)).toBe('Slide 2')
+		expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
+		await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+		await expect.poll(activeSlideLabel).toBe('3 of 3')
+		await expect.poll(() => slideAt(track)).toBe(2)
+		await userEvent.click(query(viewer(), '.amk-lightbox-previous'))
+		await expect.poll(activeSlideLabel).toBe('2 of 3')
+		await expect.poll(() => slideAt(track)).toBe(1)
 		await userEvent.keyboard('{Escape}')
 		await expect.poll(() => viewer().open).toBe(false)
 

@@ -224,8 +224,9 @@ class Viewer {
 			return
 		}
 
-		// Advance an embedded carousel locally, but never scroll its ancestors.
-		// Other offscreen thumbnails keep their position as the return target.
+		// An embedded carousel already follows the viewer; a glide underway on
+		// the page still has to stop here. Its ancestors never scroll, and other
+		// offscreen thumbnails keep their position as the return target.
 		revealCarouselItem(lift.item)
 		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
@@ -252,6 +253,12 @@ class Viewer {
 		}
 
 		const item = items[index]
+		if (item !== undefined) {
+			// A page carousel shows the slide before it is measured, so the lift
+			// starts from where the subject returns, not from a slide passing by
+			revealCarouselItem(item)
+		}
+
 		const current = item === undefined ? undefined : measure(item)
 		if (current === undefined) {
 			return false
@@ -1035,7 +1042,14 @@ class Viewer {
 		}
 
 		this.#index = index
-		this.#setPageItem(this.#slides[index]?.item)
+		const item = this.#slides[index]?.item
+		this.#setPageItem(item)
+		// A page carousel follows the viewer, so the slide on show is the one the
+		// subject returns to. Before lifting neighbors, which keep scroll positions
+		if (item !== undefined) {
+			revealCarouselItem(item)
+		}
+
 		this.#liftAround(index)
 		this.#updateControls()
 	}

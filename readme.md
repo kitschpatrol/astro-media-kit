@@ -500,7 +500,7 @@ import second from '../assets/second.jpg'
 | `label`              | `string`  | `'Carousel'`                 |
 | `class`, `className` | `string`  | — (`class` takes precedence) |
 
-The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping.
+The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping.
 
 ### MediaTheme
 
@@ -633,7 +633,7 @@ While the original is lifted, its wrapper holds its place in the page and a deco
 
 When zooming needs an uncached image candidate, the viewer enlarges the loaded image immediately and keeps those pixels visible until the selected source has decoded. The real image or picture continues to choose its responsive source; a temporary bitmap covers the loading interval, including later zoom and resize upgrades. Failed requests keep the last good image visible, as does closing and reopening before loading finishes. This also works with `zoomPlaceholder="none"`, which only controls the preview left on the page.
 
-Closing preserves the document's scroll position. An on-page Carousel advances to the selected slide without scrolling its ancestors. If the thumbnail remains offscreen, the closing animation travels toward its existing position without scrolling it into view; other scroll containers keep their positions.
+Closing preserves the document's scroll position. An on-page Carousel follows the viewer from item to item, so it is on the selected slide when the viewer closes, without scrolling its ancestors. If the thumbnail remains offscreen, the closing animation travels toward its existing position without scrolling it into view; other scroll containers keep their positions.
 
 A ZoomLink's media isn't in the page: it is instantiated from the link's template as the link is used, hovered as well as clicked, grows out of the link once it can show, shrinks back into it as the viewer closes, and is discarded then. It joins a gallery like any other item.
 
