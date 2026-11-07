@@ -278,10 +278,11 @@ class Viewer {
 
 		this.#slides = items.map((each, position) => createSlide(each, position, items.length))
 		// Ghosts stay where they are, so their transitions carry on
-		for (const child of this.#track.children) {
-			if (this.#ghosts.every((ghost) => ghost.element !== child)) {
-				child.remove()
-			}
+		const stale = [...this.#track.children].filter((child) =>
+			this.#ghosts.every((ghost) => ghost.element !== child),
+		)
+		for (const child of stale) {
+			child.remove()
 		}
 
 		this.#track.append(...this.#slides.map((slide) => slide.element))
@@ -869,15 +870,15 @@ class Viewer {
 	#itemAt(point: Point): HTMLElement | undefined {
 		let found: HTMLElement | undefined
 		for (const item of document.querySelectorAll<HTMLElement>(itemSelector)) {
-			if (
 			// A link's media is instantiated to look for it, so that comes last,
 			// for the item under the point alone
+			if (
 				!isItem(item) ||
 				Object.hasOwn(item.dataset, 'zoomInteractive') ||
-				subjectOf(item) === undefined ||
 				isNativeLink(item) ||
 				!item.checkVisibility() ||
-				!isInside(point, item.getBoundingClientRect())
+				!isInside(point, item.getBoundingClientRect()) ||
+				subjectOf(item) === undefined
 			) {
 				continue
 			}
