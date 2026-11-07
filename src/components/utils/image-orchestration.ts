@@ -537,6 +537,10 @@ export function warnBackgroundDarkWithoutBackground(
 	backgroundDark: string | undefined,
 	componentName: string,
 ): void {
+	if (!import.meta.env.DEV) {
+		return
+	}
+
 	if (
 		backgroundDark !== undefined &&
 		backgroundDark !== '' &&
