@@ -5,7 +5,7 @@ import type { AstroConfig, AstroIntegration } from 'astro'
 import { envField } from 'astro/config'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import type { CredentialService, Service } from '../components/utils/video'
+import type { CredentialService } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
 import type { AutoImportConfig, AutoImportPluginConfig } from './auto-import'
 import type { TldrawConfig } from './tldraw'
@@ -114,13 +114,13 @@ export type MediaKitConfig = {
 	 * set at build time.
 	 *
 	 * - `'bunny'` / `'cloudflare'` / `'mux'` — single service
-	 * - `Service[]` — multiple services
+	 * - `CredentialService[]` — multiple services
 	 * - `true` — all services
 	 * - `false` — no schema injection (default)
 	 *
 	 * @default false
 	 */
-	video?: boolean | Service | Service[]
+	video?: boolean | CredentialService | CredentialService[]
 	/**
 	 * Stamp every responsive image variant with its pixel dimensions and encoded
 	 * byte size as a tiled text overlay, for visual debugging of which srcset
@@ -194,9 +194,9 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 	let astroConfig: AstroConfig | undefined
 
 	const video = config?.video ?? false
-	const videoServices: Service[] =
+	const videoServices: CredentialService[] =
 		video === true
-			? (['bunny', 'cloudflare', 'mux'] as Service[])
+			? ['bunny', 'cloudflare', 'mux']
 			: video === false
 				? []
 				: Array.isArray(video)
@@ -276,10 +276,8 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					}
 
 					let schema: Record<string, ReturnType<typeof envField.string>> = {}
-					for (const s of videoServices) {
-						if (Object.hasOwn(envSchemaForService, s)) {
-							schema = { ...schema, ...envSchemaForService[s as CredentialService] }
-						}
+					for (const service of videoServices) {
+						schema = { ...schema, ...envSchemaForService[service] }
 					}
 
 					updateConfig({ env: { schema } })
