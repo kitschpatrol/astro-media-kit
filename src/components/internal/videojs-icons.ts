@@ -14,6 +14,7 @@ import {
 	volumeLowIcon,
 	volumeOffIcon,
 } from '@videojs/html/icons'
+import { expandIcon } from './expand-icon'
 import { subscribeMediaTheme } from './media-theme'
 
 // A private family leaves unrelated Video.js players alone. Register every
@@ -22,7 +23,7 @@ const defaults = {
 	'captions-off': captionsOffIcon,
 	'captions-on': captionsOnIcon,
 	check: checkIcon,
-	expand: fullscreenEnterIcon,
+	expand: expandIcon,
 	'fullscreen-enter': fullscreenEnterIcon,
 	'fullscreen-exit': fullscreenExitIcon,
 	pause: pauseIcon,

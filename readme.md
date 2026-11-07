@@ -523,18 +523,18 @@ import CloseIcon from '../icons/CloseIcon.astro'
 <slot />
 ```
 
-| Slots                                                    | Used by                                                                                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                                                           |
-| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                                                          |
-| `icon-spinner`                                           | Video and local audio buffering indicators                                                                                     |
-| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                                                         |
-| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                                                               |
-| `icon-expand`                                            | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to the fullscreen-enter artwork |
-| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                          |
-| `icon-check`                                             | Local audio's selected playback-speed indicator                                                                                |
-| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                  |
-| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                                                                 |
+| Slots                                                    | Used by                                                                                                                                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                                                                                                                  |
+| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                                                                                                                 |
+| `icon-spinner`                                           | Video and local audio buffering indicators                                                                                                                                            |
+| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                                                                                                                |
+| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                                                                                                                      |
+| `icon-expand`                                            | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to a mirror of the fullscreen-enter artwork, pointing to the top-right and bottom-left |
+| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                                                                                 |
+| `icon-check`                                             | Local audio's selected playback-speed indicator                                                                                                                                       |
+| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                                                                         |
+| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                                                                                                                        |
 
 Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG throw during rendering, which happens at build time for static pages.
 

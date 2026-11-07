@@ -1,6 +1,6 @@
-import { fullscreenEnterIcon } from '@videojs/html/icons'
 import { load } from 'cheerio'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { expandIcon } from '../src/components/internal/expand-icon'
 import { buildFixture } from './parity/helpers/build-fixture'
 
 describe('image zoom indicators', () => {
@@ -28,7 +28,7 @@ describe('image zoom indicators', () => {
 	it("draws the video player's expand artwork by default", async () => {
 		const $ = await fixture.readHTML('/zoom-indicator/')
 		const indicator = $('#builtin .amk-zoom-indicator svg')
-		const expand = load(fullscreenEnterIcon)('svg')
+		const expand = load(expandIcon)('svg')
 		expect(indicator.attr('viewBox')).toBe(expand.attr('viewBox'))
 		expect(indicator.attr('fill')).toBe(expand.attr('fill'))
 		expect(indicator.find('path').attr('d')).toBe(expand.find('path').attr('d'))
