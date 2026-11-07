@@ -294,6 +294,78 @@ export class CarouselMotion {
 	}
 
 	/**
+	 * End `drag`: let go, cancelled by the browser, or its capture lost. Only a
+	 * release carries its speed on, and only the click after a loss or a release
+	 * is the drag's own.
+	 */
+	#end(drag: Drag, outcome: 'cancel' | 'loss' | 'release', time: number) {
+		this.#drag = undefined
+		// A press that never moved far enough is a click
+		if (drag.origin === undefined) {
+			return
+		}
+
+		const isRelease = outcome === 'release'
+		delete (drag.stage ?? this.#track).dataset.dragging
+		this.#owner = 'idle'
+		if (drag.axis === 'dismiss') {
+			const velocity = velocityOf(drag.samples, drag.distanceY, time)
+			const distance = Math.abs(drag.distanceY)
+			const threshold = Math.min(160, this.#track.clientHeight * 0.2)
+			this.#ignoreClick(outcome !== 'cancel')
+			this.#options.onDismissEnd(
+				isRelease &&
+					(distance >= threshold ||
+						(distance >= 40 && Math.abs(velocity) > 0.5 && velocity * drag.distanceY > 0)),
+			)
+			return
+		}
+
+		if (drag.stage === undefined) {
+			// Let go while still moving, the track carries on to the next slide that
+			// way, as paging does on iOS: a quick short swipe advances, and swinging
+			// back cancels. Let go at rest, it settles on the nearest slide. Either
+			// way it glides there from the speed it was let go at
+			const position = this.#position
+			const velocity = isRelease ? velocityOf(drag.samples, position, time) : 0
+			// The finger has lifted, though touchend has yet to say so
+			if (isRelease) {
+				this.#isTouching = false
+			}
+
+			const slides = position / this.#width
+			this.go(
+				velocity > flickSpeed
+					? Math.floor(slides) + 1
+					: velocity < -flickSpeed
+						? Math.ceil(slides) - 1
+						: Math.round(slides),
+				'smooth',
+				velocity,
+			)
+		}
+
+		// The click that ends a drag is not a click on the content. None follows
+		// a drag the browser cancelled, so the next click is a click again
+		this.#ignoreClick(outcome !== 'cancel')
+	}
+
+	/**
+	 * A press a player kept has no capture, so a mouse let go over one of the
+	 * viewer's buttons beside the track sends no pointerup here. The move after
+	 * it, with no button held, ends the press, or the drag, as cancelled, before
+	 * that move could start dragging.
+	 */
+	#endUnreleased(event: PointerEvent) {
+		const drag = this.#drag
+		if (drag?.pointerId !== event.pointerId || drag.isTouch) {
+			return
+		}
+
+		this.#end(drag, 'cancel', event.timeStamp)
+	}
+
+	/**
 	 * Animate the track to `position` on a critically damped spring, rather than
 	 * scrolling smoothly, which browsers make instant when the system turns off
 	 * scroll animation, and which can't start at a drag's speed. Uses the
@@ -418,55 +490,11 @@ export class CarouselMotion {
 			return
 		}
 
-		this.#drag = undefined
-		// A press that never moved far enough is a click
-		if (drag.origin === undefined) {
-			return
-		}
-
-		delete (drag.stage ?? this.#track).dataset.dragging
-		this.#owner = 'idle'
-		if (drag.axis === 'dismiss') {
-			const velocity = velocityOf(drag.samples, drag.distanceY, event.timeStamp)
-			const distance = Math.abs(drag.distanceY)
-			const threshold = Math.min(160, this.#track.clientHeight * 0.2)
-			this.#ignoreClick(event.type !== 'pointercancel')
-			this.#options.onDismissEnd(
-				event.type === 'pointerup' &&
-					(distance >= threshold ||
-						(distance >= 40 && Math.abs(velocity) > 0.5 && velocity * drag.distanceY > 0)),
-			)
-			return
-		}
-
-		if (drag.stage === undefined) {
-			// Let go while still moving, the track carries on to the next slide that
-			// way, as paging does on iOS: a quick short swipe advances, and swinging
-			// back cancels. Let go at rest, it settles on the nearest slide. Either
-			// way it glides there from the speed it was let go at
-			const position = this.#position
-			const velocity =
-				event.type === 'pointerup' ? velocityOf(drag.samples, position, event.timeStamp) : 0
-			// The finger has lifted, though touchend has yet to say so
-			if (event.type === 'pointerup') {
-				this.#isTouching = false
-			}
-
-			const slides = position / this.#width
-			this.go(
-				velocity > flickSpeed
-					? Math.floor(slides) + 1
-					: velocity < -flickSpeed
-						? Math.ceil(slides) - 1
-						: Math.round(slides),
-				'smooth',
-				velocity,
-			)
-		}
-
-		// The click that ends a drag is not a click on the content. None follows
-		// a drag the browser cancelled, so the next click is a click again
-		this.#ignoreClick(event.type !== 'pointercancel')
+		this.#end(
+			drag,
+			event.type === 'pointerup' ? 'release' : event.type === 'pointercancel' ? 'cancel' : 'loss',
+			event.timeStamp,
+		)
 	}
 
 	readonly #handlePointermove = (event: PointerEvent) => {
@@ -477,6 +505,7 @@ export class CarouselMotion {
 			!this.#isPressSeen &&
 			event.buttons === 1 &&
 			event.target instanceof HTMLMediaElement &&
+			this.#endUnreleased(event)
 			event.target.controls
 		) {
 			// Firefox's native media controls keep the press itself, so a drag
