@@ -81,6 +81,8 @@ class Viewer {
 	#ghosts: Slide[] = []
 	#height = 0
 	#index = 0
+	/** Whether the keyboard has navigated since the viewer opened. */
+	#isKeyboardNavigated = false
 	readonly #motion: CarouselMotion
 	readonly #next: HTMLButtonElement
 	#openedIndex = 0
@@ -274,6 +276,7 @@ class Viewer {
 		this.#openingClickDeadline = performance.now() + 150
 		this.#index = index
 		this.#openedIndex = index
+		this.#isKeyboardNavigated = false
 		this.#setPageItem(current.item)
 
 		this.#slides = items.map((each, position) => createSlide(each, position, items.length))
@@ -373,15 +376,13 @@ class Viewer {
 		document.removeEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
 		this.#zoom.reset()
 
-		// Closing returns focus to whatever opened the viewer. After navigating,
-		// the item now showing is the better place to continue from. A pointer
-		// opened the viewer with nothing focused, and gets nothing focused back:
-		// a key pressed in the viewer would otherwise light the item's focus ring
-		const wasFocusOpened =
-			document.activeElement !== null && document.activeElement !== document.body
+		// Closing returns focus to whatever opened the viewer. After navigating
+		// from the keyboard, the item now showing is the better place to continue
+		// from. After navigating with a pointer it is left alone, since the key
+		// that closes the viewer would otherwise light its focus ring
 		if (
 			hasNavigated &&
-			wasFocusOpened &&
+			this.#isKeyboardNavigated &&
 			current?.item.isConnected === true &&
 			current.item.tabIndex >= 0
 		) {
@@ -598,12 +599,14 @@ class Viewer {
 
 		switch (event.command) {
 			case '--next': {
+				this.#noteKeyboardButton(event)
 				this.#motion.step(1)
 
 				break
 			}
 
 			case '--previous': {
+				this.#noteKeyboardButton(event)
 				this.#motion.step(-1)
 
 				break
@@ -687,6 +690,7 @@ class Viewer {
 			return
 		}
 
+		this.#isKeyboardNavigated = true
 		event.preventDefault()
 	}
 
@@ -720,6 +724,7 @@ class Viewer {
 		if (step === 0) {
 			void this.close()
 		} else {
+			this.#isKeyboardNavigated = true
 			this.#motion.step(step * this.#motion.direction)
 		}
 	}
@@ -929,6 +934,17 @@ class Viewer {
 		// Lay the new subjects out in this task, for WebKit's media pipeline
 		pending[0]?.[1].subject.getBoundingClientRect()
 		this.#activate()
+	}
+
+	/**
+	 * Count a navigation button as keyboard navigation when it was pressed from
+	 * the keyboard, which leaves it focus-visible. A click leaves it focused
+	 * without the ring in Chromium and Firefox, and unfocused in WebKit.
+	 */
+	#noteKeyboardButton(event: CommandEvent) {
+		if (event.source?.matches(':focus-visible') === true) {
+			this.#isKeyboardNavigated = true
+		}
 	}
 
 	/**

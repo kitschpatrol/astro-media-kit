@@ -608,6 +608,26 @@ describe('galleries', () => {
 		expect(document.activeElement).toBe(items[2])
 	})
 
+	it('focuses the item showing on close after Next is pressed from the keyboard', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		const items = boxes(fixture)
+		items[0]!.focus()
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+
+		const next = query(viewer(), '.amk-lightbox-next')
+		await userEvent.keyboard('{Tab}')
+		next.focus()
+		expect(next.matches(':focus-visible')).toBe(true)
+		await userEvent.keyboard('{Enter}')
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(activeSlideLabel).toBe('3 of 3')
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => viewer().open).toBe(false)
+
+		expect(document.activeElement).toBe(items[2])
+	})
+
 	it('keeps neighbors in the page while animating, so their places never visibly empty', async () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
 		const items = boxes(fixture)

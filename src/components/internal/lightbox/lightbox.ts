@@ -141,8 +141,8 @@ function handleClick(event: MouseEvent) {
 			const opener = path[at]
 			// A pointer-opened dialog must not restore keyboard-visible focus to
 			// this button after Escape, which also reopens its tooltip. Keyboard
-			// and virtual clicks have detail 0 and keep normal focus restoration.
-			if (event.detail > 0 && opener instanceof HTMLElement) {
+			// and virtual clicks keep normal focus restoration.
+			if (isPointerClick(event) && opener instanceof HTMLElement) {
 				opener.blur()
 			}
 
@@ -159,7 +159,7 @@ function handleClick(event: MouseEvent) {
 			// As with the opener button: a pointer-opened dialog must not restore
 			// keyboard-visible focus to the item after Escape, which would leave
 			// its indicator in the active state
-			if (event.detail > 0) {
+			if (isPointerClick(event)) {
 				item.blur()
 			}
 
@@ -282,6 +282,15 @@ function isOrdinaryClick(event: MouseEvent): boolean {
 		!event.shiftKey &&
 		!event.altKey
 	)
+}
+
+/**
+ * Whether a pointer made the click, rather than a key or a script. Firefox
+ * gives the click that Enter makes on a link a `detail` of 1, so only the
+ * pointer type tells them apart.
+ */
+function isPointerClick(event: MouseEvent): boolean {
+	return event instanceof PointerEvent && event.pointerType !== ''
 }
 
 function releaseIntent(item: HTMLElement) {
