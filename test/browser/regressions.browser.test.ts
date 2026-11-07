@@ -580,7 +580,17 @@ it('mirrors live video frames, follows paused seeks, and releases rendering on r
 	expect(draw).toHaveBeenCalledTimes(pausedCount)
 	video.currentTime += 1
 	await expect.poll(() => draw.mock.calls.length).toBeGreaterThan(pausedCount)
-	await video.play()
+	const seekedTo = video.currentTime
+	// With Ubuntu 26.04's GStreamer, WebKit stays at HAVE_CURRENT_DATA while it
+	// plays, so a resumed play() never fires `playing` or settles. Wait for the
+	// playback itself, and expect only the AbortError that removing the video
+	// at clean-up gives the promise left pending.
+	void video.play().catch((error: unknown) => {
+		if (!(error instanceof DOMException) || error.name !== 'AbortError') {
+			throw error
+		}
+	})
+	await expect.poll(() => video.currentTime).toBeGreaterThan(seekedTo)
 	const resumedCount = draw.mock.calls.length
 	await expect.poll(() => draw.mock.calls.length).toBeGreaterThan(resumedCount)
 	viewer().close()
