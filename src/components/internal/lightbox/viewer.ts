@@ -48,17 +48,17 @@ const markup = `
 	<dialog class="amk-lightbox" aria-label="Media viewer" tabindex="-1">
 		<div class="amk-lightbox-track" tabindex="-1" role="region" aria-roledescription="carousel" aria-label="Gallery"></div>
 		<div class="amk-lightbox-status" role="status" aria-live="polite" aria-atomic="true"></div>
-		<button class="amk-lightbox-button amk-lightbox-close" type="button" command="request-close" aria-label="Close">
+		<button class="amk-lightbox-button amk-lightbox-close" type="button" data-action="close" aria-label="Close">
 			<span class="amk-lightbox-icon" data-amk-icon="close"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></span>
 		</button>
-		<button class="amk-lightbox-button amk-lightbox-zoom" type="button" command="--zoom" aria-label="Zoom" aria-pressed="false" hidden>
+		<button class="amk-lightbox-button amk-lightbox-zoom" type="button" data-action="zoom" aria-label="Zoom" aria-pressed="false" hidden>
 			<span class="amk-lightbox-icon" data-amk-icon="zoom-in"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5M8 10.5h5M10.5 8v5" /></svg></span>
 			<span class="amk-lightbox-icon" data-amk-icon="zoom-out"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5M8 10.5h5" /></svg></span>
 		</button>
-		<button class="amk-lightbox-button amk-lightbox-previous" type="button" command="--previous" aria-label="Previous">
+		<button class="amk-lightbox-button amk-lightbox-previous" type="button" data-action="previous" aria-label="Previous">
 			<span class="amk-lightbox-icon" data-amk-icon="previous"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg></span>
 		</button>
-		<button class="amk-lightbox-button amk-lightbox-next" type="button" command="--next" aria-label="Next">
+		<button class="amk-lightbox-button amk-lightbox-next" type="button" data-action="next" aria-label="Next">
 			<span class="amk-lightbox-icon" data-amk-icon="next"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></span>
 		</button>
 	</dialog>`
@@ -116,14 +116,10 @@ class Viewer {
 		this.#zoomButton = query(fragment, '.amk-lightbox-zoom', HTMLButtonElement)
 		subscribeMediaIconTheme(this.#dialog.querySelectorAll<HTMLElement>('[data-amk-icon]'))
 		containPageScroll(this.#dialog)
-		for (const button of this.#dialog.querySelectorAll('button')) {
-			button.commandForElement = this.#dialog
-		}
 
 		this.#dialog.addEventListener('cancel', this.#handleCancel)
 		this.#dialog.addEventListener('click', this.#handleClick)
 		this.#dialog.addEventListener('close', this.#handleClose)
-		this.#dialog.addEventListener('command', this.#handleCommand)
 		this.#dialog.addEventListener('dragstart', preventDefault)
 		this.#dialog.addEventListener('pointerover', this.#prepareZoom)
 		this.#dialog.addEventListener('focusin', this.#prepareZoom)
@@ -497,6 +493,44 @@ class Viewer {
 		}
 	}
 
+	#handleButtonClick(event: MouseEvent, button: HTMLButtonElement) {
+		if (event.defaultPrevented || !this.#isNavigable) {
+			return
+		}
+
+		switch (button.dataset.action ?? '') {
+			case 'close': {
+				void this.close()
+
+				break
+			}
+
+			case 'next': {
+				this.#noteKeyboardButton(button)
+				this.#motion.step(1)
+
+				break
+			}
+
+			case 'previous': {
+				this.#noteKeyboardButton(button)
+				this.#motion.step(-1)
+
+				break
+			}
+
+			case 'zoom': {
+				this.#toggleZoom()
+
+				break
+			}
+
+			default: {
+				break
+			}
+		}
+	}
+
 	readonly #handleCancel = (event: Event) => {
 		if (event.cancelable) {
 			event.preventDefault()
@@ -509,6 +543,18 @@ class Viewer {
 	}
 
 	readonly #handleClick = (event: MouseEvent) => {
+		// Ordinary button activation also works without the Invoker Commands API.
+		const button = event
+			.composedPath()
+			.find(
+				(target): target is HTMLButtonElement =>
+					target instanceof HTMLButtonElement && target.parentElement === this.#dialog,
+			)
+		if (button !== undefined) {
+			this.#handleButtonClick(event, button)
+			return
+		}
+
 		// A closer inside lifted content, such as the player's collapse button
 		// on its floated control bar, closes the viewer, as does an opener that
 		// came in with its item
@@ -585,40 +631,6 @@ class Viewer {
 		// closed from outside (e.g. by calling close() directly)
 		if (!this.#dialog.open && this.#state !== 'idle') {
 			this.restore()
-		}
-	}
-
-	readonly #handleCommand = (event: Event) => {
-		if (
-			typeof CommandEvent === 'undefined' ||
-			event.target !== this.#dialog ||
-			!this.#isNavigable ||
-			!(event instanceof CommandEvent)
-		) {
-			return
-		}
-
-		switch (event.command) {
-			case '--next': {
-				this.#noteKeyboardButton(event)
-				this.#motion.step(1)
-
-				break
-			}
-
-			case '--previous': {
-				this.#noteKeyboardButton(event)
-				this.#motion.step(-1)
-
-				break
-			}
-
-			case '--zoom': {
-				this.#toggleZoom()
-
-				break
-			}
-			// No default
 		}
 	}
 
@@ -942,8 +954,8 @@ class Viewer {
 	 * the keyboard, which leaves it focus-visible. A click leaves it focused
 	 * without the ring in Chromium and Firefox, and unfocused in WebKit.
 	 */
-	#noteKeyboardButton(event: CommandEvent) {
-		if (event.source?.matches(':focus-visible') === true) {
+	#noteKeyboardButton(button: HTMLButtonElement) {
+		if (button.matches(':focus-visible')) {
 			this.#isKeyboardNavigated = true
 		}
 	}
