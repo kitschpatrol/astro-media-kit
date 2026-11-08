@@ -20,7 +20,8 @@ const METADATA_IMAGE_EXTENSIONS = new Set([
 /**
  * Strip EXIF/XMP and other metadata from every supported image in the Astro
  * build output directory (including files copied from `public/`). ICC color
- * profiles are kept, so wide-gamut images render as they did.
+ * profiles and orientation are kept, so image colors and transforms stay
+ * intact.
  *
  * Runs in `astro:build:done`, after all files have been written to disk. Source
  * images under `src/` and `public/` are left untouched on disk — only the
@@ -59,15 +60,22 @@ export async function stripExifFromImages(
 
 	try {
 		// `exiftool.deleteAllTags` leaves a `${file}_original` backup behind, and
-		// `-all=` alone deletes the ICC profile, shifting the colors of wide-gamut
-		// images. We use `write` directly to copy the profile back from the file
-		// itself, as its `retain` option does, and to skip the backup.
+		// `-all=` alone deletes the ICC profile and orientation, changing the
+		// appearance of wide-gamut and rotated or mirrored images. Copy those tags
+		// back from the file itself, as `retain` does, and skip the backup.
 		const results = await Promise.allSettled(
 			targets.map(async (filePath) =>
 				metadataTool.write(
 					filePath,
 					{},
-					{ writeArgs: ['-all=', '-ICC_Profile<ICC_Profile', '-overwrite_original'] },
+					{
+						writeArgs: [
+							'-all=',
+							'-ICC_Profile<ICC_Profile',
+							'-Orientation<Orientation',
+							'-overwrite_original',
+						],
+					},
 				),
 			),
 		)

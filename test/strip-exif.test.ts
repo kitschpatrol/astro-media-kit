@@ -1,6 +1,7 @@
 /* eslint-disable ts/naming-convention */
 
 import type { AstroIntegrationLogger } from 'astro'
+import { ExifTool } from 'exiftool-vendored'
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -24,6 +25,7 @@ describe('stripExifFromImages', () => {
 	let wideGamutPath: string
 	let nestedPngPath: string
 	let textPath: string
+	const metadataTool = new ExifTool()
 	const textContents = 'hello\n'
 
 	beforeAll(async () => {
@@ -63,23 +65,49 @@ describe('stripExifFromImages', () => {
 	}, 30_000)
 
 	afterAll(async () => {
+		await metadataTool.end()
 		await rm(root, { force: true, recursive: true })
 	})
 
-	it('strips EXIF from a top-level JPEG', async () => {
-		const { exif } = await sharp(jpegPath).metadata()
-		expect(exif).toBeUndefined()
+	it('strips descriptive EXIF from a top-level JPEG', async () => {
+		const tags = await metadataTool.read(jpegPath)
+		expect(tags.Copyright).toBeUndefined()
+		expect(tags.ImageDescription).toBeUndefined()
 	})
 
 	it('keeps the ICC color profile while stripping the other metadata', async () => {
-		const { exif, icc } = await sharp(wideGamutPath).metadata()
-		expect(exif).toBeUndefined()
+		const { icc } = await sharp(wideGamutPath).metadata()
+		const tags = await metadataTool.read(wideGamutPath)
+		expect(tags.Copyright).toBeUndefined()
 		expect(icc).toBeDefined()
 	})
 
+	it.each([2, 3, 4, 5, 6, 7, 8])(
+		'keeps orientation %s while removing descriptive metadata',
+		async (orientation) => {
+			const file = path.join(root, `orientation-${orientation}.jpg`)
+			await sharp({
+				create: { background: { r: 255, g: 0, b: 0 }, channels: 3, height: 40, width: 80 },
+			})
+				.withMetadata({ orientation })
+				.withExifMerge({ IFD0: { Copyright: 'Remove this credit' } })
+				.jpeg()
+				.toFile(file)
+			const before = await sharp(file).metadata()
+			await stripExifFromImages(pathToFileURL(`${root}/`), silentLogger)
+			const after = await sharp(file).metadata()
+			expect(after.orientation).toBe(orientation)
+			expect(after.width).toBe(before.width)
+			expect(after.height).toBe(before.height)
+			expect(after.autoOrient).toEqual(before.autoOrient)
+			const tags = await metadataTool.read(file)
+			expect(tags.Copyright).toBeUndefined()
+		},
+	)
+
 	it('recurses into subdirectories and strips EXIF from a nested PNG', async () => {
-		const { exif } = await sharp(nestedPngPath).metadata()
-		expect(exif).toBeUndefined()
+		const tags = await metadataTool.read(nestedPngPath)
+		expect(tags.Copyright).toBeUndefined()
 	})
 
 	it('does not leave _original backup files behind', async () => {
@@ -97,8 +125,8 @@ describe('stripExifFromImages', () => {
 			.jpeg()
 			.toFile(repeatedPath)
 		await stripExifFromImages(pathToFileURL(`${root}/`), silentLogger)
-		const { exif } = await sharp(repeatedPath).metadata()
-		expect(exif).toBeUndefined()
+		const tags = await metadataTool.read(repeatedPath)
+		expect(tags.Copyright).toBeUndefined()
 	})
 
 	it('leaves non-image files untouched', async () => {

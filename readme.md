@@ -875,7 +875,7 @@ mediaKit({
 })
 ```
 
-This walks the build output directory recursively and processes `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files — covering both Astro-processed assets and pass-through copies from `public/`. Source images under `src/` and `public/` on disk are left untouched. Stripping is performed by [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js); ICC color profiles are kept, so wide-gamut images render as they did, and individual failures are logged without stopping the build. Formats outside this list are not processed.
+This walks the build output directory recursively and processes `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif` files — covering both Astro-processed assets and pass-through copies from `public/`. Source images under `src/` and `public/` on disk are left untouched. Stripping is performed by [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js); ICC color profiles and orientation metadata are kept, preserving colors and rotated or mirrored presentation without rewriting pixels. Individual failures are logged without stopping the build. Formats outside this list are not processed.
 
 ### Watermark (dev)
 

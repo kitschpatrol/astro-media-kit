@@ -91,9 +91,9 @@ export type MediaKitConfig = {
 	/**
 	 * Strip EXIF/XMP and other metadata from every image in the build output
 	 * directory (including files copied from `public/`) at the end of the Astro
-	 * build. ICC color profiles are kept. Leaves source images on disk untouched.
-	 * `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`, `heic`, and `gif`
-	 * files are processed.
+	 * build. ICC color profiles and orientation are kept. Leaves source images on
+	 * disk untouched. `jpg`, `jpeg`, `png`, `webp`, `tif`, `tiff`, `avif`,
+	 * `heic`, and `gif` files are processed.
 	 *
 	 * @default false
 	 */
