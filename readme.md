@@ -245,7 +245,7 @@ The `darkMode` prop controls how Picture switches between light and dark image v
 
 **CSS selector string** — Any string other than `'media'` or `'none'` is treated as a CSS selector that identifies dark mode on the page. This is for frameworks that control dark mode via a class or attribute rather than the OS preference, like Starlight (`[data-theme="dark"]`) or Tailwind CSS (`.dark`).
 
-When a dark variant exists, renders two `<picture>` elements (one light, one dark) inside a `<div>` receiving `pictureAttributes`, and injects a `<style>` block that toggles visibility based on the selector. Loading follows the `loading` / `priority` props and the browser's lazy-loading behavior; selector mode alone does not guarantee that the hidden image stays unloaded. Without a dark variant, renders one `<picture>`. Selectors containing `{`, `}`, `<`, `>`, or `;` are rejected to keep the injected stylesheet well-formed.
+When a dark variant exists, renders two `<picture>` elements (one light, one dark) inside a `<div>` receiving `pictureAttributes`, and injects a `<style>` block that toggles visibility based on the selector. Loading follows the `loading` / `priority` props and the browser's lazy-loading behavior; selector mode alone does not guarantee that the hidden image stays unloaded. Without a dark variant, renders one `<picture>`. Selectors containing `{`, `}`, `<`, `>`, or `;` are rejected to keep the injected stylesheet well-formed. Zoomed pictures continue following changes to their original theme container; returning restores normal CSS visibility.
 
 ```astro
 <!-- Starlight -->

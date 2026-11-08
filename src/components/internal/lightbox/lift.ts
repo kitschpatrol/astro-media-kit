@@ -5,6 +5,7 @@ import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { releaseImagePreview, retainImage, returnImagePreview } from './image-preview'
 import { ratioOf } from './media'
+import { retainPictureThemes } from './picture-theme'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
 import { releasePreparation } from './prepare'
@@ -36,6 +37,7 @@ export function dropSlides(slides: Slide[]) {
 		slide.lift = undefined
 		const { item } = lift
 		if (isLinkItem(item)) {
+			lift.releasePictureThemes()
 			releaseImagePreview(lift.subject)
 			// A link's media is for the viewer alone: it goes away, and the next
 			// use starts afresh
@@ -56,6 +58,7 @@ export function dropSlides(slides: Slide[]) {
 			refreshPopups(lift.subject)
 		}
 
+		lift.releasePictureThemes()
 		removePlaceholder(lift.placeholder)
 		releaseControlPreview(lift.subject)
 
@@ -124,6 +127,7 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		hadStyle: item.hasAttribute('style'),
 		nextSibling: subject.nextSibling ?? undefined,
 		placeholder: placeholder?.element,
+		releasePictureThemes: retainPictureThemes(subject, item),
 	}
 	// On the slide, where both the frame and a stage beside a caption read it
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))

@@ -522,6 +522,7 @@ if (isSelector && hasDarkMode) {
 			<div
 				{...pictureAttributes}
 				class:list={[pictureAttributes.class, 'amk-picture', selectorClass]}
+				data-dark-mode={darkMode}
 			>
 				<picture class="amk-dark">
 					{optimizedImagesDark.map((image) => (

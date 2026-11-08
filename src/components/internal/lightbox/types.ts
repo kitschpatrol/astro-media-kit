@@ -39,6 +39,8 @@ export type Lift = Measurement & {
 	nextSibling: ChildNode | undefined
 	/** A decorative placeholder left in the page, if enabled. */
 	placeholder: HTMLElement | undefined
+	/** Restore selector-based picture variants when the subject returns. */
+	releasePictureThemes: () => void
 }
 
 export type Slide = {
