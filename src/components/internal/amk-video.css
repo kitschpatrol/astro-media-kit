@@ -93,15 +93,17 @@
 	height: 100%;
 }
 
-/* The lightbox provides its own close button. Expand belongs only on the page. */
-.amk-lightbox-layer .amk-zoom-button,
-.amk-lightbox-layer .amk-zoom-tooltip {
+/* Expand belongs to the page; collapse, which brings the player back to it,
+   to the lightbox. */
+.amk-lightbox-layer :is(.amk-zoom-button, .amk-zoom-tooltip),
+:is(.amk-collapse-button, .amk-collapse-tooltip):not(.amk-lightbox-layer *) {
 	display: none;
 }
 
 /* Dialog focus restoration can briefly reopen a tooltip after the button has
    moved away from the pointer. Never paint that stale label. */
-.amk-bar:not(:has(.amk-zoom-button:is(:hover, :focus-visible))) .amk-zoom-tooltip {
+.amk-bar:not(:has(.amk-zoom-button:is(:hover, :focus-visible))) .amk-zoom-tooltip,
+.amk-bar:not(:has(.amk-collapse-button:is(:hover, :focus-visible))) .amk-collapse-tooltip {
 	visibility: hidden;
 }
 
@@ -291,7 +293,8 @@ media-captions-button[data-active] .amk-icon-captions-on,
 media-captions-button:not([data-active]) .amk-icon-captions-off,
 media-fullscreen-button[data-fullscreen] .amk-icon-fullscreen-exit,
 media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
-.amk-zoom-button media-icon {
+.amk-zoom-button media-icon,
+.amk-collapse-button media-icon {
 	display: block;
 }
 

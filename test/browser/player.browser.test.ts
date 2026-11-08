@@ -82,11 +82,13 @@ it('is not a button, and leaves clicks on its controls to the player', { retry: 
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 })
 
-it('lifts the whole player, hides expand, and closes from the lightbox button', async () => {
+it('lifts the whole player, swaps expand for collapse, and closes from the lightbox button', async () => {
 	const { item, player } = await mountPlayer()
 	const button = query(player, '[data-zoom-open]')
+	const collapse = query(player, '[data-zoom-close]')
 	const controls = query(player, '.amk-controls')
 	expect(getComputedStyle(button).display).not.toBe('none')
+	expect(getComputedStyle(collapse).display).toBe('none')
 
 	await userEvent.click(button)
 
@@ -98,6 +100,7 @@ it('lifts the whole player, hides expand, and closes from the lightbox button', 
 	expect(controls.getAttribute('popover')).toBe('manual')
 	expect(controls.matches(':popover-open')).toBe(true)
 	expect(getComputedStyle(button).display).toBe('none')
+	expect(getComputedStyle(collapse).display).not.toBe('none')
 	const frame = query(viewer(), '.amk-lightbox-frame').getBoundingClientRect()
 	expect(frame.width / frame.height).toBeCloseTo(16 / 9, 1)
 
@@ -107,6 +110,23 @@ it('lifts the whole player, hides expand, and closes from the lightbox button', 
 	expect(item.contains(player)).toBe(true)
 	expect(controls.hasAttribute('popover')).toBe(false)
 	expect(isLifted(item)).toBe(false)
+})
+
+it('returns the player to the page from its collapse button', async () => {
+	const { item, player } = await mountPlayer()
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	const collapse = query(player, '[data-zoom-close]')
+	expect(collapse.getAttribute('aria-label')).toBe('Collapse video')
+
+	await userEvent.click(collapse)
+
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(item.contains(player)).toBe(true)
+	expect(isLifted(item)).toBe(false)
+	expect(getComputedStyle(collapse).display).toBe('none')
+	expect(getComputedStyle(query(player, '[data-zoom-open]')).display).not.toBe('none')
 })
 
 it('floats the controls again when a closing player is reopened', async () => {

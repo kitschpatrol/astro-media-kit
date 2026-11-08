@@ -11,6 +11,7 @@ export const mediaIconNames = [
 	'fullscreen-enter',
 	'fullscreen-exit',
 	'expand',
+	'collapse',
 	'spinner',
 	'seek',
 	'check',

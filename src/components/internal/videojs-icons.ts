@@ -14,8 +14,8 @@ import {
 	volumeLowIcon,
 	volumeOffIcon,
 } from '@videojs/html/icons'
-import { expandIcon } from './expand-icon'
 import { subscribeMediaTheme } from './media-theme'
+import { collapseIcon, expandIcon } from './zoom-icons'
 
 // A private family leaves unrelated Video.js players alone. Register every
 // default before overrides: partial families don't fall back in Video.js.
@@ -23,6 +23,7 @@ const defaults = {
 	'captions-off': captionsOffIcon,
 	'captions-on': captionsOnIcon,
 	check: checkIcon,
+	collapse: collapseIcon,
 	expand: expandIcon,
 	'fullscreen-enter': fullscreenEnterIcon,
 	'fullscreen-exit': fullscreenExitIcon,

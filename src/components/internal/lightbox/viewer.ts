@@ -509,9 +509,10 @@ class Viewer {
 	}
 
 	readonly #handleClick = (event: MouseEvent) => {
-		// An opener that travels with its item, such as the player's own zoom
-		// button, closes the viewer, from its floated control bar too
-		if (isWithin(event, '[data-zoom-open]', this.#dialog)) {
+		// A closer inside lifted content, such as the player's collapse button
+		// on its floated control bar, closes the viewer, as does an opener that
+		// came in with its item
+		if (isWithin(event, '[data-zoom-open], [data-zoom-close]', this.#dialog)) {
 			if (!event.defaultPrevented) {
 				event.preventDefault()
 				void this.close()

@@ -1,6 +1,6 @@
 import { load } from 'cheerio'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { expandIcon } from '../src/components/internal/expand-icon'
+import { expandIcon } from '../src/components/internal/zoom-icons'
 import { buildFixture } from './parity/helpers/build-fixture'
 
 describe('image zoom indicators', () => {

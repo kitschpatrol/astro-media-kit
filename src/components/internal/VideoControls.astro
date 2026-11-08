@@ -112,6 +112,23 @@ const uid = `amk-${crypto.randomUUID()}`
 							>
 								Expand
 							</media-tooltip>
+							<button
+								aria-label="Collapse video"
+								class="amk-button amk-collapse-button"
+								data-zoom-close=""
+								id={`${uid}-collapse`}
+								type="button"
+							>
+								<media-icon class="amk-icon-zoom-exit" family="amk" name="collapse" />
+							</button>
+							<media-tooltip
+								boundary="viewport"
+								class="amk-tooltip amk-collapse-tooltip"
+								id={`${uid}-collapse-tooltip`}
+								trigger={`${uid}-collapse`}
+							>
+								Collapse
+							</media-tooltip>
 						</>
 					) : (
 						<>

@@ -215,7 +215,7 @@ importers:
         specifier: ^0.9.12
         version: 0.9.12(prettier-plugin-astro@1.1.2(prettier@3.9.10))(prettier@3.9.10)(typescript@6.0.3)
       '@kitschpatrol/chagent':
-        specifier: 0.5.0
+        specifier: ^0.5.0
         version: 0.5.0(bumpp@12.3.0)
       '@kitschpatrol/shared-config':
         specifier: ^8.14.1
