@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-11-07
 
 ### Added
 
@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support direct `.m3u8` video sources through the HLS adapter and existing HLS playback options.
 - Add auto-import predicates and the exported `imageOnlyImport` helper; include image sources on `ZoomLink` in the default integration configuration.
 - Export `FormatRules`, `FormatsRules`, `ZoomerProps`, and video-service credential types through the public entry points.
+- Add a Collapse button to lifted video controls and a `collapse` icon override for MediaTheme.
+- Preserve decorative video-control previews in page thumbnails while their players are lifted.
 
 ### Changed
 
@@ -32,10 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Change `transformAstroSource` to accept `autoImport.components` configuration shapes directly, with optional project-root and public-directory context.
 - **Breaking:** Move XMP lookup into `Image` and `Picture`, remove `Caption.src` and `Caption.typeFallback`, and allow free-text `Caption.type` labels.
 - **Breaking:** Remove `creditMediaTypeFallback` from Audio and Video; use `creditMediaType` to override their audio/video labels.
+- **Breaking:** **Breaking:** Raise the Astro peer requirement to `^7.4.7`.
+- **Breaking:** **Breaking:** Make `transformAstroSource` synchronous and use Astro's Rust compiler, preserving unrelated source text and leaving parse errors for Astro to report.
+- **Breaking:** **Breaking:** Restrict `MediaKitConfig.video` to booleans and credential services (`bunny`, `cloudflare`, and `mux`), individually or in arrays.
+- Give minimal video players full playback controls in the lightbox and show an Expand button for zoom-enabled players with `controls="none"`.
+- Toggle playback when full or minimal video surfaces are clicked or tapped, reserving lightbox opening for the Expand button.
+- Match image zoom indicators to video Expand controls, sharing `icon-expand` artwork and player styling defaults.
+- Use neutral grayscale media controls, smoother hover fades, and animated volume popups with matching slider handles.
+- Give carousel dots larger, adjoining touch targets.
 
 ### Removed
 
 - **Breaking:** Remove the deprecated `FallbackRules` alias; use `FormatRules`.
+- **Breaking:** **Breaking:** Remove native fullscreen from `controls="minimal"`; use full controls with zoom disabled for native fullscreen.
 
 ### Fixed
 
@@ -78,12 +89,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Respect handled carousel keys, allow button-based slides to start drags, and preserve clicks after canceled drags.
 - Dispose detached carousels and continue initializing other carousels when one has malformed markup.
 - Make video control styling inherit from ancestors and keep zoom-wrapper layout consistent on image-only pages.
+- Preserve ICC color profiles and orientation when stripping image metadata, keeping wide-gamut colors and rotated or mirrored images intact.
+- Stop lowercasing free-text credit labels such as `AI Render`.
+- Warn about `backgroundDark` without `background` only in development.
+- Declare `sharp` `^0.35.4` as an optional peer for watermarking instead of relying on dependency hoisting.
+- Probe site-root video paths under the default `public/` directory to recover local video dimensions and duration.
+- Recognize HTTP and HTTPS schemes case-insensitively when resolving audio and video sources.
+- Apply Vimeo's initial mute setting and forward subsequent mute changes to its playback adapter.
+- Delay audio source loading until player attachment so startup failures reach the player's error dialog.
+- Fail rendering when Bunny, Cloudflare, or Mux credentials are missing instead of silently omitting videos from production builds.
+- Prefer public Mux playback IDs when an asset also lists signed IDs that require unsupported token generation.
+- Keep selector-based Picture themes synchronized with their original ancestors while lifted, restoring authored styles on return.
+- Apply gallery volume fading and restoration to native audio and video elements used directly as lifted subjects.
+- Keep lightbox navigation, zoom, and close buttons working without the Invoker Commands API.
+- Keep lightbox video-control fades working in browsers without iterator helpers.
+- Mark image links, ZoomLink anchors, and video Expand buttons as dialog openers for assistive technology.
+- Preserve normal dialog focus restoration after pointer navigation and focus the selected gallery item after keyboard navigation.
+- Synchronize page carousels during lightbox navigation and align clicked slides before measuring their opening transitions.
+- Preserve the intended carousel slide during resize races and vertical page scrolling.
+- Cancel mouse presses whose release occurred outside the track so later buttonless movement cannot start dragging media.
+- Remove every stale slide when opening a new lightbox gallery.
+- Avoid instantiating unrelated ZoomLink media when the lightbox backdrop is clicked during a transition.
+- Let nested carousels show captions independently of their parent carousel.
+- Keep carousel glides instant under reduced motion even when a custom duration is set on the carousel.
+- Exclude CSS-hidden media from lightbox galleries.
+- Keep zoom indicators anchored to image bounds in stretched layouts, visible above previews, and free of hover background flashes.
+- Keep zoom cursors off video toolbars.
+- Clip dragged carousel tracks within their viewport when pulled past either end.
+- Keep matching video-toolbar controls and translucent backgrounds steady during lightbox crossfades.
+- Prevent inactive gallery videos from reactivating the current video's lightbox toolbar.
+- Keep paused video controls visible and prevent auto-hiding while hovering player controls or their popups.
+- Keep volume popups open when muting and preserve slider arrow keys and popup Escape handling inside the lightbox.
 
 ### Documentation
 
 - Document Carousel, ZoomLink, MediaTheme, image indicators, shared control styling, and the replacement lightbox's interactions and browser requirements.
 - Correct image defaults, source requirements, provider configuration, no-JavaScript behavior, and public API descriptions; clarify that oEmbed HTML remains trusted provider content.
 - Clarify original-image cleanup, build-only watermarking, English-only gallery labels, browser-test workflows, and third-party audio-skin attribution.
+- Document player keyboard shortcuts, carousel Home/End navigation and glide timing, and additional video-control styling hooks.
+- Explain direct-media range requests and the need for author-controlled source URLs during server rendering.
+- Remove obsolete Astro Prettier plugin workaround guidance.
 
 ### Maintenance
 
@@ -93,6 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build during package preparation and publish through pnpm.
 - Consolidate media, credential, and lightbox helpers, rename the oEmbed HTML normalizer, and remove unused helpers and the passthrough image endpoint.
 - Ship the Apache license text for the vendored Video.js audio skin.
+- Generate release changelogs with chagent during versioning and update the release-note extraction workflow.
+- Pin the `@astrojs/astro2tsx` dependency on `@emnapi/runtime` to a compatible version to prevent contributor tooling crashes.
 
 ## [0.6.0] - 2026-10-07
 
@@ -340,7 +387,6 @@ No notable changes.
 
 - Establish linting, type checking, unit tests, cross-platform CI, and package release tooling.
 
-[Unreleased]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.6.0...HEAD
 [0.1.0]: https://github.com/kitschpatrol/astro-media-kit/releases/tag/v0.1.0
 [0.2.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.1.0...v0.2.0
 [0.2.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.2.0...v0.2.1
@@ -357,3 +403,4 @@ No notable changes.
 [0.5.2]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.5.1...v0.5.2
 [0.5.3]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.5.2...v0.5.3
 [0.6.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.5.3...v0.6.0
+[0.7.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.6.0...v0.7.0
