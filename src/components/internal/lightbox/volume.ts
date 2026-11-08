@@ -90,11 +90,15 @@ function track(media: MediaLike): Tracked {
 }
 
 /**
- * The media inside `root`: native elements, and the kit's media elements, which
- * wrap a native element or an embedded player behind the same API.
+ * The media at or inside `root`: native elements, and the kit's media elements,
+ * which wrap a native element or an embedded player behind the same API.
  */
 function mediaIn(root: Element): MediaLike[] {
 	const found = new Set<MediaLike>()
+	if (isMediaLike(root)) {
+		found.add(root)
+	}
+
 	for (const element of root.querySelectorAll('audio, video, .amk-media')) {
 		if (isMediaLike(element)) {
 			found.add(element)
