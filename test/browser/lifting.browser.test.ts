@@ -749,19 +749,23 @@ describe('content', () => {
 		await expect.poll(() => neighbor?.currentSrc.split('?', 1)[0]).toMatch(largeCandidatePattern)
 	})
 
-	it('decodes images normally while lifted, then restores the attribute', async () => {
-		const fixture = mount(
-			item('<img src="/media/tile-480.jpg" decoding="async" width="2400" height="2400" alt="" />'),
-		)
-		const image = query(fixture, 'img', HTMLImageElement)
-		await image.decode()
+	it.each([undefined, 'auto', 'sync', 'async'])(
+		'decodes lifted images asynchronously, then restores decoding=%s',
+		async (decoding) => {
+			const attribute = decoding === undefined ? '' : `decoding="${decoding}"`
+			const fixture = mount(
+				item(`<img src="/media/tile-480.jpg" ${attribute} width="2400" height="2400" alt="" />`),
+			)
+			const image = query(fixture, 'img', HTMLImageElement)
+			await image.decode()
 
-		await openLightbox(boxes(fixture)[0]!)
-		expect(image.getAttribute('decoding')).toBe('auto')
-		await close()
+			await openLightbox(boxes(fixture)[0]!)
+			expect(image.decoding).toBe('async')
+			await close()
 
-		expect(image.getAttribute('decoding')).toBe('async')
-	})
+			expect(image.getAttribute('decoding') ?? undefined).toBe(decoding)
+		},
+	)
 
 	it('keeps the page’s text color on lifted elements', async () => {
 		const fixture = mount(item('<p class="subject">Hi</p>'))

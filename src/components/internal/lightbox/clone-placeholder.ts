@@ -115,28 +115,51 @@ function followDisplayedImage(original: Element, copy: Element, signal: AbortSig
 		return
 	}
 
-	copyDisplayedImage(original, copy)
+	copyDisplayedImage(original, copy, 'sync')
+	const update = async () => {
+		const source = original.currentSrc
+		try {
+			await original.decode()
+		} catch {
+			// Keep the displayed copy when a replacement fails or is superseded.
+			return
+		}
+
+		if (!signal.aborted && original.currentSrc === source) {
+			// The page copy can need a different raster size than the viewer.
+			// Its later upgrades must not hold up painting the scrolling gallery.
+			copyDisplayedImage(original, copy, 'async')
+		}
+	}
+
 	original.addEventListener(
 		'load',
 		() => {
-			copyDisplayedImage(original, copy)
+			// Keep the page thumbnail until the replacement has decoded; a load
+			// event only guarantees downloaded bytes.
+			void update()
 		},
 		{ signal },
 	)
 }
 
 /** Reuse the displayed bitmap before the copy replaces its original. */
-function copyDisplayedImage(original: HTMLImageElement, copy: HTMLImageElement) {
+function copyDisplayedImage(
+	original: HTMLImageElement,
+	copy: HTMLImageElement,
+	decoding: 'async' | 'sync',
+) {
 	const { currentSrc } = original
 	if (currentSrc === '') {
 		return
 	}
 
 	// WebKit can paint a lazy copy empty for a frame after the original moves.
-	// Reuse the displayed resource eagerly, with synchronous decoding. Pin
-	// picture sources too: making sizes="auto" eager changes source selection.
+	// Reuse the initial displayed resource synchronously, then allow later
+	// upgrades to decode asynchronously. Pin picture sources too: making
+	// sizes="auto" eager changes source selection.
 	copy.loading = 'eager'
-	copy.decoding = 'sync'
+	copy.decoding = decoding
 	copy.removeAttribute('srcset')
 	const sources = copy.closest('picture')?.querySelectorAll('source') ?? []
 	for (const source of sources) {

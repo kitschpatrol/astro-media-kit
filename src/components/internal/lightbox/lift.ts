@@ -71,10 +71,6 @@ export function dropSlides(slides: Slide[]) {
 
 		releasePreparation(lift.subject)
 		delete item.dataset.lifted
-		for (const image of lift.asyncImages) {
-			image.decoding = 'async'
-		}
-
 		returnImagePreview(lift.subject, item)
 
 		subjects.push(lift.subject)
@@ -106,13 +102,6 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 
 	const { item, subject } = measurement
-	// Async decoding flashes the background while Chromium swaps in a larger
-	// srcset candidate
-	const asyncImages = imagesIn(subject).filter((image) => image.decoding === 'async')
-	for (const image of asyncImages) {
-		image.decoding = 'auto'
-	}
-
 	// A link's media was never in the page: nothing holds its place or stands in
 	const isLink = isLinkItem(item)
 	if (!isLink) {
@@ -123,7 +112,6 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	retainImage(subject, slide.layer)
 	slide.lift = {
 		...measurement,
-		asyncImages,
 		hadStyle: item.hasAttribute('style'),
 		nextSibling: subject.nextSibling ?? undefined,
 		placeholder: placeholder?.element,
@@ -247,12 +235,6 @@ function fitOf(element: Element, objectFit: string): Fit {
 	}
 
 	return objectFit === 'cover' || objectFit === 'fill' ? objectFit : 'contain'
-}
-
-/** The images whose `decoding` matters when `subject` is laid out larger. */
-function imagesIn(subject: Element): HTMLImageElement[] {
-	const images = [...subject.querySelectorAll('img')]
-	return subject instanceof HTMLImageElement ? [subject, ...images] : images
 }
 
 /**

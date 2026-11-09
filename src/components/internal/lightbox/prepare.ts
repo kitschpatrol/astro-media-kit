@@ -47,6 +47,9 @@ export function prepareImage(subject: Element, width: number) {
 	const controller = new AbortController()
 	const preparation: Preparation = { attributes: [], controller, image, width }
 	preparations.set(subject, preparation)
+	// The retained bitmap covers the source change, so decoding a large
+	// candidate need not hold up a paint of the scrolling viewer.
+	setAttribute(preparation, image, 'decoding', 'async')
 	const picture = image.closest('picture')
 	const sources = picture === null ? [] : [...picture.querySelectorAll('source')]
 	for (const element of [...sources, image]) {

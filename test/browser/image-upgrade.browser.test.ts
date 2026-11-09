@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import {
 	closeLightbox,
@@ -6,6 +6,7 @@ import {
 	prepareLightbox,
 } from '../../src/components/internal/lightbox/lightbox'
 import {
+	activeSlideLabel,
 	boxes,
 	cleanUp,
 	currentLayer,
@@ -41,22 +42,43 @@ async function fixture({ automatic = false, failure = false, picture = false } =
 	return { box, original }
 }
 
-function preview(): HTMLCanvasElement {
-	return query(viewer(), '.amk-lightbox-image-preview', HTMLCanvasElement)
+function preview(): HTMLCanvasElement | HTMLImageElement {
+	const element = query(viewer(), '.amk-lightbox-image-preview')
+	if (!(element instanceof HTMLCanvasElement) && !(element instanceof HTMLImageElement)) {
+		throw new TypeError('Expected an image or canvas preview')
+	}
+
+	return element
 }
 
 function expectVisibleBitmap(minimumWidth = 480) {
-	const canvas = preview()
-	expect(canvas.width * canvas.height).toBeGreaterThan(0)
-	expect(canvas.width * canvas.height).toBeLessThanOrEqual(1_050_000)
+	const bitmap = preview()
+	expect(bitmap.width * bitmap.height).toBeGreaterThan(0)
+	if (bitmap instanceof HTMLCanvasElement) {
+		expect(bitmap.width * bitmap.height).toBeLessThanOrEqual(1_050_000)
+	}
+
 	// The 160px thumbnail already has a 480px source; keep its available detail.
-	expect(canvas.width).toBeGreaterThanOrEqual(minimumWidth)
-	const context = canvas.getContext('2d')!
-	expect(context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data[3]).toBe(255)
-	expect(canvas.getBoundingClientRect().width).toBeGreaterThan(160)
-	expect(getComputedStyle(canvas).opacity).toBe('1')
-	expect(canvas.inert).toBe(true)
-	expect(canvas.ariaHidden).toBe('true')
+	expect(
+		bitmap instanceof HTMLImageElement ? bitmap.naturalWidth : bitmap.width,
+	).toBeGreaterThanOrEqual(minimumWidth)
+	const context = document.createElement('canvas').getContext('2d')!
+	context.drawImage(bitmap, 0, 0, 1, 1)
+	expect(context.getImageData(0, 0, 1, 1).data[3]).toBe(255)
+	expect(bitmap.getBoundingClientRect().width).toBeGreaterThan(160)
+	expect(getComputedStyle(bitmap).opacity).toBe('1')
+	expect(bitmap.inert).toBe(true)
+	expect(bitmap.ariaHidden).toBe('true')
+}
+
+/** Model a browser requiring a new response for every newly created image. */
+function requireImageRevalidation() {
+	const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'complete')!
+	return vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockImplementation(function (
+		this: HTMLImageElement,
+	) {
+		return this.isConnected && descriptor.get!.call(this) === true
+	})
 }
 
 async function responsiveFixture(picture: boolean) {
@@ -75,6 +97,60 @@ async function responsiveFixture(picture: boolean) {
 	await expect.poll(() => original.complete && original.naturalWidth > 0).toBe(true)
 	return { box, original }
 }
+
+it.each([false, true])(
+	'preloads the next slide and navigates while its decode is pending (picture=%s)',
+	async (picture) => {
+		const current = await fixture({ automatic: true, picture })
+		const next = await fixture({ automatic: true, picture })
+		current.box.dataset.gallery = 'image-upgrade'
+		next.box.dataset.gallery = 'image-upgrade'
+		const thumbnail = next.original.currentSrc
+		const decoding = Promise.withResolvers<undefined>()
+		const decodeImage = next.original.decode.bind(next.original)
+		const decode = vi.spyOn(next.original, 'decode').mockImplementation(async () => {
+			await decoding.promise
+			await decodeImage()
+		})
+		const draw = vi.spyOn(CanvasRenderingContext2D.prototype, 'drawImage')
+
+		try {
+			await openLightbox(current.box)
+			await expect.poll(() => decode.mock.calls.length).toBeGreaterThan(0)
+			expect(next.original.decoding).toBe('async')
+			expect(next.original.loading).toBe('eager')
+			expect(activeSlideLabel()).toBe('1 of 2')
+			const copy = query(next.box, 'img', HTMLImageElement)
+			// Even after the bytes arrive, the page copy must keep its decoded
+			// thumbnail instead of forcing a synchronous decode of the replacement.
+			await expect.poll(() => next.original.currentSrc).toContain('-1600.')
+			expect(copy.currentSrc).toBe(thumbnail)
+			expect(copy.decoding).toBe('sync')
+
+			query(viewer(), '.amk-lightbox-next').click()
+			await expect.poll(activeSlideLabel).toBe('2 of 2')
+			const track = query(viewer(), '.amk-lightbox-track')
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+			const bitmap = query(currentLayer(), '.amk-lightbox-image-preview', HTMLImageElement)
+			expect(getComputedStyle(bitmap).opacity).toBe('1')
+			expect(getComputedStyle(next.original).opacity).toBe('0')
+			// The picture's larger source must not take over the retained image,
+			// or force its pixels through Chromium's separate canvas decode cache.
+			expect(bitmap.currentSrc).toBe(thumbnail)
+			expect(draw.mock.calls.some(([source]) => source === next.original)).toBe(false)
+
+			decoding.resolve(undefined)
+			await expect.poll(() => bitmap.isConnected).toBe(false)
+			await expect.poll(() => copy.currentSrc).toBe(next.original.currentSrc)
+			expect(copy.decoding).toBe('async')
+			expect(getComputedStyle(next.original).opacity).toBe('1')
+		} finally {
+			decoding.resolve(undefined)
+			decode.mockRestore()
+			draw.mockRestore()
+		}
+	},
+)
 
 it.each([false, true])(
 	'loads the native candidate when a touch click zooms a warmed image (picture=%s)',
@@ -102,6 +178,38 @@ it.each([false, true])(
 		expect(original.sizes).toBe('auto, 160px')
 	},
 )
+
+it('waits for decoding before capturing an image with no loaded thumbnail', async () => {
+	const root = mount(
+		item(
+			`<img src="/media/aurora-1600.webp?cold-image=${crypto.randomUUID()}" decoding="async" alt="Aurora" width="2400" height="1600" style="width:100%;height:auto">`,
+			'style="width:160px"',
+		),
+	)
+	const original = query(root, 'img', HTMLImageElement)
+	const decoding = Promise.withResolvers<undefined>()
+	const decodeImage = original.decode.bind(original)
+	const decode = vi.spyOn(original, 'decode').mockImplementation(async () => {
+		await decoding.promise
+		await decodeImage()
+	})
+	const draw = vi.spyOn(CanvasRenderingContext2D.prototype, 'drawImage')
+	const captures = () => draw.mock.calls.filter(([source]) => source === original).length
+	const revalidation = requireImageRevalidation()
+	try {
+		await openLightbox(boxes(root)[0]!)
+		await expect.poll(() => original.complete && original.naturalWidth > 0).toBe(true)
+		await frames()
+		expect(captures()).toBe(0)
+		decoding.resolve(undefined)
+		await expect.poll(captures).toBeGreaterThan(0)
+	} finally {
+		decoding.resolve(undefined)
+		decode.mockRestore()
+		draw.mockRestore()
+		revalidation.mockRestore()
+	}
+})
 
 it.each([false, true])(
 	'loads a larger fitted candidate after the warmed viewport enlarges (picture=%s)',
@@ -153,6 +261,22 @@ it('keeps the last good image when the larger request fails', async () => {
 	expect(getComputedStyle(original).opacity).toBe('0')
 	await closeLightbox()
 	await expect.poll(() => Object.hasOwn(original.dataset, 'zoomImagePending')).toBe(false)
+})
+
+it('retains bounded canvas pixels when a thumbnail cannot be reused from cache', async () => {
+	const { box, original } = await fixture({ picture: true })
+	const revalidation = requireImageRevalidation()
+	try {
+		await openLightbox(box)
+		const bitmap = query(viewer(), '.amk-lightbox-image-preview', HTMLCanvasElement)
+		expectVisibleBitmap()
+		expect(getComputedStyle(original).opacity).toBe('0')
+		await expect.poll(() => bitmap.isConnected).toBe(false)
+		expect(bitmap.width).toBe(0)
+		expect(getComputedStyle(original).opacity).toBe('1')
+	} finally {
+		revalidation.mockRestore()
+	}
 })
 
 it('preserves translucent styling without a page placeholder or doubled painting', async () => {
@@ -221,7 +345,9 @@ it('keeps returned pixels visible and supports reopening before the large image 
 	expectVisibleBitmap()
 	await closeLightbox()
 	for (let frame = 0; frame < 5; frame++) {
-		const source = box.querySelector<HTMLCanvasElement>('.amk-lightbox-image-preview') ?? original
+		const source =
+			box.querySelector<HTMLCanvasElement | HTMLImageElement>('.amk-lightbox-image-preview') ??
+			original
 		const context = document.createElement('canvas').getContext('2d')!
 		context.drawImage(source, 0, 0, 1, 1)
 		expect(context.getImageData(0, 0, 1, 1).data[3]).toBe(255)

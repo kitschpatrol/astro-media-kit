@@ -482,9 +482,11 @@ it('restores absent sizing attributes and preserves author edits made during pre
 	await openLightbox(box)
 	expect(source.hasAttribute('sizes')).toBe(true)
 	target.sizes = '75vw'
+	target.decoding = 'sync'
 	viewer().close()
 	await expect.poll(() => source.hasAttribute('sizes')).toBe(false)
 	expect(target.sizes).toBe('75vw')
+	expect(target.decoding).toBe('sync')
 	expect(target.hasAttribute('loading')).toBe(false)
 })
 

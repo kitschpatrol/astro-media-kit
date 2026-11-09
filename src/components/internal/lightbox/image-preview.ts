@@ -1,11 +1,13 @@
 import { previewContext } from './canvas-context'
 import { rendered } from './dom'
 
+type ImagePreview = HTMLCanvasElement | HTMLImageElement
+
 type RetainedImage = {
-	canvas: HTMLCanvasElement
 	destroy: () => void
 	lift: (layer: HTMLElement) => void
 	pending: () => boolean
+	preview: ImagePreview
 	refresh: () => void
 	returnTo: (item: HTMLElement) => void
 }
@@ -39,10 +41,15 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 
 	const controller = new AbortController()
 	const { signal } = controller
-	const canvas = document.createElement('canvas')
-	canvas.className = 'amk-lightbox-image-preview'
-	canvas.ariaHidden = 'true'
-	canvas.inert = true
+	// An image preview must stay outside the original picture's source selection,
+	// while still inheriting its presentation, including selector-based themes.
+	const container = document.createElement('span')
+	container.style.display = 'contents'
+	let preview: ImagePreview = document.createElement('canvas')
+	preview.className = 'amk-lightbox-image-preview'
+	preview.ariaHidden = 'true'
+	preview.inert = true
+	container.append(preview)
 	let image: HTMLImageElement | undefined
 	let hasPixels = false
 	let pending = false
@@ -52,46 +59,27 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 	let home: HTMLElement | undefined
 
 	const capture = (source: HTMLImageElement): boolean => {
-		if (!source.complete || source.naturalWidth === 0) {
+		const next = snapshot(source)
+		if (next === undefined) {
 			return false
 		}
 
-		const bounds = source.getBoundingClientRect()
-		const ratio = source.naturalWidth / source.naturalHeight
-		// Keep enough detail for the fitted viewer: responsive images can have
-		// more decoded pixels than their density-corrected thumbnail dimensions.
-		// Cap the temporary bitmap at one megapixel instead of copying originals.
-		const fittedWidth = Math.min(window.innerWidth, window.innerHeight * ratio)
-		const width = Math.min(
-			Math.max(bounds.width, fittedWidth, 1) * devicePixelRatio,
-			Math.sqrt(1_048_576 * ratio),
-		)
-		const next = document.createElement('canvas')
-		next.width = Math.max(1, Math.round(width))
-		next.height = Math.max(1, Math.round(width / ratio))
-		const context = previewContext(next)
-		const destination = previewContext(canvas)
-		if (context === undefined || destination === undefined) {
-			return false
-		}
-
-		try {
-			context.drawImage(source, 0, 0, next.width, next.height)
-			canvas.width = next.width
-			canvas.height = next.height
-			destination.drawImage(next, 0, 0)
-		} catch {
-			return false
-		} finally {
-			next.width = 0
-			next.height = 0
-		}
-
+		next.className = preview.className
+		next.ariaHidden = preview.ariaHidden
+		next.inert = preview.inert
+		next.style.cssText = preview.style.cssText
 		const style = getComputedStyle(source)
 		for (const property of presentation) {
-			canvas.style.setProperty(property, style.getPropertyValue(property))
+			next.style.setProperty(property, style.getPropertyValue(property))
 		}
 
+		// Keep the new preview itself. Copying a canvas into another canvas
+		// flushes deferred drawing and can decode the image on the main thread.
+		const replaced = preview
+		preview = next
+		replaced.replaceWith(next)
+		replaced.width = 0
+		replaced.height = 0
 		return true
 	}
 
@@ -116,13 +104,13 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 		pending = false
 		// Save the newly decoded candidate for later resize/zoom upgrades.
 		hasPixels = capture(current) || hasPixels
-		canvas.remove()
+		container.remove()
 		if (home !== undefined) {
 			destroy()
 		}
 	}
 
-	const refresh = () => {
+	const refresh = (captureCurrent = true) => {
 		const visible = rendered(subject)
 		if (!(visible instanceof HTMLImageElement)) {
 			return
@@ -134,7 +122,7 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 			pending = false
 		}
 
-		if (!pending) {
+		if (captureCurrent && !pending) {
 			hasPixels = capture(visible) || hasPixels
 		}
 
@@ -144,9 +132,9 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 			// Inside the image's picture, ancestor styling still applies. A bare
 			// image's companion travels in its layer instead of staying on the page.
 			const parent = visible === subject && home === undefined ? targetLayer : visible.parentElement
-			parent?.append(canvas)
+			parent?.append(container)
 			if (home !== undefined) {
-				placeReturned(canvas, visible, home)
+				placeReturned(preview, visible, home)
 			}
 		}
 
@@ -158,7 +146,9 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 		})
 	}
 
-	const observer = new MutationObserver(refresh)
+	const observer = new MutationObserver(() => {
+		refresh()
+	})
 	observer.observe(subject, {
 		attributeFilter: ['src', 'srcset', 'sizes', 'media'],
 		attributes: true,
@@ -173,8 +163,28 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 	})
 	themeObserver.observe(document.documentElement, { attributes: true })
 	themeObserver.observe(document.body, { attributes: true })
-	subject.addEventListener('load', refresh, { capture: true, signal })
-	matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh, { signal })
+	subject.addEventListener(
+		'load',
+		(event) => {
+			// A retained image can load too; only the displayed original changes
+			// which pixels need retaining.
+			if (event.target !== image) {
+				return
+			}
+
+			// Downloaded bytes may still need decoding. Without an earlier
+			// thumbnail, drawImage here would force that work into this frame.
+			refresh(false)
+		},
+		{ capture: true, signal },
+	)
+	matchMedia('(prefers-color-scheme: dark)').addEventListener(
+		'change',
+		() => {
+			refresh()
+		},
+		{ signal },
+	)
 	const homeResize = new ResizeObserver(() => {
 		if (home !== undefined) {
 			refresh()
@@ -191,7 +201,7 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 		homeResize.disconnect()
 		removal.disconnect()
 		for (const property of ['inset', 'left', 'top', 'width', 'height', 'object-fit']) {
-			canvas.style.removeProperty(property)
+			preview.style.removeProperty(property)
 		}
 	}
 
@@ -202,15 +212,14 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 		leaveHome()
 		cancelAnimationFrame(frame)
 		image?.removeAttribute('data-zoom-image-pending')
-		canvas.remove()
-		canvas.width = 0
-		canvas.height = 0
+		container.remove()
+		preview.width = 0
+		preview.height = 0
 		retained.delete(subject)
 	}
 
 	document.addEventListener('astro:before-swap', destroy, { signal })
 	retained.set(subject, {
-		canvas,
 		destroy,
 		lift(nextLayer) {
 			leaveHome()
@@ -218,6 +227,9 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 			refresh()
 		},
 		pending: () => pending,
+		get preview() {
+			return preview
+		},
 		refresh,
 		returnTo(item) {
 			if (!pending) {
@@ -251,30 +263,37 @@ export function returnImagePreview(subject: Element, item: HTMLElement) {
 }
 
 /** Give an immediate reopen a page preview even while its real img is pending. */
-export function copyRetainedImage(subject: Element): HTMLCanvasElement | undefined {
+export function copyRetainedImage(subject: Element): ImagePreview | undefined {
 	const state = retained.get(subject)
-	if (state?.pending() !== true || state.canvas.width === 0) {
+	if (state?.pending() !== true || state.preview.width === 0) {
 		return undefined
 	}
 
-	const copy = document.createElement('canvas')
-	copy.width = state.canvas.width
-	copy.height = state.canvas.height
-	const context = previewContext(copy)
-	if (context === undefined) {
-		return undefined
+	let copy: ImagePreview | undefined
+	if (state.preview instanceof HTMLImageElement) {
+		copy = snapshot(state.preview)
+	} else {
+		const canvas = document.createElement('canvas')
+		canvas.width = state.preview.width
+		canvas.height = state.preview.height
+		const context = previewContext(canvas)
+		if (context !== undefined) {
+			context.drawImage(state.preview, 0, 0)
+			copy = canvas
+		}
 	}
 
-	context.drawImage(state.canvas, 0, 0)
-	for (const property of presentation) {
-		copy.style.setProperty(property, state.canvas.style.getPropertyValue(property))
+	if (copy !== undefined) {
+		for (const property of presentation) {
+			copy.style.setProperty(property, state.preview.style.getPropertyValue(property))
+		}
 	}
 
 	return copy
 }
 
-function placeReturned(canvas: HTMLCanvasElement, image: HTMLImageElement, item: HTMLElement) {
-	const origin = canvas.offsetParent instanceof HTMLElement ? canvas.offsetParent : item
+function placeReturned(preview: ImagePreview, image: HTMLImageElement, item: HTMLElement) {
+	const origin = preview.offsetParent instanceof HTMLElement ? preview.offsetParent : item
 	const bounds = origin.getBoundingClientRect()
 	const box = image.getBoundingClientRect()
 	const scaleX = bounds.width / Math.max(origin.offsetWidth, 1)
@@ -288,6 +307,50 @@ function placeReturned(canvas: HTMLCanvasElement, image: HTMLImageElement, item:
 		width: `${box.width / (scaleX > 0 ? scaleX : 1)}px`,
 	}
 	for (const [property, value] of Object.entries(values)) {
-		canvas.style.setProperty(property, value, 'important')
+		preview.style.setProperty(property, value, 'important')
+	}
+}
+
+/** Reuse a cached image; retain pixels when a new element must revalidate it. */
+function snapshot(source: HTMLImageElement): ImagePreview | undefined {
+	if (!source.complete || source.naturalWidth === 0) {
+		return undefined
+	}
+
+	const image = new Image()
+	image.crossOrigin = source.crossOrigin
+	image.referrerPolicy = source.referrerPolicy
+	image.decoding = 'async'
+	image.src = source.currentSrc
+	if (image.complete && image.naturalWidth > 0) {
+		// Canvas uses a separate decode cache in Chromium: even after decode(),
+		// drawing a large image there can decode it again during scrolling.
+		return image
+	}
+
+	const bounds = source.getBoundingClientRect()
+	const ratio = source.naturalWidth / source.naturalHeight
+	// Keep the fitted detail available from a responsive thumbnail, bounded to
+	// one megapixel rather than copying the original at full resolution.
+	const fittedWidth = Math.min(window.innerWidth, window.innerHeight * ratio)
+	const width = Math.min(
+		Math.max(bounds.width, fittedWidth, 1) * devicePixelRatio,
+		Math.sqrt(1_048_576 * ratio),
+	)
+	const canvas = document.createElement('canvas')
+	canvas.width = Math.max(1, Math.round(width))
+	canvas.height = Math.max(1, Math.round(width / ratio))
+	const context = previewContext(canvas)
+	if (context === undefined) {
+		return undefined
+	}
+
+	try {
+		context.drawImage(source, 0, 0, canvas.width, canvas.height)
+		return canvas
+	} catch {
+		canvas.width = 0
+		canvas.height = 0
+		return undefined
 	}
 }

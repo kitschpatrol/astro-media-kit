@@ -31,8 +31,6 @@ export type Measurement = {
 
 /** A subject that has been lifted into a slide, and how to put it back. */
 export type Lift = Measurement & {
-	/** Images whose async decoding is switched off while lifted. */
-	asyncImages: HTMLImageElement[]
 	/** The start of the opening transition, reused to reverse it exactly. */
 	from?: LayerStyle
 	hadStyle: boolean
