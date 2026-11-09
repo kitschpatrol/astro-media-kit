@@ -79,7 +79,7 @@
 		"@videojs/html": "^10.3.0",
 		"@videojs/vimeo-video": "^10.3.0",
 		"@videojs/youtube-video": "^10.3.0",
-		"exiftool-vendored": "^39.1.1",
+		"exiftool-vendored": "^39.2.0",
 		"linkedom": "^0.18.15",
 		"mrmime": "^2.0.1",
 		"pretty-bytes": "^7.2.0"
