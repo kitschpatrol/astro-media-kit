@@ -48,10 +48,6 @@
 		--amk-page-controls-opacity: 0;
 	}
 
-	.amk-zoom:not([data-zoom-interactive]) {
-		cursor: zoom-in;
-	}
-
 	/* A text link to media keeps its place in the line, as the link it is */
 	.amk-zoom.amk-zoom-link {
 		cursor: pointer;
@@ -181,6 +177,13 @@
 			--amk-lightbox-carousel-duration: 0s !important;
 		}
 	}
+}
+
+/* Unlayered, so a page's own link styles can't replace the cursor on items
+   that render as links; the custom properties change it on the page and in
+   the viewer alike */
+.amk-zoom:not([data-zoom-interactive], .amk-zoom-link) {
+	cursor: var(--amk-zoom-in-cursor, zoom-in);
 }
 
 /* Registered, so script can read it as a length and tell whether the free
@@ -393,18 +396,28 @@
 }
 
 @media (hover: hover) {
+	/* The cursor shows what a click does. Outside the controls and captions of
+	   an open viewer, it closes the viewer, or zooms a zoomed subject back out */
+	.amk-lightbox[data-state='open'] .amk-lightbox-track:not([data-dragging]) {
+		cursor: var(--amk-zoom-out-cursor, zoom-out);
+	}
+
 	/* A click brings a closing subject back */
 	.amk-lightbox[data-state='closing'] .amk-lightbox-layer {
-		cursor: zoom-in;
+		cursor: var(--amk-zoom-in-cursor, zoom-in);
 	}
 
-	.amk-lightbox-slide:is([data-level='fill'], [data-level='native']):not([data-zoomed])
+	/* Script marks the slide whose subject a click zooms into, from the moment
+	   it starts to open, so the cursor doesn't change under a still pointer */
+	.amk-lightbox[data-state='open']
+		.amk-lightbox-track:not([data-dragging])
+		> .amk-lightbox-slide[data-zoomable]:not([data-zoomed])
 		.amk-lightbox-layer {
-		cursor: zoom-in;
+		cursor: var(--amk-zoom-in-cursor, zoom-in);
 	}
 
-	.amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
-		cursor: zoom-out;
+	.amk-lightbox-caption {
+		cursor: auto;
 	}
 
 	.amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage[data-dragging] {

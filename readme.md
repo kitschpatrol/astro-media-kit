@@ -660,8 +660,12 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
 | `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
 | `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
+| `--amk-zoom-in-cursor`               | `zoom-in`                         |
+| `--amk-zoom-out-cursor`              | `zoom-out`                        |
 
 `--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time the image crossfade with its preview as it lifts and lands, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling comes from the [shared gallery controls](#shared-gallery-controls) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+
+The cursor shows what a click does. `--amk-zoom-in-cursor` covers items on the page, content in the viewer that a click zooms into, and content on its way back that a click brings back. `--amk-zoom-out-cursor` covers the rest of the viewer, where a click closes it or zooms back out. Captions, controls, and players keep their own cursors, and ZoomLink text links keep the link pointer. Set both on `:root` to change the page and the viewer together. The page item's cursor rule is unlayered, so a site-wide `a { cursor: pointer }` doesn't replace it on items that render as links.
 
 Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
 

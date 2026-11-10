@@ -96,7 +96,7 @@ class Viewer {
 	readonly #track: HTMLElement
 	#width = 0
 	readonly #zoom = new Zoom(() => {
-		this.#updateZoomButton()
+		this.#updateZoomState()
 	})
 	readonly #zoomButton: HTMLButtonElement
 
@@ -480,7 +480,7 @@ class Viewer {
 		}
 
 		this.#state = 'open'
-		this.#updateZoomButton()
+		this.#updateZoomState()
 		this.#liftAround(this.#index)
 	}
 
@@ -786,6 +786,8 @@ class Viewer {
 				prepareSlideImage(slide)
 			}
 
+			// Whether zooming would enlarge the subject depends on the stage's size
+			this.#updateZoomState()
 			// WebKit keeps the old pixel offset, which lands on the wrong slide
 			this.#motion.go(target, 'instant')
 		}
@@ -1189,24 +1191,28 @@ class Viewer {
 			this.#dialog.focus({ preventScroll: true })
 		}
 
-		this.#updateZoomButton()
+		this.#updateZoomState()
 		this.#activate()
 	}
 
 	/**
 	 * Show the zoom button when anything in the gallery zooms, pressed while the
 	 * current slide is zoomed, and disabled (not hidden, which would drop
-	 * keyboard focus) when the current slide can't zoom.
+	 * keyboard focus) when the current slide can't zoom. The current slide is
+	 * marked `data-zoomable` while its subject can zoom, for the cursor, which
+	 * shows it while the subject is still opening too.
 	 */
-	#updateZoomButton() {
+	#updateZoomState() {
 		const slide = this.#slides[this.#index]
 		const isZoomed = slide !== undefined && this.#zoom.current === slide
+		const canZoom = slide !== undefined && zoomWidth(slide) !== undefined
+		for (const each of this.#slides) {
+			each.element.toggleAttribute('data-zoomable', each === slide && canZoom)
+		}
+
 		this.#zoomButton.hidden = this.#slides.every((each) => !hasZoomLevel(each.item))
 		this.#zoomButton.ariaPressed = String(isZoomed)
-		this.#zoomButton.ariaDisabled = String(
-			!isZoomed &&
-				(this.#state !== 'open' || slide === undefined || zoomWidth(slide) === undefined),
-		)
+		this.#zoomButton.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
 	}
 }
 
