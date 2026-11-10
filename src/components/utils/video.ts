@@ -482,12 +482,13 @@ export function isVideoSource(src: string): boolean {
  *
  * Accepts URLs (YouTube, Vimeo, direct media files, or generic pages for
  * oEmbed), raw service IDs (Bunny UUID, Cloudflare hex, Mux alphanumeric,
- * YouTube 11-char, Vimeo numeric), local file paths, or Bunny title strings
- * (when `service` is explicitly `'bunny'`).
+ * YouTube 11-char, Vimeo numeric), or local file paths.
  *
- * When `service` is explicitly provided, it overrides inference but URL-to-ID
- * extraction still runs so downstream code receives the extracted identifier,
- * except for oEmbed discovery, which requires the original page URL.
+ * When `service` is explicitly provided, it overrides inference, and takes a
+ * value that is not a URL as it is: an ID no pattern recognizes, or a title for
+ * Bunny to search for. URL-to-ID extraction still runs so downstream code
+ * receives the extracted identifier, except for oEmbed discovery, which
+ * requires the original page URL.
  */
 export function resolveVideoSource(src: string, service?: Service): ResolvedSource {
 	const url = tryParseUrl(src)
@@ -501,23 +502,23 @@ export function resolveVideoSource(src: string, service?: Service): ResolvedSour
 		return { identifier: resolved.identifier, service: service ?? resolved.service }
 	}
 
-	// Not a URL — try ID pattern matching
+	// An explicit service takes anything else as its own identifier: an ID in
+	// a form the patterns below don't know, or a title for Bunny to search for
+	if (service !== undefined) {
+		return { identifier: src, service }
+	}
+
 	const inferred = inferServiceFromId(src)
 	if (inferred !== undefined) {
-		return { identifier: src, service: service ?? inferred }
+		return { identifier: src, service: inferred }
 	}
 
 	// Local file path (e.g. /video.mp4, ./assets/video.webm)
 	if (isLocalPath(src)) {
-		return { identifier: src, service: service ?? 'local' }
-	}
-
-	// Bunny title search (requires explicit service)
-	if (service === 'bunny') {
-		return { identifier: src, service: 'bunny' }
+		return { identifier: src, service: 'local' }
 	}
 
 	throw new Error(
-		`Could not infer video service from "${src}". Pass a URL, a recognized service ID, or set the "service" prop explicitly.`,
+		`Could not infer video service from "${src}". Pass a URL or a recognized service ID, or set the "service" prop.`,
 	)
 }

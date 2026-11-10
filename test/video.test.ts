@@ -84,15 +84,19 @@ describe('media ID validation', () => {
 	})
 
 	describe('muxIsValidMediaId', () => {
-		it('accepts valid 44-char alphanumeric string', () => {
+		it('accepts alphanumeric strings of the lengths Mux issues', () => {
 			expect(muxIsValidMediaId('a'.repeat(44))).toBe(true)
 			expect(muxIsValidMediaId('abcdefghijklmnopqrstuvwxyz012345678901234567')).toBe(true)
+			// The asset and playback IDs in Mux's API reference
+			expect(muxIsValidMediaId('lJ4bGGsp7ZlPf02nMg015W02iHQLN9XnuuLRBsPS00xqd68')).toBe(true)
+			expect(muxIsValidMediaId('vAFLI2eKFFicXX00iHBS2vqt5JjJGg5HV6fQ4Xijgt1I')).toBe(true)
 		})
 
-		it('rejects wrong-length strings', () => {
+		it('rejects other strings', () => {
 			expect(muxIsValidMediaId('too-short')).toBe(false)
-			expect(muxIsValidMediaId('a'.repeat(43))).toBe(false)
-			expect(muxIsValidMediaId('a'.repeat(45))).toBe(false)
+			expect(muxIsValidMediaId('a'.repeat(39))).toBe(false)
+			expect(muxIsValidMediaId('a'.repeat(65))).toBe(false)
+			expect(muxIsValidMediaId(`${'a'.repeat(43)}-`)).toBe(false)
 		})
 	})
 })
@@ -142,7 +146,7 @@ describe('resolveVideoSource', () => {
 			})
 		})
 
-		it('infers mux from 44-char alphanumeric', () => {
+		it('infers mux from a long alphanumeric ID', () => {
 			const id = 'a'.repeat(44)
 			expect(resolveVideoSource(id)).toEqual({
 				identifier: id,
@@ -166,6 +170,17 @@ describe('resolveVideoSource', () => {
 
 		it('throws for unrecognized format', () => {
 			expect(() => resolveVideoSource('unknown-format')).toThrow('Could not infer video service')
+		})
+
+		it('takes an unrecognized ID as it is for an explicit service', () => {
+			expect(resolveVideoSource('unknown-format', 'mux')).toEqual({
+				identifier: 'unknown-format',
+				service: 'mux',
+			})
+			expect(resolveVideoSource('A title to search for', 'bunny')).toEqual({
+				identifier: 'A title to search for',
+				service: 'bunny',
+			})
 		})
 	})
 

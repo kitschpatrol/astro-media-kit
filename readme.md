@@ -419,7 +419,7 @@ import { Video } from 'astro-media-kit/components'
 | `zoomPlaceholder`    | `'auto' \| 'none'`                                                                | `'auto'`                    |
 | `zoomScope`          | `string` (CSS selector)                                                           | —                           |
 
-`service` is required for Bunny title search. Bare Bunny UUIDs, Cloudflare 32-character hex IDs, Mux 44-character alphanumeric IDs, YouTube 11-character IDs, and numeric Vimeo IDs are inferred automatically. Bunny, Cloudflare, and Mux take these identifiers rather than arbitrary provider URLs. Use `service` to override inference when necessary.
+`service` is required for Bunny title search. Bare Bunny UUIDs, Cloudflare 32-character hex IDs, Mux alphanumeric IDs of 40 to 64 characters, YouTube 11-character IDs, and numeric Vimeo IDs are inferred automatically. Bunny, Cloudflare, and Mux take these identifiers rather than arbitrary provider URLs. Use `service` to override inference when necessary; with it set, a value that is not a URL goes to that service as it is.
 
 `capQualityToSize` and `initialBandwidth` apply to the hls.js engine for HLS playback (Bunny, Cloudflare, Mux, and direct `.m3u8` URLs); native HLS playback ignores them. `initialBandwidth` is in bits per second. `poster` replaces the thumbnail a service returns; local files have no thumbnail of their own. `<Video>` does not extract XMP metadata — use `credit`, `creditMediaType`, and `creditOrganization` for manual credits.
 

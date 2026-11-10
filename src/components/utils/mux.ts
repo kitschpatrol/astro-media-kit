@@ -135,11 +135,12 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 	}
 }
 
-const ALPHANUMERIC44_REGEX = /^[\da-z]{44}$/iv
+const MUX_ID_REGEX = /^[\da-z]{40,64}$/iv
 
 /**
- * Check if a string is a valid Mux media ID
+ * Check if a string is a valid Mux media ID. They are alphanumeric and vary in
+ * length: Mux's own documentation shows an asset ID of 47 characters.
  */
 export function muxIsValidMediaId(mediaId: string): boolean {
-	return ALPHANUMERIC44_REGEX.test(mediaId)
+	return MUX_ID_REGEX.test(mediaId)
 }
