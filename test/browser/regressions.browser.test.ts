@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { commands } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { subjectOf } from '../../src/components/internal/lightbox/dom'
 import {
 	closeLightbox,
@@ -430,6 +430,25 @@ it('dismisses ordinary HTML with a native touch gesture', async ({ skip }) => {
 
 	await expect.poll(() => viewer().open).toBe(false)
 	expect(fixture.querySelector('[data-lifted]')).toBeNull()
+})
+
+it('takes the first click after a touch gesture dismisses the viewer', async ({ skip }) => {
+	const fixture = await open(
+		`${item(image(), 'style="width: 200px"')}<button type="button">Plain</button>`,
+	)
+	if (!(await commands.touchSwipe('down'))) {
+		skip()
+	}
+
+	await expect.poll(() => viewer().open).toBe(false)
+	// A touch drag ends without a click, so none is left to let be
+	const plain = query(fixture, 'button')
+	let clicks = 0
+	plain.addEventListener('click', () => {
+		clicks++
+	})
+	await userEvent.click(plain)
+	expect(clicks).toBe(1)
 })
 
 it('keeps horizontal touch scrolling native on dismissible images', async ({ skip }) => {

@@ -119,6 +119,7 @@ export class CarouselMotion {
 		// On the document, since the click that ends a drag can land on an
 		// ancestor of the track when the pointer was let go over another element
 		document.addEventListener('click', this.#handleClick, { capture: true, signal })
+		document.addEventListener('pointerdown', this.#handleNextPress, { capture: true, signal })
 		track.addEventListener('pointerdown', this.#handlePointerdown, { signal })
 		track.addEventListener('pointermove', this.#handlePointermove, { signal })
 		track.addEventListener('pointerup', this.#handlePointerEnd, { signal })
@@ -476,8 +477,17 @@ export class CarouselMotion {
 		}
 	}
 
+	/**
+	 * A drag's click follows its release at once. A touch drag has none, so a
+	 * press anywhere means the next click is a click again.
+	 */
+	readonly #handleNextPress = () => {
+		if (this.#shouldIgnoreClick) {
+			this.#ignoreClick(false)
+		}
+	}
+
 	readonly #handlePointerdown = (event: PointerEvent) => {
-		this.#ignoreClick(false)
 		this.#isPressSeen = true
 		if (!event.isPrimary) {
 			this.#cancelDrag()
