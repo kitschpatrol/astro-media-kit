@@ -1,4 +1,4 @@
-/* Adapted from the Video.js 10.2.0 default audio skin (Apache-2.0).
+/* Adapted from the Video.js 10.3.0 default audio skin (Apache-2.0).
    https://shadcn.videojs.org/r/html/audio.json
    The packaged, flattened CSS preserves the browser baseline without @scope.
    Selectors stay inside .amk-audio without adding specificity. See notice.txt. */
@@ -1009,9 +1009,19 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	@supports not (text-fit: shrink) {
+		:where(.amk-audio) :where(.media-skin[data-theme='default']) .media-playback-rate-button {
+			font-size: min(1em, calc(4em / (var(--media-playback-rate-length, 3) + 1)));
+		}
+	}
+
 	:where(.amk-audio) :where(.media-skin[data-theme='default']) .media-playback-rate-button::after {
 		content: attr(data-rate) '×';
-		width: 4ch;
+		width: 80%;
+		min-width: 0;
+		text-align: center;
+		white-space: nowrap;
+		text-fit: shrink;
 	}
 
 	:where(.amk-audio) :where(.media-skin[data-theme='default']) .media-menu-item-indicator {
@@ -1064,6 +1074,10 @@
 		pointer-events: none;
 		cursor: not-allowed;
 		opacity: 0.5;
+	}
+
+	:where(.amk-audio) :where(.media-skin[data-theme='default']) .media-menu-radio-item[data-custom] {
+		font-style: italic;
 	}
 
 	:where(.amk-audio)
@@ -1874,7 +1888,7 @@
 		);
 		--media-accent-foreground: var(--media-accent-text-color, currentColor);
 		--media-muted: oklch(100% 0 0deg / 15%);
-		--media-muted-foreground: oklch(100% 0 0deg / 65%);
+		--media-muted-foreground: color-mix(in oklab, var(--media-foreground) 65%, transparent);
 		--media-border: oklch(0% 0 0deg / 10%);
 		--media-ring: oklch(100% 0 0deg);
 		--media-backdrop: oklch(0% 0 0deg);
@@ -1894,9 +1908,9 @@
 			transparent
 		);
 		--media-text-shadow-dialog: 0 1px 0 #00000040;
-		--media-backdrop-filter-surface: blur(16px) saturate(110%);
+		--media-backdrop-filter-surface: blur(16px) saturate(125%);
 		--media-backdrop-filter-indicator: blur(8px);
-		--media-backdrop-filter-dialog: blur(16px) saturate(110%);
+		--media-backdrop-filter-dialog: blur(16px) saturate(125%);
 		--media-control-corner-shape: round;
 		--media-control-radius: 99px;
 		--media-control-size: calc(var(--media-spacing) * 9);
@@ -2011,6 +2025,7 @@
 		--media-controls-foreground: var(--media-foreground);
 		--media-popover: var(--media-controls);
 		--media-popover-foreground: var(--media-foreground);
+		--media-muted: oklch(0% 0 0deg / 10%);
 		--media-surface-border: oklch(0% 0 0deg / 5%);
 		--media-primary: var(--media-accent-color, var(--media-foreground));
 		--media-border: oklch(0% 0 0deg / 10%);
@@ -2029,6 +2044,7 @@
 			--media-foreground: light-dark(oklch(0% 0 0deg), oklch(100% 0 0deg));
 			--media-controls: light-dark(oklch(100% 0 0deg / 50%), oklch(0% 0 0deg / 40%));
 			--media-border: light-dark(oklch(0% 0 0deg / 10%), oklch(100% 0 0deg / 10%));
+			--media-muted: light-dark(oklch(0% 0 0deg / 10%), oklch(100% 0 0deg / 10%));
 			--media-default-accent-color: light-dark(oklch(0% 0 0deg), oklch(100% 0 0deg));
 			--media-default-accent-text-color: light-dark(oklch(100% 0 0deg), oklch(0% 0 0deg));
 			--media-internal-accent-text-fallback: light-dark(oklch(100% 0 0deg), oklch(0% 0 0deg));

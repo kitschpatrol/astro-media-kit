@@ -78,3 +78,29 @@ it('plays only the native audio fallback when JavaScript is disabled', async () 
 		playButton.remove()
 	}
 })
+
+it('fits the playback speed in its button, as the skin of Video.js 10.3 does', async () => {
+	const frame = document.createElement('iframe')
+	frame.src = '/audio-startup/index.html'
+	document.body.append(frame)
+	try {
+		await waitForFrame(frame, 'audio-startup')
+		const root = frame.contentDocument!
+		const view = frame.contentWindow!
+		await expect
+			.poll(
+				() => root.querySelector(':scope #playable .media-playback-rate-button')?.clientWidth ?? 0,
+			)
+			.toBeGreaterThan(0)
+		const button = root.querySelector<HTMLElement>(':scope #playable .media-playback-rate-button')!
+		// The label is the button's `::after`, from the rate the element reports
+		await expect.poll(() => view.getComputedStyle(button, '::after').content).toContain('×')
+		const label = view.getComputedStyle(button, '::after')
+		expect(label.whiteSpace).toBe('nowrap')
+		expect(label.textAlign).toBe('center')
+		// eslint-disable-next-line unicorn/prefer-number-coercion -- Number() can't read past the unit
+		expect(Number.parseFloat(label.width)).toBeCloseTo(button.clientWidth * 0.8, 0)
+	} finally {
+		frame.remove()
+	}
+})
