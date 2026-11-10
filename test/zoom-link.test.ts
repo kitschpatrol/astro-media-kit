@@ -78,6 +78,14 @@ describe('zoom link server markup', () => {
 		expect($('#prose script')).not.toHaveLength(0)
 	})
 
+	it('keeps the scripts of a link in a caption, which renders its content once', async () => {
+		const $ = await fixture.readHTML('/caption-script/')
+		const caption = $('figcaption .caption')
+		expect(caption.find('a.amk-zoom.amk-zoom-link')).toHaveLength(1)
+		expect(caption.text()).toContain('A caption with')
+		expect($('script[src*="Zoomer"]')).toHaveLength(1)
+	})
+
 	it('gives a player wrapper its fallback as data-href rather than a link', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		const wrapper = $('#video .amk-zoom')

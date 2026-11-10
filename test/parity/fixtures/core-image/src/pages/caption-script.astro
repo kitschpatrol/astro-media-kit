@@ -1,0 +1,18 @@
+---
+import { Image, ZoomLink } from 'astro-media-kit/components'
+import photo from '../assets/penguin1.jpg'
+import other from '../assets/penguin2.png'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Caption scripts</title>
+	</head>
+	<body>
+		<Image alt="Penguin image" src={photo}>
+			A caption with <ZoomLink src={other}>the only zoom item</ZoomLink> on the page.
+		</Image>
+	</body>
+</html>

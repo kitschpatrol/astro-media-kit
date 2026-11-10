@@ -47,11 +47,11 @@ const creditLine =
 				.filter(Boolean)
 				.join(': ')
 
-// Can't get rid of children in markdown, so we inspect what's in the slot
-const hasCaption = Boolean(
-	// eslint-disable-next-line unicorn/no-await-expression-member
-	Astro.slots.default && (await Astro.slots.render('default')).trim().length > 0,
-)
+// Can't get rid of children in markdown, so we inspect what's in the slot.
+// Its one rendering is also what the page gets: Astro emits a component's
+// script once per page, so a second rendering would leave them out
+const caption = Astro.slots.has('default') ? await Astro.slots.render('default') : ''
+const hasCaption = caption.trim().length > 0
 
 const hasCredit = showCredit && creditLine !== undefined
 ---
@@ -62,7 +62,7 @@ const hasCredit = showCredit && creditLine !== undefined
 		<figcaption>
 			{hasCaption && (
 				<span class="caption">
-					<slot />
+					<Fragment set:html={caption} />
 				</span>
 			)}
 			{hasCredit && <span class="credit">{creditLine}</span>}
