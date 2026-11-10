@@ -75,7 +75,8 @@ function extensionOf(src: string): string {
  * without that origin's permission.
  */
 export function mediaCrossOrigin(src: string, hasCaptions = false): 'anonymous' | undefined {
-	return hasCaptions || tryParseUrl(src) === undefined ? 'anonymous' : undefined
+	const isOnAnotherOrigin = tryParseUrl(src) !== undefined || src.startsWith('//')
+	return hasCaptions || !isOnAnotherOrigin ? 'anonymous' : undefined
 }
 
 /**

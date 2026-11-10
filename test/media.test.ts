@@ -99,6 +99,7 @@ describe('mediaCrossOrigin', () => {
 	it('requests files on another origin plainly unless they have captions', () => {
 		expect(mediaCrossOrigin('https://cdn.example/loop.mp4')).toBeUndefined()
 		expect(mediaCrossOrigin('HTTP://cdn.example/loop.mp4')).toBeUndefined()
+		expect(mediaCrossOrigin('//cdn.example/loop.mp4')).toBeUndefined()
 		expect(mediaCrossOrigin('https://cdn.example/loop.mp4', true)).toBe('anonymous')
 	})
 })

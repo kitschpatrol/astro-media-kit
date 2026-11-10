@@ -138,11 +138,16 @@ export function validateServiceConfig(service: Service, config: ServiceConfig): 
  * dimensions. Site-root-relative sources (`/clip.mp4`) live in Astro's
  * `public/` directory, which a build copies but never moves, so that location
  * is tried before the raw value (which may itself be an absolute filesystem
- * path). Remote direct URLs and relative paths are probed as-is.
+ * path). Remote direct URLs and relative paths are probed as-is, and a
+ * protocol-relative URL over HTTPS.
  */
 export function localVideoProbeCandidates(src: string): string[] {
 	if (tryParseUrl(src) !== undefined) {
 		return [src]
+	}
+
+	if (src.startsWith('//')) {
+		return [`https:${src}`]
 	}
 
 	return src.startsWith('/') ? [getPublicFilePath(src), src] : [src]

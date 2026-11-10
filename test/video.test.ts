@@ -39,6 +39,9 @@ describe('localVideoProbeCandidates', () => {
 			'https://cdn.example/clip.mp4',
 		])
 		expect(localVideoProbeCandidates('./clip.mp4')).toEqual(['./clip.mp4'])
+		expect(localVideoProbeCandidates('//cdn.example/clip.mp4')).toEqual([
+			'https://cdn.example/clip.mp4',
+		])
 	})
 })
 
