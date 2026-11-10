@@ -43,8 +43,10 @@ const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative
 const hasFullscreen = controls === 'full' && !zoom
-// Full and minimal players use their surface for playback. Only the dedicated
-// expand button opens the lightbox.
+// Full and minimal players use their surface for playback with a mouse, and
+// to show or hide the controls by touch: a region for every pointer would take
+// the taps that reveal them. Only the dedicated expand button opens the
+// lightbox.
 const hasClickToPlay = controls === 'minimal' || controls === 'full'
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
@@ -129,7 +131,9 @@ const embedService =
 				{(hasControls || zoom) && <VideoControls controls={controls} zoom={zoom} />}
 				{hasControls && (
 					<>
-						{hasClickToPlay && <media-gesture action="togglePaused" region="center" type="tap" />}
+						{hasClickToPlay && (
+							<media-gesture action="togglePaused" pointer="mouse" region="center" type="tap" />
+						)}
 						<media-gesture action="toggleControls" pointer="touch" type="tap" />
 						<media-hotkey action="togglePaused" keys="Space" />
 						<media-hotkey action="togglePaused" keys="k" />

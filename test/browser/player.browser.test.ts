@@ -1236,6 +1236,40 @@ it.each(['video', 'video-minimal'])(
 	},
 )
 
+it.each(['video', 'video-minimal'])(
+	'shows the playing %s controls on a touch tap, rather than pausing',
+	async (id) => {
+		const fixture = await mountPage('/zoom/')
+		document.dispatchEvent(new Event('astro:page-load'))
+		const player = query(fixture, `#${id} video-player`)
+		const video = query(player, 'video', HTMLVideoElement)
+		const controls = query(player, '.amk-controls')
+		const container = query(player, 'media-container')
+		await commands.mouseMove(5, 5)
+		await video.play()
+		await expect
+			.poll(() => Object.hasOwn(controls.dataset, 'visible'), { timeout: 4000 })
+			.toBe(false)
+
+		const box = container.getBoundingClientRect()
+		for (const type of ['pointerdown', 'pointerup']) {
+			container.dispatchEvent(
+				new PointerEvent(type, {
+					bubbles: true,
+					clientX: box.x + 12,
+					clientY: box.y + 12,
+					isPrimary: true,
+					pointerId: 7,
+					pointerType: 'touch',
+				}),
+			)
+		}
+
+		await expect.poll(() => Object.hasOwn(controls.dataset, 'visible')).toBe(true)
+		expect(video.paused).toBe(false)
+	},
+)
+
 it.each(['video', 'video-minimal', 'video-zoom-only'])(
 	'keeps paused %s controls visible and hides idle playing controls sooner',
 	async (id) => {
