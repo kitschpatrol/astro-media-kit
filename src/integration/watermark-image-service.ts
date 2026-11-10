@@ -109,7 +109,13 @@ const service: typeof baseSharpService = {
 		const overlay = buildTiledStampSvg(width, height, base.data.byteLength, config)
 
 		const format = base.format as Parameters<ReturnType<typeof sharp>['toFormat']>[0]
-		const quality = typeof transform.quality === 'string' ? transform.quality : undefined
+		// A number in a build, and a string in a dev server's image URL
+		const quality =
+			typeof transform.quality === 'number'
+				? String(transform.quality)
+				: typeof transform.quality === 'string'
+					? transform.quality
+					: undefined
 		const composited = await sharp(base.data)
 			.composite([{ input: overlay, left: 0, top: 0 }])
 			.toFormat(format, encoderOptions(imageConfig, base.format, quality))

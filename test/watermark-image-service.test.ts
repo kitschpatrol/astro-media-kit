@@ -34,11 +34,12 @@ async function makePng(width: number, height: number): Promise<Uint8Array> {
 async function runTransform(
 	input: Uint8Array,
 	mediaKitWatermark: undefined | WatermarkFlags,
+	options?: { format: string; quality?: number | string },
 ): Promise<{ data: Uint8Array; format: string }> {
 	const imageConfig = makeImageConfig(mediaKitWatermark)
 	return watermarkService.transform(
 		input,
-		{ format: 'png', src: '/test.png' },
+		{ format: 'png', ...options, src: '/test.png' },
 		imageConfig as Parameters<typeof watermarkService.transform>[2],
 		silentLogger,
 	)
@@ -59,6 +60,18 @@ describe('watermark image service', { timeout: 30_000 }, () => {
 		expect(result.data.length === input.length && result.data.every((v, i) => v === input[i])).toBe(
 			false,
 		)
+	})
+
+	it('encodes the stamped variant at the quality asked for, as a number or a string', async () => {
+		const input = await makePng(400, 300)
+		const sizeAt = async (quality: number | string) => {
+			const result = await runTransform(input, defaultWatermarkConfig, { format: 'webp', quality })
+			return result.data.length
+		}
+
+		const low = await sizeAt(5)
+		expect(low).toBe(await sizeAt('5'))
+		expect(low).toBeLessThan(await sizeAt(95))
 	})
 
 	it('skips images smaller than minDimension', async () => {
