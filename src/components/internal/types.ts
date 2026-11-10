@@ -18,6 +18,8 @@ export type InternalVideoProps = {
 		srclang: string
 	}>
 	controls: Controls
+	/** The video's length in seconds, where its service or a probe reported one. */
+	duration: number | undefined
 	hlsOptions: HlsSourceOptions
 	/** Intrinsic video width in pixels, used for native-like sizing. */
 	intrinsicWidth: number | undefined

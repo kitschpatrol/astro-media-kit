@@ -1,19 +1,27 @@
 ---
 import type { InternalVideoProps } from './types'
+import { formatMediaTime } from '../utils/media'
 import Icon from './Icon.astro'
 
 export type Props = {
 	controls: InternalVideoProps['controls']
+	duration?: InternalVideoProps['duration']
+	muted?: boolean
 	zoom?: boolean
 }
 
-const { controls, zoom = false } = Astro.props
+const { controls, duration, muted = false, zoom = false } = Astro.props
 // A minimal player that can zoom gets the full bar as well, hidden on the page
 // and shown by the lightbox, which gives the player its own control level
 const hasBar = controls === 'full' || controls === 'lightbox' || (controls === 'minimal' && zoom)
 const hasFullscreen =
 	controls === 'full' || (zoom && (controls === 'minimal' || controls === 'none'))
 const uid = `amk-${crypto.randomUUID()}`
+// What the time displays show until the player's script runs, and until the
+// media reports its own length: Video.js adds its text beside any put in the
+// elements, so these are attributes that the stylesheet draws
+const currentTime = formatMediaTime(0, duration ?? 0)
+const durationTime = duration === undefined ? undefined : formatMediaTime(duration)
 ---
 
 <media-controls data-interactive="">
@@ -44,7 +52,12 @@ const uid = `amk-${crypto.randomUUID()}`
 								<media-tooltip-label />
 								<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 							</media-tooltip>
-							<amk-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
+							<amk-mute-button
+								class="amk-button"
+								commandfor={`${uid}-volume`}
+								data-volume-level={muted ? 'off' : undefined}
+								id={`${uid}-mute`}
+							>
 								<Icon class="amk-icon-volume-off" name="volume-off" />
 								<Icon class="amk-icon-volume-low" name="volume-low" />
 								<Icon class="amk-icon-volume-high" name="volume-high" />
@@ -74,9 +87,9 @@ const uid = `amk-${crypto.randomUUID()}`
 								<media-slider-value class="amk-slider-value" type="pointer" />
 							</media-time-slider>
 							<media-time-group class="amk-time">
-								<media-time type="current" />
+								<media-time data-amk-time={currentTime} type="current" />
 								<media-time-separator />
-								<media-time type="duration" />
+								<media-time data-amk-time={durationTime} type="duration" />
 							</media-time-group>
 							<media-captions-button class="amk-button" id={`${uid}-captions`}>
 								<Icon class="amk-icon-captions-off" name="captions-off" />

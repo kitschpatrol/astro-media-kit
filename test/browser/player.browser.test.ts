@@ -93,6 +93,29 @@ it("leaves a page's own media that waits in data-src alone", async () => {
 	expect(own.hasAttribute('src')).toBe(false)
 })
 
+it('hands the times over to the player once the media reports its length', async () => {
+	const { player } = await mountPlayer()
+	const duration = query(player, 'media-time[type="duration"]')
+	// The page was rendered with a length of 75 seconds; the file has its own
+	expect(duration.dataset.amkTime).toBe('1:15')
+	await expect.poll(() => duration.getAttribute('datetime')).not.toBeNull()
+	expect(Object.hasOwn(duration.dataset, 'unavailable')).toBe(false)
+	expect(getComputedStyle(duration, '::before').content).toBe('none')
+	expect(getComputedStyle(duration).fontSize).toBe('14px')
+	expect(duration.textContent).not.toBe('')
+
+	// Until then the rendered time shows, in place of the player's zero
+	duration.dataset.unavailable = ''
+	expect(getComputedStyle(duration, '::before').content).toBe('"1:15"')
+	expect(getComputedStyle(duration).fontSize).toBe('0px')
+	delete duration.dataset.unavailable
+
+	// The poster is the image the page came with, shown and hidden by the player
+	const poster = query(player, 'media-poster')
+	expect(query(poster, 'img', HTMLImageElement).getAttribute('src')).toBe('/media/loop-poster.jpg')
+	expect(poster.shadowRoot?.querySelector('img') ?? undefined).toBeUndefined()
+})
+
 it('lifts the whole player, swaps expand for collapse, and closes from the lightbox button', async () => {
 	const { item, player } = await mountPlayer()
 	const button = query(player, '[data-zoom-open]')

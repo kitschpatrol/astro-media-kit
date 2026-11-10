@@ -62,6 +62,26 @@ describe('zoom server markup', () => {
 		expect($('#video button[data-zoom-open] .amk-icon svg')).toHaveLength(1)
 	})
 
+	it('draws the poster and the times into the page, for before the player runs', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		const poster = $('#video media-poster.amk-poster > img')
+		expect(poster.attr('src')).toBe('/media/loop-poster.jpg')
+		expect(poster.attr('alt')).toBe('')
+		// The duration the page was rendered with: 75 seconds
+		expect($('#video media-time[type="current"]').attr('data-amk-time')).toBe('0:00')
+		expect($('#video media-time[type="duration"]').attr('data-amk-time')).toBe('1:15')
+		// Video.js adds its own text, so none is put inside the elements
+		expect($('#video media-time').text()).toBe('')
+	})
+
+	it('leaves out a duration that is not known', async () => {
+		const $ = await fixture.readHTML('/zoom-hls/')
+		expect($('media-time[type="current"]').attr('data-amk-time')).toBe('0:00')
+		expect($('media-time[type="duration"]')).toHaveLength(1)
+		expect($('media-time[type="duration"]').attr('data-amk-time')).toBeUndefined()
+		expect($('media-poster')).toHaveLength(0)
+	})
+
 	it('renders the full bar for a minimal player the lightbox can raise, and the volume in a popover', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		expect($('#video-minimal .amk-player').attr('data-controls')).toBe('minimal')

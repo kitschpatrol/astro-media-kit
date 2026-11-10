@@ -225,6 +225,7 @@ const sharedProps = {
 	aspectRatio,
 	autoPlay,
 	controls,
+	duration: videoInfo !== undefined && videoInfo.duration > 0 ? videoInfo.duration : undefined,
 	intrinsicWidth: videoInfo?.width,
 	loop,
 	muted,

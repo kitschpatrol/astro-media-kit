@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	formatMediaTime,
 	hasImageExtension,
 	hasMediaExtension,
 	isDirectMediaUrl,
@@ -114,5 +115,32 @@ describe('isLocalPath', () => {
 
 	it.each(['some-identifier', 'page.html', ''])('rejects %s', (path) => {
 		expect(isLocalPath(path)).toBe(false)
+	})
+})
+
+describe('formatMediaTime', () => {
+	it('shows minutes and seconds as Video.js does', () => {
+		expect(formatMediaTime(0)).toBe('0:00')
+		expect(formatMediaTime(5)).toBe('0:05')
+		expect(formatMediaTime(75)).toBe('1:15')
+		expect(formatMediaTime(90.9)).toBe('1:30')
+		expect(formatMediaTime(750)).toBe('12:30')
+	})
+
+	it('shows hours once there are any, with the minutes padded', () => {
+		expect(formatMediaTime(3661)).toBe('1:01:01')
+		expect(formatMediaTime(36_000)).toBe('10:00:00')
+	})
+
+	it('follows the guide, so a current time reads like its duration', () => {
+		expect(formatMediaTime(0, 75)).toBe('0:00')
+		expect(formatMediaTime(35, 600)).toBe('00:35')
+		expect(formatMediaTime(35, 3600)).toBe('0:00:35')
+		expect(formatMediaTime(0, 0)).toBe('0:00')
+	})
+
+	it('shows zero for a time that is not a number', () => {
+		expect(formatMediaTime(NaN)).toBe('0:00')
+		expect(formatMediaTime(Infinity)).toBe('0:00')
 	})
 })

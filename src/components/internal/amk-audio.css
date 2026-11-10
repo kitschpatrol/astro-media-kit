@@ -1,5 +1,5 @@
 /* The local audio skin keeps Video.js's audio layout and theme, with its
-   source owned by the kit so icons can use the shared media theme. */
+   source owned by the kit so its icons are the site's, drawn into the page. */
 
 .amk audio-player {
 	display: contents;
@@ -22,6 +22,23 @@
 .amk-audio media-controls,
 .amk-audio media-tooltip-group {
 	display: contents;
+}
+
+/* Until their script arrives, popups have nothing to say and nowhere to open
+   from, and the speed button no rate to draw its label from. */
+.amk-audio
+	:is(
+		media-tooltip,
+		media-menu,
+		media-volume-popover,
+		media-slider-preview,
+		media-error-dialog
+	):not(:defined) {
+	display: none;
+}
+
+.amk-audio media-playback-rate-button:not(:defined)::after {
+	content: '1×';
 }
 
 .amk-soundcloud {

@@ -116,11 +116,13 @@
 	transition: opacity var(--amk-duration);
 }
 
-.amk-poster:not([data-visible]) {
+/* Shown until its script arrives, which then says when it is */
+.amk-poster:defined:not([data-visible]) {
 	opacity: 0;
 }
 
-.amk-poster::part(image) {
+.amk-poster img {
+	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
@@ -283,8 +285,8 @@
 }
 
 /* Icon switching from Video.js state attributes. Before its script arrives a
-   button has none of them, and shows what it will at rest: play, full volume,
-   captions off, and entering fullscreen. */
+   button has none of them, and shows what it will at rest: play, the volume
+   the page was rendered with, and entering fullscreen. */
 media-play-button:not(:defined) .amk-icon-play,
 media-play-button[data-paused]:not([data-ended]) .amk-icon-play,
 media-play-button:defined:not([data-paused]) .amk-icon-pause,
@@ -299,6 +301,11 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .amk-zoom-button .amk-icon,
 .amk-collapse-button .amk-icon {
 	display: block;
+}
+
+/* Whether there are captions to show is for the player to find out */
+media-captions-button.amk-button:not(:defined) {
+	display: none;
 }
 
 /* Minimal mode: a large centered play button, and only the fullscreen (or
@@ -369,6 +376,22 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .amk-time media-time,
 .amk-time media-time-separator {
 	display: inline;
+}
+
+/* Until its script arrives, and then until the media reports its length, a
+   time shows what was known when the page was rendered. The display's own text
+   steps aside for it rather than standing beside it. */
+.amk-time media-time[data-amk-time]:is(:not(:defined), [data-unavailable]) {
+	font-size: 0;
+}
+
+.amk-time media-time[data-amk-time]:is(:not(:defined), [data-unavailable])::before {
+	content: attr(data-amk-time);
+	font-size: var(--amk-font-size);
+}
+
+.amk-time media-time-separator:not(:defined)::before {
+	content: '/';
 }
 
 /* --- Sliders --- */

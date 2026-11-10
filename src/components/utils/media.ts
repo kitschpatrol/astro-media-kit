@@ -87,6 +87,35 @@ export function requestSignal(): AbortSignal {
 	return AbortSignal.timeout(15_000)
 }
 
+/**
+ * A time in seconds as a player shows it, such as `1:05` or `1:05:30`, in the
+ * form Video.js gives its own time displays, so that a time drawn into the page
+ * reads the same once the player takes over. `guide`, usually the duration,
+ * decides whether hours show and minutes are padded, which keeps the current
+ * time and the duration alike.
+ */
+export function formatMediaTime(seconds: number, guide = seconds): string {
+	if (!Number.isFinite(seconds)) {
+		return '0:00'
+	}
+
+	const total = Math.floor(Math.abs(seconds))
+	const hours = Math.floor(total / 3600)
+	const minutes = Math.floor((total % 3600) / 60)
+	const guideSeconds = Number.isFinite(guide) ? Math.abs(guide) : 0
+	const rest = padded(total % 60)
+	if (hours > 0 || guideSeconds >= 3600) {
+		return `${hours}:${padded(minutes)}:${rest}`
+	}
+
+	const hasPaddedMinutes = Math.floor((guideSeconds / 60) % 60) >= 10
+	return `${hasPaddedMinutes ? padded(minutes) : minutes}:${rest}`
+}
+
+function padded(value: number): string {
+	return String(value).padStart(2, '0')
+}
+
 /** Try to parse a string as an HTTP(S) URL. Returns undefined for non-URLs. */
 export function tryParseUrl(src: string): undefined | URL {
 	if (!HTTP_URL_PATTERN.test(src)) {

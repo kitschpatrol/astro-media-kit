@@ -25,6 +25,7 @@ const {
 	autoPlay,
 	captions,
 	controls,
+	duration,
 	element,
 	fallbackUrl,
 	hlsOptions,
@@ -124,11 +125,18 @@ const embedService =
 			>
 				<VideoMedia {...mediaProps} native={false} />
 				<VideoError fallbackUrl={fallbackUrl} />
-				{hasPoster && <media-poster class="amk-poster" />}
+				{hasPoster && (
+					<media-poster class="amk-poster">
+						{/* Its own image, so the poster shows before the player's script runs */}
+						<img alt="" decoding="async" src={posterUrl} />
+					</media-poster>
+				)}
 				<media-buffering-indicator class="amk-buffering">
 					<Icon name="spinner" />
 				</media-buffering-indicator>
-				{(hasControls || zoom) && <VideoControls controls={controls} zoom={zoom} />}
+				{(hasControls || zoom) && (
+					<VideoControls controls={controls} duration={duration} muted={muted} zoom={zoom} />
+				)}
 				{hasControls && (
 					<>
 						{hasClickToPlay && (
