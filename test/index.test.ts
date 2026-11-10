@@ -292,6 +292,29 @@ const title = 'Hello'
 		expect(result).toContain('import __ami_0 from "../assets/test.jpeg"')
 	})
 
+	it('keeps the imports in the frontmatter when a component is written there', () => {
+		const source = [
+			'---',
+			'const hero = <Image src="../assets/a-long-file-name.jpeg" alt="Hero" />',
+			'---',
+			'<div>{hero}</div>',
+			'<Image src="../assets/test.jpeg" alt="Test" />',
+			'',
+		].join('\n')
+		expect(transformAstroSource(source, defaultConfig)).toBe(
+			[
+				'---',
+				'const hero = <Image src={__ami_0} alt="Hero" />',
+				'import __ami_0 from "../assets/a-long-file-name.jpeg"',
+				'import __ami_1 from "../assets/test.jpeg"',
+				'---',
+				'<div>{hero}</div>',
+				'<Image src={__ami_1} alt="Test" />',
+				'',
+			].join('\n'),
+		)
+	})
+
 	it('handles multiple different images', () => {
 		const source = `---
 ---

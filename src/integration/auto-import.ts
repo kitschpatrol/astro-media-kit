@@ -397,6 +397,18 @@ function transformWithEntries(
 		(entry) => `import ${entry.name} from ${JSON.stringify(entry.path)}`,
 	).join('\n')
 
+	// A file without frontmatter gets one to hold the imports; otherwise they
+	// go before the closing fence. Either is one more edit, since a component
+	// in the frontmatter is rewritten ahead of the fence, which moves it
+	const { frontmatter } = root
+	if (frontmatter.end === 0) {
+		edits.push({ end: 0, start: 0, text: `---\n${importStatements}\n---\n\n` })
+	} else {
+		const fence = frontmatter.end - 3
+		const at = source.startsWith('---', fence) ? fence : frontmatter.program.end
+		edits.push({ end: at, start: at, text: `${importStatements}\n` })
+	}
+
 	// Later edits first, so earlier positions stay valid
 	let result = source
 	const ordered = edits.toSorted((a, b) => b.start - a.start)
@@ -404,16 +416,7 @@ function transformWithEntries(
 		result = `${result.slice(0, edit.start)}${edit.text}${result.slice(edit.end)}`
 	}
 
-	// A file without frontmatter gets one to hold the imports; otherwise they
-	// go before the closing fence
-	const { frontmatter } = root
-	if (frontmatter.end === 0) {
-		return `---\n${importStatements}\n---\n\n${result}`
-	}
-
-	const fence = frontmatter.end - 3
-	const at = source.startsWith('---', fence) ? fence : frontmatter.program.end
-	return `${result.slice(0, at)}${importStatements}\n${result.slice(at)}`
+	return result
 }
 
 /**
