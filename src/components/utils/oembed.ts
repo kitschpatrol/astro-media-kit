@@ -2,6 +2,8 @@ import { parseHTML } from 'linkedom'
 import { requestSignal } from './media'
 
 const WWW_PREFIX_RE = /^www\./v
+/** Content types of a page that can carry an oEmbed discovery link. */
+const PAGE_TYPE_RE = /^(?:text\/|application\/xhtml\+xml)/iv
 
 /** Parsed oEmbed response for a page URL. */
 export type OembedInfo = {
@@ -36,6 +38,17 @@ export async function fetchOEmbed(pageUrl: string): Promise<OembedInfo> {
 	}
 
 	const canonicalUrl = pageResponse.url
+
+	// A media file whose URL didn't give it away is not a page to read
+	// through, and can be very large
+	const contentType = pageResponse.headers.get('content-type') ?? ''
+	if (contentType !== '' && !PAGE_TYPE_RE.test(contentType)) {
+		await pageResponse.body?.cancel()
+		throw new Error(
+			`"${canonicalUrl}" is ${contentType}, not a page to embed. Set the "service" prop to "local" to play a media file directly.`,
+		)
+	}
+
 	const html = await pageResponse.text()
 
 	// Step 2: Parse the HTML for the oEmbed discovery link.

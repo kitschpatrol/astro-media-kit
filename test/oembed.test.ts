@@ -21,6 +21,23 @@ describe('fetchOEmbed', () => {
 		vi.unstubAllGlobals()
 	})
 
+	it('refuses a media file without reading it, and says how to play it', async () => {
+		const cancel = vi.fn<() => Promise<void>>().mockResolvedValue()
+		const file = new Response('not a page', { headers: { 'content-type': 'video/mp4' } })
+		Object.defineProperties(file, {
+			body: { value: { cancel } },
+			url: { value: 'https://cdn.example/clip' },
+		})
+		const text = vi.spyOn(file, 'text')
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(file))
+
+		await expect(fetchOEmbed('https://cdn.example/clip')).rejects.toThrow(
+			'"https://cdn.example/clip" is video/mp4, not a page to embed. Set the "service" prop to "local"',
+		)
+		expect(cancel).toHaveBeenCalledOnce()
+		expect(text).not.toHaveBeenCalled()
+	})
+
 	it('reads sizes sent as numbers or numeric strings', async () => {
 		stubProvider('https://www.ted.com/talks/x', {
 			height: '480',

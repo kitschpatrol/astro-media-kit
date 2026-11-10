@@ -1,13 +1,17 @@
 /** Media file extensions recognized as directly playable by browsers. */
 const DIRECT_MEDIA_EXTENSIONS = new Set([
+	'.aac',
 	'.flac',
 	'.m3u8',
 	'.m4a',
+	'.m4v',
 	'.mkv',
 	'.mov',
 	'.mp3',
 	'.mp4',
+	'.oga',
 	'.ogg',
+	'.ogv',
 	'.opus',
 	'.wav',
 	'.webm',

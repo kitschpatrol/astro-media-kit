@@ -50,6 +50,10 @@ describe('hasMediaExtension', () => {
 	it('recognizes media files by extension', () => {
 		expect(hasMediaExtension('/media/loop.mp4')).toBe(true)
 		expect(hasMediaExtension('stream.M3U8?token=1')).toBe(true)
+		for (const extension of ['aac', 'm4v', 'oga', 'ogv']) {
+			expect(hasMediaExtension(`https://cdn.example/clip.${extension}`)).toBe(true)
+		}
+
 		expect(hasMediaExtension('../assets/photo.jpg')).toBe(false)
 	})
 })
