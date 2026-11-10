@@ -260,7 +260,6 @@ export class CarouselMotion {
 			drag.origin = { x: this.#mapPastEnds(this.#position, rubberBandDistance), y: 0 }
 			// Snapping would pull every position in between back to a slide
 			this.#track.dataset.moving = ''
-			this.#owner = 'drag'
 		} else {
 			drag.origin = { x: drag.stage.scrollLeft, y: drag.stage.scrollTop }
 		}

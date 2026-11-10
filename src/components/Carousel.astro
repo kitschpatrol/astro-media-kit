@@ -19,13 +19,12 @@ export type Props = {
 	 */
 	captions?: boolean | undefined
 	/**
-	 * Astro `class` attribute, merged with `className`.
+	 * Astro `class` attribute, used instead of `className` when both are present.
 	 */
 	class?: string | undefined
 	/**
 	 * JSX-style class name (passed by MDX, which uses `className` instead of
-	 * `class`). Merged with Astro's `class` prop (`class` wins when both are
-	 * present).
+	 * `class`).
 	 */
 	className?: string | undefined
 	/**

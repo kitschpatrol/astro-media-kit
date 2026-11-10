@@ -403,8 +403,8 @@ class Viewer {
 
 	/**
 	 * Whether a lifted subject has a place to animate back to: not if its item
-	 * was removed or hidden, if it had no size in the page (an image that never
-	 * loaded), or if a resize has left the place it holds out of date.
+	 * was removed or hidden, if its position in the page isn't known, or if it
+	 * had no size there (an image that never loaded).
 	 */
 	#canReturn(lift: Lift): boolean {
 		return (
@@ -436,8 +436,8 @@ class Viewer {
 		}
 	}
 
-	/** Put ghosts back straight away: all of them, or the ones given. */
-	#dropGhosts(ghosts = this.#ghosts.splice(0)) {
+	/** Put the given ghosts back straight away. */
+	#dropGhosts(ghosts: Slide[]) {
 		this.#ghosts = this.#ghosts.filter((ghost) => !ghosts.includes(ghost))
 		dropSlides(ghosts)
 		for (const ghost of ghosts) {
