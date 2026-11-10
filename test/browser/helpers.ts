@@ -6,6 +6,7 @@ import '../../src/components/internal/lightbox/lightbox.css'
 declare module 'vitest/browser' {
 	// eslint-disable-next-line ts/consistent-type-definitions -- Declaration merging requires an interface
 	interface BrowserCommands {
+		displayWithoutScripts: (path: string, selector: string) => Promise<false | string>
 		emulateReducedMotion: (isReduced: boolean) => Promise<void>
 		mouseDown: (x: number, y: number) => Promise<void>
 		mouseFlick: (x: number, y: number) => Promise<void>

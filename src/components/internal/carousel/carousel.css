@@ -286,3 +286,12 @@
 		transition-duration: 0s !important;
 	}
 }
+
+/* Without scripts the track still scrolls and snaps, but nothing answers the
+   buttons or the dots */
+@media (scripting: none) {
+	.amk-carousel-button,
+	.amk-carousel-dots {
+		display: none;
+	}
+}

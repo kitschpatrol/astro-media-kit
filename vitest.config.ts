@@ -135,6 +135,33 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 	},
 )
 
+/**
+ * How the first match of a selector displays in a fixture page opened with
+ * scripting off, or false where turning it off doesn't match `(scripting:
+ * none)`, which it only does in Chromium.
+ */
+const displayWithoutScripts = defineBrowserCommand<[path: string, selector: string]>(
+	async (context, path, selector) => {
+		const browser = context.page.context().browser()
+		if (browser?.browserType().name() !== 'chromium') {
+			return false
+		}
+
+		const frame = await context.frame()
+		const withoutScripts = await browser.newContext({ javaScriptEnabled: false })
+		try {
+			const page = await withoutScripts.newPage()
+			await page.goto(new URL(`${path}index.html`, frame.url()).href)
+			return await page
+				.locator(selector)
+				.first()
+				.evaluate((element) => getComputedStyle(element).display)
+		} finally {
+			await withoutScripts.close()
+		}
+	},
+)
+
 export default defineConfig(async (): Promise<ViteUserConfig> => {
 	// Built before any server starts: Vite lists the public directory once, on
 	// start, so the browser project serves the fixture's pages and assets from
@@ -198,6 +225,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 					test: {
 						browser: {
 							commands: {
+								displayWithoutScripts,
 								emulateReducedMotion,
 								mouseDown,
 								mouseFlick,

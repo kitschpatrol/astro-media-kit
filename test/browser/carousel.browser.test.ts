@@ -103,6 +103,19 @@ it('leaves a press on a caption to its text, rather than dragging the track', as
 	expect(isClickFromDrag()).toBe(false)
 })
 
+it('shows only the track where scripts are off', async ({ skip }) => {
+	const displays = await Promise.all(
+		['.amk-carousel-button', '.amk-carousel-dots', '.amk-carousel-track'].map(async (selector) =>
+			commands.displayWithoutScripts('/carousel/', selector),
+		),
+	)
+	if (displays.includes(false)) {
+		skip()
+	}
+
+	expect(displays).toEqual(['none', 'none', 'flex'])
+})
+
 it('lays slides out one per track width, with captions shown on request', async () => {
 	const { carousel, track } = await mountCarousel()
 	const slides = [...track.querySelectorAll<HTMLElement>('.amk-carousel-slide')]
