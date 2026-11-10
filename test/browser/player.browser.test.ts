@@ -69,18 +69,9 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	return { item, player }
 }
 
-it("leaves a page's own media that waits in data-src alone", async () => {
-	const { item } = await mountPlayer()
-	const own = document.createElement('video')
-	own.dataset.src = '/media/loop.mp4'
-	item.after(own)
-	document.dispatchEvent(new Event('astro:page-load'))
-	await settle(100)
-	expect(own.hasAttribute('src')).toBe(false)
-})
-
 // WebKit on Linux runners has stalled this file's first video load for over 10s,
-// though the same load works in the next test. The cause is unknown.
+// though the same load works in the next test. The cause is unknown. Keep this
+// test first: it is the one that retries.
 it('is not a button, and leaves clicks on its controls to the player', { retry: 1 }, async () => {
 	const { item, player } = await mountPlayer()
 	expect(item.hasAttribute('role')).toBe(false)
@@ -90,6 +81,16 @@ it('is not a button, and leaves clicks on its controls to the player', { retry: 
 	await userEvent.click(query(player, 'media-play-button'))
 
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
+})
+
+it("leaves a page's own media that waits in data-src alone", async () => {
+	const { item } = await mountPlayer()
+	const own = document.createElement('video')
+	own.dataset.src = '/media/loop.mp4'
+	item.after(own)
+	document.dispatchEvent(new Event('astro:page-load'))
+	await settle(100)
+	expect(own.hasAttribute('src')).toBe(false)
 })
 
 it('lifts the whole player, swaps expand for collapse, and closes from the lightbox button', async () => {
