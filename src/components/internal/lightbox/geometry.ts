@@ -53,6 +53,27 @@ export function lengthOf(value: string): number {
 }
 
 /**
+ * How much a transform, such as a hover zoom, scales an element along each
+ * axis: its box as drawn, over its box as laid out. Layout sizes come in whole
+ * pixels, so a difference that rounding accounts for is no scale at all. Taking
+ * it for one would resize whatever is laid over a fractional box by part of a
+ * pixel.
+ */
+export function drawnScale(
+	element: HTMLElement,
+	drawn: Pick<Box, 'height' | 'width'> = element.getBoundingClientRect(),
+): { x: number; y: number } {
+	return {
+		x: scaleAlong(drawn.width, element.offsetWidth),
+		y: scaleAlong(drawn.height, element.offsetHeight),
+	}
+}
+
+function scaleAlong(drawn: number, layout: number): number {
+	return layout <= 0 || drawn <= 0 || Math.abs(drawn - layout) <= 0.5 ? 1 : drawn / layout
+}
+
+/**
  * Map a frame onto the visible content of an element in the page.
  *
  * The frame always has the content's natural aspect ratio. In the page, the

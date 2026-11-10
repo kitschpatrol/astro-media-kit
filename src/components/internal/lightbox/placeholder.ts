@@ -3,7 +3,7 @@ import type { PreviewFrame } from './video-placeholder'
 import { previewContext } from './canvas-context'
 import { clonePlaceholder } from './clone-placeholder'
 import { rendered } from './dom'
-import { lengthOf } from './geometry'
+import { drawnScale, lengthOf } from './geometry'
 import { copyRetainedImage } from './image-preview'
 import { mirrorVideo, previewSize } from './video-placeholder'
 
@@ -60,8 +60,7 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 	placeholder.ariaHidden = 'true'
 	placeholder.inert = true
 	// Layout sizes, unaffected by transforms such as a hover zoom
-	const scaleX = home.width / Math.max(item.offsetWidth, 1)
-	const scaleY = home.height / Math.max(item.offsetHeight, 1)
+	const scale = drawnScale(item, home)
 	Object.assign(placeholder.style, {
 		borderRadius: style.borderRadius,
 		objectFit,
@@ -88,10 +87,10 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 	item.append(placeholder)
 	return {
 		box: {
-			height: box.height / (scaleY > 0 ? scaleY : 1),
-			width: box.width / (scaleX > 0 ? scaleX : 1),
-			x: (box.x - home.x) / (scaleX > 0 ? scaleX : 1) - item.clientLeft,
-			y: (box.y - home.y) / (scaleY > 0 ? scaleY : 1) - item.clientTop,
+			height: box.height / scale.y,
+			width: box.width / scale.x,
+			x: (box.x - home.x) / scale.x - item.clientLeft,
+			y: (box.y - home.y) / scale.y - item.clientTop,
 		},
 		element: placeholder,
 	}

@@ -1,5 +1,6 @@
 import { previewContext } from './canvas-context'
 import { rendered } from './dom'
+import { drawnScale } from './geometry'
 
 type ImagePreview = HTMLCanvasElement | HTMLImageElement
 
@@ -296,15 +297,14 @@ function placeReturned(preview: ImagePreview, image: HTMLImageElement, item: HTM
 	const origin = preview.offsetParent instanceof HTMLElement ? preview.offsetParent : item
 	const bounds = origin.getBoundingClientRect()
 	const box = image.getBoundingClientRect()
-	const scaleX = bounds.width / Math.max(origin.offsetWidth, 1)
-	const scaleY = bounds.height / Math.max(origin.offsetHeight, 1)
+	const scale = drawnScale(origin, bounds)
 	const values = {
-		height: `${box.height / (scaleY > 0 ? scaleY : 1)}px`,
+		height: `${box.height / scale.y}px`,
 		inset: 'auto',
-		left: `${(box.left - bounds.left) / (scaleX > 0 ? scaleX : 1) - origin.clientLeft + origin.scrollLeft}px`,
+		left: `${(box.left - bounds.left) / scale.x - origin.clientLeft + origin.scrollLeft}px`,
 		'object-fit': getComputedStyle(image).objectFit,
-		top: `${(box.top - bounds.top) / (scaleY > 0 ? scaleY : 1) - origin.clientTop + origin.scrollTop}px`,
-		width: `${box.width / (scaleX > 0 ? scaleX : 1)}px`,
+		top: `${(box.top - bounds.top) / scale.y - origin.clientTop + origin.scrollTop}px`,
+		width: `${box.width / scale.x}px`,
 	}
 	for (const [property, value] of Object.entries(values)) {
 		preview.style.setProperty(property, value, 'important')

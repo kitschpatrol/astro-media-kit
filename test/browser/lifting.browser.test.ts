@@ -77,6 +77,29 @@ describe('lifting', () => {
 		expect(narrow!.getBoundingClientRect().width).toBe(100)
 	})
 
+	it('lays the preview exactly over a subject whose size is a fraction of a pixel', async () => {
+		const fixture = mount(
+			item(
+				'<img src="/media/tile-480.jpg" alt="" width="480" height="480" style="width: 100%; height: auto" />',
+				'style="width: 240.6px"',
+			),
+		)
+		const [box] = boxes(fixture)
+		const image = query(box!, 'img', HTMLImageElement)
+		await image.decode()
+		const home = image.getBoundingClientRect()
+		expect(home.height % 1).not.toBe(0)
+
+		await openLightbox(box!)
+		// A preview off by part of a pixel shifts the picture as the subject lands.
+		// Layout works in 64ths of a pixel, so it is within one of those
+		const preview = query(box!, '[data-amk-preview]').getBoundingClientRect()
+		expect(preview.x).toBeCloseTo(home.x, 1)
+		expect(preview.y).toBeCloseTo(home.y, 1)
+		expect(preview.width).toBeCloseTo(home.width, 1)
+		expect(preview.height).toBeCloseTo(home.height, 1)
+	})
+
 	it('opens with Enter and Space', async () => {
 		const fixture = mount(item(block('a')))
 		const [box] = boxes(fixture)
