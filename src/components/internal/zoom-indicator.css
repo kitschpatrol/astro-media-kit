@@ -127,9 +127,3 @@
 		}
 	}
 }
-
-/* Keep full-width media filling its parent even on pages with player CSS,
-   which also shrink-wraps ordinary image zoom wrappers. */
-.amk-zoom[data-zoom-indicator]:has([data-astro-image='full-width']) {
-	width: 100%;
-}

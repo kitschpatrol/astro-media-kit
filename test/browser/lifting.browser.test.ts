@@ -63,6 +63,20 @@ describe('lifting', () => {
 		await expect.poll(() => viewer().dataset.state).toBe('open')
 	})
 
+	it('lets full-width media fill its column, and wraps other media closely', () => {
+		const image = (attributes: string) =>
+			`<img class="amk" alt="" src="/media/tile-480.jpg" width="100" height="100" ${attributes} />`
+		const fixture = mount(
+			`<div style="width: 300px">
+				${item(image('data-astro-image="full-width" style="width: 100%; height: auto"'))}
+				${item(image('style="max-width: 100%; height: auto"'))}
+			</div>`,
+		)
+		const [full, narrow] = boxes(fixture)
+		expect(full!.getBoundingClientRect().width).toBe(300)
+		expect(narrow!.getBoundingClientRect().width).toBe(100)
+	})
+
 	it('opens with Enter and Space', async () => {
 		const fixture = mount(item(block('a')))
 		const [box] = boxes(fixture)

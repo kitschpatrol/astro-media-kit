@@ -44,6 +44,11 @@
 		max-width: 100%;
 	}
 
+	/* Full-width media fills its column, whatever its own width */
+	.amk-zoom:has([data-astro-image='full-width']) {
+		width: 100%;
+	}
+
 	.amk-zoom[data-zoom-active] {
 		--amk-page-controls-opacity: 0;
 	}
