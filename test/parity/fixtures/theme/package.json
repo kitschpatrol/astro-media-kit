@@ -1,0 +1,21 @@
+{
+	"name": "@fixtures/theme",
+	"private": true,
+	"description": "Astro fixture for testing icons configured through the integration.",
+	"author": {
+		"name": "Eric Mika",
+		"email": "eric@ericmika.com",
+		"url": "https://ericmika.com"
+	},
+	"type": "module",
+	"scripts": {
+		"astro": "astro",
+		"build": "astro build"
+	},
+	"devDependencies": {
+		"@astrojs/check": "^0.9.10",
+		"astro": "^7.4.7",
+		"astro-media-kit": "link:../../../..",
+		"sharp": "^0.35.5"
+	}
+}

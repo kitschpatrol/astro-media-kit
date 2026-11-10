@@ -1,6 +1,9 @@
-import { expect, it } from 'vitest'
+import { afterEach, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { waitForFrame } from './frame'
+import { cleanUp, mountPage, query } from './helpers'
+
+afterEach(cleanUp)
 
 it('reports an audio startup failure even when the player scripts arrive late', async () => {
 	const response = await fetch('/audio-startup/index.html')
@@ -103,4 +106,21 @@ it('fits the playback speed in its button, as the skin of Video.js 10.3 does', a
 	} finally {
 		frame.remove()
 	}
+})
+
+it('reserves the audio bar without showing raw controls while its skin loads', async () => {
+	const fixture = await mountPage('/audio-startup/')
+	const links = fixture.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')
+	for (const link of links) {
+		link.disabled = true
+	}
+
+	const skin = query(fixture, 'audio-player media-container')
+	expect(getComputedStyle(skin).visibility).toBe('hidden')
+	expect(skin.getBoundingClientRect().height).toBe(44)
+	for (const link of links) {
+		link.disabled = false
+	}
+
+	await expect.poll(() => getComputedStyle(skin).visibility).toBe('visible')
 })

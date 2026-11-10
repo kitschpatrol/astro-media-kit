@@ -2,6 +2,7 @@
 import type { InternalVideoProps, VideoElementTag } from './types'
 import { mediaCrossOrigin } from '../utils/media'
 import FallbackLink from './FallbackLink.astro'
+import Icon from './Icon.astro'
 import VideoControls from './VideoControls.astro'
 import VideoError from './VideoError.astro'
 import VideoMedia from './VideoMedia.astro'
@@ -125,7 +126,7 @@ const embedService =
 				<VideoError fallbackUrl={fallbackUrl} />
 				{hasPoster && <media-poster class="amk-poster" />}
 				<media-buffering-indicator class="amk-buffering">
-					<media-icon family="amk" name="spinner" />
+					<Icon name="spinner" />
 				</media-buffering-indicator>
 				{(hasControls || zoom) && <VideoControls controls={controls} zoom={zoom} />}
 				{hasControls && (

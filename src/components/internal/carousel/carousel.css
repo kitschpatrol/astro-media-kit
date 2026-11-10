@@ -176,14 +176,6 @@
 	height: 100%;
 }
 
-.amk-carousel-default-icon {
-	fill: none;
-	stroke: currentcolor;
-	stroke-linecap: round;
-	stroke-linejoin: round;
-	stroke-width: 2.25;
-}
-
 /* Drawn on the button rather than around it, where it could fall on the image */
 .amk-carousel-button:focus-visible {
 	outline: 2px solid currentcolor;

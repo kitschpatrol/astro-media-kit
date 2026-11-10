@@ -1,7 +1,7 @@
 import type { Box } from './geometry'
 import type { LayerStyle, Lift, Measurement, Point, Slide } from './types'
-import { subscribeMediaIconTheme } from '../media-theme'
 import { identity, layerStyle, linkStyle, setLayerStyle, settle } from './animation'
+import { viewerMarkup } from './chrome'
 import {
 	arrowKeySelector,
 	captionOf,
@@ -43,25 +43,6 @@ const panDirections = new Map<string, [x: number, y: number]>([
 	['ArrowRight', [1, 0]],
 	['ArrowUp', [0, -1]],
 ])
-
-const markup = `
-	<dialog class="amk-lightbox" aria-label="Media viewer" tabindex="-1">
-		<div class="amk-lightbox-track" tabindex="-1" role="region" aria-roledescription="carousel" aria-label="Gallery"></div>
-		<div class="amk-lightbox-status" role="status" aria-live="polite" aria-atomic="true"></div>
-		<button class="amk-lightbox-button amk-lightbox-close" type="button" data-action="close" aria-label="Close">
-			<span class="amk-lightbox-icon" data-amk-icon="close"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></span>
-		</button>
-		<button class="amk-lightbox-button amk-lightbox-zoom" type="button" data-action="zoom" aria-label="Zoom" aria-pressed="false" hidden>
-			<span class="amk-lightbox-icon" data-amk-icon="zoom-in"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5M8 10.5h5M10.5 8v5" /></svg></span>
-			<span class="amk-lightbox-icon" data-amk-icon="zoom-out"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5M8 10.5h5" /></svg></span>
-		</button>
-		<button class="amk-lightbox-button amk-lightbox-previous" type="button" data-action="previous" aria-label="Previous">
-			<span class="amk-lightbox-icon" data-amk-icon="previous"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg></span>
-		</button>
-		<button class="amk-lightbox-button amk-lightbox-next" type="button" data-action="next" aria-label="Next">
-			<span class="amk-lightbox-icon" data-amk-icon="next"><svg class="amk-lightbox-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></span>
-		</button>
-	</dialog>`
 
 /**
  * The full-screen viewer. There is one per document, created on first use. It
@@ -106,7 +87,7 @@ class Viewer {
 
 	constructor() {
 		const template = document.createElement('template')
-		template.innerHTML = markup
+		template.innerHTML = viewerMarkup()
 		const fragment = document.importNode(template.content, true)
 		this.#dialog = query(fragment, 'dialog', HTMLDialogElement)
 		this.#track = query(fragment, '.amk-lightbox-track', HTMLElement)
@@ -114,7 +95,6 @@ class Viewer {
 		this.#previous = query(fragment, '.amk-lightbox-previous', HTMLButtonElement)
 		this.#next = query(fragment, '.amk-lightbox-next', HTMLButtonElement)
 		this.#zoomButton = query(fragment, '.amk-lightbox-zoom', HTMLButtonElement)
-		subscribeMediaIconTheme(this.#dialog.querySelectorAll<HTMLElement>('[data-amk-icon]'))
 		containPageScroll(this.#dialog)
 
 		this.#dialog.addEventListener('cancel', this.#handleCancel)

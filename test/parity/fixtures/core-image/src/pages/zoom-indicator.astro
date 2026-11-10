@@ -1,5 +1,5 @@
 ---
-import { Image, MediaTheme, Picture } from 'astro-media-kit/components'
+import { Image, Picture } from 'astro-media-kit/components'
 import { ClientRouter } from 'astro:transitions'
 import penguin from '../assets/penguin1.jpg'
 
@@ -14,11 +14,6 @@ const layouts = ['none', 'fixed', 'constrained', 'full-width'] as const
 		<ClientRouter />
 	</head>
 	<body>
-		<MediaTheme>
-			<svg data-custom-icon="global-indicator" slot="icon-expand" viewBox="0 0 24 24">
-				<path d="M3 12h18" stroke="currentColor" />
-			</svg>
-		</MediaTheme>
 		<section id="default">
 			<Image alt="Default" src={penguin} width={300} zoom />
 		</section>

@@ -1,9 +1,8 @@
 /**
- * Registers the Video.js custom elements and icons composed by
- * VideoPlayer.astro, whose original player also travels into the lightbox.
- * Registered after the player and container, from the constructors, so a shared
- * Astro chunk never registers an element twice, and the order stays the same on
- * every page.
+ * Registers the Video.js custom elements composed by VideoPlayer.astro, whose
+ * original player also travels into the lightbox. Registered after the player
+ * and container, from the constructors, so a shared Astro chunk never registers
+ * an element twice, and the order stays the same on every page.
  */
 import {
 	BufferingIndicatorElement,
@@ -42,7 +41,6 @@ import {
 import { defineElements } from './videojs-player'
 import './videojs-controls'
 import './videojs-mute-button'
-import './videojs-icons'
 
 // The constructors come from the public API without registration side effects.
 // Providers precede their parts, including controls and tooltip context, as a

@@ -1,6 +1,5 @@
 import { arrowKeySelector, isWithin } from '../lightbox/dom'
 import { CarouselMotion, trackWidth } from '../lightbox/motion'
-import { subscribeMediaIconTheme } from '../media-theme'
 
 type Carousel = { dispose: () => void }
 
@@ -64,11 +63,6 @@ function setUp(root: HTMLElement): Carousel {
 	const dots = [...root.querySelectorAll<HTMLButtonElement>(':scope > .amk-carousel-dots > button')]
 	const controller = new AbortController()
 	const { signal } = controller
-	const unsubscribeIcons = subscribeMediaIconTheme(
-		root.querySelectorAll<HTMLElement>(
-			':scope > .amk-carousel-viewport > .amk-carousel-button [data-amk-icon]',
-		),
-	)
 	let width = 0
 
 	const update = (at: number) => {
@@ -209,7 +203,6 @@ function setUp(root: HTMLElement): Carousel {
 
 	return {
 		dispose() {
-			unsubscribeIcons()
 			controller.abort()
 			observer.disconnect()
 			motion.destroy()

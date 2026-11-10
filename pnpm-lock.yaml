@@ -353,6 +353,21 @@ importers:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@24.13.6)
 
+  test/parity/fixtures/theme:
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.10
+        version: 0.9.12(prettier-plugin-astro@1.1.2(prettier@3.9.10))(prettier@3.9.10)(typescript@6.0.3)
+      astro:
+        specifier: ^7.4.7
+        version: 7.4.7(@astrojs/markdown-remark@7.3.6(supports-color@10.2.2))(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      astro-media-kit:
+        specifier: link:../../../..
+        version: link:../../../..
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@24.13.6)
+
 packages:
 
   '@altano/repository-tools@2.1.2':

@@ -26,6 +26,15 @@ export default defineConfig({
 					ZoomLink: imageOnlyImport,
 				},
 			},
+			// Outlined artwork, shown off on the Media theme page
+			icons: {
+				close: './src/icons/close.svg',
+				expand: './src/icons/expand.svg',
+				next: './src/icons/next.svg',
+				pause: './src/icons/pause.svg',
+				play: './src/icons/play.svg',
+				previous: './src/icons/previous.svg',
+			},
 			tldraw: true,
 			watermark: true,
 		}),

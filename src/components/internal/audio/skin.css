@@ -1,7 +1,9 @@
 /* Adapted from the Video.js 10.3.0 default audio skin (Apache-2.0).
    https://shadcn.videojs.org/r/html/audio.json
    The packaged, flattened CSS preserves the browser baseline without @scope.
-   Selectors stay inside .amk-audio without adding specificity. See notice.txt. */
+   Selectors stay inside .amk-audio without adding specificity, and the kit's
+   inline icon wrapper, .amk-icon, stands where upstream has its media-icon
+   element. See notice.txt. */
 /* stylelint-disable no-descending-specificity -- Preserve the upstream skin's grouped control states. */
 @layer base {
 	:where(.amk-audio) {
@@ -38,7 +40,7 @@
 
 	:where(.amk-audio) :where(.media-skin) img,
 	:where(.amk-audio) :where(.media-skin) svg,
-	:where(.amk-audio) :where(.media-skin) media-icon {
+	:where(.amk-audio) :where(.media-skin) .amk-icon {
 		display: block;
 		max-width: 100%;
 	}
@@ -65,7 +67,7 @@
 		object-position: var(--media-object-position, center);
 	}
 
-	:where(.amk-audio) :where(.media-skin) media-icon > svg {
+	:where(.amk-audio) :where(.media-skin) .amk-icon > svg {
 		width: 100%;
 		height: 100%;
 	}

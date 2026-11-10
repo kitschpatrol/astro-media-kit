@@ -65,3 +65,47 @@ it.each(['zoom', 'zoom-hls'])(
 		}
 	},
 )
+
+it.each(['media-audio-first', 'media-video-first'])(
+	'connects both player contexts when %s initializes shared controls',
+	async (route) => {
+		const frame = document.createElement('iframe')
+		frame.src = `/${route}/index.html`
+		frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
+		document.body.append(frame)
+		try {
+			await waitForFrame(frame, route)
+			await expect
+				.poll(
+					() =>
+						frame.contentDocument
+							?.querySelector('video-player media-play-button')
+							?.getAttribute('aria-label'),
+					{ timeout: 5000 },
+				)
+				.toBe('Play')
+			const root: Document = frame.contentDocument!
+			expect(root.documentElement.dataset.firstHasSeek).toBe(String(route === 'media-audio-first'))
+			expect(root.documentElement.dataset.firstHasFullscreen).toBe(
+				String(route === 'media-video-first'),
+			)
+			for (const kind of ['audio-player', 'video-player']) {
+				const player = root.querySelector<HTMLElement>(kind)!
+				await expect
+					.poll(() => player.querySelector(':scope media-play-button')?.getAttribute('aria-label'))
+					.toBe('Play')
+				const mute = player.querySelector<HTMLElement>(':scope media-mute-button')!
+				await expect.poll(() => mute.getAttribute('aria-label')).toBe('Unmute')
+				mute.click()
+				await expect.poll(() => mute.getAttribute('aria-label')).toBe('Mute')
+			}
+
+			const video = root.querySelector<HTMLVideoElement>(':scope video')!
+			video.muted = true
+			root.querySelector<HTMLElement>(':scope video-player media-play-button')!.click()
+			await expect.poll(() => video.paused, { timeout: 5000 }).toBe(false)
+		} finally {
+			frame.remove()
+		}
+	},
+)

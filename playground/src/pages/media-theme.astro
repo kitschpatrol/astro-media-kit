@@ -1,41 +1,17 @@
 ---
-import { Audio, Carousel, Image, MediaTheme, Picture, Video } from 'astro-media-kit/components'
+import { Audio, Carousel, Image, Picture, Video } from 'astro-media-kit/components'
 import Layout from '../layouts/Layout.astro'
 ---
 
 <Layout title="Media theme">
-	<MediaTheme>
-		<svg fill="none" slot="icon-play" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-			<path d="m8 4 12 8-12 8Z" />
-		</svg>
-		<svg fill="none" slot="icon-pause" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-			<path d="M7 4v16M17 4v16" />
-		</svg>
-		<svg fill="none" slot="icon-close" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-			<path d="m5 5 14 14M19 5 5 19" />
-		</svg>
-		<svg
-			fill="none"
-			slot="icon-previous"
-			stroke="currentColor"
-			stroke-width="2"
-			viewBox="0 0 24 24"
-		>
-			<path d="m15 5-7 7 7 7" />
-		</svg>
-		<svg fill="none" slot="icon-next" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-			<path d="m9 5 7 7-7 7" />
-		</svg>
-		<svg fill="none" slot="icon-expand" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-			<path d="M12 3v18M3 12h18" />
-		</svg>
-	</MediaTheme>
 	<h1>Media theme</h1>
 	<p class="note">
-		One MediaTheme supplies outlined play and pause icons to both players, a close icon to the
-		lightbox, navigation arrows to both galleries, and an expand icon to the video players and image
-		indicators. One set of gallery variables supplies the rectangular targets, colors, and opacity
-		transitions.
+		The <code>icons</code> option of <code>mediaKit()</code> in this site's{' '}
+		<code>astro.config.ts</code> supplies outlined play and pause icons to both players, a close
+		icon to the lightbox, navigation arrows to both galleries, and an expand icon to the video
+		players and image indicators, on every page. They are drawn into the markup, so they are there
+		before any script runs. On this page, one set of gallery variables supplies the rectangular
+		targets, colors, and opacity transitions.
 	</p>
 	<h2>Audio</h2>
 	<Audio src="/test.mp3" />

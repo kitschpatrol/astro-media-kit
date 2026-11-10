@@ -2,7 +2,6 @@ import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import videoStyles from '../../src/components/internal/amk-video.css?inline'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
-import { installZoomIndicators } from '../../src/components/internal/zoom-indicator'
 import {
 	activeSlideLabel,
 	cleanUp,
@@ -15,29 +14,10 @@ import {
 } from './helpers'
 
 setUpLightbox()
-installZoomIndicators()
 afterEach(async () => {
 	document.dispatchEvent(new Event('astro:before-swap'))
 	await cleanUp()
 	document.dispatchEvent(new Event('astro:page-load'))
-})
-
-it('themes builtin indicators while preserving local slots and restores defaults on navigation', async () => {
-	const fixture = await mountPage('/zoom-indicator/')
-	document.dispatchEvent(new Event('astro:page-load'))
-	expect(
-		fixture.querySelector(':scope #builtin [data-custom-icon="global-indicator"]'),
-	).not.toBeNull()
-	expect(
-		fixture.querySelector(':scope #custom [data-custom-icon="local-indicator"]'),
-	).not.toBeNull()
-	query(fixture, '[data-amk-media-theme]').remove()
-	document.dispatchEvent(new Event('astro:page-load'))
-	expect(fixture.querySelector(':scope #builtin [data-custom-icon]')).toBeNull()
-	expect(fixture.querySelector(':scope #builtin .amk-zoom-indicator svg')).not.toBeNull()
-	expect(
-		fixture.querySelector(':scope #custom [data-custom-icon="local-indicator"]'),
-	).not.toBeNull()
 })
 
 it.each([false, true])(

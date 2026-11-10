@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Drawn for the theme fixture -->
+<svg xmlns="http://www.w3.org/2000/svg" data-custom-icon="close" viewBox="0 0 24 24">
+	<path d="m5 5 14 14M19 5 5 19" stroke="currentColor" />
+</svg>

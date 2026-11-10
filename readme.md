@@ -38,14 +38,12 @@ It includes:
   Unified player for YouTube, Vimeo, Bunny, Cloudflare Stream, Mux, local files, and generic oEmbed, plus lightbox zoom.
 - **Audio**\
   Player for SoundCloud, local files, and generic oEmbed.
-- **MediaTheme**\
-  Optional shared icon overrides for video, local audio, carousels, and the lightbox.
 - **Carousel**\
   Embedded carousel with buttons, swiping, optional dots and captions, and lightbox galleries when its media children have `zoom` enabled.
 - **ZoomLink**\
   Text link that opens an image or a video in the lightbox, and goes to the file itself without JavaScript.
 - **Astro Integration**\
-  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
+  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), your own icons for the kit's controls, EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 
 The components work standalone via direct import, or you can use the Astro integration for streamlined auto-imports and automatic Vite plugin configuration.
 
@@ -91,6 +89,7 @@ export default defineConfig({
       // autoImport: true,       // Enabled by default
       // tldraw: false,          // .tldr file support
       // aphex: false,           // Apple Photos imports
+      // icons: {},              // Your own SVG artwork for the kit's icons
       // removeOriginals: false, // Delete originals Astro leaves after build
       // stripExif: false,       // Strip EXIF/XMP metadata from build-output images
       // video: false,           // Secret env schema for video services
@@ -278,7 +277,7 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 
 A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. The active lightbox item's indicator fades out on the page. Moving to another item fades the previous thumbnail's indicator back in and the newly active thumbnail's indicator out; other thumbnails retain their indicators. Closing the lightbox restores the active thumbnail's indicator. These fades follow the lightbox's opening/closing fade durations independently of hover styling, and respect reduced motion. Indicators stay out of the lightbox itself.
 
-To replace the built-in artwork across a page, add `<YourExpandIcon slot="icon-expand" />` to `MediaTheme`, which also replaces the video player's expand button. Individual `zoom-indicator` slots take precedence over that shared icon. As with other `MediaTheme` icons, the shared replacement requires JavaScript; per-image slots and the built-in artwork render on the server.
+To replace the built-in artwork across the site, give the integration an `expand` icon in its [`icons`](#icons) option, which also replaces the video player's expand button. Individual `zoom-indicator` slots take precedence over that shared icon. All three render on the server.
 
 Set these variables in global CSS or on an ancestor of the image:
 
@@ -468,7 +467,7 @@ import { Audio } from 'astro-media-kit/components'
 | `creditMediaType`    | `MediaType`                           | `'audio'`                      |
 | `creditOrganization` | `string`                              | —                              |
 
-Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. When the player is focused, Space or K plays, M mutes, the left and right arrows or J and L seek, the up and down arrows change the volume, 0 through 9, Home, and End jump to a position, and `<` and `>` change the speed. Its skin stylesheet is requested only when a local audio player renders. Its icons share the [MediaTheme](#mediatheme) overrides used by video. SoundCloud and oEmbed players retain their providers' controls.
+Local audio uses the kit's editable Video.js audio controls, including play/pause, ten-second seeking, time, playback speed, and volume. When the player is focused, Space or K plays, M mutes, the left and right arrows or J and L seek, the up and down arrows change the volume, 0 through 9, Home, and End jump to a position, and `<` and `>` change the speed. Its skin stylesheet is requested only when a local audio player renders. Its icons follow the integration's [`icons`](#icons) option, as video's do. SoundCloud and oEmbed players retain their providers' controls.
 
 `autoPlay`, `muted`, `loop`, and `preload` configure local audio; SoundCloud receives only `autoPlay`, while generic oEmbed uses the provider's embed settings. Numeric SoundCloud track IDs are inferred automatically. Generic oEmbed requires a page advertising a JSON discovery endpoint that returns embed HTML. As with Video, oEmbed failures are logged and shown inline only in development.
 
@@ -501,45 +500,6 @@ import second from '../assets/second.jpg'
 | `class`, `className` | `string`  | — (`class` takes precedence) |
 
 The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping. Set `--amk-carousel-duration` (default `0.4s`, `0s` with reduced motion) on the carousel or an ancestor to time its glide.
-
-### MediaTheme
-
-Place one optional `<MediaTheme>` in your page layout to replace decorative icons across the kit's video controls, local audio controls, carousels, image zoom indicators, and lightbox. Supply inline SVGs or Astro components that render a single SVG through named `icon-*` slots. Every omitted icon keeps its built-in artwork; without `MediaTheme`, all components work as usual.
-
-```astro
----
-import { MediaTheme } from 'astro-media-kit/components'
-import PlayIcon from '../icons/PlayIcon.astro'
-import PauseIcon from '../icons/PauseIcon.astro'
-import CloseIcon from '../icons/CloseIcon.astro'
----
-
-<MediaTheme>
-  <PlayIcon slot="icon-play" />
-  <PauseIcon slot="icon-pause" />
-  <CloseIcon slot="icon-close" />
-</MediaTheme>
-
-<slot />
-```
-
-| Slots                                                    | Used by                                                                                                                                                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `icon-play`, `icon-pause`, `icon-restart`                | Video and local audio, including the large minimal-video play button                                                                                                                  |
-| `icon-volume-off`, `icon-volume-low`, `icon-volume-high` | Video and local audio                                                                                                                                                                 |
-| `icon-spinner`                                           | Video and local audio buffering indicators                                                                                                                                            |
-| `icon-captions-off`, `icon-captions-on`                  | Video caption controls                                                                                                                                                                |
-| `icon-fullscreen-enter`, `icon-fullscreen-exit`          | Video native-fullscreen controls                                                                                                                                                      |
-| `icon-expand`                                            | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to a mirror of the fullscreen-enter artwork, pointing to the top-right and bottom-left |
-| `icon-collapse`                                          | Video's lightbox button that returns the player to the page; defaults to a mirror of the fullscreen-exit artwork                                                                      |
-| `icon-seek`                                              | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                                                                                 |
-| `icon-check`                                             | Local audio's selected playback-speed indicator                                                                                                                                       |
-| `icon-close`, `icon-previous`, `icon-next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                                                                         |
-| `icon-zoom-in`, `icon-zoom-out`                          | Lightbox secondary zoom states                                                                                                                                                        |
-
-Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit retains accessible button labels, focus handling, keyboard behavior, and state switching. Icons must be static SVG markup; client-hydrated components and interactive content are not supported in these slots. Unknown slots and slots that do not render a single SVG throw during rendering, which happens at build time for static pages.
-
-Overrides apply to the current document and refresh on Astro client-side navigation. `MediaTheme` emits inert template content, so it adds no layout box and can also sit inside a Carousel without becoming a slide. Visiting a page without `MediaTheme` restores the defaults. These overrides leave unrelated Video.js icon families alone, and image-only pages do not load Video.js. The `MediaIconName` type is exported from `astro-media-kit/components`.
 
 For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, `--amk-icon-size`, `--amk-font-size`, `--amk-slider-track-height`, `--amk-slider-track`, `--amk-slider-buffer`, `--amk-slider-fill`, and `--amk-duration` (the control bar's own fade) on `:root`, on any element around the player, or on `.amk-video` itself. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
 
@@ -667,7 +627,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 
 The cursor shows what a click does. `--amk-zoom-in-cursor` covers items on the page, content in the viewer that a click zooms into, and content on its way back that a click brings back. `--amk-zoom-out-cursor` covers the rest of the viewer, where a click closes it or zooms back out. Captions, controls, and players keep their own cursors, and ZoomLink text links keep the link pointer. Set both on `:root` to change the page and the viewer together. The page item's cursor rule is unlayered, so a site-wide `a { cursor: pointer }` doesn't replace it on items that render as links.
 
-Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use [MediaTheme](#mediatheme) to replace icon artwork.
+Set these properties in global CSS (or `<style is:global>` in an Astro layout). The viewer is appended to `<body>`, so properties set only on an individual image or its page wrapper do not inherit into the overlay. Existing part classes remain available for borders, focus styles, positioning, and individual button overrides. Use the integration's [`icons`](#icons) option to replace icon artwork.
 
 The lightbox requires native `<dialog>` support. It uses [`moveBefore()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore) when available to preserve element state during a lift. Otherwise it falls back to insertion: HTML video playback is preserved, but iframes inside lifted elements reload and player popups restart. While an image is lifted, temporary `sizes` values follow its displayed width when it opens, zooms, or the viewport grows. The browser still selects the matching picture source and responsive candidate; the original sizing hints return when the image lands. Hover and focus warm candidates before opening.
 
@@ -822,6 +782,36 @@ import { Image } from 'astro-media-kit/components'
 <Image src="../assets/photo.jpg" alt="Photo" />
 ```
 
+### Icons
+
+Give the integration your own artwork for the icons on the kit's video controls, local audio controls, carousels, image zoom indicators, and lightbox. Each icon is an SVG file, as a path from the project root or a `URL`, or SVG markup itself. Every icon left out keeps its built-in artwork.
+
+```ts
+mediaKit({
+  icons: {
+    close: './src/icons/close.svg',
+    pause: new URL('src/icons/pause.svg', import.meta.url),
+    play: '<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z" /></svg>',
+  },
+})
+```
+
+| Icons                                     | Used by                                                                                                                                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `play`, `pause`, `restart`                | Video and local audio, including the large minimal-video play button                                                                                                                  |
+| `volume-off`, `volume-low`, `volume-high` | Video and local audio                                                                                                                                                                 |
+| `spinner`                                 | Video and local audio buffering indicators                                                                                                                                            |
+| `captions-off`, `captions-on`             | Video caption controls                                                                                                                                                                |
+| `fullscreen-enter`, `fullscreen-exit`     | Video native-fullscreen controls                                                                                                                                                      |
+| `expand`                                  | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to a mirror of the fullscreen-enter artwork, pointing to the top-right and bottom-left |
+| `collapse`                                | Video's lightbox button that returns the player to the page; defaults to a mirror of the fullscreen-exit artwork                                                                      |
+| `seek`                                    | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                                                                                 |
+| `check`                                   | Local audio's selected playback-speed indicator                                                                                                                                       |
+| `close`, `previous`, `next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                                                                         |
+| `zoom-in`, `zoom-out`                     | Lightbox secondary zoom states                                                                                                                                                        |
+
+Icons are drawn into each page as it is rendered, and into the lightbox's script as it is built, so they are there before any script runs and nothing is swapped in the browser. They apply to the whole site. Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit marks them hidden from assistive technology and retains accessible button labels, focus handling, keyboard behavior, and state switching. An unknown icon name, a file that can't be read, or a source that is not exactly one SVG element stops the build with the icon's name in the message. The `MediaIconName` type is exported from `astro-media-kit` and `astro-media-kit/components`.
+
 ### Tldraw
 
 Enable `.tldr` file support via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw), which wraps [`tldraw-cli`](https://github.com/kitschpatrol/tldraw-cli). Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
@@ -930,7 +920,8 @@ Exported from `astro-media-kit`:
 - **`BunnyConfig`**, **`CloudflareConfig`**, **`MuxConfig`** — Credential shapes for those services.
 - **`VideoInfo`** — Normalized video metadata (dimensions, duration, URLs, captions).
 - **`MediaKitConfig`** — Options accepted by the `mediaKit()` integration function.
-- **`AphexConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
+- **`AphexConfig`**, **`IconsConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
+- **`MediaIconName`** — The names of the icons the `icons` option takes.
 - **`AutoImportConfig`**, **`AutoImportEntry`**, **`AutoImportPluginConfig`** — Types for the auto-import feature's component mapping.
 
 Component prop types are exported from `astro-media-kit/components`: **`AudioProps`**, **`CaptionProps`**, **`CarouselProps`**, **`ImageProps`**, **`PictureProps`**, **`VideoProps`**, **`ZoomerProps`**, and **`ZoomLinkProps`**. **`FormatRules`** and **`FormatsRules`**, the per-input-format object forms of `format`, `fallbackFormat`, and `formats`, are exported there too, as is **`MediaIconName`** for icon overrides.

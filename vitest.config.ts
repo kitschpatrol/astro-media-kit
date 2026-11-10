@@ -168,6 +168,8 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 	// its first request. Unit tests rebuild dist while browser tests run, so
 	// serve a separate build.
 	const { dist } = await buildFixture('core-image', '.vitest/dist')
+	// The fixture with its own icons, served from a folder of the same directory
+	await buildFixture('theme', '../core-image/.vitest/dist/themed')
 	return {
 		test: {
 			projects: [

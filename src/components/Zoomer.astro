@@ -1,7 +1,7 @@
 ---
 import './internal/lightbox/lightbox.css'
 import './internal/zoom-indicator.css'
-import { expandIcon } from './internal/zoom-icons'
+import { icons } from './internal/theme'
 
 /**
  * Wraps content the lightbox can lift into a full-screen viewer. The wrapper
@@ -89,7 +89,7 @@ const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim
 				data-amk-icon={hasCustomIndicator ? undefined : 'expand'}
 				inert
 			>
-				<Fragment set:html={hasCustomIndicator ? customIndicator : expandIcon} />
+				<Fragment set:html={hasCustomIndicator ? customIndicator : icons.expand} />
 			</span>
 		)}
 	</TAG>
@@ -99,6 +99,4 @@ const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim
 
 {isEnabled && <script>
 	import './internal/lightbox'
-	import { installZoomIndicators } from './internal/zoom-indicator'
-	installZoomIndicators()
 </script>}

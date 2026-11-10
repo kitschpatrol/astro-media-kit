@@ -1,0 +1,56 @@
+---
+import { Audio, Carousel, Image, Picture, Video } from 'astro-media-kit/components'
+import photo from '../../../core-image/src/assets/penguin1.jpg'
+import sticker from '../../../core-image/src/assets/penguin2.png'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Themed icons</title>
+	</head>
+	<body>
+		<section id="indicator">
+			<Image alt="Penguin" src={photo} width={300} zoom="themed" zoomIndicator zoomLevel="fill" />
+		</section>
+		<section id="local-indicator">
+			<Picture alt="Its own corner artwork" src={photo} width={300} zoom="themed">
+				<svg data-custom-icon="local-indicator" slot="zoom-indicator" viewBox="0 0 24 24">
+					<circle cx="12" cy="12" fill="currentColor" r="8" />
+				</svg>
+			</Picture>
+		</section>
+		<section id="carousel">
+			<Carousel class="themed-carousel">
+				<Image alt="First" src={photo} width={300} />
+				<Image alt="Second" src={sticker} width={300} />
+			</Carousel>
+		</section>
+		<section id="video">
+			<Video src="/media/loop.mp4" zoom="themed" />
+		</section>
+		<section id="audio">
+			<Audio src="/media/silence.wav" />
+		</section>
+	</body>
+</html>
+
+<style is:global>
+	.themed-carousel {
+		--amk-carousel-control-size: 48px;
+		--amk-carousel-control-radius: 8px;
+		--amk-carousel-control-color: rgb(250 220 100);
+		--amk-carousel-icon-size: 28px;
+
+		width: 400px;
+		max-width: 100%;
+	}
+
+	:root {
+		--amk-lightbox-close-width: 52px;
+		--amk-lightbox-control-radius: 8px;
+		--amk-lightbox-control-color: rgb(250 220 100);
+		--amk-lightbox-icon-size: 28px;
+	}
+</style>

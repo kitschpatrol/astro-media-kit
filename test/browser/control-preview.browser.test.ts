@@ -34,7 +34,7 @@ async function playerPage() {
 	await expect
 		.poll(() => query(player, 'media-play-button').getAttribute('aria-label'))
 		.toBe('Play')
-	await expect.poll(() => player.querySelector(':scope media-icon svg')).not.toBeNull()
+	await expect.poll(() => player.querySelector(':scope .amk-icon svg')).not.toBeNull()
 	await expect.poll(() => query(player, 'video', HTMLVideoElement).readyState).toBeGreaterThan(0)
 	await expect
 		.poll(() => query(player, 'media-time[type="duration"]').getAttribute('datetime'))

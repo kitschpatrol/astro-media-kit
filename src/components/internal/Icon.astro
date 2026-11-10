@@ -1,0 +1,18 @@
+---
+import type { MediaIconName } from '../media-icon-names'
+import { icons } from './theme'
+
+/**
+ * One of the kit's icons, drawn into the page as inline SVG, so it shows before
+ * any script runs: the site's own, from `mediaKit({ icons })`, or else the
+ * built-in artwork.
+ */
+export type Props = {
+	class?: string | undefined
+	name: MediaIconName
+}
+
+const { class: className, name } = Astro.props
+---
+
+<span class:list={['amk-icon', className]} data-amk-icon={name} set:html={icons[name]} />

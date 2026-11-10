@@ -8,17 +8,20 @@ import { fileURLToPath } from 'node:url'
 import type { CredentialService } from '../components/utils/video'
 import type { AphexConfig } from './aphex'
 import type { AutoImportConfig, AutoImportPluginConfig } from './auto-import'
+import type { IconsConfig } from './theme'
 import type { TldrawConfig } from './tldraw'
 import type { ResolvedWatermarkConfig } from './watermark-image-service'
 import { vitePluginMediaKitAphex } from './aphex'
 import { imageOnlyImport, vitePluginMediaKitAutoImport } from './auto-import'
 import { removeOriginalImages } from './remove-originals'
 import { stripExifFromImages } from './strip-exif'
+import { resolveIcons, viewerIcons } from './theme'
 import { vitePluginMediaKitTldraw } from './tldraw'
 
 export type { AphexConfig } from './aphex'
 export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './auto-import'
 export { imageOnlyImport, tldrawDarkImport, transformAstroSource } from './auto-import'
+export type { IconsConfig } from './theme'
 export type { TldrawConfig } from './tldraw'
 export type { TldrawImageOptions } from './tldraw'
 
@@ -77,6 +80,22 @@ export type MediaKitConfig = {
 	 * @default true
 	 */
 	autoImport?: AutoImportPluginConfig | boolean
+	/**
+	 * The site's own artwork for the icons on the kit's video and audio controls,
+	 * carousels, zoom indicators, and lightbox, by icon name: an SVG file, as a
+	 * path from the project root or a `URL`, or SVG markup itself. Icons are
+	 * drawn into each page as it is rendered, so they are there before any script
+	 * runs. An icon left out keeps its built-in artwork.
+	 *
+	 * @example
+	 * 	icons: {
+	 * 	close: './src/icons/close.svg',
+	 * 	play: '<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z" /></svg>',
+	 * 	}
+	 *
+	 * @default {}
+	 */
+	icons?: IconsConfig
 	/**
 	 * Remove unused original images from the build output after Astro has
 	 * finished writing the site. Astro deletes a raster original that only its
@@ -251,7 +270,25 @@ export default function mediaKit(config?: MediaKitConfig): AstroIntegration {
 					}
 				}
 			},
-			'astro:config:setup'({ command, config: setupConfig, logger, updateConfig }) {
+			'astro:config:setup'({ addWatchFile, command, config: setupConfig, logger, updateConfig }) {
+				// The components and the lightbox's script read the icons as
+				// constants of the build, so nothing is themed in the browser
+				const { files, icons } = resolveIcons(config?.icons ?? {}, setupConfig.root)
+				for (const file of files) {
+					addWatchFile(file)
+				}
+
+				if (Object.keys(icons).length > 0) {
+					updateConfig({
+						vite: {
+							define: {
+								__AMK_THEME__: JSON.stringify({ icons }),
+								__AMK_VIEWER_THEME__: JSON.stringify({ icons: viewerIcons(icons) }),
+							},
+						},
+					})
+				}
+
 				if (videoServices.length > 0) {
 					const envSchemaForService: Record<
 						CredentialService,

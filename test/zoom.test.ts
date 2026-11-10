@@ -59,7 +59,7 @@ describe('zoom server markup', () => {
 		expect($('#video media-container').attr('data-media')).toBe('')
 		expect($('#video media-controls').attr('data-interactive')).toBe('')
 		expect($('#video button[data-zoom-open]')).toHaveLength(1)
-		expect($('#video button[data-zoom-open] media-icon')).toHaveLength(1)
+		expect($('#video button[data-zoom-open] .amk-icon svg')).toHaveLength(1)
 	})
 
 	it('renders the full bar for a minimal player the lightbox can raise, and the volume in a popover', async () => {

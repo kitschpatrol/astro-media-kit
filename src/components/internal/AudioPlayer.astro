@@ -2,6 +2,7 @@
 // A rendered link keeps the skin out of unused barrel imports and lets the
 // browser share the stylesheet between players without repeating inline CSS.
 import audioSkinUrl from './audio/skin.css?url'
+import Icon from './Icon.astro'
 
 export type Props = {
 	attributes: astroHTML.JSX.AudioHTMLAttributes
@@ -49,28 +50,12 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 					<media-controls-group class="audio-controls-start">
 						<div class="audio-play-button">
 							<media-buffering-indicator class="media-buffering-indicator audio-play-button-buffering-indicator">
-								<media-icon
-									class="media-buffering-indicator-spinner-icon"
-									family="amk"
-									name="spinner"
-								></media-icon>
+								<Icon class="media-buffering-indicator-spinner-icon" name="spinner" />
 							</media-buffering-indicator>
 							<media-play-button class="media-button media-play-button" id={`${uid}-0`}>
-								<media-icon
-									class="media-button-icon media-play-button-restart-icon"
-									family="amk"
-									name="restart"
-								></media-icon>
-								<media-icon
-									class="media-button-icon media-play-button-play-icon"
-									family="amk"
-									name="play"
-								></media-icon>
-								<media-icon
-									class="media-button-icon media-play-button-pause-icon"
-									family="amk"
-									name="pause"
-								></media-icon>
+								<Icon class="media-button-icon media-play-button-restart-icon" name="restart" />
+								<Icon class="media-button-icon media-play-button-play-icon" name="play" />
+								<Icon class="media-button-icon media-play-button-pause-icon" name="pause" />
 							</media-play-button>
 							<media-tooltip
 								boundary="viewport"
@@ -88,11 +73,7 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 							seconds="-10"
 						>
 							<div class="media-seek-button-content">
-								<media-icon
-									class="media-button-icon media-seek-button-backward-icon"
-									family="amk"
-									name="seek"
-								></media-icon>
+								<Icon class="media-button-icon media-seek-button-backward-icon" name="seek" />
 								<span class="media-seek-button-label media-seek-button-backward-label">10</span>
 							</div>
 						</media-seek-button>
@@ -111,7 +92,7 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 							seconds="10"
 						>
 							<div class="media-seek-button-content">
-								<media-icon class="media-button-icon" family="amk" name="seek"></media-icon>
+								<Icon class="media-button-icon" name="seek" />
 								<span class="media-seek-button-label media-seek-button-forward-label">10</span>
 							</div>
 						</media-seek-button>
@@ -176,11 +157,7 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 										<media-menu-radio-item class="media-menu-radio-item">
 											<span data-part="label"></span>
 											<media-menu-item-indicator class="media-menu-item-indicator" force-mount>
-												<media-icon
-													class="media-menu-radio-item-icon"
-													family="amk"
-													name="check"
-												></media-icon>
+												<Icon class="media-menu-radio-item-icon" name="check" />
 											</media-menu-item-indicator>
 										</media-menu-radio-item>
 									</template>
@@ -192,21 +169,9 @@ const uid = `amk-audio-${crypto.randomUUID()}`
 							commandfor={`${uid}-6`}
 							id={`${uid}-5`}
 						>
-							<media-icon
-								class="media-button-icon media-mute-button-off-icon"
-								family="amk"
-								name="volume-off"
-							></media-icon>
-							<media-icon
-								class="media-button-icon media-mute-button-low-icon"
-								family="amk"
-								name="volume-low"
-							></media-icon>
-							<media-icon
-								class="media-button-icon media-mute-button-high-icon"
-								family="amk"
-								name="volume-high"
-							></media-icon>
+							<Icon class="media-button-icon media-mute-button-off-icon" name="volume-off" />
+							<Icon class="media-button-icon media-mute-button-low-icon" name="volume-low" />
+							<Icon class="media-button-icon media-mute-button-high-icon" name="volume-high" />
 						</media-mute-button>
 						<media-tooltip
 							class="media-popup media-popup-safe-area media-popup-transition media-popup-surface media-tooltip"

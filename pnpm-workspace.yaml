@@ -18,6 +18,7 @@ packages:
   - playground-starlight
   - test/parity/fixtures/core-image
   - test/parity/fixtures/picture-darkmode
+  - test/parity/fixtures/theme
 peerDependencyRules:
   allowedVersions:
     # Remove once the installed version declares ESLint 10 support.

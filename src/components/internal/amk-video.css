@@ -140,7 +140,7 @@
 	opacity: 1;
 }
 
-.amk-buffering media-icon {
+.amk-buffering .amk-icon {
 	display: block;
 	width: 48px;
 	height: 48px;
@@ -270,21 +270,24 @@
 	}
 }
 
-.amk-button media-icon {
+.amk-button .amk-icon {
 	display: none;
 	width: var(--amk-icon-size);
 	height: var(--amk-icon-size);
 }
 
-.amk-button media-icon svg {
+.amk-button .amk-icon svg {
 	display: block;
 	width: 100%;
 	height: 100%;
 }
 
-/* Icon switching from Video.js state attributes. */
+/* Icon switching from Video.js state attributes. Before its script arrives a
+   button has none of them, and shows what it will at rest: play, full volume,
+   captions off, and entering fullscreen. */
+media-play-button:not(:defined) .amk-icon-play,
 media-play-button[data-paused]:not([data-ended]) .amk-icon-play,
-media-play-button:not([data-paused]) .amk-icon-pause,
+media-play-button:defined:not([data-paused]) .amk-icon-pause,
 media-play-button[data-ended] .amk-icon-restart,
 amk-mute-button[data-volume-level='off'] .amk-icon-volume-off,
 amk-mute-button:is([data-volume-level='low'], [data-volume-level='medium']) .amk-icon-volume-low,
@@ -293,8 +296,8 @@ media-captions-button[data-active] .amk-icon-captions-on,
 media-captions-button:not([data-active]) .amk-icon-captions-off,
 media-fullscreen-button[data-fullscreen] .amk-icon-fullscreen-exit,
 media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
-.amk-zoom-button media-icon,
-.amk-collapse-button media-icon {
+.amk-zoom-button .amk-icon,
+.amk-collapse-button .amk-icon {
 	display: block;
 }
 
@@ -311,7 +314,7 @@ media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 	background: var(--amk-control-background);
 }
 
-.amk-center-play media-icon {
+.amk-center-play .amk-icon {
 	width: 32px;
 	height: 32px;
 }

@@ -1,5 +1,6 @@
 ---
 import { parseHTML } from 'linkedom'
+import { icons } from './internal/theme'
 import { escapeAttributeAmpersands } from './utils/html'
 import './internal/carousel/carousel.css'
 
@@ -99,18 +100,10 @@ const hasNavigation = slides.length > 1
 					class="amk-carousel-button amk-carousel-previous"
 					type="button"
 				>
-					<span class="amk-carousel-icon" data-amk-icon="previous">
-						<svg aria-hidden="true" class="amk-carousel-default-icon" viewBox="0 0 24 24">
-							<path d="M15 5 8 12l7 7" />
-						</svg>
-					</span>
+					<span class="amk-carousel-icon" data-amk-icon="previous" set:html={icons.previous} />
 				</button>
 				<button aria-label="Next" class="amk-carousel-button amk-carousel-next" type="button">
-					<span class="amk-carousel-icon" data-amk-icon="next">
-						<svg aria-hidden="true" class="amk-carousel-default-icon" viewBox="0 0 24 24">
-							<path d="M9 5l7 7-7 7" />
-						</svg>
-					</span>
+					<span class="amk-carousel-icon" data-amk-icon="next" set:html={icons.next} />
 				</button>
 			</>
 		)}
