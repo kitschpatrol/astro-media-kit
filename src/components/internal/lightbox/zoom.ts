@@ -39,7 +39,7 @@ export class Zoom {
 
 		delete slide.element.dataset.zoomed
 		slide.element.querySelector<HTMLElement>('.amk-lightbox-caption')?.removeAttribute('inert')
-		slide.frame.style.removeProperty('--amk-lightbox-zoom-width')
+		slide.frame.style.removeProperty('--amk-lightbox-zoomed-width')
 		setLayerStyle(slide.layer, identity, false)
 		prepareSlideImage(slide)
 		this.#slide = undefined
@@ -65,11 +65,11 @@ export class Zoom {
 		const { stage } = slide
 		if (width === undefined) {
 			delete slide.element.dataset.zoomed
-			slide.frame.style.removeProperty('--amk-lightbox-zoom-width')
+			slide.frame.style.removeProperty('--amk-lightbox-zoomed-width')
 			this.#slide = undefined
 		} else {
 			slide.element.dataset.zoomed = ''
-			slide.frame.style.setProperty('--amk-lightbox-zoom-width', `${width}px`)
+			slide.frame.style.setProperty('--amk-lightbox-zoomed-width', `${width}px`)
 			this.#slide = slide
 			// Keyboard scrolling goes to the focused scroll container
 			stage.focus({ preventScroll: true })

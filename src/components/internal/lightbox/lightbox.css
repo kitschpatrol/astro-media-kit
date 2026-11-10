@@ -397,7 +397,7 @@
 }
 
 .amk-lightbox-slide[data-zoomed] .amk-lightbox-frame {
-	width: var(--amk-lightbox-zoom-width);
+	width: var(--amk-lightbox-zoomed-width);
 }
 
 @media (hover: hover) {
