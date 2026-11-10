@@ -56,7 +56,7 @@ export function createPlaceholder(item: HTMLElement, subject: Element): Placehol
 		})
 	}
 
-	placeholder.dataset.preview = ''
+	placeholder.dataset.amkPreview = ''
 	placeholder.ariaHidden = 'true'
 	placeholder.inert = true
 	// Layout sizes, unaffected by transforms such as a hover zoom

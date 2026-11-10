@@ -44,7 +44,7 @@ it('opens a rendered picture gallery within its scope, lifting the real picture'
 	expect(currentLayer().firstElementChild).toBe(original)
 	// The neighbor follows once the opening transition settles
 	await expect.poll(() => isLifted(image!)).toBe(true)
-	expect(query(picture!, '[data-preview]').matches('picture')).toBe(true)
+	expect(query(picture!, '[data-amk-preview]').matches('picture')).toBe(true)
 	expect(document.querySelectorAll('#second .amk-zoom[data-lifted]')).toHaveLength(0)
 	const caption = query(viewer(), '.amk-lightbox-caption')
 	expect(caption.textContent).toContain('Picture caption')

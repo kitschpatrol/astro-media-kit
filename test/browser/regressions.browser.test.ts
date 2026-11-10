@@ -218,7 +218,7 @@ it.each([
 
 		const opening = openLightbox(box)
 		const preview = box.querySelector<HTMLCanvasElement | HTMLImageElement | HTMLPictureElement>(
-			'[data-preview]',
+			'[data-amk-preview]',
 		)!
 		const shown =
 			preview instanceof HTMLPictureElement ? query(preview, 'img', HTMLImageElement) : preview
@@ -275,7 +275,7 @@ it('supports automatic and disabled placeholders without collapsing layout', asy
 		const box = boxes(fixture)[0]!
 		const before = box.getBoundingClientRect()
 		await openLightbox(box)
-		expect(box.querySelectorAll('[data-preview]')).toHaveLength(mode === 'none' ? 0 : 1)
+		expect(box.querySelectorAll('[data-amk-preview]')).toHaveLength(mode === 'none' ? 0 : 1)
 		expect(box.querySelector('canvas')).toBeNull()
 		expect(box.getBoundingClientRect().height).toBe(before.height)
 		viewer().close()
@@ -857,7 +857,7 @@ it('preserves ordinary markup styling and remaps preview references without copy
 	const original = box.querySelector('div')!
 	const before = original.getBoundingClientRect()
 	await openLightbox(box)
-	const copy = query(box, '[data-preview]')
+	const copy = query(box, '[data-amk-preview]')
 	expect(copy.textContent).toBe(original.textContent)
 	expect(copy.id).not.toBe(original.id)
 	// eslint-disable-next-line unicorn/no-incorrect-query-selector -- Count every match to detect duplicate IDs.
@@ -894,7 +894,7 @@ it('does not initialize a second custom component for a placeholder', async () =
 	const box = boxes(fixture)[0]!
 	await openLightbox(box)
 	expect(constructions).toBe(1)
-	expect(box.querySelector('[data-preview]')).toBeNull()
+	expect(box.querySelector('[data-amk-preview]')).toBeNull()
 	expect(box.getBoundingClientRect().height).toBe(100)
 })
 
@@ -913,7 +913,7 @@ it('disables previews for every supported content type while preserving captions
 		await Promise.all(Array.from(box.querySelectorAll('img'), async (target) => target.decode()))
 		const before = box.getBoundingClientRect()
 		await openLightbox(box)
-		expect(box.querySelector('[data-preview]')).toBeNull()
+		expect(box.querySelector('[data-amk-preview]')).toBeNull()
 		expect(box.getBoundingClientRect().height).toBeCloseTo(before.height, 0)
 		expect(getComputedStyle(fixture.querySelector('figcaption')!).visibility).toBe('visible')
 		viewer().close()
@@ -949,7 +949,7 @@ it('stands a poster in for an embedded player with nothing to draw, started or n
 	const box = boxes(fixture)[0]!
 	const container = query(box, 'media-container').getBoundingClientRect()
 	await openLightbox(box)
-	const preview = query(box, '[data-preview]', HTMLImageElement)
+	const preview = query(box, '[data-amk-preview]', HTMLImageElement)
 	expect(preview.src).toContain('/media/loop-poster.jpg')
 	expect(preview.getBoundingClientRect().width).toBeCloseTo(container.width, 0)
 	expect(preview.getBoundingClientRect().height).toBeCloseTo(container.height, 0)

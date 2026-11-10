@@ -48,7 +48,19 @@ describe('lifting', () => {
 		expect(subject.closest('.amk-lightbox-frame')).not.toBeNull()
 		expect(viewer().querySelector('.subject')).toBe(subject)
 		expect(document.querySelectorAll('.subject')).toHaveLength(2)
-		expect(query(fixture, '[data-preview]').inert).toBe(true)
+		expect(query(fixture, '[data-amk-preview]').inert).toBe(true)
+	})
+
+	it("leaves a page's own data-preview attribute alone", async () => {
+		const fixture = mount(
+			`<section data-preview style="margin: 12px">${item(block('a'))}</section>`,
+		)
+		const section = query(fixture, 'section')
+		expect(getComputedStyle(section).position).toBe('static')
+		expect(getComputedStyle(section).marginTop).toBe('12px')
+
+		await userEvent.click(query(fixture, '.amk-zoom'))
+		await expect.poll(() => viewer().dataset.state).toBe('open')
 	})
 
 	it('opens with Enter and Space', async () => {
@@ -180,11 +192,11 @@ describe('lifting', () => {
 		expect(Number(getComputedStyle(layer).opacity)).toBeGreaterThan(0.35)
 		expect(Number(getComputedStyle(layer).opacity)).toBeLessThan(0.5)
 		expect(subject.parentElement).toBe(layer)
-		expect(box.querySelector('[data-preview]')).not.toBeNull()
+		expect(box.querySelector('[data-amk-preview]')).not.toBeNull()
 		fade.finish()
 		await closing
 		expect(subject.parentElement).toBe(box)
-		expect(box.querySelector('[data-preview]')).toBeNull()
+		expect(box.querySelector('[data-amk-preview]')).toBeNull()
 		expect(viewer().open).toBe(false)
 	})
 
@@ -274,7 +286,7 @@ describe('lifting', () => {
 		const fixture = mount(item(block('a')))
 		const opening = openLightbox(boxes(fixture)[0]!)
 		const layer = query(document, '.amk-lightbox-layer')
-		query(fixture, '[data-preview]')
+		query(fixture, '[data-amk-preview]')
 		expect(fadeOf(layer)).toBeUndefined()
 		expect(getComputedStyle(layer).opacity).toBe('1')
 		await opening
@@ -296,7 +308,7 @@ describe('lifting', () => {
 		expect(small).toContain('-480.')
 		prepareLightbox(box)
 		await openLightbox(box)
-		const copy = query(box, '[data-preview]', HTMLImageElement)
+		const copy = query(box, '[data-amk-preview]', HTMLImageElement)
 		await expect.poll(() => image.currentSrc).not.toBe(small)
 		await expect.poll(() => copy.currentSrc).toBe(image.currentSrc)
 		await expect.poll(() => copy.complete).toBe(true)

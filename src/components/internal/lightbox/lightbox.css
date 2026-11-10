@@ -72,7 +72,7 @@
 	}
 
 	/* Decorative copies keep their content styling, but not layout or input. */
-	[data-preview] {
+	[data-amk-preview] {
 		pointer-events: none !important;
 		position: absolute !important;
 		transform: none !important;
@@ -87,7 +87,7 @@
 		margin: 0 !important;
 	}
 
-	picture[data-preview] {
+	picture[data-amk-preview] {
 		display: block !important;
 	}
 

@@ -147,7 +147,7 @@ export function isItem(node: EventTarget | undefined): node is HTMLElement {
 	return (
 		node instanceof HTMLElement &&
 		node.matches(itemSelector) &&
-		node.parentElement?.closest(`[data-preview], ${viewerSelector}`) === null
+		node.parentElement?.closest(`[data-amk-preview], ${viewerSelector}`) === null
 	)
 }
 

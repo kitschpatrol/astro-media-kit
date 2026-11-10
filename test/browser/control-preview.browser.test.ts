@@ -151,5 +151,5 @@ it('omits decorative controls when thumbnail previews are disabled', async () =>
 	item.dataset.placeholder = 'none'
 	await openLightbox(item)
 	expect(item.querySelector('.amk-page-control-preview')).toBeNull()
-	expect(item.querySelector('[data-preview]')).toBeNull()
+	expect(item.querySelector('[data-amk-preview]')).toBeNull()
 })

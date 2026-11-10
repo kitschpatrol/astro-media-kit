@@ -297,7 +297,7 @@ it('preserves translucent styling without a page placeholder or doubled painting
 	expect(style.filter).toBe('grayscale(1)')
 	expect(style.borderRadius).toBe('12px')
 	expect(getComputedStyle(original).opacity).toBe('0')
-	expect(box.querySelector('[data-preview]')).toBeNull()
+	expect(box.querySelector('[data-amk-preview]')).toBeNull()
 	await expect.poll(() => bitmap.isConnected).toBe(false)
 	expect(getComputedStyle(original).opacity).toBe('0.4')
 })
