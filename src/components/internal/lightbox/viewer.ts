@@ -21,7 +21,7 @@ import { refreshImagePreview } from './image-preview'
 import { canFade, dropSlides, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
-import { CarouselMotion } from './motion'
+import { CarouselMotion, trackWidth } from './motion'
 import { closeInactiveTooltips, floatControls, hideControls } from './player-controls'
 import { prepareImage, prepareSlideImage } from './prepare'
 import { containPageScroll, containScrollKey } from './scroll-boundary'
@@ -303,7 +303,7 @@ class Viewer {
 		// With the dialog shown and the slide's media in it, so that the status
 		// region announces the slide, by name
 		this.#updateControls()
-		this.#width = this.#track.clientWidth
+		this.#width = trackWidth(this.#track)
 		this.#height = this.#track.clientHeight
 		this.#motion.configure(this.#slides.length, index)
 
@@ -743,7 +743,7 @@ class Viewer {
 	}
 
 	readonly #handleResize = () => {
-		const width = this.#track.clientWidth
+		const width = trackWidth(this.#track)
 		const height = this.#track.clientHeight
 		if (width === this.#width && height === this.#height) {
 			return

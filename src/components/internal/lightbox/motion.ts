@@ -61,6 +61,12 @@ const flickSpeed = 0.3
 /** How hard a drag past either end of the track is held back: iOS's constant. */
 const pull = 0.55
 
+/**
+ * How close to a slide, in px, the track counts as resting on it. Browsers round
+ * a fractional snap position to whole or device pixels when they report it.
+ */
+const onSlide = 1
+
 /** Whether the click being dispatched, or the next one, ends a drag. */
 let isDragClick = false
 
@@ -130,7 +136,7 @@ export class CarouselMotion {
 		this.stop()
 		this.#count = count
 		this.#index = index
-		this.#width = this.#track.clientWidth
+		this.#width = trackWidth(this.#track)
 		this.#direction = getComputedStyle(this.#track).direction === 'rtl' ? -1 : 1
 		this.render(index * this.#width)
 	}
@@ -288,7 +294,7 @@ export class CarouselMotion {
 			stage === undefined &&
 			dismissible !== undefined &&
 			this.#glide === undefined &&
-			Math.abs(this.#position - this.#index * this.#width) < 1 &&
+			Math.abs(this.#position - this.#index * this.#width) < onSlide &&
 			event.composedPath().includes(dismissible)
 		)
 	}
@@ -564,14 +570,14 @@ export class CarouselMotion {
 		if (
 			!this.#options.canNavigate() ||
 			this.#width === 0 ||
-			this.#track.clientWidth !== this.#width
+			this.#isResizePending()
 		) {
 			return
 		}
 
 		// Have the neighbors ready as soon as the track moves off the current
 		// slide (but not for the jump to it when opening)
-		if (Math.abs(Math.abs(this.#track.scrollLeft) - this.#index * this.#width) > 0.5) {
+		if (Math.abs(Math.abs(this.#track.scrollLeft) - this.#index * this.#width) >= onSlide) {
 			this.#options.onPrepare(this.#index)
 		}
 
@@ -593,6 +599,14 @@ export class CarouselMotion {
 		return this.#width === 0
 			? this.#index
 			: clamp(Math.round(Math.abs(this.#track.scrollLeft) / this.#width), this.#count)
+	}
+
+	/**
+	 * Whether the track has a new width that `resize` has yet to hear of: its
+	 * scroll offset is for the new width by then, but `#width` isn't.
+	 */
+	#isResizePending(): boolean {
+		return Math.abs(this.#track.clientWidth - this.#width) >= 1
 	}
 
 	/**
@@ -677,8 +691,7 @@ export class CarouselMotion {
 			this.#owner === 'drag' ||
 			this.#owner === 'glide' ||
 			this.#width === 0 ||
-			// A resize is pending: the offset is for the new width, but #width isn't
-			this.#track.clientWidth !== this.#width ||
+			this.#isResizePending() ||
 			!this.#options.canNavigate()
 		) {
 			return
@@ -690,14 +703,14 @@ export class CarouselMotion {
 			// Restore it only after native input has settled, and let the browser
 			// finish any remaining distance with its own scrolling behavior.
 			delete this.#track.dataset.moving
-			if (Math.abs(this.#position - index * this.#width) > 0.5) {
+			if (Math.abs(this.#position - index * this.#width) >= onSlide) {
 				this.#track.scrollTo({
 					behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
 					left: index * this.#width * this.#direction,
 				})
 				return
 			}
-		} else if (Math.abs(this.#position - index * this.#width) > 0.5) {
+		} else if (Math.abs(this.#position - index * this.#width) >= onSlide) {
 			this.go(index)
 			return
 		}
@@ -735,6 +748,18 @@ export class CarouselMotion {
 		cancelAnimationFrame(this.#glide.frame)
 		this.#glide = undefined
 	}
+}
+
+/**
+ * A track's width as laid out, which is how far apart its slides rest. It is
+ * fractional in a fluid column or a zoomed page, where `clientWidth` rounds it,
+ * and offsets counted in rounded widths drift from the slides.
+ */
+export function trackWidth(track: HTMLElement): number {
+	// eslint-disable-next-line unicorn/prefer-number-coercion -- Number() can't read past the unit
+	const width = Number.parseFloat(getComputedStyle(track).width)
+	// Not laid out, or sized by its border box: the rounded width has to do
+	return Math.abs(width - track.clientWidth) < 1 ? width : track.clientWidth
 }
 
 function clamp(index: number, count: number): number {

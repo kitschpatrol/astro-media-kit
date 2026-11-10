@@ -15,6 +15,7 @@ import {
 	mount,
 	mountPage,
 	query,
+	settle,
 	setUpLightbox,
 	viewer,
 } from './helpers'
@@ -94,6 +95,29 @@ it('lays slides out one per track width, with captions shown on request', async 
 	expect(track.scrollWidth).toBe(1200)
 	expect(getComputedStyle(query(slides[0]!, 'figcaption')).display).not.toBe('none')
 	expect(getComputedStyle(query(carousel, '.amk-carousel-previous')).opacity).toBe('0.3')
+})
+
+it('rests on a slide in a track with a fractional width', async () => {
+	const { carousel, track } = await mountCarousel()
+	carousel.style.width = '300.4px'
+	await expect.poll(() => track.getBoundingClientRect().width).toBeCloseTo(300.4, 1)
+	const next = query(carousel, '.amk-carousel-next')
+	await userEvent.click(next)
+	await expect.poll(() => slideAt(track)).toBe(1)
+	await userEvent.click(next)
+	await expect.poll(() => slideAt(track)).toBe(2)
+	await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+
+	// Slides rest a fractional width apart, and the browser snaps to them
+	let moves = 0
+	const observer = new MutationObserver((records) => {
+		moves += records.length
+	})
+	observer.observe(track, { attributeFilter: ['data-moving'], attributes: true })
+	await settle(600)
+	observer.disconnect()
+	expect(moves).toBe(0)
+	expect(next.getAttribute('aria-disabled')).toBe('true')
 })
 
 it('gives the dots touch-sized hit zones that meet', async () => {

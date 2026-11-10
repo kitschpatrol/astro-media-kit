@@ -1,5 +1,5 @@
 import { arrowKeySelector, isWithin } from '../lightbox/dom'
-import { CarouselMotion } from '../lightbox/motion'
+import { CarouselMotion, trackWidth } from '../lightbox/motion'
 import { subscribeMediaIconTheme } from '../media-theme'
 
 type Carousel = { dispose: () => void }
@@ -133,7 +133,7 @@ function setUp(root: HTMLElement): Carousel {
 			event.preventDefault()
 			// Configure stops motion and refreshes both width and reading direction.
 			motion.configure(count, event.detail)
-			width = track.clientWidth
+			width = trackWidth(track)
 			update(event.detail)
 		},
 		{ signal },
@@ -195,11 +195,12 @@ function setUp(root: HTMLElement): Carousel {
 	// The slide widths follow the track's, and the scroll offset with them,
 	// landing on the slide a glide under way was heading for
 	const observer = new ResizeObserver(() => {
-		if (track.clientWidth === width) {
+		const laidOut = trackWidth(track)
+		if (laidOut === width) {
 			return
 		}
 
-		width = track.clientWidth
+		width = laidOut
 		const at = motion.target
 		motion.resize(width)
 		motion.go(at, 'instant')
