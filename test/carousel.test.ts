@@ -29,6 +29,11 @@ describe('carousel server markup', () => {
 		expect(dots.eq(1).attr('aria-current')).toBeUndefined()
 	})
 
+	it('keeps text that reads as a character reference in a slide attribute as written', async () => {
+		const $ = await fixture.readHTML('/entities/')
+		expect($('#carousel .amk-carousel-slide img').first().attr('alt')).toBe('&copy; as written')
+	})
+
 	it('keeps the scripts and styles the slides emit outside the track', async () => {
 		const $ = await fixture.readHTML('/carousel/')
 		// A script a captioned slide carries inside its figure is the component's own

@@ -86,6 +86,12 @@ describe('zoom link server markup', () => {
 		expect($('script[src*="Zoomer"]')).toHaveLength(1)
 	})
 
+	it('keeps text that reads as a character reference in a templated attribute as written', async () => {
+		const $ = await fixture.readHTML('/entities/')
+		const link = $('#link a.amk-zoom.amk-zoom-link')
+		expect(templated($, link).find('img').attr('alt')).toBe('&copy; as written')
+	})
+
 	it('gives a player wrapper its fallback as data-href rather than a link', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		const wrapper = $('#video .amk-zoom')

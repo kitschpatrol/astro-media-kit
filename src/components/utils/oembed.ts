@@ -1,4 +1,5 @@
 import { parseHTML } from 'linkedom'
+import { escapeAttributeAmpersands } from './html'
 import { requestSignal } from './media'
 
 const WWW_PREFIX_RE = /^www\./v
@@ -151,5 +152,6 @@ export function normalizeEmbedHtml(html: string, title: string): string {
 		}
 	}
 
+	escapeAttributeAmpersands(document.body)
 	return document.body.innerHTML
 }

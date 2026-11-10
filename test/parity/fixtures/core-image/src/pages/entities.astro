@@ -1,0 +1,29 @@
+---
+import { Carousel, Image, ZoomLink } from 'astro-media-kit/components'
+import photo from '../assets/penguin1.jpg'
+import sticker from '../assets/penguin2.png'
+
+// Text that reads as a character reference once its ampersand loses its escape
+const written = '&copy; as written'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Entities</title>
+	</head>
+	<body>
+		<section id="carousel">
+			<Carousel>
+				<Image alt={written} src={photo} />
+				<Image alt="Another" src={sticker} />
+			</Carousel>
+		</section>
+		<p id="link">
+			<ZoomLink alt={written} src={photo}>
+				A link
+			</ZoomLink>
+		</p>
+	</body>
+</html>

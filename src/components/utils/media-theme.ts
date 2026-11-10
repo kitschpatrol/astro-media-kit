@@ -1,6 +1,7 @@
 import { parseHTML } from 'linkedom'
 import type { MediaIconName } from '../media-icon-names'
 import { mediaIconNames } from '../media-icon-names'
+import { escapeAttributeAmpersands } from './html'
 
 /** Validate an icon slot and normalize its SVG as decorative artwork. */
 export function parseMediaThemeIcon(
@@ -24,5 +25,6 @@ export function parseMediaThemeIcon(
 	svg.removeAttribute('slot')
 	svg.setAttribute('aria-hidden', 'true')
 	svg.setAttribute('focusable', 'false')
+	escapeAttributeAmpersands(document.body)
 	return { markup: svg.outerHTML, name }
 }

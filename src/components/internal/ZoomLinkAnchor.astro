@@ -1,5 +1,6 @@
 ---
 import { parseHTML } from 'linkedom'
+import { escapeAttributeAmpersands } from '../utils/html'
 
 /**
  * The link `<ZoomLink>` renders: the `text` slot, then the media rendered into
@@ -17,14 +18,6 @@ const { class: className, href: fallbackHref } = Astro.props
 
 const html = await Astro.slots.render('default')
 const { document } = parseHTML(`<html><body>${html}</body></html>`)
-// Scripts and styles the components emit alongside their markup stay in the
-// page, outside the template, where the browser would not run them
-const extras: string[] = []
-for (const node of document.querySelectorAll('link, script, style')) {
-	extras.push(node.outerHTML)
-	node.remove()
-}
-
 const wrapper = document.querySelector('.amk-zoom')
 // eslint-disable-next-line unicorn/dom-node-dataset -- linkedom types `dataset` as `any`
 const href = wrapper?.getAttribute('href') ?? wrapper?.getAttribute('data-href') ?? fallbackHref
@@ -34,6 +27,17 @@ const attributes = Object.fromEntries(
 		wrapper?.getAttribute(name) ?? undefined,
 	]),
 )
+
+// Every attribute is read by now; the rest is written out as markup
+escapeAttributeAmpersands(document.body)
+// Scripts and styles the components emit alongside their markup stay in the
+// page, outside the template, where the browser would not run them
+const extras: string[] = []
+for (const node of document.querySelectorAll('link, script, style')) {
+	extras.push(node.outerHTML)
+	node.remove()
+}
+
 // A caption the media rendered, such as a credit line, goes along for the viewer
 const content =
 	wrapper === null
