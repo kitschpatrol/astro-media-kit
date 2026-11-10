@@ -3,7 +3,7 @@ import './videojs-player'
 
 /**
  * Keep Video.js's mute state, labels, availability, and keyboard behavior, but
- * reserve clicks for mute. In 10.2 the hover popover also installs a click
+ * reserve clicks for mute. As of 10.3 the hover popover also installs a click
  * toggle on its trigger, which otherwise dismisses the slider after muting.
  */
 class AmkMuteButton extends MuteButtonElement {

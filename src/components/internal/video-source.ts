@@ -51,8 +51,8 @@ export function setVideoSource(element: HTMLElement, src: string, options?: stri
 }
 
 /**
- * Video.js 10.2 reflects Vimeo's live `muted` property through the content
- * attribute. If Vimeo reports a different state, assigning the existing
+ * As of 10.3, Video.js reflects Vimeo's live `muted` property through the
+ * content attribute. If Vimeo reports a different state, assigning the existing
  * attribute value does nothing and the mute command never reaches the adapter.
  * Forward runtime mute directly, keeping the attribute as the startup default,
  * like native media. The adapter also needs that default before building its
