@@ -6,6 +6,11 @@ import { afterEach, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
+	beginVolumes,
+	endVolumes,
+	focusVolumes,
+} from '../../src/components/internal/lightbox/volume'
+import {
 	activeSlideLabel,
 	boxes,
 	cleanUp,
@@ -65,6 +70,29 @@ it.each([true, false])(
 		expect(second!.volume).toBeCloseTo(0.5, 5)
 	},
 )
+
+it('keeps tracking silenced media that the next session takes over as it fades back', async () => {
+	const { fixture, videos } = await mountGallery()
+	const second = videos[1]!
+	const roots = boxes(fixture)
+	beginVolumes(roots, roots[0])
+	await expect.poll(() => second.volume).toBe(0)
+	second.pause()
+
+	// A hand-over: the next session begins before the fades back have finished
+	endVolumes()
+	beginVolumes(roots, roots[0])
+	await expect.poll(() => second.volume).toBeCloseTo(0.5, 5)
+
+	// Not awaited: WebKit on Linux never settles a resumed play()
+	void second.play()
+	await expect.poll(() => second.paused).toBe(false)
+	focusVolumes(roots[0]!)
+	await expect.poll(() => second.volume).toBe(0)
+
+	endVolumes()
+	await expect.poll(() => second.volume).toBeCloseTo(0.5, 5)
+})
 
 it.each([true, false])(
 	'keeps volume changes across navigation and close, wrapped=%s',

@@ -15,6 +15,8 @@ type Tracked = {
 	frame: number | undefined
 	/** The volume to come back to. */
 	level: number
+	/** The latest session to take the media on, which alone forgets it. */
+	session: number
 }
 
 /** How long a fade takes, in ms. */
@@ -25,16 +27,24 @@ const tracked = new Map<MediaLike, Tracked>()
 /** The media in the item on show, whose sound the viewer leaves alone. */
 let heard = new Set<MediaLike>()
 
+/** Counts the sessions begun, to tell the one ending from one that follows it. */
+let session = 0
+
 /**
  * Remember the level of every media element in `roots`, unless it is already
- * being tracked from a session that is still fading out, then let the one in
- * `active` play on while the others fade away.
+ * being tracked from a session that is still fading out, which this one takes
+ * it over from. Then let the one in `active` play on while the others fade
+ * away.
  */
 export function beginVolumes(roots: Element[], active: Element | undefined) {
+	session++
 	for (const root of roots) {
 		for (const media of mediaIn(root)) {
-			if (!tracked.has(media)) {
+			const entry = tracked.get(media)
+			if (entry === undefined) {
 				tracked.set(media, track(media))
+			} else {
+				entry.session = session
 			}
 		}
 	}
@@ -59,11 +69,19 @@ export function focusVolumes(active: Element) {
 	}
 }
 
-/** Bring every tracked media element back to its level, and forget it. */
+/**
+ * Bring every tracked media element back to its level, and forget it, unless a
+ * session that begins before it gets there has taken it over.
+ */
 export function endVolumes() {
 	heard = new Set()
+	const ending = session
 	for (const [media, entry] of tracked) {
 		fade(media, entry, entry.level, () => {
+			if (entry.session !== ending) {
+				return
+			}
+
 			entry.controller.abort()
 			tracked.delete(media)
 		})
@@ -76,7 +94,7 @@ export function endVolumes() {
  */
 function track(media: MediaLike): Tracked {
 	const controller = new AbortController()
-	const entry: Tracked = { controller, frame: undefined, level: media.volume }
+	const entry: Tracked = { controller, frame: undefined, level: media.volume, session }
 	media.addEventListener(
 		'volumechange',
 		() => {
