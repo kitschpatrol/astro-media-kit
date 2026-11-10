@@ -69,6 +69,9 @@ describe('zoom server markup', () => {
 		expect($('#video-minimal .amk-playback media-play-button')).toHaveLength(1)
 		expect($('#video-background .amk-center-play')).toHaveLength(1)
 		expect($('#video-background .amk-playback')).toHaveLength(0)
+		// With nothing to hold, the labeled group of the bar is left out
+		expect($('#video-background media-controls-group')).toHaveLength(0)
+		expect($('#video-minimal media-controls-group')).toHaveLength(1)
 		expect($('#video-background media-fullscreen-button')).toHaveLength(0)
 		expect($('#video-background media-hotkey[action="toggleFullscreen"]')).toHaveLength(0)
 		expect($('#video-background media-gesture[action="togglePaused"]')).toHaveLength(1)

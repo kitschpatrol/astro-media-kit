@@ -24,135 +24,141 @@ const uid = `amk-${crypto.randomUUID()}`
 				<media-icon class="amk-icon-restart" family="amk" name="restart" />
 			</media-play-button>
 		)}
-		<media-tooltip-group>
-			<media-controls-group aria-label="Playback controls" class="amk-bar">
-				{hasBar && (
-					<div class="amk-playback">
-						<media-play-button class="amk-button" id={`${uid}-play`}>
-							<media-icon class="amk-icon-play" family="amk" name="play" />
-							<media-icon class="amk-icon-pause" family="amk" name="pause" />
-							<media-icon class="amk-icon-restart" family="amk" name="restart" />
-						</media-play-button>
-						<media-tooltip
-							boundary="viewport"
-							class="amk-tooltip"
-							id={`${uid}-play-tooltip`}
-							trigger={`${uid}-play`}
-						>
-							<media-tooltip-label />
-							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-						</media-tooltip>
-						<amk-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
-							<media-icon class="amk-icon-volume-off" family="amk" name="volume-off" />
-							<media-icon class="amk-icon-volume-low" family="amk" name="volume-low" />
-							<media-icon class="amk-icon-volume-high" family="amk" name="volume-high" />
-						</amk-mute-button>
-						<media-volume-popover
-							boundary="viewport"
-							class="amk-volume-popover"
-							close-delay="40"
-							delay="0"
-							id={`${uid}-volume`}
-							open-on-hover
-							side="top"
-						>
-							<media-volume-slider class="amk-slider amk-volume-slider" orientation="vertical">
-								<media-slider-track class="amk-slider-track">
-									<media-slider-fill class="amk-slider-fill" />
-								</media-slider-track>
-								<media-slider-thumb class="amk-slider-thumb" />
-							</media-volume-slider>
-						</media-volume-popover>
-						<media-time-slider class="amk-slider amk-time-slider">
-							<media-slider-track class="amk-slider-track">
-								<media-slider-buffer class="amk-slider-buffer" />
-								<media-slider-fill class="amk-slider-fill" />
-							</media-slider-track>
-							<media-slider-thumb class="amk-slider-thumb" />
-							<media-slider-value class="amk-slider-value" type="pointer" />
-						</media-time-slider>
-						<media-time-group class="amk-time">
-							<media-time type="current" />
-							<media-time-separator />
-							<media-time type="duration" />
-						</media-time-group>
-						<media-captions-button class="amk-button" id={`${uid}-captions`}>
-							<media-icon class="amk-icon-captions-off" family="amk" name="captions-off" />
-							<media-icon class="amk-icon-captions-on" family="amk" name="captions-on" />
-						</media-captions-button>
-						<media-tooltip
-							boundary="viewport"
-							class="amk-tooltip"
-							id={`${uid}-captions-tooltip`}
-							trigger={`${uid}-captions`}
-						>
-							<media-tooltip-label />
-							<media-tooltip-shortcut class="amk-tooltip-shortcut" />
-						</media-tooltip>
-					</div>
-				)}
-				{hasFullscreen &&
-					(zoom ? (
-						<>
-							<button
-								aria-haspopup="dialog"
-								aria-label="Expand video"
-								class="amk-button amk-zoom-button"
-								data-zoom-open=""
-								id={`${uid}-zoom`}
-								type="button"
-							>
-								<media-icon class="amk-icon-zoom-enter" family="amk" name="expand" />
-							</button>
-							<media-tooltip
-								boundary="viewport"
-								class="amk-tooltip amk-zoom-tooltip"
-								id={`${uid}-zoom-tooltip`}
-								trigger={`${uid}-zoom`}
-							>
-								Expand
-							</media-tooltip>
-							<button
-								aria-label="Collapse video"
-								class="amk-button amk-collapse-button"
-								data-zoom-close=""
-								id={`${uid}-collapse`}
-								type="button"
-							>
-								<media-icon class="amk-icon-zoom-exit" family="amk" name="collapse" />
-							</button>
-							<media-tooltip
-								boundary="viewport"
-								class="amk-tooltip amk-collapse-tooltip"
-								id={`${uid}-collapse-tooltip`}
-								trigger={`${uid}-collapse`}
-							>
-								Collapse
-							</media-tooltip>
-						</>
-					) : (
-						<>
-							<media-fullscreen-button class="amk-button" id={`${uid}-fullscreen`}>
-								<media-icon
-									class="amk-icon-fullscreen-enter"
-									family="amk"
-									name="fullscreen-enter"
-								/>
-								<media-icon class="amk-icon-fullscreen-exit" family="amk" name="fullscreen-exit" />
-							</media-fullscreen-button>
+		{(hasBar || hasFullscreen) && (
+			<media-tooltip-group>
+				<media-controls-group aria-label="Playback controls" class="amk-bar">
+					{hasBar && (
+						<div class="amk-playback">
+							<media-play-button class="amk-button" id={`${uid}-play`}>
+								<media-icon class="amk-icon-play" family="amk" name="play" />
+								<media-icon class="amk-icon-pause" family="amk" name="pause" />
+								<media-icon class="amk-icon-restart" family="amk" name="restart" />
+							</media-play-button>
 							<media-tooltip
 								boundary="viewport"
 								class="amk-tooltip"
-								id={`${uid}-fullscreen-tooltip`}
-								trigger={`${uid}-fullscreen`}
+								id={`${uid}-play-tooltip`}
+								trigger={`${uid}-play`}
 							>
 								<media-tooltip-label />
 								<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 							</media-tooltip>
-						</>
-					))}
-			</media-controls-group>
-		</media-tooltip-group>
+							<amk-mute-button class="amk-button" commandfor={`${uid}-volume`} id={`${uid}-mute`}>
+								<media-icon class="amk-icon-volume-off" family="amk" name="volume-off" />
+								<media-icon class="amk-icon-volume-low" family="amk" name="volume-low" />
+								<media-icon class="amk-icon-volume-high" family="amk" name="volume-high" />
+							</amk-mute-button>
+							<media-volume-popover
+								boundary="viewport"
+								class="amk-volume-popover"
+								close-delay="40"
+								delay="0"
+								id={`${uid}-volume`}
+								open-on-hover
+								side="top"
+							>
+								<media-volume-slider class="amk-slider amk-volume-slider" orientation="vertical">
+									<media-slider-track class="amk-slider-track">
+										<media-slider-fill class="amk-slider-fill" />
+									</media-slider-track>
+									<media-slider-thumb class="amk-slider-thumb" />
+								</media-volume-slider>
+							</media-volume-popover>
+							<media-time-slider class="amk-slider amk-time-slider">
+								<media-slider-track class="amk-slider-track">
+									<media-slider-buffer class="amk-slider-buffer" />
+									<media-slider-fill class="amk-slider-fill" />
+								</media-slider-track>
+								<media-slider-thumb class="amk-slider-thumb" />
+								<media-slider-value class="amk-slider-value" type="pointer" />
+							</media-time-slider>
+							<media-time-group class="amk-time">
+								<media-time type="current" />
+								<media-time-separator />
+								<media-time type="duration" />
+							</media-time-group>
+							<media-captions-button class="amk-button" id={`${uid}-captions`}>
+								<media-icon class="amk-icon-captions-off" family="amk" name="captions-off" />
+								<media-icon class="amk-icon-captions-on" family="amk" name="captions-on" />
+							</media-captions-button>
+							<media-tooltip
+								boundary="viewport"
+								class="amk-tooltip"
+								id={`${uid}-captions-tooltip`}
+								trigger={`${uid}-captions`}
+							>
+								<media-tooltip-label />
+								<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+							</media-tooltip>
+						</div>
+					)}
+					{hasFullscreen &&
+						(zoom ? (
+							<>
+								<button
+									aria-haspopup="dialog"
+									aria-label="Expand video"
+									class="amk-button amk-zoom-button"
+									data-zoom-open=""
+									id={`${uid}-zoom`}
+									type="button"
+								>
+									<media-icon class="amk-icon-zoom-enter" family="amk" name="expand" />
+								</button>
+								<media-tooltip
+									boundary="viewport"
+									class="amk-tooltip amk-zoom-tooltip"
+									id={`${uid}-zoom-tooltip`}
+									trigger={`${uid}-zoom`}
+								>
+									Expand
+								</media-tooltip>
+								<button
+									aria-label="Collapse video"
+									class="amk-button amk-collapse-button"
+									data-zoom-close=""
+									id={`${uid}-collapse`}
+									type="button"
+								>
+									<media-icon class="amk-icon-zoom-exit" family="amk" name="collapse" />
+								</button>
+								<media-tooltip
+									boundary="viewport"
+									class="amk-tooltip amk-collapse-tooltip"
+									id={`${uid}-collapse-tooltip`}
+									trigger={`${uid}-collapse`}
+								>
+									Collapse
+								</media-tooltip>
+							</>
+						) : (
+							<>
+								<media-fullscreen-button class="amk-button" id={`${uid}-fullscreen`}>
+									<media-icon
+										class="amk-icon-fullscreen-enter"
+										family="amk"
+										name="fullscreen-enter"
+									/>
+									<media-icon
+										class="amk-icon-fullscreen-exit"
+										family="amk"
+										name="fullscreen-exit"
+									/>
+								</media-fullscreen-button>
+								<media-tooltip
+									boundary="viewport"
+									class="amk-tooltip"
+									id={`${uid}-fullscreen-tooltip`}
+									trigger={`${uid}-fullscreen`}
+								>
+									<media-tooltip-label />
+									<media-tooltip-shortcut class="amk-tooltip-shortcut" />
+								</media-tooltip>
+							</>
+						))}
+				</media-controls-group>
+			</media-tooltip-group>
+		)}
 	</media-controls-content>
 </media-controls>
 <media-status-announcer class="amk-announcer" />
