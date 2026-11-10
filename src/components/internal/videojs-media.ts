@@ -1,4 +1,4 @@
-import { setMediaSourceWhenReady, VIDEO_ELEMENT_SELECTOR } from './video-source'
+import { PENDING_MEDIA_SELECTOR, setMediaSourceWhenReady } from './video-source'
 
 let pageController = new AbortController()
 let pending = new WeakSet<HTMLElement>()
@@ -7,35 +7,32 @@ let pending = new WeakSet<HTMLElement>()
 async function initializeMedia(root: ParentNode = document): Promise<void> {
 	const { signal } = pageController
 	await Promise.all(
-		Array.from(
-			root.querySelectorAll<HTMLElement>(`audio, ${VIDEO_ELEMENT_SELECTOR}`),
-			async (element) => {
-				if (!Object.hasOwn(element.dataset, 'src') || pending.has(element)) {
-					return
-				}
+		Array.from(root.querySelectorAll<HTMLElement>(PENDING_MEDIA_SELECTOR), async (element) => {
+			if (pending.has(element)) {
+				return
+			}
 
-				pending.add(element)
-				if (element.localName.includes('-')) {
-					await customElements.whenDefined(element.localName)
-				}
+			pending.add(element)
+			if (element.localName.includes('-')) {
+				await customElements.whenDefined(element.localName)
+			}
 
-				const player = element.closest('audio-player, video-player')
-				if (player) {
-					await customElements.whenDefined(player.localName)
-				}
+			const player = element.closest('audio-player, video-player')
+			if (player) {
+				await customElements.whenDefined(player.localName)
+			}
 
-				if (signal.aborted || !element.isConnected) {
-					return
-				}
+			if (signal.aborted || !element.isConnected) {
+				return
+			}
 
-				const cleanup = setMediaSourceWhenReady(
-					element,
-					element.dataset.src ?? '',
-					element.dataset.hlsOptions,
-				)
-				signal.addEventListener('abort', cleanup, { once: true })
-			},
-		),
+			const cleanup = setMediaSourceWhenReady(
+				element,
+				element.dataset.src ?? '',
+				element.dataset.hlsOptions,
+			)
+			signal.addEventListener('abort', cleanup, { once: true })
+		}),
 	)
 }
 

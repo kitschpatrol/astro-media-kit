@@ -23,7 +23,7 @@ describe('media sources', () => {
 			},
 		)
 		document.body.innerHTML =
-			'<hlsjs-video data-src="/first.m3u8"></hlsjs-video><audio data-src="/first.wav"></audio>'
+			'<div class="amk"><hlsjs-video data-src="/first.m3u8"></hlsjs-video><audio data-src="/first.wav"></audio></div>'
 		await import('../src/components/internal/videojs-media')
 		const first = document.querySelector('hlsjs-video')!
 		await vi.waitFor(() => expect(first.getAttribute('src')).toBe('/first.m3u8'))
@@ -37,7 +37,7 @@ describe('media sources', () => {
 		expect(audioAssignment).not.toHaveBeenCalled()
 		document.dispatchEvent(new Event('astro:before-swap'))
 		document.body.innerHTML =
-			'<hlsjs-video data-src="/second.m3u8"></hlsjs-video><audio data-src="/second.wav"></audio>'
+			'<div class="amk"><hlsjs-video data-src="/second.m3u8"></hlsjs-video><audio data-src="/second.wav"></audio></div>'
 		document.dispatchEvent(new Event('astro:page-load'))
 		await vi.waitFor(() =>
 			expect(document.querySelector('hlsjs-video')?.getAttribute('src')).toBe('/second.m3u8'),

@@ -5,7 +5,14 @@ export type HlsSourceOptions = Pick<HlsSource, 'capRenditionToPlayerSize' | 'eng
 
 const VIDEO_ELEMENT_TAGS = ['hlsjs-video', 'video', 'vimeo-video', 'youtube-video'] as const
 export type VideoElementTag = (typeof VIDEO_ELEMENT_TAGS)[number]
-export const VIDEO_ELEMENT_SELECTOR = VIDEO_ELEMENT_TAGS.join(', ')
+/**
+ * The kit's media that still waits for its source in `data-src`: only inside a
+ * wrapper the kit rendered, since a page's own lazy media uses that attribute
+ * too.
+ */
+export const PENDING_MEDIA_SELECTOR = ['audio', ...VIDEO_ELEMENT_TAGS]
+	.map((tag) => `.amk ${tag}[data-src]`)
+	.join(', ')
 
 /**
  * Recognize manifests independently of the hosting service, including signed
