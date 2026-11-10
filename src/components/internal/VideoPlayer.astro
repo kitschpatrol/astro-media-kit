@@ -3,6 +3,8 @@ import type { InternalVideoProps, VideoElementTag } from './types'
 import { mediaCrossOrigin } from '../utils/media'
 import FallbackLink from './FallbackLink.astro'
 import Icon from './Icon.astro'
+import { fillLabel } from './labels'
+import { labels } from './theme'
 import VideoControls from './VideoControls.astro'
 import VideoError from './VideoError.astro'
 import VideoMedia from './VideoMedia.astro'
@@ -166,14 +168,14 @@ const embedService =
 				{noscriptSources.map((source) => (
 					<source {...source} />
 				))}
-				Your browser does not support HTML5 video.
+				{labels.unsupportedVideo}
 			</video>
 		</noscript>
 	)}
 	{embedService !== undefined && (
 		<FallbackLink
 			href={fallbackUrl}
-			label={`Watch on ${embedService}`}
+			label={fillLabel(labels.watchOn, { service: embedService })}
 			poster={
 				hasPoster && containerStyle !== undefined
 					? { alt: resolvedLabel, src: posterUrl }

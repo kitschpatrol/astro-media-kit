@@ -5,7 +5,7 @@ export { isImageMetadataObject, resolveImageSource } from './components/utils/im
 export type { MuxConfig } from './components/utils/mux'
 export type { CredentialService, Service, ServiceConfig, VideoInfo } from './components/utils/video'
 export { default } from './integration/index'
-export type { AphexConfig, IconsConfig } from './integration/index'
+export type { AphexConfig, IconsConfig, LabelsConfig } from './integration/index'
 export type { AutoImportConfig, AutoImportEntry, AutoImportPluginConfig } from './integration/index'
 export type { MediaKitConfig, WatermarkConfig } from './integration/index'
 export type { TldrawConfig, TldrawImageOptions } from './integration/index'

@@ -7,6 +7,8 @@ import { disposeCarousels, setUpCarousels } from '../../src/components/internal/
 import { waitForFrame } from './frame'
 import { cleanUp, mountPage, query } from './helpers'
 
+const slideLabel = /^Picture 1 out of \d+$/v
+
 afterEach(async () => {
 	disposeCarousels()
 	await cleanUp()
@@ -59,7 +61,7 @@ it('sizes and colors configured and built-in carousel icons alike, and mirrors t
 	expect(getComputedStyle(query(next, '.amk-carousel-icon')).scale).toBe('-1 1')
 })
 
-it("draws the configured icons on the viewer's own buttons, which switch with their state", async () => {
+it("draws the configured icons and labels on the viewer's own buttons, which switch with their state", async () => {
 	const frame = document.createElement('iframe')
 	frame.src = '/themed/index.html'
 	frame.style.cssText = 'width: 1000px; height: 700px; border: 0'
@@ -77,7 +79,18 @@ it("draws the configured icons on the viewer's own buttons, which switch with th
 		const dialog = root.querySelector<HTMLDialogElement>(':scope dialog.amk-lightbox')!
 		const close = dialog.querySelector<HTMLElement>('.amk-lightbox-close')!
 		const closeIcon = close.querySelector<SVGElement>('svg')!
-		expect(close.getAttribute('aria-label')).toBe('Close')
+		// The site's own words, with English for the labels it left out
+		expect(close.getAttribute('aria-label')).toBe('Shut')
+		expect(dialog.getAttribute('aria-label')).toBe('Media "viewing" & more')
+		expect(dialog.querySelector(':scope .amk-lightbox-next')!.getAttribute('aria-label')).toBe(
+			'Onward',
+		)
+		expect(dialog.querySelector(':scope .amk-lightbox-previous')!.getAttribute('aria-label')).toBe(
+			'Previous',
+		)
+		expect(
+			dialog.querySelector(':scope .amk-lightbox-slide:not([inert])')!.getAttribute('aria-label'),
+		).toMatch(slideLabel)
 		expect(closeIcon.dataset.customIcon).toBe('close')
 		expect(view.getComputedStyle(close).width).toBe('52px')
 		expect(view.getComputedStyle(close).borderRadius).toBe('8px')

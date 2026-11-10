@@ -13,6 +13,15 @@ export default defineConfig({
 				next: '<svg data-custom-icon="next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" stroke="currentColor" /></svg>',
 				play: '<svg data-custom-icon="play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z" /></svg>',
 			},
+			// Some in other words, and the rest left as they are
+			labels: {
+				close: 'Shut',
+				goToSlide: 'Picture {index}',
+				next: 'Onward',
+				playbackControls: 'Playing controls',
+				slide: 'Picture {index} out of {count}',
+				viewer: 'Media "viewing" & more',
+			},
 		}),
 	],
 })

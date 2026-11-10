@@ -2,7 +2,9 @@ import { parseHTML } from 'linkedom'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { LabelName, Labels } from '../components/internal/labels'
 import type { MediaIconName } from '../components/media-icon-names'
+import { labelNames } from '../components/internal/labels'
 import { mediaIconNames } from '../components/media-icon-names'
 import { escapeAttributeAmpersands } from '../components/utils/html'
 
@@ -20,6 +22,34 @@ import { escapeAttributeAmpersands } from '../components/utils/html'
  * 	})
  */
 export type IconsConfig = Partial<Record<MediaIconName, string | URL>>
+
+/**
+ * The site's own words for the kit's controls, by label name, in place of the
+ * built-in English. Words in braces, such as `{index}`, stand for a value, and
+ * stay as they are. A label left out keeps its English.
+ *
+ * @example
+ * 	mediaKit({
+ * 		labels: {
+ * 			close: 'Schließen',
+ * 			slide: '{index} von {count}',
+ * 		},
+ * 	})
+ */
+export type LabelsConfig = Partial<Labels>
+
+/** Labels the lightbox's script puts on its own dialog, buttons, and slides. */
+const viewerLabelNames = new Set<LabelName>([
+	'carouselRole',
+	'close',
+	'gallery',
+	'next',
+	'previous',
+	'slide',
+	'slideRole',
+	'viewer',
+	'zoom',
+])
 
 /** Icons the lightbox's script draws on its own buttons. */
 const viewerIconNames = new Set<MediaIconName>(['close', 'next', 'previous', 'zoom-in', 'zoom-out'])
@@ -80,6 +110,41 @@ export function viewerIcons(
 ): Partial<Record<MediaIconName, string>> {
 	return Object.fromEntries(
 		Object.entries(icons).filter(([name]) => viewerIconNames.has(name as MediaIconName)),
+	)
+}
+
+/**
+ * Check every configured label, so a misspelled name stops the build rather
+ * than leaving English on a control.
+ *
+ * @param config - The `labels` option of `mediaKit()`.
+ * @throws {TypeError} For a name the kit has no label by, or a label that is
+ *   not text.
+ */
+export function resolveLabels(config: LabelsConfig): Partial<Labels> {
+	const resolved: Partial<Labels> = {}
+	for (const [name, label] of Object.entries(config)) {
+		const labelName = labelNames.find((known) => known === name)
+		if (labelName === undefined) {
+			throw new TypeError(
+				`[astro-media-kit] Unknown label "${name}" in the labels option. The labels are: ${labelNames.join(', ')}.`,
+			)
+		}
+
+		if (typeof label !== 'string' || label.trim() === '') {
+			throw new TypeError(`[astro-media-kit] The "${name}" label must be text.`)
+		}
+
+		resolved[labelName] = label
+	}
+
+	return resolved
+}
+
+/** The part of the configured labels that the lightbox's script needs. */
+export function viewerLabels(labels: Partial<Labels>): Partial<Labels> {
+	return Object.fromEntries(
+		Object.entries(labels).filter(([name]) => viewerLabelNames.has(name as LabelName)),
 	)
 }
 

@@ -3,9 +3,10 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { fillLabel, labelNames } from '../src/components/internal/labels'
 import { viewerMarkup } from '../src/components/internal/lightbox/chrome'
 import { mediaIconNames } from '../src/components/media-icon-names'
-import { resolveIcons, viewerIcons } from '../src/integration/theme'
+import { resolveIcons, resolveLabels, viewerIcons, viewerLabels } from '../src/integration/theme'
 import { buildFixture } from './parity/helpers/build-fixture'
 
 const fixtureRoot = new URL('parity/fixtures/theme/', import.meta.url)
@@ -95,7 +96,61 @@ describe('resolveIcons', () => {
 	})
 })
 
+describe('resolveLabels', () => {
+	it('takes the labels as given', () => {
+		expect(resolveLabels({ close: 'Shut', slide: '{index} von {count}' })).toEqual({
+			close: 'Shut',
+			slide: '{index} von {count}',
+		})
+		expect(resolveLabels({})).toEqual({})
+	})
+
+	it('names the labels there are when given one there is not', () => {
+		expect(() => resolveLabels({ shut: 'Shut' } as never)).toThrow(
+			`Unknown label "shut" in the labels option. The labels are: ${labelNames.join(', ')}.`,
+		)
+	})
+
+	it.each([42, '', ' ', undefined])('refuses a label that is not text: %s', (label) => {
+		expect(() => resolveLabels({ close: label } as never)).toThrow(
+			'The "close" label must be text.',
+		)
+	})
+
+	it('hands the lightbox script only the labels it puts on its own controls', () => {
+		expect(
+			viewerLabels({ close: 'a', goToSlide: 'b', playbackControls: 'c', slide: 'd', viewer: 'e' }),
+		).toEqual({ close: 'a', slide: 'd', viewer: 'e' })
+	})
+})
+
+describe('fillLabel', () => {
+	it('puts each value in place of its name in braces', () => {
+		expect(fillLabel('{index} of {count}', { count: 3, index: 1 })).toBe('1 of 3')
+		expect(fillLabel('Picture {index} out of {count} ({index})', { count: 3, index: 2 })).toBe(
+			'Picture 2 out of 3 (2)',
+		)
+		expect(fillLabel('Watch on {service}', { service: 'YouTube' })).toBe('Watch on YouTube')
+	})
+
+	it('leaves a label without placeholders, and a placeholder without a value, as written', () => {
+		expect(fillLabel('Onward', { index: 1 })).toBe('Onward')
+		expect(fillLabel('{index} of {total}', { index: 1 })).toBe('1 of {total}')
+	})
+})
+
 describe('viewerMarkup', () => {
+	it('puts the configured labels on the dialog and its buttons, escaped, and English on the rest', () => {
+		const $ = load(viewerMarkup({ labels: { close: 'Shut', viewer: 'Media "viewing" & more' } }))
+		expect($('dialog').attr('aria-label')).toBe('Media "viewing" & more')
+		expect($('.amk-lightbox-close').attr('aria-label')).toBe('Shut')
+		expect($('.amk-lightbox-next').attr('aria-label')).toBe('Next')
+		expect($('.amk-lightbox-previous').attr('aria-label')).toBe('Previous')
+		expect($('.amk-lightbox-zoom').attr('aria-label')).toBe('Zoom')
+		expect($('.amk-lightbox-track').attr('aria-label')).toBe('Gallery')
+		expect($('.amk-lightbox-track').attr('aria-roledescription')).toBe('carousel')
+	})
+
 	it('draws the configured icons, and the built-in artwork for the rest', () => {
 		const $ = load(viewerMarkup({ icons: { close: '<svg data-custom-icon="close"></svg>' } }))
 		expect($('.amk-lightbox-close [data-amk-icon="close"] svg').attr('data-custom-icon')).toBe(
@@ -159,6 +214,35 @@ describe('icons configured through the integration', () => {
 		for (const icon of icons) {
 			expect($(icon).children('svg')).toHaveLength(1)
 		}
+	})
+
+	it('puts the configured labels on the controls the templates render', async () => {
+		const $ = await fixture.readHTML('/')
+		expect($('#carousel .amk-carousel-next').attr('aria-label')).toBe('Onward')
+		expect($('#carousel .amk-carousel-previous').attr('aria-label')).toBe('Previous')
+		const slides = $('#carousel .amk-carousel-slide')
+		expect(slides.eq(0).attr('aria-label')).toBe('Picture 1 out of 2')
+		expect(slides.eq(1).attr('aria-label')).toBe('Picture 2 out of 2')
+		expect($('#carousel .amk-carousel-dot').eq(1).attr('aria-label')).toBe('Picture 2')
+		expect($('#video media-controls-group').attr('aria-label')).toBe('Playing controls')
+		// Left out of the configuration, so in English
+		expect($('#video [data-zoom-open]').attr('aria-label')).toBe('Expand video')
+		expect($('#carousel .amk-carousel').attr('aria-label')).toBe('Carousel')
+	})
+
+	it("builds the viewer's labels into the lightbox script, and no others", async () => {
+		const directory = path.join(fixture.dist, '_astro')
+		const names = await readdir(directory)
+		const scripts = await Promise.all(
+			names
+				.filter((name) => name.endsWith('.js'))
+				.map(async (name) => readFile(path.join(directory, name), 'utf8')),
+		)
+		const bundle = scripts.join('\n')
+		expect(bundle).toContain('Shut')
+		expect(bundle).toContain('Picture {index} out of {count}')
+		expect(bundle).not.toContain('Playing controls')
+		expect(bundle).not.toContain('Picture {index}"')
 	})
 
 	it("builds the viewer's icons into the lightbox script, and no others", async () => {

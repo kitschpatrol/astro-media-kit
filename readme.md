@@ -43,7 +43,7 @@ It includes:
 - **ZoomLink**\
   Text link that opens an image or a video in the lightbox, and goes to the file itself without JavaScript.
 - **Astro Integration**\
-  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), your own icons for the kit's controls, EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
+  Auto-import image assets in `.astro` files (no manual `import` statements), plus optional support for tldraw files via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw). Apple Photos via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), your own icons and labels for the kit's controls, EXIF stripping, original-file cleanup, and a dev-mode image watermark overlay to help debug responsive images.
 
 The components work standalone via direct import, or you can use the Astro integration for streamlined auto-imports and automatic Vite plugin configuration.
 
@@ -90,6 +90,7 @@ export default defineConfig({
       // tldraw: false,          // .tldr file support
       // aphex: false,           // Apple Photos imports
       // icons: {},              // Your own SVG artwork for the kit's icons
+      // labels: {},             // Your own words for the kit's controls
       // removeOriginals: false, // Delete originals Astro leaves after build
       // stripExif: false,       // Strip EXIF/XMP metadata from build-output images
       // video: false,           // Secret env schema for video services
@@ -606,7 +607,7 @@ In the viewer:
 - A figure's caption is copied beside the content when there is room, and below it otherwise. The caption on the page stays where it is.
 - Transitions can be turned around partway, and a click on another item while the viewer opens or closes opens that item instead.
 
-The viewer's control labels and slide announcements, and the carousel's button and slide labels, are in English only.
+The viewer's control labels and slide announcements, and the carousel's button and slide labels, are in English unless you give the integration your own through its [`labels`](#labels) option.
 
 The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk-lightbox` cascade layer so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
 
@@ -812,6 +813,46 @@ mediaKit({
 
 Icons are drawn into each page as it is rendered, and into the lightbox's script as it is built, so they are there before any script runs and nothing is swapped in the browser. They apply to the whole site. Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit marks them hidden from assistive technology and retains accessible button labels, focus handling, keyboard behavior, and state switching. An unknown icon name, a file that can't be read, or a source that is not exactly one SVG element stops the build with the icon's name in the message. The `MediaIconName` type is exported from `astro-media-kit` and `astro-media-kit/components`.
 
+### Labels
+
+Give the integration your own words for the kit's controls, in place of the built-in English. Words in braces stand for a value and stay as they are. Every label left out keeps its English.
+
+```ts
+mediaKit({
+  labels: {
+    close: 'Schließen',
+    next: 'Weiter',
+    previous: 'Zurück',
+    slide: '{index} von {count}',
+  },
+})
+```
+
+| Label              | Default                                      | Used by                                                     |
+| ------------------ | -------------------------------------------- | ----------------------------------------------------------- |
+| `viewer`           | `Media viewer`                               | The lightbox dialog                                         |
+| `gallery`          | `Gallery`                                    | The lightbox's track of slides                              |
+| `close`            | `Close`                                      | The lightbox's close button                                 |
+| `zoom`             | `Zoom`                                       | The lightbox's secondary zoom button                        |
+| `previous`, `next` | `Previous`, `Next`                           | Lightbox and carousel navigation buttons                    |
+| `slide`            | `{index} of {count}`                         | Each lightbox and carousel slide                            |
+| `goToSlide`        | `Slide {index}`                              | Each carousel dot                                           |
+| `carousel`         | `Carousel`                                   | A carousel without a `label` of its own                     |
+| `carouselRole`     | `carousel`                                   | What a carousel and the lightbox's gallery are announced as |
+| `slideRole`        | `slide`                                      | What a slide is announced as                                |
+| `playbackControls` | `Playback controls`                          | A video's bar of controls                                   |
+| `expandVideo`      | `Expand video`                               | The video button that opens the lightbox                    |
+| `expand`           | `Expand`                                     | That button's tooltip                                       |
+| `collapseVideo`    | `Collapse video`                             | The video button that returns from the lightbox             |
+| `collapse`         | `Collapse`                                   | That button's tooltip                                       |
+| `openVideo`        | `Open video directly`                        | The link a video's error message offers                     |
+| `unsupportedVideo` | `Your browser does not support HTML5 video.` | Shown by a browser that can't play video                    |
+| `watchOn`          | `Watch on {service}`                         | The link to a video service, shown without JavaScript       |
+| `listenOn`         | `Listen on {service}`                        | The link to an audio service, shown without JavaScript      |
+| `video`, `audio`   | `Video`, `Audio`                             | A player without a `label` or a title from its service      |
+
+Like icons, labels are rendered into each page and built into the lightbox's script, and apply to the whole site, so a site in several languages gets one set. The buttons of the player itself, such as Play and Mute, are labeled by Video.js. An unknown label name, or a label that is not text, stops the build with its name in the message.
+
 ### Tldraw
 
 Enable `.tldr` file support via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw), which wraps [`tldraw-cli`](https://github.com/kitschpatrol/tldraw-cli). Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
@@ -920,7 +961,7 @@ Exported from `astro-media-kit`:
 - **`BunnyConfig`**, **`CloudflareConfig`**, **`MuxConfig`** — Credential shapes for those services.
 - **`VideoInfo`** — Normalized video metadata (dimensions, duration, URLs, captions).
 - **`MediaKitConfig`** — Options accepted by the `mediaKit()` integration function.
-- **`AphexConfig`**, **`IconsConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
+- **`AphexConfig`**, **`IconsConfig`**, **`LabelsConfig`**, **`TldrawConfig`**, **`TldrawImageOptions`**, **`WatermarkConfig`** — Config shapes for the corresponding integration features.
 - **`MediaIconName`** — The names of the icons the `icons` option takes.
 - **`AutoImportConfig`**, **`AutoImportEntry`**, **`AutoImportPluginConfig`** — Types for the auto-import feature's component mapping.
 

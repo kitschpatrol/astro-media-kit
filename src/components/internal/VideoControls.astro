@@ -2,6 +2,7 @@
 import type { InternalVideoProps } from './types'
 import { formatMediaTime } from '../utils/media'
 import Icon from './Icon.astro'
+import { labels } from './theme'
 
 export type Props = {
 	controls: InternalVideoProps['controls']
@@ -35,7 +36,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 		)}
 		{(hasBar || hasFullscreen) && (
 			<media-tooltip-group>
-				<media-controls-group aria-label="Playback controls" class="amk-bar">
+				<media-controls-group aria-label={labels.playbackControls} class="amk-bar">
 					{hasBar && (
 						<div class="amk-playback">
 							<media-play-button class="amk-button" id={`${uid}-play`}>
@@ -111,7 +112,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 							<>
 								<button
 									aria-haspopup="dialog"
-									aria-label="Expand video"
+									aria-label={labels.expandVideo}
 									class="amk-button amk-zoom-button"
 									data-zoom-open=""
 									id={`${uid}-zoom`}
@@ -125,10 +126,10 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 									id={`${uid}-zoom-tooltip`}
 									trigger={`${uid}-zoom`}
 								>
-									Expand
+									{labels.expand}
 								</media-tooltip>
 								<button
-									aria-label="Collapse video"
+									aria-label={labels.collapseVideo}
 									class="amk-button amk-collapse-button"
 									data-zoom-close=""
 									id={`${uid}-collapse`}
@@ -142,7 +143,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 									id={`${uid}-collapse-tooltip`}
 									trigger={`${uid}-collapse`}
 								>
-									Collapse
+									{labels.collapse}
 								</media-tooltip>
 							</>
 						) : (

@@ -1,7 +1,8 @@
 import type { Box } from './geometry'
 import type { LayerStyle, Lift, Measurement, Point, Slide } from './types'
+import { fillLabel } from '../labels'
 import { identity, layerStyle, linkStyle, setLayerStyle, settle } from './animation'
-import { viewerMarkup } from './chrome'
+import { viewerLabels, viewerMarkup } from './chrome'
 import {
 	arrowKeySelector,
 	captionOf,
@@ -1228,8 +1229,8 @@ function createSlide(item: HTMLElement, index: number, count: number): Slide {
 	element.className = 'amk-lightbox-slide'
 	element.inert = true
 	element.role = 'group'
-	element.ariaRoleDescription = 'slide'
-	element.ariaLabel = `${index + 1} of ${count}`
+	element.ariaRoleDescription = viewerLabels.slideRole
+	element.ariaLabel = fillLabel(viewerLabels.slide, { count, index: index + 1 })
 	// Lifted content keeps the language and direction it had in the page
 	const lang = item.closest('[lang]')?.getAttribute('lang') ?? undefined
 	if (lang !== undefined) {

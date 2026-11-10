@@ -1,4 +1,6 @@
 ---
+import { labels } from './theme'
+
 export type Props = { fallbackUrl: string }
 const { fallbackUrl } = Astro.props
 ---
@@ -9,7 +11,7 @@ const { fallbackUrl } = Astro.props
 		<media-dialog-title class="amk-error-title" />
 		<media-dialog-description />
 		<a href={fallbackUrl} rel="noreferrer" target="_blank">
-			Open video directly
+			{labels.openVideo}
 		</a>
 		<media-dialog-close class="amk-error-close" />
 	</media-dialog-popup>

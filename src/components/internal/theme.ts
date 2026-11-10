@@ -14,15 +14,18 @@ import {
 	volumeOffIcon,
 } from '@videojs/html/icons'
 import type { MediaIconName } from '../media-icon-names'
+import type { Labels } from './labels'
 import { closeIcon, nextIcon, previousIcon, zoomInIcon, zoomOutIcon } from './gallery-icons'
+import { defaultLabels } from './labels'
 import { collapseIcon, expandIcon } from './zoom-icons'
 
 /**
- * The site's own icons, as the `mediaKit()` integration hands them to the
- * build: SVG markup by icon name.
+ * The site's own icons and labels, as the `mediaKit()` integration hands them
+ * to the build: SVG markup by icon name, and words by label name.
  */
 export type ThemeOverrides = {
 	icons?: Partial<Record<MediaIconName, string>>
+	labels?: Partial<Labels>
 }
 
 // Replaced with the configured theme when the integration builds the site.
@@ -61,3 +64,9 @@ const defaultIcons: Record<MediaIconName, string> = {
  * templates; a client script that imported this would carry every icon.
  */
 export const icons: Record<MediaIconName, string> = { ...defaultIcons, ...configured.icons }
+
+/**
+ * Every label, for a component to render into the page: the one given to
+ * `mediaKit({ labels })`, or else the built-in English.
+ */
+export const labels: Labels = { ...defaultLabels, ...configured.labels }

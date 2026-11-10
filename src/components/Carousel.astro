@@ -1,6 +1,7 @@
 ---
 import { parseHTML } from 'linkedom'
-import { icons } from './internal/theme'
+import { fillLabel } from './internal/labels'
+import { icons, labels } from './internal/theme'
 import { escapeAttributeAmpersands } from './utils/html'
 import './internal/carousel/carousel.css'
 
@@ -37,7 +38,7 @@ export type Props = {
 	/**
 	 * Accessible name of the carousel.
 	 *
-	 * @default 'Carousel'
+	 * @default 'Carousel', or the integration'
 	 */
 	label?: string | undefined
 }
@@ -47,7 +48,7 @@ const {
 	class: classFromAstro,
 	className: classFromJsx,
 	dots = false,
-	label = 'Carousel',
+	label = labels.carousel,
 } = Astro.props
 
 // Each element the slot renders is a slide. Scripts and styles the components
@@ -75,7 +76,7 @@ const hasNavigation = slides.length > 1
 
 <div
 	aria-label={label}
-	aria-roledescription="carousel"
+	aria-roledescription={labels.carouselRole}
 	class:list={['amk-carousel', classFromAstro ?? classFromJsx]}
 	data-captions={captions ? '' : undefined}
 	role="region"
@@ -84,8 +85,8 @@ const hasNavigation = slides.length > 1
 		<div class="amk-carousel-track" tabindex="-1">
 			{slides.map((slide, index) => (
 				<div
-					aria-label={`${index + 1} of ${slides.length}`}
-					aria-roledescription="slide"
+					aria-label={fillLabel(labels.slide, { count: slides.length, index: index + 1 })}
+					aria-roledescription={labels.slideRole}
 					class="amk-carousel-slide"
 					role="group"
 					set:html={slide}
@@ -96,13 +97,17 @@ const hasNavigation = slides.length > 1
 			<>
 				<button
 					aria-disabled="true"
-					aria-label="Previous"
+					aria-label={labels.previous}
 					class="amk-carousel-button amk-carousel-previous"
 					type="button"
 				>
 					<span class="amk-carousel-icon" data-amk-icon="previous" set:html={icons.previous} />
 				</button>
-				<button aria-label="Next" class="amk-carousel-button amk-carousel-next" type="button">
+				<button
+					aria-label={labels.next}
+					class="amk-carousel-button amk-carousel-next"
+					type="button"
+				>
 					<span class="amk-carousel-icon" data-amk-icon="next" set:html={icons.next} />
 				</button>
 			</>
@@ -113,7 +118,7 @@ const hasNavigation = slides.length > 1
 			{slides.map((_slide, index) => (
 				<button
 					aria-current={index === 0 ? 'true' : undefined}
-					aria-label={`Slide ${index + 1}`}
+					aria-label={fillLabel(labels.goToSlide, { index: index + 1 })}
 					class="amk-carousel-dot"
 					type="button"
 				/>

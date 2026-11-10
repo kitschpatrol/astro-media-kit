@@ -7,7 +7,9 @@ import type { Service, VideoInfo } from './utils/video'
 import type { PrefixedProps as PrefixedZoomProps } from './zoom-props-map'
 import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
+import { fillLabel } from './internal/labels'
 import InternalOembed from './internal/OEmbed.astro'
+import { labels } from './internal/theme'
 import { isHlsSource } from './internal/video-source'
 import VideoPlayer from './internal/VideoPlayer.astro'
 import { fetchOEmbed } from './utils/oembed'
@@ -139,7 +141,7 @@ if (resolvedService === 'oembed') {
 	}
 }
 
-const resolvedLabel = label ?? oembedInfo?.title ?? videoInfo?.title ?? 'Video'
+const resolvedLabel = label ?? oembedInfo?.title ?? videoInfo?.title ?? labels.video
 
 // Compute the video source URL based on service type.
 let videoSrc: string | undefined
@@ -245,7 +247,7 @@ const sharedProps = {
 					aspectRatio={oembedAspectRatio}
 					href={identifier}
 					html={oembedInfo.html}
-					linkLabel={`Watch on ${oembedInfo.providerName}`}
+					linkLabel={fillLabel(labels.watchOn, { service: oembedInfo.providerName })}
 					posterUrl={posterUrl}
 					resolvedLabel={resolvedLabel}
 					slot="media-component"

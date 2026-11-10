@@ -6,7 +6,9 @@ import { toCaptionProps } from './caption-props-map'
 import Caption from './Caption.astro'
 import AudioPlayer from './internal/AudioPlayer.astro'
 import FallbackLink from './internal/FallbackLink.astro'
+import { fillLabel } from './internal/labels'
 import InternalOembed from './internal/OEmbed.astro'
+import { labels } from './internal/theme'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
 import { mediaCrossOrigin, tryParseUrl } from './utils/media'
 import { fetchOEmbed } from './utils/oembed'
@@ -83,7 +85,7 @@ if (resolvedService === 'soundcloud') {
 	}
 }
 
-const resolvedLabel = label ?? oembedInfo?.title ?? 'Audio'
+const resolvedLabel = label ?? oembedInfo?.title ?? labels.audio
 
 const captionProps = await toCaptionProps(
 	{ credit, creditMediaType, creditOrganization },
@@ -107,7 +109,7 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 				<InternalOembed
 					href={identifier}
 					html={oembedInfo.html}
-					linkLabel={`Listen on ${oembedInfo.providerName}`}
+					linkLabel={fillLabel(labels.listenOn, { service: oembedInfo.providerName })}
 					resolvedLabel={resolvedLabel}
 					slot="media-component"
 				/>
@@ -135,7 +137,10 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 					src={embedUrl}
 					title={resolvedLabel}
 				/>
-				<FallbackLink href={soundcloudPageUrl} label="Listen on SoundCloud" />
+				<FallbackLink
+					href={soundcloudPageUrl}
+					label={fillLabel(labels.listenOn, { service: 'SoundCloud' })}
+				/>
 			</div>
 		)}
 		<slot />
