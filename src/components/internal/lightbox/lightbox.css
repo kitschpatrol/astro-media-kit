@@ -458,7 +458,8 @@
 		opacity var(--amk-lightbox-open-fade-duration) cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-/* Closing mirrors it, fading the media out as it zooms home. */
+/* Closing mirrors it for an image, which fades out as it zooms home. A video
+   stays as it is, since its preview can differ from it in tint. */
 .amk-lightbox[data-state='closing'] .amk-lightbox-layer {
 	transition-duration:
 		var(--amk-lightbox-duration), var(--amk-lightbox-duration), var(--amk-lightbox-duration),

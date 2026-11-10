@@ -1191,31 +1191,32 @@ it('returns its bar on the active thumbnail fade without a second opacity transi
 	expect(getComputedStyle(query(player, '.amk-media')).filter).toBe('none')
 })
 
-it.each([false, true])('crossfades video with its page preview, playing=%s', async (playing) => {
-	const { item, player } = await mountPlayer()
-	if (playing) {
-		await query(player, 'video', HTMLVideoElement).play()
-	}
+it.each([false, true])(
+	'fades video in over its page preview, and lands it as itself, playing=%s',
+	async (playing) => {
+		const { item, player } = await mountPlayer()
+		if (playing) {
+			await query(player, 'video', HTMLVideoElement).play()
+		}
 
-	const opening = openLightbox(item)
-	const layer = currentLayer()
-	const entering = fadeOf(layer)!
-	expect(entering).toBeDefined()
-	entering.pause()
-	entering.currentTime = 0
-	expect(getComputedStyle(layer).opacity).toBe('0')
-	entering.finish()
-	await opening
-	const closing = closeLightbox()
-	const leaving = fadeOf(layer)!
-	expect(leaving).toBeDefined()
-	leaving.pause()
-	leaving.currentTime = 0
-	expect(getComputedStyle(layer).opacity).toBe('1')
-	expect(layer.style.opacity).toBe('0')
-	leaving.finish()
-	await closing
-})
+		const opening = openLightbox(item)
+		const layer = currentLayer()
+		const entering = fadeOf(layer)!
+		expect(entering).toBeDefined()
+		entering.pause()
+		entering.currentTime = 0
+		expect(getComputedStyle(layer).opacity).toBe('0')
+		entering.finish()
+		await opening
+		const closing = closeLightbox()
+		// The preview is a canvas copy, which can differ from the video in tint, so
+		// the video itself is what shows all the way home
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
+		expect(layer.style.opacity).toBe('1')
+		await closing
+	},
+)
 
 it.each(['video', 'video-minimal'])(
 	'uses the %s surface for playback and only its button for zoom',

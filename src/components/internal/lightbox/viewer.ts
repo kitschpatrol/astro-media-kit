@@ -18,7 +18,7 @@ import {
 } from './dom'
 import { lengthOf } from './geometry'
 import { refreshImagePreview } from './image-preview'
-import { canFade, dropSlides, liftSlide, measure } from './lift'
+import { canFade, canFadeHome, dropSlides, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
@@ -869,8 +869,8 @@ class Viewer {
 			isOpening && lift.from !== undefined && isSameBox(target, lift.target)
 				? lift.from
 				: layerStyle(slide.frame.getBoundingClientRect(), target, lift)
-		// Images and videos fade out into their preview as they land.
-		return canFade(lift) ? { ...to, opacity: '0' } : to
+		// Images fade out into their preview as they land.
+		return canFadeHome(lift) ? { ...to, opacity: '0' } : to
 	}
 
 	/**

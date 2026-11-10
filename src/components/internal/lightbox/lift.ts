@@ -25,6 +25,17 @@ export function canFade(lift: Lift): boolean {
 	)
 }
 
+/**
+ * Images also fade back into their preview as they land. A video lands as
+ * itself: its preview is a copy drawn on a canvas, which a browser can color
+ * differently from the video element (Chromium on macOS draws the copy about 3%
+ * darker, without the conversion of the video's transfer curve that the element
+ * gets), so fading into the copy would end on a change of tint.
+ */
+export function canFadeHome(lift: Lift): boolean {
+	return canFade(lift) && rendered(lift.subject) instanceof HTMLImageElement
+}
+
 /** Put lifted subjects back where they came from, in one task. */
 export function dropSlides(slides: Slide[]) {
 	const subjects: Element[] = []
