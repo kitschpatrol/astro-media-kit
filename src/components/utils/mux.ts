@@ -130,7 +130,7 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 		hlsUrl: `https://stream.mux.com/${playbackId}.m3u8`,
 		mp4Url: `https://stream.mux.com/${playbackId}/${mp4Name}`,
 		posterUrl: `https://image.mux.com/${playbackId}/thumbnail.png`, // TODO expose time param
-		title: undefined, // Mux assets don't have a title field
+		title: video.meta?.title,
 		width,
 	}
 }

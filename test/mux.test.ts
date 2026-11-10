@@ -15,9 +15,10 @@ vi.mock('@mux/ts', () => ({
 const mediaId = 'a'.repeat(44)
 const config = { accessToken: 'token', secret: 'secret' }
 
-function stubRenditions(renditions: Asset.StaticRenditions): void {
+function stubRenditions(renditions: Asset.StaticRenditions, meta?: Asset['meta']): void {
 	/* eslint-disable ts/naming-convention -- Mux API response field names. */
 	retrieve.mockResolvedValue({
+		...(meta && { meta }),
 		playback_ids: [{ id: 'playback', policy: 'public' }],
 		static_renditions: renditions,
 		status: 'ready',
@@ -45,6 +46,18 @@ describe('muxGetVideoInfo', () => {
 		const [assetId, options] = retrieve.mock.calls[0]!
 		expect(assetId).toBe(mediaId)
 		expect(options?.signal).toBeInstanceOf(AbortSignal)
+	})
+
+	it('takes the title from the asset metadata, when it has one', async () => {
+		const renditions: Asset.StaticRenditions = {
+			files: [{ name: 'high.mp4', status: 'ready', width: 1920 }],
+		}
+		stubRenditions(renditions)
+		const untitled = await muxGetVideoInfo(mediaId, config)
+		expect(untitled.title).toBeUndefined()
+		stubRenditions(renditions, { title: 'Penguins at dusk' })
+		const titled = await muxGetVideoInfo(mediaId, config)
+		expect(titled.title).toBe('Penguins at dusk')
 	})
 
 	it('supports legacy aggregate readiness and skips audio-only files', async () => {
