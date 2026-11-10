@@ -62,10 +62,17 @@ const flickSpeed = 0.3
 const pull = 0.55
 
 /**
- * How close to a slide, in px, the track counts as resting on it. Browsers round
- * a fractional snap position to whole or device pixels when they report it.
+ * How close to a slide, in px, the track counts as resting on it. Browsers
+ * round a fractional snap position to whole or device pixels when they report
+ * it.
  */
 const onSlide = 1
+
+/**
+ * Captions keep their presses, for selecting their text: the viewer's, and a
+ * page carousel's.
+ */
+const captionSelector = '.amk-lightbox-caption,.amk-carousel-slide figcaption'
 
 /** Whether the click being dispatched, or the next one, ends a drag. */
 let isDragClick = false
@@ -577,11 +584,7 @@ export class CarouselMotion {
 		}
 
 		// Skip while a resize is pending: the offset is still for the old width
-		if (
-			!this.#options.canNavigate() ||
-			this.#width === 0 ||
-			this.#isResizePending()
-		) {
+		if (!this.#options.canNavigate() || this.#width === 0 || this.#isResizePending()) {
 			return
 		}
 
@@ -641,7 +644,7 @@ export class CarouselMotion {
 		if (
 			(!canDismiss && (isNative || isInRegion)) ||
 			!this.#options.canNavigate() ||
-			isWithin(event, `${controlSelector},.amk-lightbox-caption`, this.#track) ||
+			isWithin(event, `${controlSelector},${captionSelector}`, this.#track) ||
 			(event.target === stage && isOnScrollbar(event, stage))
 		) {
 			return
