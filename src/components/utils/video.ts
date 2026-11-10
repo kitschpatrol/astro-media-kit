@@ -156,8 +156,11 @@ async function localGetVideoInfo(src: string): Promise<VideoInfo> {
 	for (const candidate of localVideoProbeCandidates(src)) {
 		try {
 			const info = await getVideoResolution(candidate, { signal: requestSignal() })
-			width = info.width
-			height = info.height
+			// The probe reports the frame as stored. A phone's portrait clip is
+			// stored on its side, with a rotation that players show it by
+			const isSideways = info.rotation === 90 || info.rotation === 270
+			width = isSideways ? info.height : info.width
+			height = isSideways ? info.width : info.height
 			if (info.duration !== undefined) {
 				duration = info.duration
 			}

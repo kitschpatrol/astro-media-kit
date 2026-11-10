@@ -7,7 +7,7 @@ const { getVideoResolution } = vi.hoisted(() => ({
 			(
 				source: string,
 				options?: { signal?: AbortSignal },
-			) => Promise<{ duration?: number; height: number; width: number }>
+			) => Promise<{ duration?: number; height: number; rotation?: number; width: number }>
 		>(),
 }))
 
@@ -40,6 +40,20 @@ describe('direct media probes', () => {
 		expect(info.width).toBe(1280)
 		expect(info.height).toBe(720)
 		expect(info.duration).toBe(3)
+	})
+
+	it.for([90, 270])('turns a clip stored on its side by %i degrees upright', async (rotation) => {
+		getVideoResolution.mockResolvedValue({ height: 1080, rotation, width: 1920 })
+		const info = await getVideoInfo('https://cdn.example/portrait.mov', 'local', localOnlyConfig)
+		expect(info.width).toBe(1080)
+		expect(info.height).toBe(1920)
+	})
+
+	it.for([0, 180])('keeps the stored frame of a clip rotated by %i degrees', async (rotation) => {
+		getVideoResolution.mockResolvedValue({ height: 1080, rotation, width: 1920 })
+		const info = await getVideoInfo('https://cdn.example/landscape.mov', 'local', localOnlyConfig)
+		expect(info.width).toBe(1920)
+		expect(info.height).toBe(1080)
 	})
 
 	it('reports a failed remote probe, and stays quiet about a missing local file', async () => {
