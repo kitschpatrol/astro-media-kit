@@ -1216,7 +1216,7 @@ it('returns its bar on the active thumbnail fade without a second opacity transi
 })
 
 it.each([false, true])(
-	'fades video in over its page preview, and lands it as itself, playing=%s',
+	'lifts and lands video as itself, without fading over its page preview, playing=%s',
 	async (playing) => {
 		const { item, player } = await mountPlayer()
 		if (playing) {
@@ -1225,16 +1225,12 @@ it.each([false, true])(
 
 		const opening = openLightbox(item)
 		const layer = currentLayer()
-		const entering = fadeOf(layer)!
-		expect(entering).toBeDefined()
-		entering.pause()
-		entering.currentTime = 0
-		expect(getComputedStyle(layer).opacity).toBe('0')
-		entering.finish()
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
 		await opening
 		const closing = closeLightbox()
 		// The preview is a canvas copy, which can differ from the video in tint, so
-		// the video itself is what shows all the way home
+		// the video itself is what shows all the way
 		expect(fadeOf(layer)).toBeUndefined()
 		expect(getComputedStyle(layer).opacity).toBe('1')
 		expect(layer.style.opacity).toBe('1')

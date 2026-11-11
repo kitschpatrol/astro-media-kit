@@ -470,19 +470,20 @@ it('keeps horizontal touch scrolling native on dismissible images', async ({ ski
 	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
 })
 
-it('fades the lifted layer in on opening and out on closing, keeping it opaque through secondary zoom', async () => {
+it('keeps the lifted layer opaque through opening, secondary zoom, and closing', async () => {
 	const fixture = mount(item(image(), 'data-level="fill" style="width: 200px"'))
 	await fixture.querySelector('img')!.decode()
 	const opening = openLightbox(boxes(fixture)[0]!)
 	const layer = query(viewer(), '.amk-lightbox-layer')
-	expect(getComputedStyle(layer).opacity).toBe('0')
+	expect(getComputedStyle(layer).opacity).toBe('1')
 	await opening
 	expect(getComputedStyle(layer).opacity).toBe('1')
 	button('zoom').click()
 	await frames(2)
 	expect(getComputedStyle(layer).opacity).toBe('1')
 	viewer().requestClose()
-	await expect.poll(() => Number(getComputedStyle(layer).opacity)).toBeLessThan(1)
+	await expect.poll(() => viewer().dataset.state).toBe('closing')
+	expect(getComputedStyle(layer).opacity).toBe('1')
 	await expect.poll(() => viewer().open).toBe(false)
 })
 

@@ -451,8 +451,9 @@
 	overflow: hidden;
 }
 
-/* Images and videos fade in over their page preview: quickly at first, so they
-   are mostly there as they leave, then gently. Other subjects cut over. */
+/* A lifted subject leaves its place and lands on it as it is, over the preview
+   left on the page. Only a text link's media, which has no place there, fades:
+   in quickly at first as it grows out of the link, then gently. */
 .amk-lightbox-layer {
 	position: absolute;
 	inset: 0;
@@ -465,8 +466,7 @@
 		opacity var(--amk-lightbox-open-fade-duration) cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-/* Closing mirrors it for an image, which fades out as it zooms home. A video
-   stays as it is, since its preview can differ from it in tint. */
+/* Closing mirrors it, as the media shrinks back into the link */
 .amk-lightbox[data-state='closing'] .amk-lightbox-layer {
 	transition-duration:
 		var(--amk-lightbox-duration), var(--amk-lightbox-duration), var(--amk-lightbox-duration),

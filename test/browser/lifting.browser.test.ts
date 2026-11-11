@@ -193,27 +193,27 @@ describe('lifting', () => {
 		expect(after.y).toBeCloseTo(before.y, 1)
 	})
 
-	it('fades an image in steeply over its placeholder as the opening zoom starts', async () => {
-		const fixture = mount(imageItem())
-		await query(fixture, 'img', HTMLImageElement).decode()
+	it.each([
+		['an image', () => imageItem()],
+		['an image without a placeholder', () => imageItem('data-placeholder="none"')],
+		['HTML', () => item(block('a'))],
+	])('lifts and lands %s as it is, without fading', async (_name, markup) => {
+		const fixture = mount(markup())
+		await fixture.querySelector('img')?.decode()
 		const opening = openLightbox(boxes(fixture)[0]!)
 		const layer = query(document, '.amk-lightbox-layer')
-		const fade = fadeOf(layer)!
-		fade.pause()
-		expect(fade.effect?.getTiming().duration).toBe(300)
-		expect(getComputedStyle(layer).opacity).toBe('0')
-		fade.currentTime = 60
-		expect(Number(getComputedStyle(layer).opacity)).toBeGreaterThan(0.5)
-		expect(Number(getComputedStyle(layer).opacity)).toBeLessThan(0.65)
-		fade.currentTime = 150
-		expect(Number(getComputedStyle(layer).opacity)).toBeGreaterThan(0.85)
-		expect(Number(getComputedStyle(layer).opacity)).toBeLessThan(1)
-		fade.finish()
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
 		await opening
 		expect(getComputedStyle(layer).opacity).toBe('1')
+		const closing = closeLightbox()
+		expect(fadeOf(layer)).toBeUndefined()
+		expect(getComputedStyle(layer).opacity).toBe('1')
+		await closing
+		expect(viewer().open).toBe(false)
 	})
 
-	it('fades an image out into its placeholder as it zooms home, on the opening curve', async () => {
+	it('keeps an image over its placeholder until it lands', async () => {
 		const fixture = mount(imageItem())
 		const box = boxes(fixture)[0]!
 		const subject = query(fixture, 'img', HTMLImageElement)
@@ -221,30 +221,22 @@ describe('lifting', () => {
 		await openLightbox(box)
 		const layer = query(document, '.amk-lightbox-layer')
 		const closing = closeLightbox()
-		const fade = fadeOf(layer)!
-		fade.pause()
-		expect(fade.effect?.getTiming().duration).toBe(300)
-		expect(getComputedStyle(layer).opacity).toBe('1')
-		fade.currentTime = 60
-		expect(Number(getComputedStyle(layer).opacity)).toBeGreaterThan(0.35)
-		expect(Number(getComputedStyle(layer).opacity)).toBeLessThan(0.5)
 		expect(subject.parentElement).toBe(layer)
 		expect(box.querySelector('[data-amk-preview]')).not.toBeNull()
-		fade.finish()
 		await closing
 		expect(subject.parentElement).toBe(box)
 		expect(box.querySelector('[data-amk-preview]')).toBeNull()
 		expect(viewer().open).toBe(false)
 	})
 
-	it('can restore during the closing fade without affecting a newly opened viewer', async () => {
+	it('can restore while closing without affecting a newly opened viewer', async () => {
 		const fixture = mount(imageItem())
 		const box = boxes(fixture)[0]!
 		await query(fixture, 'img', HTMLImageElement).decode()
 		await openLightbox(box)
 		const layer = query(document, '.amk-lightbox-layer')
 		const closing = closeLightbox()
-		await expect.poll(() => Number(getComputedStyle(layer).opacity)).toBeLessThan(1)
+		await expect.poll(() => getComputedStyle(layer).translate).not.toBe('none')
 		await closeLightbox(true)
 		await openLightbox(box)
 		await closing
@@ -271,14 +263,14 @@ describe('lifting', () => {
 		expect(getComputedStyle(layer).opacity).toBe('1')
 	})
 
-	it('brings a fading subject back when clicked', async () => {
+	it('brings a returning subject back when clicked', async () => {
 		const fixture = mount(imageItem())
 		const box = boxes(fixture)[0]!
 		await query(fixture, 'img', HTMLImageElement).decode()
 		await openLightbox(box)
 		const layer = currentLayer()
 		const closing = closeLightbox()
-		await expect.poll(() => Number(getComputedStyle(layer).opacity)).toBeLessThan(0.9)
+		await expect.poll(() => getComputedStyle(layer).translate).not.toBe('none')
 		clickMiddle(layer)
 		await closing
 		await transitionsDone()
@@ -301,35 +293,6 @@ describe('lifting', () => {
 				detail: 1,
 			}),
 		)
-		await closing
-		expect(viewer().open).toBe(false)
-	})
-
-	it('skips both fades without a placeholder', async () => {
-		const fixture = mount(imageItem('data-placeholder="none"'))
-		await query(fixture, 'img', HTMLImageElement).decode()
-		const opening = openLightbox(boxes(fixture)[0]!)
-		const layer = query(document, '.amk-lightbox-layer')
-		expect(getComputedStyle(layer).opacity).toBe('1')
-		await opening
-		const closing = closeLightbox()
-		expect(fadeOf(layer)).toBeUndefined()
-		expect(getComputedStyle(layer).opacity).toBe('1')
-		await closing
-		expect(viewer().open).toBe(false)
-	})
-
-	it('cuts HTML over without fading, since its layout can change', async () => {
-		const fixture = mount(item(block('a')))
-		const opening = openLightbox(boxes(fixture)[0]!)
-		const layer = query(document, '.amk-lightbox-layer')
-		query(fixture, '[data-amk-preview]')
-		expect(fadeOf(layer)).toBeUndefined()
-		expect(getComputedStyle(layer).opacity).toBe('1')
-		await opening
-		const closing = closeLightbox()
-		expect(fadeOf(layer)).toBeUndefined()
-		expect(getComputedStyle(layer).opacity).toBe('1')
 		await closing
 		expect(viewer().open).toBe(false)
 	})

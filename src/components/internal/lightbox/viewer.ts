@@ -19,7 +19,7 @@ import {
 } from './dom'
 import { lengthOf } from './geometry'
 import { refreshImagePreview } from './image-preview'
-import { canFade, canFadeHome, dropSlides, followLayout, liftSlide, measure } from './lift'
+import { dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
@@ -300,8 +300,7 @@ class Viewer {
 			? linkStyle(frame, current.target)
 			: layerStyle(frame, current.target, current)
 		const start = current.position === undefined ? identity : lift.from
-		// Images and videos fade in over the preview left behind.
-		setLayerStyle(slide.layer, canFade(lift) ? { ...start, opacity: '0' } : start, false)
+		setLayerStyle(slide.layer, start, false)
 		// Commit the start values, including the backdrop's and the controls'
 		// opacity, so the changes below transition from them
 		slide.layer.getAnimations()
@@ -465,7 +464,7 @@ class Viewer {
 		this.#liftAround(this.#index)
 	}
 
-	/** Finish the return zoom and its fade, then restore the original. */
+	/** Finish the return zoom, then restore the original. */
 	async #finishClose(slide: Slide, generation: number) {
 		await settle(slide.layer)
 		// Any later close or restore bumps the generation
@@ -853,12 +852,9 @@ class Viewer {
 			x: home.x + lift.offset.x * scaleX,
 			y: home.y + lift.offset.y * scaleY,
 		}
-		const to =
-			isOpening && lift.from !== undefined && isSameBox(target, lift.target)
-				? lift.from
-				: layerStyle(slide.frame.getBoundingClientRect(), target, lift)
-		// Images fade out into their preview as they land.
-		return canFadeHome(lift) ? { ...to, opacity: '0' } : to
+		return isOpening && lift.from !== undefined && isSameBox(target, lift.target)
+			? lift.from
+			: layerStyle(slide.frame.getBoundingClientRect(), target, lift)
 	}
 
 	/**
