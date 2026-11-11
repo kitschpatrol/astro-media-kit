@@ -76,6 +76,13 @@
 		height: var(--amk-lightbox-placeholder-height) !important;
 	}
 
+	/* A stand-in for a lifted subject's box, once the page has been laid out
+	   anew: it takes the subject's room in the page, and shows nothing. */
+	[data-amk-probe] {
+		pointer-events: none !important;
+		visibility: hidden !important;
+	}
+
 	/* Decorative copies keep their content styling, but not layout or input. */
 	[data-amk-preview] {
 		pointer-events: none !important;

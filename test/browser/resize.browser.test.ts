@@ -10,6 +10,7 @@ import {
 	gallery,
 	item,
 	mount,
+	mountPage,
 	query,
 	setUpLightbox,
 	viewer,
@@ -90,6 +91,77 @@ it('holds a content-sized wrapper at its size, and one with a size of its own no
 		expect(preview.height).toBeCloseTo(500, 0)
 		await closeLightbox()
 		expect(query(shaped!, 'img').getBoundingClientRect().height).toBeCloseTo(500, 0)
+	} finally {
+		await page.viewport(1280, 800)
+	}
+})
+
+it('lets a content-sized wrapper follow a resize that changes its content, and lands the subject there', async () => {
+	// A wrapper that shrinks to an image, which shrinks to its column
+	const fixture = mount(
+		`<div style="width: 25vw">${item(
+			`<img src="/media/aurora-480.jpg" width="480" height="320" alt=""
+				style="display: block; max-width: 100%; height: auto" />`,
+			'style="display: inline-block; max-width: 100%; vertical-align: top"',
+		)}</div>`,
+	)
+	const box = boxes(fixture)[0]!
+	const image = query(fixture, 'img', HTMLImageElement)
+	await image.decode()
+	expect(box.getBoundingClientRect().width).toBeCloseTo(320, 0)
+	await openLightbox(box)
+	expect(box.dataset.lifted).toBe('size')
+	try {
+		await page.viewport(800, 600)
+		// The size it had is out of date now: the image would be 200px wide here.
+		// Its height says so, where the column alone narrows a wrapper that is held
+		await expect.poll(() => box.getBoundingClientRect().height).toBeCloseTo(200 / 1.5, 0)
+		expect(box.getBoundingClientRect().width).toBeCloseTo(200, 0)
+		const preview = query(box, '[data-amk-preview]').getBoundingClientRect()
+		expect(preview.width).toBeCloseTo(200, 0)
+		expect(preview.height).toBeCloseTo(200 / 1.5, 0)
+		// What stands in for the image takes its room, and shows nothing
+		const probe = query(box, '[data-amk-probe]')
+		expect(getComputedStyle(probe).visibility).toBe('hidden')
+		expect(probe.inert).toBe(true)
+
+		await page.viewport(1000, 700)
+		await expect.poll(() => box.getBoundingClientRect().width).toBeCloseTo(250, 0)
+		expect(box.querySelectorAll('[data-amk-probe]')).toHaveLength(1)
+
+		await closeLightbox()
+		expect(image.parentElement).toBe(box)
+		expect(image.getBoundingClientRect().width).toBeCloseTo(250, 0)
+		expect(box.querySelector('[data-amk-probe]')).toBeNull()
+		expect(box.hasAttribute('style')).toBe(true)
+		expect(box.style.getPropertyValue('--amk-lightbox-placeholder-width')).toBe('')
+	} finally {
+		await page.viewport(1280, 800)
+	}
+})
+
+it("stands in for the kit's player with its box alone, and lands it at its new size", async () => {
+	const fixture = await mountPage('/zoom/')
+	const section = query(fixture, '#video')
+	section.style.width = '25vw'
+	const box = query(section, '.amk-zoom')
+	const container = query(box, 'media-container')
+	expect(container.getBoundingClientRect().width).toBeCloseTo(320, 0)
+	await openLightbox(box)
+	expect(box.dataset.lifted).toBe('size')
+	try {
+		await page.viewport(800, 600)
+		await expect.poll(() => box.getBoundingClientRect().width).toBeCloseTo(200, 0)
+		expect(box.getBoundingClientRect().height).toBeCloseTo((200 * 9) / 16, 0)
+		// Never a second player: only boxes of the player's size
+		const probe = query(box, '[data-amk-probe]')
+		expect(probe.classList.contains('amk-video')).toBe(true)
+		expect(probe.querySelector('video-player, media-container, video')).toBeNull()
+
+		await closeLightbox()
+		expect(container.getBoundingClientRect().width).toBeCloseTo(200, 0)
+		expect(container.getBoundingClientRect().height).toBeCloseTo((200 * 9) / 16, 0)
+		expect(box.querySelector('[data-amk-probe]')).toBeNull()
 	} finally {
 		await page.viewport(1280, 800)
 	}

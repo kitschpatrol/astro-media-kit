@@ -1,5 +1,6 @@
 import type { Box, Fit } from './geometry'
 import type { Lift, Measurement, Point, Slide } from './types'
+import { isPlainMarkup } from './clone-placeholder'
 import { releaseControlPreview, retainControlPreview } from './control-preview'
 import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
@@ -8,7 +9,7 @@ import { ratioOf } from './media'
 import { retainPictureThemes } from './picture-theme'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
-import { releasePreparation } from './prepare'
+import { releasePreparation, restorePreparedClone } from './prepare'
 import { releaseWarmup } from './warm-image'
 
 /**
@@ -70,6 +71,7 @@ export function dropSlides(slides: Slide[]) {
 		}
 
 		lift.releasePictureThemes()
+		lift.probe?.remove()
 		removePlaceholder(lift.placeholder)
 		releaseControlPreview(lift.subject)
 
@@ -126,6 +128,8 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		hadStyle: item.hasAttribute('style'),
 		nextSibling: subject.nextSibling ?? undefined,
 		placeholder: placeholder?.element,
+		placeholderBox: placeholder?.box,
+		probe: undefined,
 		releasePictureThemes: retainPictureThemes(subject, item),
 	}
 	// On the slide, where both the frame and a stage beside a caption read it
@@ -163,6 +167,95 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 
 	releaseWarmup(subject)
+}
+
+/**
+ * Let an item that holds its measured size follow the page again, after the
+ * page has been laid out anew, as when the viewport is resized or turned. Its
+ * size came from its subject, which is away, so an invisible stand-in for the
+ * subject's box goes in its place: the item takes the size the subject would
+ * give it now, its preview keeps to it, and the way home leads there. A subject
+ * that can't be stood in for keeps its measured size.
+ */
+export function followLayout(lift: Lift) {
+	const { item } = lift
+	if (item.dataset.lifted !== 'size' || lift.probe !== undefined) {
+		return
+	}
+
+	const probe = createProbe(lift)
+	if (probe === undefined) {
+		return
+	}
+
+	probe.dataset.amkProbe = ''
+	probe.ariaHidden = 'true'
+	probe.inert = true
+	const { nextSibling } = lift
+	item.insertBefore(probe, nextSibling?.parentNode === item ? nextSibling : item.firstChild)
+	item.dataset.lifted = ''
+	const box = item.getBoundingClientRect()
+	if (box.width <= 0 || box.height <= 0) {
+		// Not a box the subject could have given it, so the measured size stays
+		probe.remove()
+		item.dataset.lifted = 'size'
+		return
+	}
+
+	lift.probe = probe
+	item.style.removeProperty('--amk-lightbox-placeholder-width')
+	item.style.removeProperty('--amk-lightbox-placeholder-height')
+	if (lift.placeholder !== undefined && lift.placeholderBox !== undefined) {
+		placePlaceholder(item, { box: lift.placeholderBox, element: lift.placeholder }, lift.home, true)
+	}
+}
+
+/**
+ * An element that takes the room the subject takes in the page, with nothing to
+ * show: a copy of ordinary markup, or, for the kit's player, boxes with the
+ * width and aspect ratio its container was rendered with. Undefined for a
+ * subject neither can stand in for, such as an embed.
+ */
+function createProbe(lift: Lift): HTMLElement | undefined {
+	const { subject } = lift
+	const container = subject.querySelector<HTMLElement>('media-container[data-media]')
+	if (container !== null && subject instanceof HTMLElement) {
+		// Never a copy of the player itself, which would start a second one
+		const probe = subject.cloneNode(false) as HTMLElement
+		const box = document.createElement('div')
+		Object.assign(box.style, {
+			aspectRatio:
+				container.style.aspectRatio === '' ? String(lift.ratio) : container.style.aspectRatio,
+			display: 'block',
+			maxWidth: '100%',
+			width: container.style.width,
+		})
+		probe.append(box)
+		probe.removeAttribute('id')
+		return probe
+	}
+
+	if (!isPlainMarkup(subject)) {
+		return undefined
+	}
+
+	const probe = subject.cloneNode(true)
+	if (!(probe instanceof HTMLElement)) {
+		return undefined
+	}
+
+	// The copy is laid out as the subject was in the page, not as the viewer
+	// has prepared it
+	restorePreparedClone(subject, probe)
+	for (const element of [probe, ...probe.querySelectorAll('*')]) {
+		element.removeAttribute('id')
+		element.removeAttribute('name')
+		if (element instanceof HTMLImageElement) {
+			element.alt = ''
+		}
+	}
+
+	return probe
 }
 
 /** How a wrapper's space is held while its subject is lifted. */

@@ -18,24 +18,31 @@ const references = new Set([
 ])
 
 /**
+ * Whether a subject is ordinary markup, which a copy of stays inert: no player,
+ * custom component, embed, or form control that would start up a second time.
+ */
+export function isPlainMarkup(subject: Element): boolean {
+	return [subject, ...subject.querySelectorAll('*')].every(
+		(element) =>
+			!element.localName.includes('-') &&
+			!element.hasAttribute('is') &&
+			element.shadowRoot === null &&
+			!element.matches(
+				'iframe, object, embed, video, audio, canvas, script, style, link, template, form, input, select, textarea',
+			),
+	)
+}
+
+/**
  * Copy ordinary markup without initializing another player or custom component.
  * Image copies follow their originals until `signal` aborts.
  */
 export function clonePlaceholder(subject: Element, signal: AbortSignal): HTMLElement | undefined {
-	const originals = [subject, ...subject.querySelectorAll('*')]
-	if (
-		originals.some(
-			(element) =>
-				element.localName.includes('-') ||
-				element.hasAttribute('is') ||
-				element.shadowRoot !== null ||
-				element.matches(
-					'iframe, object, embed, video, audio, canvas, script, style, link, template, form, input, select, textarea',
-				),
-		)
-	) {
+	if (!isPlainMarkup(subject)) {
 		return undefined
 	}
+
+	const originals = [subject, ...subject.querySelectorAll('*')]
 
 	const clone = subject.cloneNode(true)
 	if (!(clone instanceof Element)) {

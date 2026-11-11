@@ -19,7 +19,7 @@ import {
 } from './dom'
 import { lengthOf } from './geometry'
 import { refreshImagePreview } from './image-preview'
-import { canFade, canFadeHome, dropSlides, liftSlide, measure } from './lift'
+import { canFade, canFadeHome, dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
@@ -736,6 +736,13 @@ class Viewer {
 		this.#motion.resize(width)
 		if (this.#state === 'idle') {
 			return
+		}
+
+		// The page has been laid out anew too, and the items there with it
+		for (const slide of [...this.#slides, ...this.#ghosts]) {
+			if (slide.lift !== undefined) {
+				followLayout(slide.lift)
+			}
 		}
 
 		for (const slide of this.#slides) {

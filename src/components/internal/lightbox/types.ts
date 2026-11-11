@@ -37,6 +37,13 @@ export type Lift = Measurement & {
 	nextSibling: ChildNode | undefined
 	/** A decorative placeholder left in the page, if enabled. */
 	placeholder: HTMLElement | undefined
+	/** Where the placeholder lies in the item, for laying it out another way. */
+	placeholderBox: Box | undefined
+	/**
+	 * An invisible stand-in for the subject in the item, once the page has been
+	 * laid out anew, which sizes the item as the subject would.
+	 */
+	probe: HTMLElement | undefined
 	/** Restore selector-based picture variants when the subject returns. */
 	releasePictureThemes: () => void
 }
