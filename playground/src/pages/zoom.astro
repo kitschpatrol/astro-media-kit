@@ -256,6 +256,39 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		<ColdZoomImage zoom="uncached" />
 		<ColdZoomImage dark zoom="uncached" />
 	</div>
+
+	<h2 id="cropped-thumbnails">11. Cropped thumbnails</h2>
+	<p class="note">
+		Each thumbnail shows part of its image, cropped with <code>object-fit: cover</code> and placed
+		with <code>object-position</code>. The viewer shows the whole image: the crop opens up as the
+		image lifts, and closes in again as it lands.
+	</p>
+	<div class="crops">
+		<Image
+			alt="JPEG photo, cropped to a wide strip"
+			class="crop-strip"
+			src="../assets/test.jpeg"
+			zoom="crops"
+		/>
+		<Image
+			alt="JPEG photo, cropped to a tall strip"
+			class="crop-tall"
+			src="../assets/test.jpeg"
+			zoom="crops"
+		/>
+		<Image
+			alt="JPEG photo, cropped to a circle"
+			class="crop-round"
+			src="../assets/test.jpeg"
+			zoom="crops"
+		/>
+		<Image
+			alt="SVG tiger, cropped to a band across its eyes"
+			class="crop-detail"
+			src="../assets/tiger.svg"
+			zoom="crops"
+		/>
+	</div>
 </Layout>
 
 <style>
@@ -274,6 +307,43 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	.grid :global(img) {
 		max-width: 100%;
 		height: auto;
+	}
+
+	.crops {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: flex-start;
+		margin-bottom: 2rem;
+	}
+
+	.crops :global(img) {
+		object-fit: cover;
+	}
+
+	.crops :global(.crop-strip) {
+		width: 320px;
+		height: 120px;
+		object-position: 50% 20%;
+	}
+
+	.crops :global(.crop-tall) {
+		width: 120px;
+		height: 240px;
+		object-position: 70% 50%;
+	}
+
+	.crops :global(.crop-round) {
+		width: 200px;
+		height: 200px;
+		border-radius: 50%;
+	}
+
+	.crops :global(.crop-detail) {
+		width: 240px;
+		height: 80px;
+		border-radius: 12px;
+		object-position: 50% 30%;
 	}
 
 	.indicator-contrast {
