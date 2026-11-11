@@ -67,7 +67,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@astrojs/compiler-rs": "^0.5.2",
+		"@astrojs/compiler-rs": "^0.5.3",
 		"@kitschpatrol/unplugin-aphex": "^0.2.5",
 		"@kitschpatrol/unplugin-tldraw": "^1.1.5",
 		"@mux/ts": "^16.1.0",
@@ -89,7 +89,7 @@
 		"@types/node": "~24.13.6",
 		"@videojs/skills": "github:videojs/skills#66afaeb4508f324b0b554700d52cb6a5a7a5b14c",
 		"@vitest/browser-playwright": "^5.1.0",
-		"astro": "^7.4.7",
+		"astro": "^7.4.10",
 		"bumpp": "^12.3.0",
 		"cheerio": "^1.2.0",
 		"happy-dom": "^21.0.4",

@@ -2,9 +2,6 @@ allowBuilds:
   esbuild: true
   puppeteer: true
 ignoreWorkspaceRootCheck: true
-minimumReleaseAgeExclude:
-  - '@kitschpatrol/chagent@0.5.0'
-  - astro-mdx-kit@0.8.0
 packageExtensions:
   # astro2tsx pins @emnapi/core but leaves @emnapi/runtime to peer resolution,
   # which picks rolldown's 2.0 beta and crashes the 1.x core on load.
@@ -44,4 +41,3 @@ publicHoistPattern:
 skills:
   dirs:
     - .agents/skills
-    - .claude/skills
