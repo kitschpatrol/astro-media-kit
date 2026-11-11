@@ -597,7 +597,7 @@ When zooming needs an uncached image candidate, the viewer enlarges the loaded i
 
 Closing preserves the document's scroll position. An on-page Carousel follows the viewer from item to item, so it is on the selected slide when the viewer closes, without scrolling its ancestors. If the thumbnail remains offscreen, the closing animation travels toward its existing position without scrolling it into view; other scroll containers keep their positions. An image whose computed `object-position` is not a pair of percentages, or that has no size on the page, returns without the animation.
 
-A ZoomLink's media isn't in the page: it is instantiated from the link's template as the link is used, hovered as well as clicked, grows out of the link once it can show, fading in, shrinks and fades back into it as the viewer closes, and is discarded then. It joins a gallery like any other item.
+A ZoomLink's media isn't in the page: it is instantiated from the link's template as the link is used, hovered as well as clicked, grows out of the link once it can show, fading in from the height of the link's text, shrinks and fades back into it as the viewer closes, and is discarded then. It joins a gallery like any other item.
 
 In the viewer:
 

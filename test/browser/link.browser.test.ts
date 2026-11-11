@@ -127,17 +127,20 @@ it('grows the image out of the link, and shrinks it back into it', async () => {
 		const layer = currentLayer()
 		await expect.poll(() => layer.getAnimations().length).toBeGreaterThan(0)
 		const frame = currentFrame()
-		expect(numberOf(keyframesOf(layer, 'scale')[0], 'scale')).toBe(0.5)
+		// As tall as the link's text, and centered on it
+		const scale = numberOf(keyframesOf(layer, 'scale')[0], 'scale')
+		expect(frame.height * scale).toBeCloseTo(link.height, 1)
+		expect(link.height).toBeLessThan(40)
 		const [x = '', y = ''] = String(keyframesOf(layer, 'translate')[0]?.translate).split(' ', 2)
-		expect(frame.x + numberOf({ x }, 'x') + frame.width / 4).toBeCloseTo(linkCenter.x, 0)
-		expect(frame.y + numberOf({ y }, 'y') + frame.height / 4).toBeCloseTo(linkCenter.y, 0)
+		expect(frame.x + numberOf({ x }, 'x') + (frame.width * scale) / 2).toBeCloseTo(linkCenter.x, 0)
+		expect(frame.y + numberOf({ y }, 'y') + (frame.height * scale) / 2).toBeCloseTo(linkCenter.y, 0)
 		expect(numberOf(keyframesOf(layer, 'opacity')[0], 'opacity')).toBe(0)
 		await liftDone(3000)
 
 		clickViewerAt({ x: 5, y: 5 })
 
 		await expect.poll(() => viewer().dataset.state).toBe('closing')
-		expect(numberOf(keyframesOf(layer, 'scale').at(-1), 'scale')).toBe(0.5)
+		expect(numberOf(keyframesOf(layer, 'scale').at(-1), 'scale')).toBeCloseTo(scale, 5)
 		expect(numberOf(keyframesOf(layer, 'opacity').at(-1), 'opacity')).toBe(0)
 		await expect.poll(() => viewer().open, { timeout: 3000 }).toBe(false)
 	} finally {
