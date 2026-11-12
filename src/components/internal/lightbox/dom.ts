@@ -14,6 +14,12 @@ const instances = new WeakMap<HTMLElement, Element>()
 export const viewerSelector = '.amk-lightbox'
 
 /**
+ * Regions whose parts can't be told apart from outside at all, which may take a
+ * sideways swipe for a control: native media controls and embedded documents.
+ */
+const sealedRegions = ['audio[controls]', 'iframe', 'video[controls]']
+
+/**
  * Regions that run their own pointer UI, whose parts the lightbox can't see:
  * the player's controls, native media controls, and embedded documents.
  */
@@ -21,9 +27,7 @@ const regions = [
 	'[data-interactive]',
 	'[data-zoom-interactive]',
 	'[data-click-to-play]:not([data-in-lightbox])',
-	'audio[controls]',
-	'iframe',
-	'video[controls]',
+	...sealedRegions,
 ]
 
 /** Controls with their own click, drag, and keyboard behavior. */
@@ -52,6 +56,9 @@ export const interactiveSelector = [...regions, ...openers, ...controls].join(',
  * viewer, since a press there may not have landed on any control.
  */
 export const regionSelector = regions.join(',')
+
+/** Regions that keep sideways touch swipes, which a player's surface passes on. */
+export const sealedRegionSelector = sealedRegions.join(',')
 
 /**
  * Controls, which keep every press, drag included. An item itself gives its
@@ -162,6 +169,15 @@ export function isNativeLink(item: HTMLElement): boolean {
 		item instanceof HTMLAnchorElement &&
 		(item.hasAttribute('download') || (item.target !== '' && item.target !== '_self'))
 	)
+}
+
+/**
+ * Whether a pointer made the click, rather than a key or a script. Firefox
+ * gives the click that Enter makes on a link a `detail` of 1, so only the
+ * pointer type tells them apart.
+ */
+export function isPointerClick(event: MouseEvent): boolean {
+	return event instanceof PointerEvent && event.pointerType !== ''
 }
 
 /**

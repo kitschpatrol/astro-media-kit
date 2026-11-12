@@ -3,6 +3,7 @@ import {
 	isItem,
 	isLinkItem,
 	isNativeLink,
+	isPointerClick,
 	isWithin,
 	itemSelector,
 	rendered,
@@ -282,15 +283,6 @@ function isOrdinaryClick(event: MouseEvent): boolean {
 		!event.shiftKey &&
 		!event.altKey
 	)
-}
-
-/**
- * Whether a pointer made the click, rather than a key or a script. Firefox
- * gives the click that Enter makes on a link a `detail` of 1, so only the
- * pointer type tells them apart.
- */
-function isPointerClick(event: MouseEvent): boolean {
-	return event instanceof PointerEvent && event.pointerType !== ''
 }
 
 function releaseIntent(item: HTMLElement) {

@@ -1,4 +1,4 @@
-import type { Frame } from 'playwright'
+import type { CDPSession, Frame, Page } from 'playwright'
 import type { ViteUserConfig } from 'vitest/config'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
@@ -136,6 +136,75 @@ const touchSwipe = defineBrowserCommand<[direction?: 'down' | 'left' | 'up']>(
 )
 
 /**
+ * Each page's finger that is down, with the protocol session that put it there,
+ * which alone can move or lift it, and where it is in the browser window.
+ */
+const fingers = new WeakMap<Page, { point: { x: number; y: number }; session: CDPSession }>()
+
+function fingerOn(page: Page): { point: { x: number; y: number }; session: CDPSession } {
+	const finger = fingers.get(page)
+	if (finger === undefined) {
+		throw new Error('No finger is down: call touchDown first')
+	}
+
+	return finger
+}
+
+/**
+ * Put a finger down at a point in the test page's viewport, and keep it there.
+ * Returns false where the browser has no protocol for it, as `touchSwipe`
+ * does.
+ */
+const touchDown = defineBrowserCommand<[x: number, y: number]>(async (context, x, y) => {
+	if (context.page.context().browser()?.browserType().name() !== 'chromium') {
+		return false
+	}
+
+	const point = await toWindow(await context.frame(), x, y)
+	const session = await context.page.context().newCDPSession(context.page)
+	fingers.set(context.page, { point, session })
+	await session.send('Input.dispatchTouchEvent', {
+		touchPoints: [{ ...point, id: 1 }],
+		type: 'touchStart',
+	})
+	return true
+})
+
+/**
+ * Slide the finger that is down to a point in the test page's viewport, as a
+ * hand would.
+ */
+const touchMove = defineBrowserCommand<[x: number, y: number]>(async (context, x, y) => {
+	const finger = fingerOn(context.page)
+	const start = finger.point
+	const end = await toWindow(await context.frame(), x, y)
+	for (let i = 1; i <= 8; i++) {
+		finger.point = {
+			x: start.x + ((end.x - start.x) * i) / 8,
+			y: start.y + ((end.y - start.y) * i) / 8,
+		}
+		await finger.session.send('Input.dispatchTouchEvent', {
+			touchPoints: [{ ...finger.point, id: 1 }],
+			type: 'touchMove',
+		})
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 16)
+		})
+	}
+})
+
+/** Lift the finger that is down. */
+const touchUp = defineBrowserCommand(async (context) => {
+	const { session } = fingerOn(context.page)
+	fingers.delete(context.page)
+	try {
+		await session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
+	} finally {
+		await session.detach()
+	}
+})
+
+/**
  * How the first match of a selector displays in a fixture page opened with
  * scripting off, or false where turning it off doesn't match `(scripting:
  * none)`, which it only does in Chromium.
@@ -234,7 +303,10 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 								mouseMove,
 								mouseUp,
 								mouseWheel,
+								touchDown,
+								touchMove,
 								touchSwipe,
+								touchUp,
 							},
 							enabled: true,
 							headless: true,

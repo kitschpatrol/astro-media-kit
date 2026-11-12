@@ -343,6 +343,12 @@
 		max(env(safe-area-inset-left), var(--amk-lightbox-gutter));
 }
 
+/* Script drags the track and a fitted subject under touch, as under a mouse, so
+   the browser keeps only pinch zoom. A zoomed stage pans natively. */
+.amk-lightbox-slide:not([data-zoomed]) {
+	touch-action: pinch-zoom;
+}
+
 .amk-lightbox-stage {
 	container-type: size;
 	display: grid;
@@ -440,12 +446,6 @@
 	}
 }
 
-/* A lone slide has nowhere to scroll, so script rubber-bands its horizontal
-   drags. Captions and zoomed stages keep scrolling natively. */
-.amk-lightbox[data-lone] .amk-lightbox-slide:not([data-zoomed]) > .amk-lightbox-stage {
-	touch-action: pinch-zoom;
-}
-
 /* Momentum would carry a closing subject away from home here too */
 .amk-lightbox[data-state='closing'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
 	overflow: hidden;
@@ -473,15 +473,11 @@
 		var(--amk-lightbox-close-fade-duration);
 }
 
-/* Horizontal swipes and page pinch zoom remain native. Fitted content reserves
-   vertical gestures to dismiss; zoomed content keeps both axes. */
-.amk-lightbox-slide:not([data-zoomed]) .amk-lightbox-layer {
-	touch-action: pan-x pinch-zoom;
-}
-
 /* On a scrim of its own: the backdrop alone leaves light text unreadable on a
-   light page */
+   light page. It scrolls up and down natively; as a scroll container, it would
+   otherwise let the browser swipe the track sideways again */
 .amk-lightbox-caption {
+	touch-action: pan-y pinch-zoom;
 	overflow-y: auto;
 	box-sizing: border-box;
 	max-width: min(100%, 70ch);

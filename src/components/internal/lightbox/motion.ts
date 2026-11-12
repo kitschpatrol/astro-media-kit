@@ -1,6 +1,12 @@
-import { controlSelector, isWithin, regionSelector } from './dom'
+import {
+	controlSelector,
+	isPointerClick,
+	isWithin,
+	regionSelector,
+	sealedRegionSelector,
+} from './dom'
 
-/** Native scrolling, mouse dragging, and glides have one owner at a time. */
+/** Native scrolling, dragging, and glides have one owner at a time. */
 type MotionOwner = 'drag' | 'glide' | 'idle' | 'native'
 
 type MotionOptions = {
@@ -16,19 +22,21 @@ type MotionOptions = {
 }
 
 /**
- * A mouse drag scrolls the track or pans a zoomed stage. A vertical drag on a
- * fitted image dismisses it, with mouse, pen, or touch input.
+ * A drag scrolls the track, with mouse, pen, or touch input, or pans a zoomed
+ * stage under a mouse. A vertical drag on a fitted image dismisses it.
  */
 type Drag = {
 	axis: 'dismiss' | 'scroll' | undefined
 	canDismiss: boolean
 	distanceY: number
 	/**
-	 * Pressed inside a player or native media controls, which keep the press
-	 * unless it turns into a clearly vertical drag.
+	 * Pressed inside a player or native media controls, which take a longer and
+	 * stricter look before a drag starts.
 	 */
 	isInRegion: boolean
 	isTouch: boolean
+	/** Pressed where a sideways drag belongs to what was pressed. */
+	keepsSideways: boolean
 	/**
 	 * What the drag moves from, taken once the pointer has moved far enough to
 	 * count as a drag, so it catches a glide where it is: the stage's scroll
@@ -69,7 +77,13 @@ const pull = 0.55
 const onSlide = 1
 
 /**
- * Captions keep their presses, for selecting their text: the viewer's, and a
+ * How far from its slide, in px, a glide still moves visibly, for a press to
+ * catch it. A press on one nearly there is a press on what is showing.
+ */
+const catchDistance = 2
+
+/**
+ * Captions keep mouse presses, for selecting their text: the viewer's, and a
  * page carousel's.
  */
 const captionSelector = '.amk-lightbox-caption,.amk-carousel-slide figcaption'
@@ -225,10 +239,11 @@ export class CarouselMotion {
 	 * from, or undefined while it is still a press or once the browser takes it.
 	 */
 	#begin(drag: Drag, event: PointerEvent, distanceX: number, distanceY: number): Drag['origin'] {
-		// A player gets a longer and stricter look, so its own drags stay its own
+		// A player gets a longer and stricter look, so its own drags stay its own.
+		// A touch moving mostly up or down is decided as soon, for the page
 		const distance = Math.hypot(
 			distanceX,
-			drag.canDismiss || drag.stage !== undefined ? distanceY : 0,
+			drag.canDismiss || drag.stage !== undefined || drag.isTouch ? distanceY : 0,
 		)
 		if (distance < (drag.isInRegion ? 12 : 6)) {
 			return
@@ -242,24 +257,13 @@ export class CarouselMotion {
 			// a measurable velocity when released in the same frame.
 			drag.samples[0]!.position = 0
 			this.#track.setPointerCapture(event.pointerId)
-		} else if (drag.isInRegion || (drag.isTouch && this.#count > 1)) {
-			// The player keeps any other drag. The browser owns horizontal touch
-			// scrolling and pinch zoom.
+		} else if (drag.keepsSideways || (drag.isTouch && Math.abs(distanceY) > Math.abs(distanceX))) {
+			// What was pressed keeps any other drag, and the browser scrolls the page,
+			// or a caption, under a mostly vertical swipe
 			this.#cancelDrag()
 			return
 		} else if (drag.stage === undefined) {
-			drag.axis = 'scroll'
-			if (drag.isTouch) {
-				// Touch initially captures on what was pressed
-				this.#track.setPointerCapture(event.pointerId)
-			}
-
-			// The drag takes over from any navigation underway, wherever it has got to
-			this.#stopGlide()
-			this.#target = undefined
-			drag.origin = { x: this.#mapPastEnds(this.#position, rubberBandDistance), y: 0 }
-			// Snapping would pull every position in between back to a slide
-			this.#track.dataset.moving = ''
+			return this.#grab(drag, event.pointerId)
 		} else {
 			drag.origin = { x: drag.stage.scrollLeft, y: drag.stage.scrollTop }
 		}
@@ -428,9 +432,33 @@ export class CarouselMotion {
 		this.#owner = 'glide'
 	}
 
+	/**
+	 * Take the track for `drag` wherever it has got to, from any glide underway,
+	 * and return where the drag moves it from.
+	 */
+	#grab(drag: Drag, pointerId: number): Drag['origin'] {
+		// Touch initially captures on what was pressed
+		this.#track.setPointerCapture(pointerId)
+		this.#stopGlide()
+		this.#target = undefined
+		drag.axis = 'scroll'
+		drag.origin = { x: this.#mapPastEnds(this.#position, rubberBandDistance), y: 0 }
+		this.#owner = 'drag'
+		this.#track.dataset.dragging = ''
+		// Snapping would pull every position in between back to a slide
+		this.#track.dataset.moving = ''
+		return drag.origin
+	}
+
 	/** The click that ends a drag is not a click on anything. */
 	readonly #handleClick = (event: MouseEvent) => {
 		if (!this.#shouldIgnoreClick) {
+			return
+		}
+
+		// A touch drag ends without a click, so a key or a script may click next
+		if (!isPointerClick(event)) {
+			this.#ignoreClick(false)
 			return
 		}
 
@@ -444,11 +472,12 @@ export class CarouselMotion {
 	}
 
 	/**
-	 * A touch or a wheel along the track takes over from any navigation underway.
-	 * A glide it interrupts leaves the track between slides with snapping off, so
-	 * the realign settles it, once the touch lifts or the wheel goes quiet. A
-	 * wheel across the track scrolls the page or a zoomed stage, and leaves a
-	 * glide alone.
+	 * A wheel along the track, or a touch the track leaves to the browser, such
+	 * as a pinch or a press on a control, takes over from any navigation
+	 * underway. A glide it interrupts leaves the track between slides with
+	 * snapping off, so the realign settles it, once the touch lifts or the wheel
+	 * goes quiet. A wheel across the track scrolls the page or a zoomed stage,
+	 * and leaves a glide alone.
 	 */
 	readonly #handleGesture = (event: TouchEvent | WheelEvent) => {
 		if (
@@ -460,16 +489,16 @@ export class CarouselMotion {
 
 		if (event.type === 'touchstart') {
 			this.#isTouching = true
+			// Pointerdown precedes touchstart, so a lone finger the track took as a
+			// possible drag, or caught it with, is already its own
+			if ('touches' in event && event.touches.length === 1 && this.#drag?.isTouch) {
+				return
+			}
 		}
 
 		const wasCustom = this.#owner === 'glide' || this.#owner === 'drag'
 		this.#stopGlide()
-		// Pointerdown precedes touchstart. Keep that one-finger candidate while
-		// native horizontal scrolling and custom vertical dismissal choose an axis.
-		if (!('touches' in event) || event.touches.length !== 1 || !this.#drag?.isTouch) {
-			this.#cancelDrag()
-		}
-
+		this.#cancelDrag()
 		this.#target = undefined
 		this.#owner = 'native'
 		// Clear synthetic overshoot before the browser takes over scrolling.
@@ -631,20 +660,30 @@ export class CarouselMotion {
 		return inside + Math.sign(beyond) * map(Math.abs(beyond), this.#width)
 	}
 
-	/** Take a primary press as a possible drag, unless something else owns it. */
+	/**
+	 * Take a primary press as a possible drag, unless something else owns it. A
+	 * press on the gliding track catches it where it is, as on iOS: a drag goes
+	 * on from there, and letting go settles it on the nearest slide.
+	 */
 	#press(event: PointerEvent) {
 		// A zoomed stage pans instead of the track scrolling
 		const stage = this.#options.stage()
 		const canDismiss = this.#canDismiss(event, stage)
 		const isTouch = event.pointerType !== 'mouse'
-		// A lone slide can't scroll, so script takes its horizontal drags too
-		const isNative = isTouch && this.#count > 1
+		const isCatch =
+			this.#glide !== undefined &&
+			stage === undefined &&
+			Math.abs(this.#position - this.target * this.#width) >= catchDistance
 		const isInRegion = isWithin(event, regionSelector, this.#track)
+		// A player keeps sideways mouse drags, which may be its own, but passes
+		// sideways touch swipes on to the track, unless they may be for native
+		// controls or an embed that can't be seen into
+		const keepsSideways =
+			isInRegion && (!isTouch || isWithin(event, sealedRegionSelector, this.#track))
 		if (
-			(!canDismiss && (isNative || isInRegion)) ||
 			!this.#options.canNavigate() ||
-			isWithin(event, `${controlSelector},${captionSelector}`, this.#track) ||
-			(event.target === stage && isOnScrollbar(event, stage))
+			isKeptByTarget(event, this.#track, stage) ||
+			(!canDismiss && !isCatch && keepsSideways)
 		) {
 			return
 		}
@@ -667,6 +706,7 @@ export class CarouselMotion {
 			distanceY: 0,
 			isInRegion,
 			isTouch,
+			keepsSideways,
 			origin: undefined,
 			pointerId: event.pointerId,
 			samples: [{ position: this.#position, time: event.timeStamp }],
@@ -674,9 +714,12 @@ export class CarouselMotion {
 			startX: event.clientX,
 			startY: event.clientY,
 		}
-		// Keep receiving the drag when it passes over the controls, or leaves
-		// the track. The click that follows a press then lands on the track
-		if (!isTouch && !isInRegion) {
+		if (isCatch) {
+			// Captured, so a player under the press never takes its release as a tap
+			this.#grab(this.#drag, event.pointerId)
+		} else if (!isTouch && !isInRegion) {
+			// Keep receiving the drag when it passes over the controls, or leaves
+			// the track. The click that follows a press then lands on the track
 			this.#track.setPointerCapture(event.pointerId)
 		}
 	}
@@ -783,6 +826,25 @@ function isAlongTrack(event: WheelEvent): boolean {
 	const x = event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX
 	const y = event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY
 	return x !== 0 && Math.abs(x) >= Math.abs(y)
+}
+
+/**
+ * Whether a press belongs to what it landed on, whatever the track is doing: a
+ * control, a caption's text under a mouse, or a zoomed stage's scrollbar. The
+ * browser pans a zoomed stage under touch.
+ */
+function isKeptByTarget(
+	event: PointerEvent,
+	track: HTMLElement,
+	stage: HTMLElement | undefined,
+): boolean {
+	const isTouch = event.pointerType !== 'mouse'
+	return (
+		isWithin(event, controlSelector, track) ||
+		// Touch selects text with a long press, not a drag
+		(!isTouch && isWithin(event, captionSelector, track)) ||
+		(stage !== undefined && (isTouch || (event.target === stage && isOnScrollbar(event, stage))))
+	)
 }
 
 /** Whether a press landed on one of `element`'s own scrollbars. */

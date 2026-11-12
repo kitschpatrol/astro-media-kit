@@ -7,6 +7,7 @@ import {
 	prepareLightbox,
 } from '../../src/components/internal/lightbox/lightbox'
 import {
+	activeSlideLabel,
 	boxes,
 	cleanUp,
 	frames,
@@ -14,6 +15,7 @@ import {
 	mount,
 	playerItem,
 	query,
+	settle,
 	setUpLightbox,
 	viewer,
 } from './helpers'
@@ -451,23 +453,127 @@ it('takes the first click after a touch gesture dismisses the viewer', async ({ 
 	expect(clicks).toBe(1)
 })
 
-it('keeps horizontal touch scrolling native on dismissible images', async ({ skip }) => {
+it('drags the track itself under a sideways touch swipe on an image', async ({ skip }) => {
 	await open(
 		Array.from({ length: 3 }, () =>
 			item(image(), 'data-gallery="touch-images" style="width: 200px"'),
 		).join(''),
 	)
-	if (!(await commands.touchSwipe())) {
+	const track = query(viewer(), '.amk-lightbox-track')
+	let wasDragged = false
+	const observer = new MutationObserver(() => {
+		wasDragged ||= Object.hasOwn(track.dataset, 'dragging')
+	})
+	observer.observe(track, { attributeFilter: ['data-dragging'], attributes: true })
+	try {
+		if (!(await commands.touchSwipe())) {
+			skip()
+		}
+	} finally {
+		observer.disconnect()
+	}
+
+	expect(wasDragged).toBe(true)
+	await expect.poll(activeSlideLabel).toBe('2 of 3')
+	await expect.poll(() => track.scrollLeft).toBe(track.clientWidth)
+	expect(viewer().open).toBe(true)
+	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
+
+	// No click ends a touch drag, so the next one, from a key or a script, counts
+	button('next').click()
+	await expect.poll(activeSlideLabel).toBe('3 of 3')
+})
+
+it('rubber-bands a touch swipe past the last slide, then springs back', async ({ skip }) => {
+	await open(
+		Array.from({ length: 2 }, () =>
+			item(image(), 'data-gallery="touch-end" style="width: 200px"'),
+		).join(''),
+	)
+	await userEvent.keyboard('{End}')
+	await expect.poll(activeSlideLabel).toBe('2 of 2')
+	const track = query(viewer(), '.amk-lightbox-track')
+	let most = 0
+	const observer = new MutationObserver(() => {
+		most = Math.max(most, Math.abs(track.getBoundingClientRect().x))
+	})
+	observer.observe(track, { attributeFilter: ['style'], attributes: true })
+	try {
+		if (!(await commands.touchSwipe())) {
+			skip()
+		}
+	} finally {
+		observer.disconnect()
+	}
+
+	expect(most).toBeGreaterThan(50)
+	await expect.poll(() => track.getBoundingClientRect().x).toBe(0)
+	expect(activeSlideLabel()).toBe('2 of 2')
+	expect(viewer().open).toBe(true)
+})
+
+it.for(['mouse', 'touch'] as const)(
+	'catches a gliding track under a still %s press, then settles it on the nearest slide',
+	async (input, { skip }) => {
+		await open(
+			Array.from({ length: 3 }, (_value, index) =>
+				item(`<div style="width: 200px; height: 100px">${index}</div>`, 'data-gallery="catch"'),
+			).join(''),
+		)
+		const track = query(viewer(), '.amk-lightbox-track')
+		// Slow enough to press while it is under way
+		viewer().style.setProperty('--amk-lightbox-carousel-duration', '3s')
+		button('next').click()
+		await expect.poll(() => track.scrollLeft).toBeGreaterThan(100)
+		// Below the subject, on the slide itself
+		if (input === 'mouse') {
+			await commands.mouseDown(640, 700)
+		} else if (!(await commands.touchDown(640, 700))) {
+			skip()
+		}
+
+		const caught = track.scrollLeft
+		await frames(6)
+		expect(track.scrollLeft).toBe(caught)
+		viewer().style.removeProperty('--amk-lightbox-carousel-duration')
+		await (input === 'mouse' ? commands.mouseUp() : commands.touchUp())
+
+		const nearest = Math.round(caught / track.clientWidth) * track.clientWidth
+		await expect.poll(() => track.scrollLeft).toBe(nearest)
+		await settle(100)
+		expect(track.scrollLeft).toBe(nearest)
+		// The click that ends the press neither closes the viewer nor reaches the page
+		expect(viewer().open).toBe(true)
+		expect(viewer().dataset.state).toBe('open')
+	},
+)
+
+it('drags on from where a touch press caught the track', async ({ skip }) => {
+	await open(
+		Array.from({ length: 3 }, (_value, index) =>
+			item(`<div style="width: 200px; height: 100px">${index}</div>`, 'data-gallery="catch-drag"'),
+		).join(''),
+	)
+	const track = query(viewer(), '.amk-lightbox-track')
+	viewer().style.setProperty('--amk-lightbox-carousel-duration', '3s')
+	button('next').click()
+	await expect.poll(() => track.scrollLeft).toBeGreaterThan(100)
+	if (!(await commands.touchDown(640, 700))) {
 		skip()
 	}
 
-	await expect
-		.poll(() =>
-			viewer().querySelector('.amk-lightbox-slide:not([inert])')?.getAttribute('aria-label'),
-		)
-		.toBe('2 of 3')
-	expect(viewer().open).toBe(true)
+	const caught = track.scrollLeft
+	await commands.touchMove(560, 700)
+	// Follows the finger from where it was caught, with no threshold to make up
+	expect(track.scrollLeft).toBeCloseTo(caught + 80, -1)
 	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
+	viewer().style.removeProperty('--amk-lightbox-carousel-duration')
+	await settle(150)
+	await commands.touchUp()
+	await expect
+		.poll(() => track.scrollLeft)
+		.toBe(Math.round((caught + 80) / track.clientWidth) * track.clientWidth)
+	expect(viewer().open).toBe(true)
 })
 
 it('keeps the lifted layer opaque through opening, secondary zoom, and closing', async () => {

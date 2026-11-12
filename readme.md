@@ -601,7 +601,7 @@ A ZoomLink's media isn't in the page: it is instantiated from the link's templat
 
 In the viewer:
 
-- Drag the content up or down to dismiss it; a short drag springs back. Swipe, scroll horizontally, or drag with the mouse to move between items; a drag let go while still moving carries on to the next item, as paging does on iOS.
+- Drag the content up or down to dismiss it; a short drag springs back. Swipe, scroll horizontally, or drag with the mouse to move between items; a drag let go while still moving carries on to the next item, as paging does on iOS, and one pulled past the first or last item gives way and springs back. A press while the carousel moves catches it where it is, and it settles on the nearest item when let go. The page carousel drags the same way.
 - Use the previous and next buttons, the arrow keys, Home, and End. Close with Escape, the close button, or a click outside the content; Space also closes when focus is outside the content, caption, and controls. While zoomed in, a click anywhere zooms back out instead of closing. A focused player keeps its own keys, except Escape and gallery navigation arrows. Sliders keep their arrow keys, and an open player popup receives Escape before the viewer closes.
 - With `zoomLevel="fill"` or `"native"`, click the content to zoom in on that point, or use the Zoom button. Pan by scrolling, dragging, or with the arrow keys, and click again to zoom back out. `"fit"` (the default) closes on click.
 - A figure's caption is copied beside the content when there is room, and below it otherwise. The caption on the page stays where it is.

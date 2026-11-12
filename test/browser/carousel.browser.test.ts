@@ -242,6 +242,8 @@ it('drags with the mouse without opening the lightbox, and opens it on a click',
 	})
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 
+	// A press while it still glides would only catch it
+	await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
 	await userEvent.click(query(track, '.amk-carousel-slide:nth-child(2) .amk-zoom'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	expect(activeSlideLabel()).toBe('2 of 3')
@@ -287,6 +289,47 @@ it('clips the slides at its edges as the track is pulled past an end', async () 
 	const beside = document.elementFromPoint(box.right + 20, middle.y)
 	expect(beside !== null && carousel.contains(beside)).toBe(false)
 	await commands.mouseUp()
+})
+
+it('rubber-bands a touch swipe past the first slide, then springs back', async ({ skip }) => {
+	const { carousel, track } = await mountCarousel()
+	const box = query(carousel, '.amk-carousel-viewport').getBoundingClientRect()
+	const middle = middleOf(track)
+	if (!(await commands.touchDown(middle.x, middle.y))) {
+		skip()
+	}
+
+	try {
+		await commands.touchMove(middle.x + 150, middle.y)
+		expect(track.getBoundingClientRect().x).toBeGreaterThan(box.x + 20)
+	} finally {
+		await commands.touchUp()
+	}
+
+	await expect.poll(() => track.getBoundingClientRect().x).toBe(box.x)
+	expect(slideAt(track)).toBe(0)
+	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
+})
+
+it('swipes to the next slide under touch without opening the lightbox', async ({ skip }) => {
+	const { carousel, track } = await mountCarousel()
+	const middle = middleOf(track)
+	if (!(await commands.touchDown(middle.x, middle.y))) {
+		skip()
+	}
+
+	try {
+		await commands.touchMove(middle.x - 200, middle.y)
+		expect(Object.hasOwn(track.dataset, 'dragging')).toBe(true)
+	} finally {
+		await commands.touchUp()
+	}
+
+	await expect.poll(() => slideAt(track)).toBe(1)
+	await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+	expect(currentDot(carousel)).toBe('Slide 2')
+	await settle(200)
+	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 })
 
 it('hides captions unless asked, leaving them to the lightbox', async () => {
