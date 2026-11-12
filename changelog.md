@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-11-11
+
+### Added
+
+- Add `mediaKit({ labels })` and the exported `LabelsConfig` type to customize control labels, slide announcements, and fallback text site-wide.
+- Add `--amk-zoom-in-cursor` and `--amk-zoom-out-cursor` properties to customize page and lightbox cursors.
+- Recognize `.aac`, `.m4v`, `.oga`, and `.ogv` as direct media sources.
+
+### Changed
+
+- **Breaking:** Replace `MediaTheme` and its `icon-*` slots with site-wide `mediaKit({ icons })` configuration accepting SVG files, file URLs, or markup; export `IconsConfig` and `MediaIconName` from `astro-media-kit`.
+- Render video posters and initial times, plus video and audio control icons, before player scripts run; hide uninitialized audio popups.
+- Keep images and videos opaque while opening and closing the lightbox, avoiding crossfades over page previews and video tint changes on return.
+- Scale `ZoomLink` media to the link text's height during opening and closing animations.
+- Update local audio styling to the Video.js 10.3 skin, with playback-speed labels that fit their buttons and revised theme colors.
+
+### Fixed
+
+- Keep page and lightbox cursors consistent with the available zoom or close action, including during transitions.
+- Fix repeated carousel realignment and slide-position drift at fractional track widths.
+- Stop swallowing the first page click after a touch drag dismisses the lightbox.
+- Render caption content once so scripts required by nested components reach the page.
+- Fix auto-import corrupting Astro files when media components appear in frontmatter.
+- Account for 90-degree and 270-degree rotation metadata when sizing direct video files.
+- Recognize Mux IDs of 40 to 64 characters and accept unrecognized identifiers when a video `service` is explicitly set.
+- Use Mux asset metadata titles as default video labels.
+- Reject non-page oEmbed responses before reading them as HTML, with guidance to use `service="local"` for direct media files.
+- Treat protocol-relative media URLs as remote sources for CORS settings and probe their video metadata over HTTPS.
+- Prevent lightbox preview styling and detection from interfering with a page's own `data-preview` attributes.
+- Limit lazy media-source assignment to the kit's own audio and video markup.
+- Keep zoom-enabled full-width images filling their columns even without a zoom indicator.
+- Make touch taps reveal video controls instead of pausing playback.
+- Preserve escaped ampersands in attributes when rewriting carousel slides, `ZoomLink` templates, oEmbed markup, and custom icons.
+- Allow selecting carousel caption text without dragging the slide track.
+- Hide inactive carousel buttons and dots when JavaScript is disabled while retaining native scrolling and snapping.
+- Respect numeric `quality` values when encoding watermarked images.
+- Keep gallery volume fades and restoration working when a new lightbox session begins before the previous session's fades finish.
+- Omit empty playback-control groups from minimal players without lightbox zoom.
+- Prevent thumbnails from shifting when lifted images return to elements with fractional pixel dimensions.
+- Keep lifted media placeholders, previews, and return positions aligned with responsive page layouts after viewport resizing.
+
+### Documentation
+
+- Document the integration's `icons` and `labels` options with configuration examples, supported keys, defaults, and exported types.
+- Update player and lightbox guidance for source inference, touch controls, pre-rendered UI, zoom cursors, and opening and closing animations.
+- Correct the lightbox's browser requirements and clarify that oEmbed provider markup includes scripts.
+- Correct `Carousel` prop documentation to state that `class` takes precedence over `className`.
+
+### Maintenance
+
+- Update `@astrojs/compiler-rs` to `^0.5.3`.
+- Update the Astro development dependency to `^7.4.10` and simplify pnpm release-age and skill-directory settings.
+- Remove unused player and lightbox code and distinguish internal zoom dimensions from zoom-button styling.
+- Keep the retried player startup test first to accommodate intermittent WebKit video-load stalls on Linux.
+
 ## [0.7.1] - 2026-11-09
 
 ### Fixed
@@ -415,3 +470,4 @@ No notable changes.
 [0.6.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.5.3...v0.6.0
 [0.7.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.6.0...v0.7.0
 [0.7.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.0...v0.7.1
+[0.8.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.1...v0.8.0
