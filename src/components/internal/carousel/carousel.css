@@ -139,7 +139,9 @@
 	margin: 0;
 }
 
-.amk-carousel-slide :is(img, picture, video) {
+/* Not inside the kit's players and embeds, which size their own media. Kept
+   out with :where(), so as not to outweigh a Picture's themed variants */
+.amk-carousel-slide :is(img, picture, video):not(:where(.amk *)) {
 	display: block;
 	max-width: 100%;
 	height: auto;

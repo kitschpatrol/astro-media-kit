@@ -21,6 +21,9 @@ import {
 	trackpadSwipe,
 	viewer,
 } from './helpers'
+import '../../src/components/internal/amk-fallback.css'
+import '../../src/components/internal/amk-video.css'
+// After the player's styles, as a page may bundle them
 import '../../src/components/internal/carousel/carousel.css'
 
 setUpLightbox()
@@ -129,6 +132,31 @@ it('lays slides out one per viewport, a gap apart, with captions shown on reques
 	expect(track.scrollWidth).toBe(3 * 424)
 	expect(getComputedStyle(query(slides[0]!, 'figcaption')).display).not.toBe('none')
 	expect(getComputedStyle(query(carousel, '.amk-carousel-previous')).opacity).toBe('0.3')
+})
+
+it('leaves the media of players and embeds in its slides to size itself', async () => {
+	const fixture = mount(`<div class="amk-carousel" style="width: 400px">
+		<div class="amk-carousel-viewport"><div class="amk-carousel-track">
+			<div class="amk-carousel-slide"><div class="amk amk-video">
+				<div style="position: relative; width: 400px; height: 300px">
+					<video class="amk-media"></video>
+					<media-poster class="amk-poster"><img alt="" src="/media/horizon-480.jpg" /></media-poster>
+				</div>
+			</div></div>
+			<div class="amk-carousel-slide"><div class="amk">
+				<a class="amk-fallback-link" href="#" style="width: 400px; aspect-ratio: 1">
+					<img alt="" class="amk-fallback-poster" src="/media/horizon-480.jpg" />
+				</a>
+			</div></div>
+		</div></div>
+	</div>`)
+	for (const image of fixture.querySelectorAll('img')) {
+		await image.decode()
+	}
+
+	expect(query(fixture, '.amk-media').getBoundingClientRect().height).toBe(300)
+	expect(query(fixture, '.amk-poster img').getBoundingClientRect().height).toBe(300)
+	expect(query(fixture, '.amk-fallback-poster').getBoundingClientRect().height).toBe(400)
 })
 
 it('spaces slides by its own gap property, else the shared gallery one', async () => {
