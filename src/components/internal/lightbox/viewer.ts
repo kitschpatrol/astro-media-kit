@@ -61,6 +61,8 @@ class Viewer {
 	#activeSlide: Slide | undefined
 	/** The subject whose player controls are floated, if it has any. */
 	#activeSubject: Element | undefined
+	/** The slide the status region last named. */
+	#announcedSlide: Slide | undefined
 	readonly #dialog: HTMLDialogElement
 	#dismissLayer: HTMLElement | undefined
 	#generation = 0
@@ -289,9 +291,10 @@ class Viewer {
 		document.addEventListener('keydown', this.#handleKeydown)
 		document.addEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
 		this.#lift(this.#slides[index]!, current)
+		this.#updateControls()
 		// With the dialog shown and the slide's media in it, so that the status
 		// region announces the slide, by name
-		this.#updateControls()
+		this.#announce()
 		this.#width = trackWidth(this.#track)
 		this.#height = this.#track.clientHeight
 		this.#motion.configure(this.#slides.length, index)
@@ -351,6 +354,7 @@ class Viewer {
 		this.#ghosts = []
 		this.#activeSlide = undefined
 		this.#activeSubject = undefined
+		this.#announcedSlide = undefined
 		this.#openItem = undefined
 		this.#track.replaceChildren()
 		this.#motion.stop()
@@ -394,6 +398,17 @@ class Viewer {
 		this.#activeSubject = subject
 		floatControls(subject, this.#dialog)
 		focusVolumes(subject)
+	}
+
+	/** Name the current slide to screen readers, unless it was the last named. */
+	#announce() {
+		const slide = this.#slides[this.#index]
+		if (slide === this.#announcedSlide) {
+			return
+		}
+
+		this.#announcedSlide = slide
+		this.#status.textContent = slide === undefined ? '' : describeSlide(slide)
 	}
 
 	/**
@@ -1061,6 +1076,8 @@ class Viewer {
 	 */
 	#rest() {
 		this.#setIndex(this.#motion.index)
+		// Only now, rather than as each slide passes the middle on the way
+		this.#announce()
 		// A slide that was navigated away from is out of view by now, so it zooms
 		// back out unseen rather than shrinking as it slides away
 		if (this.#zoom.current !== undefined && this.#zoom.current !== this.#slides[this.#index]) {
@@ -1194,7 +1211,6 @@ class Viewer {
 			}
 
 			this.#activeSlide = active
-			this.#status.textContent = active === undefined ? '' : describeSlide(active)
 		}
 
 		// Focus inside a slide that just went inert would otherwise fall to

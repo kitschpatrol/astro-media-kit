@@ -136,6 +136,27 @@ it('lays slides out one per viewport, a gap apart, with captions shown on reques
 	expect(Number(getComputedStyle(icon).opacity)).toBeCloseTo(0.3)
 })
 
+it('names a slide to screen readers once the track settles on it', async () => {
+	const { carousel } = await mountCarousel()
+	const status = query(carousel, '.amk-carousel-status')
+	expect(status.getAttribute('role')).toBe('status')
+	expect(status.textContent).toBe('')
+	const box = query(carousel, '.amk-carousel-viewport').getBoundingClientRect()
+	// Past the middle of the next slide, within the page, which Firefox ends a
+	// drag at, and clear of the buttons
+	const y = box.y + box.height / 4
+	try {
+		await commands.mouseDown(box.right - 10, y)
+		await commands.mouseMove(box.x + 100, y)
+		await expect.poll(() => currentDot(carousel)).toBe('Slide 2')
+		expect(status.textContent).toBe('')
+	} finally {
+		await commands.mouseUp()
+	}
+
+	await expect.poll(() => status.textContent).toBe('2 of 3, Second caption')
+})
+
 it('dims the dots of other slides, but not their focus ring', async () => {
 	const { carousel } = await mountCarousel()
 	const current = query(carousel, '.amk-carousel-dot[aria-current="true"]')

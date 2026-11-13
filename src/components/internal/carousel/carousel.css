@@ -228,6 +228,17 @@
 	scale: -1 1;
 }
 
+/* Heard, not seen */
+.amk-carousel-status {
+	position: absolute;
+	overflow: hidden;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	white-space: nowrap;
+	clip-path: inset(50%);
+}
+
 /* The hit zones are touch-sized and meet, with no dead space between them */
 .amk-carousel-dots {
 	display: flex;

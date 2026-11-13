@@ -62,11 +62,16 @@ function setUp(root: HTMLElement): Carousel {
 	const previous = root.querySelector<HTMLButtonElement>(':scope > * > .amk-carousel-previous')
 	const next = root.querySelector<HTMLButtonElement>(':scope > * > .amk-carousel-next')
 	const dots = [...root.querySelectorAll<HTMLButtonElement>(':scope > .amk-carousel-dots > button')]
+	const status = root.querySelector<HTMLElement>(':scope > .amk-carousel-status')
 	const controller = new AbortController()
 	const { signal } = controller
 	let width = 0
+	let current = 0
+	/** The slide the status region last named, or that was on show without it. */
+	let announced = 0
 
 	const update = (at: number) => {
+		current = at
 		if (previous !== null) {
 			previous.ariaDisabled = String(at === 0)
 		}
@@ -113,7 +118,14 @@ function setUp(root: HTMLElement): Carousel {
 			// Every slide is in the page already
 		},
 		onRest() {
-			// Nothing to settle beyond the track
+			// Only once settled, rather than as each slide passes the middle
+			const slide = slides[current]
+			if (current === announced || status === null || slide === undefined) {
+				return
+			}
+
+			announced = current
+			status.textContent = describeSlide(slide)
 		},
 		stage() {
 			// Nothing zooms in the page
@@ -142,6 +154,8 @@ function setUp(root: HTMLElement): Carousel {
 			motion.configure(count, event.detail)
 			width = trackWidth(track)
 			update(event.detail)
+			// The lightbox names its own slides
+			announced = event.detail
 		},
 		{ signal },
 	)
@@ -228,4 +242,20 @@ function setUp(root: HTMLElement): Carousel {
 			}
 		},
 	}
+}
+
+/**
+ * What a screen reader hears as a slide settles, as in the lightbox: its
+ * position, and its caption or else its media's name.
+ */
+function describeSlide(slide: HTMLElement): string {
+	const media = slide.querySelector('img[alt], [aria-label]')
+	const texts = [
+		slide.querySelector('figcaption')?.textContent,
+		media?.getAttribute('alt'),
+		media?.getAttribute('aria-label'),
+	]
+	const name = texts.map((text) => text?.trim() ?? '').find((text) => text !== '') ?? ''
+	const label = slide.getAttribute('aria-label') ?? ''
+	return name === '' ? label : `${label}, ${name}`
 }

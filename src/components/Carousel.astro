@@ -113,6 +113,9 @@ const hasNavigation = slides.length > 1
 			</>
 		)}
 	</div>
+	{hasNavigation && (
+		<div aria-atomic="true" aria-live="polite" class="amk-carousel-status" role="status" />
+	)}
 	{dots && hasNavigation && (
 		<div class="amk-carousel-dots">
 			{slides.map((_slide, index) => (

@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest'
-import { page, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
 	activeSlideLabel,
@@ -51,8 +51,31 @@ it('tells screen readers which slide is current, with its caption or media name'
 	expect(status.textContent).toBe('1 of 2, First caption')
 
 	query(document, '.amk-lightbox-next').click()
-	await expect.poll(activeSlideLabel).toBe('2 of 2')
-	expect(status.textContent).toBe('2 of 2, A tile')
+	await expect.poll(() => status.textContent).toBe('2 of 2, A tile')
+})
+
+it('names a slide only once a drag has settled on it', async () => {
+	const fixture = mount(`
+		<figure>${item(block('a'), 'data-gallery="settle"')}<figcaption>First caption</figcaption></figure>
+		${item(block('b'), 'data-gallery="settle"')}`)
+	await openLightbox(boxes(fixture)[0]!)
+	const status = query(viewer(), '.amk-lightbox-status')
+	expect(status.textContent).toBe('1 of 2, First caption')
+	const box = query(
+		viewer(),
+		'.amk-lightbox-slide:not([inert]) .amk-lightbox-frame',
+	).getBoundingClientRect()
+	const y = box.y + box.height / 2
+	try {
+		await commands.mouseDown(box.right - 5, y)
+		await commands.mouseMove(5, y)
+		await expect.poll(activeSlideLabel).toBe('2 of 2')
+		expect(status.textContent).toBe('1 of 2, First caption')
+	} finally {
+		await commands.mouseUp()
+	}
+
+	await expect.poll(() => status.textContent).toBe('2 of 2')
 })
 
 it('names the opening slide by its media when it has no caption', async () => {
