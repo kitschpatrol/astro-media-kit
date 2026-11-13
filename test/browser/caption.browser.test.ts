@@ -70,6 +70,19 @@ it('drags the track from a press on a caption, whose text is not selectable', as
 	await expect.poll(activeSlideLabel).toBe('2 of 2')
 })
 
+it('closes for a click on a caption, as for the space around the subject', async () => {
+	const fixture = mount(captioned('dune', 3600) + captioned('horizon', 1029))
+	for (const image of fixture.querySelectorAll('img')) {
+		await image.decode()
+	}
+
+	await openLightbox(boxes(fixture)[0]!)
+	const { x, y } = middleOf(query(viewer(), '.amk-lightbox-slide .amk-lightbox-caption'))
+	await commands.mouseDown(x, y)
+	await commands.mouseUp()
+	await expect.poll(() => viewer().open).toBe(false)
+})
+
 it('moves the caption below when a resize leaves no room beside the subject', async () => {
 	const fixture = mount(captioned('dune', 3600))
 	await query(fixture, 'img', HTMLImageElement).decode()

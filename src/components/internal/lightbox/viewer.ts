@@ -609,11 +609,7 @@ class Viewer {
 		}
 
 		if (
-			isWithin(
-				event,
-				`dialog:modal, [popover]:popover-open, ${interactiveSelector}, .amk-lightbox-caption`,
-				this.#dialog,
-			)
+			isWithin(event, `dialog:modal, [popover]:popover-open, ${interactiveSelector}`, this.#dialog)
 		) {
 			return
 		}
@@ -626,8 +622,8 @@ class Viewer {
 
 		this.#openingClickDeadline = 0
 		const slide = this.#slides[this.#index]
-		// Hit-tested by position: the track captures each mouse press in case it
-		// turns into a drag, and the click then targets the track
+		// Hit-tested by position, wherever the click landed. A caption is part of
+		// the space around the subject
 		const point = { x: event.clientX, y: event.clientY }
 		const isOnSubject = slide !== undefined && isInside(point, slide.layer.getBoundingClientRect())
 		if (this.#state === 'closing') {

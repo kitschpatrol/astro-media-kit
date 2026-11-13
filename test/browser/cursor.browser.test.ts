@@ -35,7 +35,7 @@ it('shows that a click closes a fit subject, and brings it back while it closes'
 	await openLightbox(boxes(fixture)[0]!)
 	expect(cursorOf(currentLayer())).toBe('zoom-out')
 	expect(cursorOf(currentStage())).toBe('zoom-out')
-	expect(cursorOf(query(viewer(), '.amk-lightbox-caption'))).toBe('auto')
+	expect(cursorOf(query(viewer(), '.amk-lightbox-caption'))).toBe('zoom-out')
 
 	clickViewerAt(middleOf(currentLayer()))
 	expect(viewer().dataset.state).toBe('closing')

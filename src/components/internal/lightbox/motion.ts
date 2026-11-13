@@ -284,6 +284,9 @@ export class CarouselMotion {
 			return this.#grab(drag, event.pointerId)
 		} else {
 			drag.origin = { x: drag.stage.scrollLeft, y: drag.stage.scrollTop }
+			// Keep receiving the drag when it passes over the controls, or leaves
+			// the stage
+			this.#track.setPointerCapture(event.pointerId)
 		}
 
 		this.#owner = 'drag'
@@ -377,10 +380,10 @@ export class CarouselMotion {
 	}
 
 	/**
-	 * A press a player kept has no capture, so a mouse let go over one of the
-	 * viewer's buttons beside the track sends no pointerup here. The move after
-	 * it, with no button held, ends the press, or the drag, as cancelled, before
-	 * that move could start dragging.
+	 * A press has no capture until it drags, and one a player kept has none at
+	 * all, so a mouse let go over one of the viewer's buttons beside the track
+	 * sends no pointerup here. The move after it, with no button held, ends the
+	 * press, or the drag, as cancelled, before that move could start dragging.
 	 */
 	#endUnreleased(event: PointerEvent) {
 		const drag = this.#drag
@@ -803,13 +806,12 @@ export class CarouselMotion {
 			startX: event.clientX,
 			startY: event.clientY,
 		}
+		// Otherwise the track captures the pointer only once a drag begins: a
+		// press holding it would show the track's cursor rather than the one
+		// under the pointer, and send its click to the track
 		if (isCatch) {
 			// Captured, so a player under the press never takes its release as a tap
 			this.#grab(this.#drag, event.pointerId)
-		} else if (!isTouch && !isInRegion) {
-			// Keep receiving the drag when it passes over the controls, or leaves
-			// the track. The click that follows a press then lands on the track
-			this.#track.setPointerCapture(event.pointerId)
 		}
 	}
 

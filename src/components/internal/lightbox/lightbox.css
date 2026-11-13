@@ -424,8 +424,9 @@
 }
 
 @media (hover: hover) {
-	/* The cursor shows what a click does. Outside the controls and captions of
-	   an open viewer, it closes the viewer, or zooms a zoomed subject back out */
+	/* The cursor shows what a click does. Outside the controls of an open
+	   viewer, captions included, it closes the viewer, or zooms a zoomed subject
+	   back out */
 	.amk-lightbox[data-state='open'] .amk-lightbox-track:not([data-dragging]) {
 		cursor: var(--amk-zoom-out-cursor, zoom-out);
 	}
@@ -450,10 +451,6 @@
 		.amk-lightbox-track:not([data-dragging])
 		> .amk-lightbox-slide
 		.amk-lightbox-layer:has(.amk-player:not([data-controls='none'])) {
-		cursor: auto;
-	}
-
-	.amk-lightbox-caption {
 		cursor: auto;
 	}
 

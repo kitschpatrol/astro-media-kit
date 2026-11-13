@@ -248,6 +248,34 @@ it('drags a playing video down and back, or aside to the next, without pausing i
 	await closeLightbox()
 })
 
+it('keeps the cursor over a lifted video while pressed, until the press drags', async () => {
+	const { item, player } = await mountVideo('/zoom/', 'video')
+	await openLightbox(item)
+	await liftDone()
+	const track = query(viewer(), '.amk-lightbox-track')
+	let pointerId: number | undefined
+	track.addEventListener(
+		'pointerdown',
+		(event) => {
+			pointerId = event.pointerId
+		},
+		{ once: true },
+	)
+	const { x, y } = middleOf(query(player, 'media-container'))
+	try {
+		await commands.mouseDown(x, y)
+		// A pointer the track captured would show its cursor, zoom-out
+		expect(track.hasPointerCapture(pointerId!)).toBe(false)
+		await commands.mouseMove(x - 20, y)
+		await commands.mouseMove(x - 200, y)
+		expect(track.hasPointerCapture(pointerId!)).toBe(true)
+	} finally {
+		await commands.mouseUp()
+	}
+
+	await closeLightbox()
+})
+
 it('takes its keyboard shortcuts in the lightbox, which keeps its own keys', async () => {
 	const { item, player, video } = await mountVideo('/zoom/', 'video')
 	await openLightbox(item)

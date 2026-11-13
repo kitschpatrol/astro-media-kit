@@ -160,41 +160,19 @@ function handleClick(event: MouseEvent) {
 	}
 
 	const item = path.find(isItem)
-	if (item !== undefined) {
-		if (!isWithin(event, interactiveSelector, item) && !isNativeLink(item)) {
-			event.preventDefault()
-			// As with the opener button: a pointer-opened dialog must not restore
-			// keyboard-visible focus to the item after Escape, which would leave
-			// its indicator in the active state
-			if (isPointerClick(event)) {
-				item.blur()
-			}
-
-			void openLightbox(item)
-		}
-
-		return
-	}
-
-	// An embedded carousel's track captures the pointer for a possible drag, so
-	// a click there lands on the track: the item is found under the point instead
-	if (!(event.target instanceof Element) || !event.target.matches('.amk-carousel-track')) {
-		return
-	}
-
-	const stack = document.elementsFromPoint(event.clientX, event.clientY)
-	const depth = stack.findIndex((node) => isItem(node))
-	const under = stack[depth]
-	if (
-		!isItem(under) ||
-		isNativeLink(under) ||
-		stack.slice(0, depth).some((node) => node.matches(interactiveSelector))
-	) {
+	if (item === undefined || isWithin(event, interactiveSelector, item) || isNativeLink(item)) {
 		return
 	}
 
 	event.preventDefault()
-	void openLightbox(under)
+	// As with the opener button: a pointer-opened dialog must not restore
+	// keyboard-visible focus to the item after Escape, which would leave its
+	// indicator in the active state
+	if (isPointerClick(event)) {
+		item.blur()
+	}
+
+	void openLightbox(item)
 }
 
 /**
