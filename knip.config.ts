@@ -5,6 +5,7 @@ export default knipConfig({
 		'@kitschpatrol/chagent', // Typically invoked through bumpp's --execute argument, which Knip doesn't parse
 		// Agent skills are loaded by tooling rather than imported by source code.
 		'@videojs/skills',
+		'modern-web-guidance',
 	],
 	ignoreWorkspaces: ['playground', 'playground-starlight'],
 })

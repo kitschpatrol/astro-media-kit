@@ -47,11 +47,14 @@ const isHls = element === 'hlsjs-video'
 const isNative = controls === 'native'
 const hasControls = controls !== 'none' && !isNative
 const hasFullscreen = controls === 'full' && !zoom
-// Full and minimal players use their surface for playback with a mouse, and
-// to show or hide the controls by touch: a region for every pointer would take
-// the taps that reveal them. Only the dedicated expand button opens the
-// lightbox.
-const hasClickToPlay = controls === 'minimal' || controls === 'full'
+// A player with playback controls plays and pauses from a tap or click anywhere
+// on its surface, unless that surface is what opens the lightbox, as it is for
+// a zoomable player without an expand button. A touch tap also reveals the
+// controls (`videojs-controls.ts`). The gesture that would toggle them is
+// rendered disabled, which still claims the tap from Video.js's own touch
+// toggle: that would hide controls that are showing.
+const hasClickToPlay =
+	controls === 'minimal' || controls === 'full' || (controls === 'lightbox' && !zoom)
 const hasPoster = posterUrl !== undefined && posterUrl !== ''
 
 // The container at the video's intrinsic width and aspect ratio, where known
@@ -141,10 +144,13 @@ const embedService =
 				)}
 				{hasControls && (
 					<>
-						{hasClickToPlay && (
-							<media-gesture action="togglePaused" pointer="mouse" region="center" type="tap" />
-						)}
-						<media-gesture action="toggleControls" pointer="touch" type="tap" />
+						{hasClickToPlay && <media-gesture action="togglePaused" type="tap" />}
+						<media-gesture
+							action="toggleControls"
+							disabled={hasClickToPlay || undefined}
+							pointer="touch"
+							type="tap"
+						/>
 						<media-hotkey action="togglePaused" keys="Space" />
 						<media-hotkey action="togglePaused" keys="k" />
 						<media-hotkey action="toggleMuted" keys="m" />

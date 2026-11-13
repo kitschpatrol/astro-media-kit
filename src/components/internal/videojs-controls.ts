@@ -6,7 +6,8 @@
  * open is held here while the pointer is over the bar or a popup of its own, by
  * document listeners that cover every player on the page, whenever it arrived.
  * Playback events also drive the paused visibility rule, and an earlier idle
- * timer uses Video.js's public action so its interaction locks still apply.
+ * timer uses Video.js's public action so its interaction locks still apply. A
+ * touch on a player whose surface toggles playback shows its controls too.
  */
 
 type Player = HTMLElement & {
@@ -66,6 +67,22 @@ function reflectPlayback(event: Event) {
 	scheduleIdle(event)
 }
 
+/**
+ * Show the controls of a page player whose surface toggles playback when a
+ * touch lifts from it, since a tap there also plays or pauses it. The player's
+ * markup keeps Video.js's own touch toggle out of such taps, as it would hide
+ * controls that are showing.
+ */
+function revealOnTouch(event: PointerEvent) {
+	if (event.pointerType !== 'touch' || !(event.target instanceof Element)) {
+		return
+	}
+
+	event.target
+		.closest<Player>('.amk-player[data-click-to-play]:not([data-in-lightbox])')
+		?.store?.state?.toggleControls?.(true)
+}
+
 /** The release of the lock each hovered bar holds. */
 const releases = new WeakMap<Element, () => void>()
 
@@ -100,6 +117,7 @@ function handlePointer(event: PointerEvent) {
 
 document.addEventListener('pointerover', handlePointer)
 document.addEventListener('pointerout', handlePointer)
+document.addEventListener('pointerup', revealOnTouch)
 
 for (const type of [
 	'pointermove',
