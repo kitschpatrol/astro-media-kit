@@ -106,7 +106,7 @@ it('hands the times over to the player once the media reports its length', async
 
 	// Until then the rendered time shows, in place of the player's zero
 	duration.dataset.unavailable = ''
-	expect(getComputedStyle(duration, '::before').content).toBe('"1:15"')
+	expect(getComputedStyle(duration, '::before').content).toBe('"1:15" / ""')
 	expect(getComputedStyle(duration).fontSize).toBe('0px')
 	delete duration.dataset.unavailable
 

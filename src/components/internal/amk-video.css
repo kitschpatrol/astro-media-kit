@@ -391,18 +391,19 @@ media-captions-button.amk-button:not(:defined) {
 
 /* Until its script arrives, and then until the media reports its length, a
    time shows what was known when the page was rendered. The display's own text
-   steps aside for it rather than standing beside it. */
+   steps aside for it rather than standing beside it, and is what screen
+   readers read, so what is drawn here has no text for them. */
 .amk-time media-time[data-amk-time]:is(:not(:defined), [data-unavailable]) {
 	font-size: 0;
 }
 
 .amk-time media-time[data-amk-time]:is(:not(:defined), [data-unavailable])::before {
-	content: attr(data-amk-time);
+	content: attr(data-amk-time) / '';
 	font-size: var(--amk-font-size);
 }
 
 .amk-time media-time-separator:not(:defined)::before {
-	content: '/';
+	content: '/' / '';
 }
 
 /* --- Sliders --- */

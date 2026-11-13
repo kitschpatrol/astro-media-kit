@@ -30,9 +30,11 @@ it('shows the poster, the icons, and the times before the player runs', async ()
 
 	const current = query(player, 'media-time[type="current"]')
 	const duration = query(player, 'media-time[type="duration"]')
-	expect(getComputedStyle(current, '::before').content).toBe('"0:00"')
-	expect(getComputedStyle(duration, '::before').content).toBe('"1:15"')
-	expect(getComputedStyle(query(player, 'media-time-separator'), '::before').content).toBe('"/"')
+	expect(getComputedStyle(current, '::before').content).toBe('"0:00" / ""')
+	expect(getComputedStyle(duration, '::before').content).toBe('"1:15" / ""')
+	expect(getComputedStyle(query(player, 'media-time-separator'), '::before').content).toBe(
+		'"/" / ""',
+	)
 	// A player this narrow leaves the duration out, so measure the current time
 	expect(getComputedStyle(current, '::before').fontSize).toBe('14px')
 	expect(current.getBoundingClientRect().width).toBeGreaterThan(0)
