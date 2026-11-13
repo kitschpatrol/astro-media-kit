@@ -1,7 +1,17 @@
 import { afterEach, expect, it } from 'vitest'
-import { page } from 'vitest/browser'
+import { commands, page } from 'vitest/browser'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
-import { boxes, cleanUp, item, mount, query, setUpLightbox } from './helpers'
+import {
+	activeSlideLabel,
+	boxes,
+	cleanUp,
+	item,
+	middleOf,
+	mount,
+	query,
+	setUpLightbox,
+	viewer,
+} from './helpers'
 
 setUpLightbox()
 afterEach(cleanUp)
@@ -37,6 +47,27 @@ it('puts the caption beside a subject with room next to it, and below one withou
 	const wideFrame = query(wide!, '.amk-lightbox-frame').getBoundingClientRect()
 	const wideCaption = query(wide!, '.amk-lightbox-caption').getBoundingClientRect()
 	expect(wideCaption.y).toBeGreaterThanOrEqual(wideFrame.bottom)
+})
+
+it('drags the track from a press on a caption, whose text is not selectable', async () => {
+	const fixture = mount(captioned('dune', 3600) + captioned('horizon', 1029))
+	for (const image of fixture.querySelectorAll('img')) {
+		await image.decode()
+	}
+
+	await openLightbox(boxes(fixture)[0]!)
+	const caption = query(viewer(), '.amk-lightbox-slide .amk-lightbox-caption')
+	expect(getComputedStyle(caption).getPropertyValue('-webkit-user-select')).toBe('none')
+	const middle = middleOf(caption)
+	try {
+		await commands.mouseDown(middle.x, middle.y)
+		await commands.mouseMove(middle.x - 700, middle.y)
+		expect(Object.hasOwn(query(viewer(), '.amk-lightbox-track').dataset, 'dragging')).toBe(true)
+	} finally {
+		await commands.mouseUp()
+	}
+
+	await expect.poll(activeSlideLabel).toBe('2 of 2')
 })
 
 it('moves the caption below when a resize leaves no room beside the subject', async () => {

@@ -494,9 +494,13 @@
 
 /* On a scrim of its own: the backdrop alone leaves light text unreadable on a
    light page. It scrolls up and down natively; as a scroll container, it would
-   otherwise let the browser swipe the track sideways again */
+   otherwise let the browser swipe the track sideways again. A press on it
+   drags the track, as anywhere on the slide, so its text isn't selectable */
 .amk-lightbox-caption {
 	touch-action: pan-y pinch-zoom;
+	/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */
+	-webkit-user-select: none;
+	user-select: none;
 	overflow-y: auto;
 	box-sizing: border-box;
 	max-width: min(100%, 70ch);

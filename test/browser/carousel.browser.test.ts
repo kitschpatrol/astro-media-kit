@@ -91,19 +91,19 @@ it('releases drag click suppression when disposed during a drag', async () => {
 	expect(Object.hasOwn(track.dataset, 'dragging')).toBe(false)
 })
 
-it('leaves a press on a caption to its text, rather than dragging the track', async () => {
+it('drags the track from a press on a caption', async () => {
 	const { track } = await mountCarousel()
 	const caption = middleOf(query(track, '.amk-carousel-slide figcaption'))
 	try {
 		await commands.mouseDown(caption.x, caption.y)
-		await commands.mouseMove(caption.x - 100, caption.y)
-		expect(Object.hasOwn(track.dataset, 'dragging')).toBe(false)
-		expect(slideAt(track)).toBe(0)
+		await commands.mouseMove(caption.x - 200, caption.y)
+		expect(Object.hasOwn(track.dataset, 'dragging')).toBe(true)
 	} finally {
 		await commands.mouseUp()
 	}
 
-	expect(isClickFromDrag()).toBe(false)
+	await expect.poll(() => slideAt(track)).toBe(1)
+	expect(document.getSelection()?.isCollapsed ?? true).toBe(true)
 })
 
 it('shows only the track where scripts are off', async ({ skip }) => {

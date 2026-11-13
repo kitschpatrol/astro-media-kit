@@ -104,12 +104,6 @@ const onSlide = 1
  */
 const catchDistance = 2
 
-/**
- * Captions keep mouse presses, for selecting their text: the viewer's, and a
- * page carousel's.
- */
-const captionSelector = '.amk-lightbox-caption,.amk-carousel-slide figcaption'
-
 /** Whether the click being dispatched, or the next one, ends a drag. */
 let isDragClick = false
 
@@ -1000,8 +994,8 @@ function isAlongTrack(event: WheelEvent): boolean {
 
 /**
  * Whether a press belongs to what it landed on, whatever the track is doing: a
- * control, a caption's text under a mouse, or a zoomed stage's scrollbar. The
- * browser pans a zoomed stage under touch.
+ * control, or a zoomed stage's scrollbar. The browser pans a zoomed stage under
+ * touch.
  */
 function isKeptByTarget(
 	event: PointerEvent,
@@ -1011,8 +1005,6 @@ function isKeptByTarget(
 	const isTouch = event.pointerType !== 'mouse'
 	return (
 		isWithin(event, controlSelector, track) ||
-		// Touch selects text with a long press, not a drag
-		(!isTouch && isWithin(event, captionSelector, track)) ||
 		(stage !== undefined && (isTouch || (event.target === stage && isOnScrollbar(event, stage))))
 	)
 }
