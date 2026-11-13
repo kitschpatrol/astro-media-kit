@@ -38,6 +38,7 @@ import {
 	warnBackgroundDarkWithoutBackground,
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
+	warnZoomWithoutAlt,
 } from './utils/image-orchestration'
 import { zoomTarget } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
@@ -251,6 +252,7 @@ if (isRemote) {
 }
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Image')
+warnZoomWithoutAlt('Image', imageMetadataSrc, alt ?? undefined, zoom)
 warnWidthsWithoutSizes(
 	imageMetadataSrc,
 	{

@@ -21,6 +21,7 @@ import {
 	resolveSrcToMetadata,
 	warnBackgroundDarkWithoutBackground,
 	warnWidthsWithoutSizes,
+	warnZoomWithoutAlt,
 } from '../src/components/utils/image-orchestration'
 
 const pngMeta = { format: 'png' as const, height: 100, src: '/img.png', width: 200 }
@@ -498,6 +499,35 @@ describe('getMimeType', () => {
 		expect(getMimeType(stubImage({ format: 'webp', src: '/foo.webp' }))).toBe('image/webp')
 		expect(getMimeType(stubImage({ format: 'jpg', src: '/foo.jpg' }))).toBe('image/jpeg')
 		expect(getMimeType(stubImage({ format: 'svg', src: '/foo.svg' }))).toBe('image/svg+xml')
+	})
+})
+
+describe('warnZoomWithoutAlt', () => {
+	it.each([
+		['', true],
+		['  ', 'gallery'],
+		[undefined, true],
+	] as const)('warns when a zoomable image has alt %j', (alt, zoom) => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(noop)
+		warnZoomWithoutAlt('Picture', '/_astro/photo.abc123.jpg', alt, zoom)
+		expect(spy).toHaveBeenCalledExactlyOnceWith(
+			expect.stringContaining('Picture "/_astro/photo.abc123.jpg"'),
+		)
+		spy.mockRestore()
+	})
+
+	it.each([false, '', undefined])('does not warn when zoom is %j', (zoom) => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(noop)
+		warnZoomWithoutAlt('Image', '/a.jpg', '', zoom)
+		expect(spy).not.toHaveBeenCalled()
+		spy.mockRestore()
+	})
+
+	it('does not warn when a zoomable image has alt text', () => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(noop)
+		warnZoomWithoutAlt('Image', '/a.jpg', 'A penguin', true)
+		expect(spy).not.toHaveBeenCalled()
+		spy.mockRestore()
 	})
 })
 

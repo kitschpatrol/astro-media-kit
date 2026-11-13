@@ -47,6 +47,7 @@ import {
 	warnRemoteLocalSrcDark,
 	warnRemoteMissingDimsOrInferSize,
 	warnWidthsWithoutSizes,
+	warnZoomWithoutAlt,
 } from './utils/image-orchestration'
 import { zoomTarget } from './utils/zoom-image'
 import { toZoomerProps } from './zoom-props-map'
@@ -477,6 +478,7 @@ const captionProps = await toCaptionProps(
 )
 
 warnBackgroundDarkWithoutBackground(background, backgroundDark, 'Picture')
+warnZoomWithoutAlt('Picture', lightSrcLabel, alt ?? undefined, zoom)
 warnWidthsWithoutSizes(
 	lightSrcLabel,
 	{

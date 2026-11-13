@@ -528,6 +528,28 @@ export function warnWidthsWithoutSizes(
 }
 
 /**
+ * Dev-only warning when a zoomable image has no alt text. The link that opens
+ * it in the lightbox then has no accessible name either, so screen readers read
+ * out its address, the image's hashed file name, instead.
+ */
+export function warnZoomWithoutAlt(
+	componentName: 'Image' | 'Picture',
+	imageName: string,
+	alt: string | undefined,
+	zoom: boolean | string | undefined,
+): void {
+	const isZoomable = zoom !== undefined && zoom !== false && zoom !== ''
+	const hasAlt = typeof alt === 'string' && alt.trim() !== ''
+	if (!isZoomable || hasAlt || !import.meta.env.DEV) {
+		return
+	}
+
+	console.warn(
+		`[astro-media-kit] ${componentName} "${imageName}" is zoomable but has an empty \`alt\`, so the link that opens it in the lightbox has no accessible name, and screen readers read out its file name instead. Describe the image in \`alt\`, or turn \`zoom\` off for a decorative image.`,
+	)
+}
+
+/**
  * Dev-only warning when `backgroundDark` is set without `background`. Without a
  * light-mode color, light mode stays transparent and the dark-mode color never
  * composites visibly.
