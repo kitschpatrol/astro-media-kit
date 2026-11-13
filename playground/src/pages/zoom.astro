@@ -196,12 +196,12 @@ const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 
 	<h2 id="zoom-indicators">9. Zoom indicators</h2>
 	<p class="note">
-		The first section uses the default indicator, the video player's expand button. These examples
-		customize its appearance or replace it through the <code>zoom-indicator</code> slot. Hover or
-		use Tab to focus the image: the first indicator reverses its colors immediately and fades back
-		when inactive. Reduced motion disables the fade. Open an image, then move through the gallery:
-		only the active item's thumbnail indicator fades out, and it fades back in when you move to
-		another item or close the lightbox.
+		Section 1 uses the default indicator, drawn with the <code>zoom-indicator</code> icon. These
+		examples customize its appearance with the <code>--amk-zoom-indicator-*</code> variables. Hover
+		or use Tab to focus the image: the first indicator reverses its colors immediately and fades
+		back when inactive. Reduced motion disables the fade. Open an image, then move through the
+		gallery: only the active item's thumbnail indicator fades out, and it fades back in when you
+		move to another item or close the lightbox.
 	</p>
 	<div class="grid">
 		<div class="indicator-contrast">
@@ -214,36 +214,20 @@ const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 				Custom background and active colors.
 			</Image>
 		</div>
-		<div class="indicator-custom">
+		<div class="indicator-corner">
 			<Picture
-				alt="Tiger with a custom corner indicator"
+				alt="Tiger with a top-left zoom indicator"
 				formats={['svg']}
 				src="../assets/tiger.svg"
 				zoom="indicators"
+				zoomIndicator
 			>
-				<svg
-					fill="none"
-					slot="zoom-indicator"
-					stroke="currentColor"
-					stroke-width="2"
-					viewBox="0 0 24 24"
-				>
-					<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-				</svg>
-				A custom slot enables the indicator, positioned at the top left.
+				Positioned at the top left.
 			</Picture>
 		</div>
-		<div class="indicator-disabled">
-			<Image
-				alt="Photo with its zoom indicator disabled"
-				src="../assets/test-dark.jpeg"
-				zoom="indicators"
-				zoomIndicator={false}
-			>
-				<svg fill="none" slot="zoom-indicator" stroke="currentColor" viewBox="0 0 24 24">
-					<path d="M12 4v16M4 12h16" />
-				</svg>
-				Explicitly disabled despite the supplied slot. Zoom still works.
+		<div>
+			<Image alt="Photo without a zoom indicator" src="../assets/test-dark.jpeg" zoom="indicators">
+				No indicator. Zoom still works.
 			</Image>
 		</div>
 	</div>
@@ -369,7 +353,7 @@ const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 		--amk-zoom-indicator-active-transition-duration: 0ms;
 	}
 
-	.indicator-custom {
+	.indicator-corner {
 		--amk-zoom-indicator-size: 32px;
 		--amk-zoom-indicator-inset: 12px auto auto 12px;
 		--amk-zoom-indicator-color: #000;

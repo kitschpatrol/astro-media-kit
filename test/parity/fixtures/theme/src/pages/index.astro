@@ -1,5 +1,5 @@
 ---
-import { Audio, Carousel, Image, Picture, Video } from 'astro-media-kit/components'
+import { Audio, Carousel, Image, Video } from 'astro-media-kit/components'
 import photo from '../../../core-image/src/assets/penguin1.jpg'
 import sticker from '../../../core-image/src/assets/penguin2.png'
 ---
@@ -13,13 +13,6 @@ import sticker from '../../../core-image/src/assets/penguin2.png'
 	<body>
 		<section id="indicator">
 			<Image alt="Penguin" src={photo} width={300} zoom="themed" zoomIndicator zoomLevel="fill" />
-		</section>
-		<section id="local-indicator">
-			<Picture alt="Its own corner artwork" src={photo} width={300} zoom="themed">
-				<svg data-custom-icon="local-indicator" slot="zoom-indicator" viewBox="0 0 24 24">
-					<circle cx="12" cy="12" fill="currentColor" r="8" />
-				</svg>
-			</Picture>
 		</section>
 		<section id="carousel">
 			<Carousel class="themed-carousel" dots>

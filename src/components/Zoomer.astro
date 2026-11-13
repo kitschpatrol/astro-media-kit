@@ -19,10 +19,7 @@ export type Props = {
 	 * link to the content to go to.
 	 */
 	href?: string | undefined
-	/**
-	 * Decorative corner indicator: the video player's expand button, as the
-	 * `expand` icon; the `indicator` slot overrides its artwork.
-	 */
+	/** Decorative corner indicator, drawn with the `zoom-indicator` icon. */
 	indicator?: boolean | undefined
 	/**
 	 * The content runs its own controls, such as a video player: the wrapper is
@@ -61,8 +58,6 @@ const gallery = typeof enabled === 'string' ? enabled : undefined
 // A link is operable as itself; a wrapper around interactive content opens from
 // a button inside it; anything else becomes a button
 const isButton = !isLink && !interactive
-const customIndicator = indicator ? await Astro.slots.render('indicator') : undefined
-const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim() !== ''
 ---
 
 {isEnabled ? (
@@ -86,11 +81,10 @@ const hasCustomIndicator = customIndicator !== undefined && customIndicator.trim
 			<span
 				aria-hidden="true"
 				class="amk-zoom-indicator"
-				data-amk-icon={hasCustomIndicator ? undefined : 'expand'}
+				data-amk-icon="zoom-indicator"
 				inert
-			>
-				<Fragment set:html={hasCustomIndicator ? customIndicator : icons.expand} />
-			</span>
+				set:html={icons['zoom-indicator']}
+			/>
 		)}
 	</TAG>
 ) : (

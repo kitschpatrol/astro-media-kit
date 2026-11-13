@@ -12,6 +12,8 @@ export default defineConfig({
 				expand: new URL('src/icons/expand.svg', import.meta.url),
 				next: '<svg data-custom-icon="next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" stroke="currentColor" /></svg>',
 				play: '<svg data-custom-icon="play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z" /></svg>',
+				'zoom-indicator':
+					'<svg data-custom-icon="zoom-indicator" viewBox="0 0 24 24"><circle cx="12" cy="12" fill="currentColor" r="8" /></svg>',
 			},
 			// Some in other words, and the rest left as they are
 			labels: {

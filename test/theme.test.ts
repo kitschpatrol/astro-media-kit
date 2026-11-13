@@ -173,7 +173,7 @@ describe('icons configured through the integration', () => {
 
 	it('draws them into the page wherever the kit shows that icon', async () => {
 		const $ = await fixture.readHTML('/')
-		expect($('#indicator .amk-zoom-indicator svg').attr('data-custom-icon')).toBe('expand')
+		expect($('#indicator .amk-zoom-indicator svg').attr('data-custom-icon')).toBe('zoom-indicator')
 		expect($('#video [data-zoom-open] .amk-icon svg').attr('data-custom-icon')).toBe('expand')
 		expect($('#carousel .amk-carousel-next svg').attr('data-custom-icon')).toBe('next')
 		expect($('#video media-play-button .amk-icon-play svg').attr('data-custom-icon')).toBe('play')
@@ -196,13 +196,6 @@ describe('icons configured through the integration', () => {
 			expect($(selector).length).toBeGreaterThan(0)
 			expect($(selector).attr('data-custom-icon')).toBeUndefined()
 		}
-	})
-
-	it('leaves an indicator its own slotted artwork', async () => {
-		const $ = await fixture.readHTML('/')
-		const indicator = $('#local-indicator .amk-zoom-indicator')
-		expect(indicator.find('svg').attr('data-custom-icon')).toBe('local-indicator')
-		expect(indicator.attr('data-amk-icon')).toBeUndefined()
 	})
 
 	it('draws every icon as markup, with nothing left for a script to fill in', async () => {

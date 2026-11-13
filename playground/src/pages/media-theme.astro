@@ -1,5 +1,5 @@
 ---
-import { Audio, Carousel, Image, Picture, Video } from 'astro-media-kit/components'
+import { Audio, Carousel, Image, Video } from 'astro-media-kit/components'
 import Layout from '../layouts/Layout.astro'
 ---
 
@@ -7,7 +7,7 @@ import Layout from '../layouts/Layout.astro'
 	<h1>Media theme</h1>
 	<p class="note">
 		On this page, one set of gallery variables supplies the rectangular targets, colors, and opacity
-		transitions, and the <code>zoom-indicator</code> slot gives one picture its own corner artwork.
+		transitions.
 	</p>
 	<h2>Audio</h2>
 	<Audio src="/test.mp3" />
@@ -21,19 +21,6 @@ import Layout from '../layouts/Layout.astro'
 		zoomIndicator
 		zoomLevel="native"
 	/>
-	<h2>Custom image indicator</h2>
-	<Picture alt="A picture with its own corner artwork" src="../assets/test.jpeg" zoom="themed">
-		<svg
-			fill="none"
-			slot="zoom-indicator"
-			stroke="currentColor"
-			stroke-width="2"
-			viewBox="0 0 24 24"
-		>
-			<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-		</svg>
-		This caption stays separate from the custom indicator slot.
-	</Picture>
 	<h2>Carousel</h2>
 	<Carousel>
 		<Image alt="First carousel image" src="../assets/test.jpeg" zoom="themed" zoomIndicator />

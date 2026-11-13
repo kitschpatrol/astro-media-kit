@@ -10,7 +10,7 @@ it('draws image indicators without loading Video.js, and keeps them across clien
 		await waitForFrame(frame, 'zoom-indicator')
 		const root = frame.contentDocument!
 		expect(root.querySelector(':scope #builtin .amk-zoom-indicator svg')).not.toBeNull()
-		expect(root.querySelector(':scope #custom [data-custom-icon="local-indicator"]')).not.toBeNull()
+		expect(root.querySelector(':scope #captioned .amk-zoom-indicator svg')).not.toBeNull()
 		const registry = (frame.contentWindow as Window & { customElements: CustomElementRegistry })
 			.customElements
 		expect(registry.get('video-player')).toBeUndefined()

@@ -29,11 +29,11 @@ it('shows the configured icons in the page before any player script runs', async
 	expect(getComputedStyle(query(button, '.amk-icon-pause')).display).toBe('none')
 	expect(getComputedStyle(query(button, '.amk-icon-restart')).display).toBe('none')
 	expect(query(fixture, '#indicator .amk-zoom-indicator svg', SVGElement).dataset.customIcon).toBe(
-		'expand',
+		'zoom-indicator',
 	)
 	expect(
-		query(fixture, '#local-indicator .amk-zoom-indicator svg', SVGElement).dataset.customIcon,
-	).toBe('local-indicator')
+		query(fixture, '#video [data-zoom-open] .amk-icon svg', SVGElement).dataset.customIcon,
+	).toBe('expand')
 })
 
 it('sizes and colors configured and built-in carousel icons alike, and mirrors them', async () => {
@@ -108,13 +108,18 @@ it("draws the configured icons and labels on the viewer's own buttons, which swi
 		const zoomIn = zoom.querySelector<HTMLElement>('[data-amk-icon="zoom-in"]')!
 		const zoomOut = zoom.querySelector<HTMLElement>('[data-amk-icon="zoom-out"]')!
 		await expect.poll(() => zoom.hidden).toBe(false)
-		// The button answers once the opening transition has run
+		// The button answers once the opening transition has run; the neighboring
+		// video's spinner animates for as long as the player exists
 		await expect
 			.poll(
 				() =>
 					dialog
 						.getAnimations({ subtree: true })
-						.filter((animation) => animation.playState === 'running').length,
+						.filter(
+							(animation) =>
+								animation.playState === 'running' &&
+								animation.effect?.getTiming().iterations !== Infinity,
+						).length,
 			)
 			.toBe(0)
 		await new Promise((resolve) => {

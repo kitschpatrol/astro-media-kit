@@ -20,28 +20,13 @@ const layouts = ['none', 'fixed', 'constrained', 'full-width'] as const
 		<section id="builtin">
 			<Image alt="Builtin" src={penguin} width={300} zoom zoomIndicator />
 		</section>
-		<section id="custom">
-			<Picture alt="Custom" src={penguin} width={300} zoom>
-				<svg data-custom-icon="local-indicator" slot="zoom-indicator" viewBox="0 0 24 24">
-					<circle cx="12" cy="12" fill="currentColor" r="8" />
-				</svg>
+		<section id="captioned">
+			<Picture alt="Captioned" src={penguin} width={300} zoom zoomIndicator>
 				Caption stays here.
 			</Picture>
 		</section>
-		<section id="disabled">
-			<Image alt="Disabled" src={penguin} width={300} zoom zoomIndicator={false}>
-				<span slot="zoom-indicator">Hidden indicator</span>
-			</Image>
-		</section>
 		<section id="no-zoom">
 			<Picture alt="No zoom" src={penguin} width={300} zoomIndicator />
-		</section>
-		<section id="custom-inert">
-			<Image alt="Inert custom decoration" src={penguin} width={300} zoom>
-				<button data-custom-interactive slot="zoom-indicator" type="button">
-					Decoration
-				</button>
-			</Image>
 		</section>
 		<section id="selector">
 			<Picture

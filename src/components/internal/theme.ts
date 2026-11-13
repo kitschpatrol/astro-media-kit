@@ -57,6 +57,7 @@ const defaultIcons: Record<MediaIconName, string> = {
 	'volume-low': volumeLowIcon,
 	'volume-off': volumeOffIcon,
 	'zoom-in': zoomInIcon,
+	'zoom-indicator': expandIcon,
 	'zoom-out': zoomOutIcon,
 }
 

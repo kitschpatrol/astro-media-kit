@@ -142,8 +142,8 @@ export type Props = Omit<LocalImageProps, 'format' | 'height' | 'src' | 'width'>
 		 */
 		width?: LocalImageProps['width']
 		/**
-		 * Show a decorative corner indicator when zoom is enabled. A custom
-		 * `zoom-indicator` slot enables it unless this is explicitly false.
+		 * Show a decorative corner indicator when zoom is enabled, drawn with the
+		 * `zoom-indicator` icon.
 		 */
 		zoomIndicator?: boolean | undefined
 	}
@@ -307,12 +307,7 @@ const captionProps = await toCaptionProps(
 ---
 
 <Caption {...captionProps}>
-	<Zoomer
-		{...zoomerProps}
-		{...zoomTarget(image)}
-		indicator={zoomIndicator ?? Astro.slots.has('zoom-indicator')}
-		slot="media-component"
-	>
+	<Zoomer {...zoomerProps} {...zoomTarget(image)} indicator={zoomIndicator} slot="media-component">
 		<img
 			alt={alt}
 			src={image.src}
@@ -320,11 +315,6 @@ const captionProps = await toCaptionProps(
 			class:list={[className, imgClassName, 'amk']}
 			style={mergeImageStyle(imgStyle, backgroundStyle)}
 		/>
-		{Astro.slots.has('zoom-indicator') && (
-			<Fragment slot="indicator">
-				<slot name="zoom-indicator" />
-			</Fragment>
-		)}
 	</Zoomer>
 	<slot />
 </Caption>

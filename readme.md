@@ -155,37 +155,37 @@ Caption text is passed as a slot child:
 
 Columns: **Origin** — `astro` marks props inherited from Astro's `LocalImageProps`, with differences noted; `media-kit` marks additions in this library. **Remote** — whether the prop has any effect when `src` is a remote URL. Image transformation props depend on the configured image service and remote-image authorization.
 
-| Prop                      | Type                                                                                                            | Default                              | Origin             | Remote   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------ | -------- |
-| `src`                     | `ImageMetadata \| Promise<{ default: ImageMetadata }> \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                                    | `astro` (widened)  | yes      |
-| `alt`                     | `string`                                                                                                        | —                                    | `astro`            | yes      |
-| `width`                   | number or numeric string                                                                                        | —                                    | `astro`            | yes      |
-| `height`                  | number or numeric string                                                                                        | —                                    | `astro`            | yes      |
-| `quality`                 | `ImageQuality` (number, presets, or service-specific strings)                                                   | —                                    | `astro`            | yes      |
-| `format`                  | `ImageOutputFormat \| FormatRules`                                                                              | local: `'webp'` (`svg → svg`)        | `astro` (widened)  | yes      |
-| `densities`               | ``(number \| `${number}x`)[]``                                                                                  | —                                    | `astro`            | yes      |
-| `widths`                  | `number[]`                                                                                                      | —                                    | `astro`            | yes      |
-| `sizes`                   | `string`                                                                                                        | —                                    | `astro`            | yes      |
-| `fit`                     | `ImageFit` (`'cover'`, `'contain'`, `'fill'`, `'none'`, `'scale-down'`, or service-specific strings)            | `'cover'`                            | `astro`            | yes      |
-| `position`                | `string`                                                                                                        | `'center'`                           | `astro`            | yes      |
-| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                                                            | `'none'`                             | `astro`            | yes      |
-| `loading`                 | `'lazy' \| 'eager'`                                                                                             | `'lazy'`                             | `astro`            | yes      |
-| `decoding`                | `'auto' \| 'sync' \| 'async'`                                                                                   | `'async'`                            | `astro`            | yes      |
-| `priority`                | `boolean`                                                                                                       | `false`                              | `astro`            | yes      |
-| `inferSize`               | `boolean`                                                                                                       | `false`                              | `astro`            | yes      |
-| (other `<img>` attrs)     | `HTMLAttributes<'img'>`                                                                                         | —                                    | `astro`            | yes      |
-| `className`               | `string`                                                                                                        | —                                    | `media-kit`        | yes      |
-| `background`              | `string` (CSS color)                                                                                            | —                                    | `astro` (extended) | yes      |
-| `backgroundDark`          | `string` (CSS color)                                                                                            | —                                    | `media-kit`        | yes      |
-| `credit`                  | `boolean \| string`                                                                                             | `false`                              | `media-kit`        | partial¹ |
-| `creditMediaType`         | `MediaType`                                                                                                     | —                                    | `media-kit`        | yes      |
-| `creditMediaTypeFallback` | `MediaType`                                                                                                     | `'image'`                            | `media-kit`        | yes      |
-| `creditOrganization`      | `string`                                                                                                        | —                                    | `media-kit`        | yes      |
-| `zoom`                    | `boolean \| string`                                                                                             | `false`                              | `media-kit`        | yes      |
-| `zoomIndicator`           | `boolean`                                                                                                       | `false` (a supplied slot enables it) | `media-kit`        | yes      |
-| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                                                   | `'fit'`                              | `media-kit`        | yes      |
-| `zoomPlaceholder`         | `'auto' \| 'none'`                                                                                              | `'auto'`                             | `media-kit`        | yes      |
-| `zoomScope`               | `string` (CSS selector)                                                                                         | —                                    | `media-kit`        | yes      |
+| Prop                      | Type                                                                                                            | Default                       | Origin             | Remote   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------ | -------- |
+| `src`                     | `ImageMetadata \| Promise<{ default: ImageMetadata }> \| DarkLightImageMetadata \| ImageMetadataLike \| string` | —                             | `astro` (widened)  | yes      |
+| `alt`                     | `string`                                                                                                        | —                             | `astro`            | yes      |
+| `width`                   | number or numeric string                                                                                        | —                             | `astro`            | yes      |
+| `height`                  | number or numeric string                                                                                        | —                             | `astro`            | yes      |
+| `quality`                 | `ImageQuality` (number, presets, or service-specific strings)                                                   | —                             | `astro`            | yes      |
+| `format`                  | `ImageOutputFormat \| FormatRules`                                                                              | local: `'webp'` (`svg → svg`) | `astro` (widened)  | yes      |
+| `densities`               | ``(number \| `${number}x`)[]``                                                                                  | —                             | `astro`            | yes      |
+| `widths`                  | `number[]`                                                                                                      | —                             | `astro`            | yes      |
+| `sizes`                   | `string`                                                                                                        | —                             | `astro`            | yes      |
+| `fit`                     | `ImageFit` (`'cover'`, `'contain'`, `'fill'`, `'none'`, `'scale-down'`, or service-specific strings)            | `'cover'`                     | `astro`            | yes      |
+| `position`                | `string`                                                                                                        | `'center'`                    | `astro`            | yes      |
+| `layout`                  | `'constrained' \| 'fixed' \| 'full-width' \| 'none'`                                                            | `'none'`                      | `astro`            | yes      |
+| `loading`                 | `'lazy' \| 'eager'`                                                                                             | `'lazy'`                      | `astro`            | yes      |
+| `decoding`                | `'auto' \| 'sync' \| 'async'`                                                                                   | `'async'`                     | `astro`            | yes      |
+| `priority`                | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
+| `inferSize`               | `boolean`                                                                                                       | `false`                       | `astro`            | yes      |
+| (other `<img>` attrs)     | `HTMLAttributes<'img'>`                                                                                         | —                             | `astro`            | yes      |
+| `className`               | `string`                                                                                                        | —                             | `media-kit`        | yes      |
+| `background`              | `string` (CSS color)                                                                                            | —                             | `astro` (extended) | yes      |
+| `backgroundDark`          | `string` (CSS color)                                                                                            | —                             | `media-kit`        | yes      |
+| `credit`                  | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | partial¹ |
+| `creditMediaType`         | `MediaType`                                                                                                     | —                             | `media-kit`        | yes      |
+| `creditMediaTypeFallback` | `MediaType`                                                                                                     | `'image'`                     | `media-kit`        | yes      |
+| `creditOrganization`      | `string`                                                                                                        | —                             | `media-kit`        | yes      |
+| `zoom`                    | `boolean \| string`                                                                                             | `false`                       | `media-kit`        | yes      |
+| `zoomIndicator`           | `boolean`                                                                                                       | `false`                       | `media-kit`        | yes      |
+| `zoomLevel`               | `'fill' \| 'fit' \| 'native'`                                                                                   | `'fit'`                       | `media-kit`        | yes      |
+| `zoomPlaceholder`         | `'auto' \| 'none'`                                                                                              | `'auto'`                      | `media-kit`        | yes      |
+| `zoomScope`               | `string` (CSS selector)                                                                                         | —                             | `media-kit`        | yes      |
 
 ¹ Manual credit strings work for remote sources. XMP extraction requires local file bytes and is skipped for remote URLs.
 
@@ -263,22 +263,15 @@ When a dark variant exists, renders two `<picture>` elements (one light, one dar
 
 ### Image zoom indicators
 
-`Image` and `Picture` can display a decorative corner indicator when zoom is enabled. Add `zoomIndicator` to show the built-in indicator, which matches the video player's expand button: the same artwork, size, and colors, flush with the bottom-right corner of the image. Supply a `zoom-indicator` slot for custom artwork:
+`Image` and `Picture` can display a decorative corner indicator when zoom is enabled. Add `zoomIndicator` to show it: by default it looks like the video player's expand button, with the same artwork, size, and colors, flush with the bottom-right corner of the image.
 
 ```astro
 <Image src={photo} alt="Mountain lake" zoom zoomIndicator />
-
-<Picture src={photo} alt="Mountain lake" zoom>
-  <svg slot="zoom-indicator" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-    <path d="M12 4v16M4 12h16" />
-  </svg>
-  This remains the image caption.
-</Picture>
 ```
 
-A supplied slot enables the indicator automatically. `zoomIndicator={false}` suppresses it even when a slot is supplied; `zoom={false}` also suppresses it. Without either the prop or slot, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. The active lightbox item's indicator fades out on the page. Moving to another item fades the previous thumbnail's indicator back in and the newly active thumbnail's indicator out; other thumbnails retain their indicators. Closing the lightbox restores the active thumbnail's indicator. These fades follow the lightbox's opening/closing fade durations independently of hover styling, and respect reduced motion. Indicators stay out of the lightbox itself.
+Without `zoomIndicator`, or with `zoom={false}`, no indicator appears. The indicator is decorative and does not add another focus stop: the image's existing zoom link remains the click and keyboard target. The active lightbox item's indicator fades out on the page. Moving to another item fades the previous thumbnail's indicator back in and the newly active thumbnail's indicator out; other thumbnails retain their indicators. Closing the lightbox restores the active thumbnail's indicator. These fades follow the lightbox's opening/closing fade durations independently of hover styling, and respect reduced motion. Indicators stay out of the lightbox itself.
 
-To replace the built-in artwork across the site, give the integration an `expand` icon in its [`icons`](#icons) option, which also replaces the video player's expand button. Individual `zoom-indicator` slots take precedence over that shared icon. All three render on the server.
+To replace its artwork across the site, give the integration a `zoom-indicator` icon in its [`icons`](#icons) option. It is separate from the `expand` icon of the video player's button, so either can change without the other. Both render on the server.
 
 Set these variables in global CSS or on an ancestor of the image:
 
@@ -560,7 +553,7 @@ For rectangular arrow targets, a smaller close target, icons resting at 40%, imm
 }
 ```
 
-Active styling applies to hover-capable pointers and keyboard focus. Controls fade back to their resting appearance over 0.5 seconds by default. Lightbox icon and background fades use `--amk-lightbox-easing`, matching its other transitions. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity unless their indicator-specific properties override it; their size, colors, and transitions follow the video control properties instead. Existing SVG replacement slots continue to work with these controls.
+Active styling applies to hover-capable pointers and keyboard focus. Controls fade back to their resting appearance over 0.5 seconds by default. Lightbox icon and background fades use `--amk-lightbox-easing`, matching its other transitions. Disabled arrows keep their disabled appearance. Icon opacity is separate from the lightbox's opening, closing, and drag fades; captions retain their own lifecycle opacity. Reduced motion disables these cosmetic transitions. Image indicators inherit the shared icon opacity unless their indicator-specific properties override it; their size, colors, and transitions follow the video control properties instead.
 
 ### ZoomLink
 
@@ -584,7 +577,7 @@ import photo from '../assets/photo.jpg'
 
 **Caption** wraps media in `<figure>`/`<figcaption>` when there is caption text or a visible credit, with a credit line built from `creator`, `organization`, and `type` when `showCredit` is on. Its named `media-component` slot holds the media; the default slot holds the caption text. Image, Picture, Video, and Audio render it from their `credit*` props, so you generally don't need to use it directly.
 
-**Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, `nativeWidth` for the `native` zoom level, and `interactive` for content that runs its own controls, such as a player: an interactive wrapper is not itself a button, and opens from an element inside it carrying `data-zoom-open`; once lifted, an element inside it carrying `data-zoom-close` closes the lightbox. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap. Set standalone `indicator` to enable the decorative marker and optionally replace its artwork through the named `indicator` slot. Unlike Image and Picture, the standalone slot does not enable the indicator by itself.
+**Zoomer** wraps content the lightbox can lift. Enable it through `zoom` on Image, Picture, or Video, with `zoomLevel`, `zoomScope`, and `zoomPlaceholder` alongside. Standalone, it accepts `enabled`, `level`, `scope`, `placeholder`, an optional `href` for native fallback navigation, `nativeWidth` for the `native` zoom level, and `interactive` for content that runs its own controls, such as a player: an interactive wrapper is not itself a button, and opens from an element inside it carrying `data-zoom-open`; once lifted, an element inside it carrying `data-zoom-close` closes the lightbox. Its child is the content to enlarge: any element works, laid out at the larger size rather than scaled as a bitmap. Set standalone `indicator` to enable the decorative marker, drawn with the `zoom-indicator` icon.
 
 ### Lightbox
 
@@ -803,20 +796,21 @@ mediaKit({
 })
 ```
 
-| Icons                                     | Used by                                                                                                                                                                               |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `play`, `pause`, `restart`                | Video and local audio, including the large minimal-video play button                                                                                                                  |
-| `volume-off`, `volume-low`, `volume-high` | Video and local audio                                                                                                                                                                 |
-| `no-audio`                                | Video's disabled volume button for a video without sound; defaults to the volume-high artwork struck through                                                                          |
-| `spinner`                                 | Video and local audio buffering indicators                                                                                                                                            |
-| `captions-off`, `captions-on`             | Video caption controls                                                                                                                                                                |
-| `fullscreen-enter`, `fullscreen-exit`     | Video native-fullscreen controls                                                                                                                                                      |
-| `expand`                                  | Video's on-page lightbox opener and the opted-in Image and Picture corner indicators; defaults to a mirror of the fullscreen-enter artwork, pointing to the top-right and bottom-left |
-| `collapse`                                | Video's lightbox button that returns the player to the page; defaults to a mirror of the fullscreen-exit artwork                                                                      |
-| `seek`                                    | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                                                                                 |
-| `check`                                   | Local audio's selected playback-speed indicator                                                                                                                                       |
-| `close`, `previous`, `next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                                                                         |
-| `zoom-in`, `zoom-out`                     | Lightbox secondary zoom states                                                                                                                                                        |
+| Icons                                     | Used by                                                                                                                          |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `play`, `pause`, `restart`                | Video and local audio, including the large minimal-video play button                                                             |
+| `volume-off`, `volume-low`, `volume-high` | Video and local audio                                                                                                            |
+| `no-audio`                                | Video's disabled volume button for a video without sound; defaults to the volume-high artwork struck through                     |
+| `spinner`                                 | Video and local audio buffering indicators                                                                                       |
+| `captions-off`, `captions-on`             | Video caption controls                                                                                                           |
+| `fullscreen-enter`, `fullscreen-exit`     | Video native-fullscreen controls                                                                                                 |
+| `expand`                                  | Video's on-page lightbox opener; defaults to a mirror of the fullscreen-enter artwork, pointing to the top-right and bottom-left |
+| `zoom-indicator`                          | The opted-in Image and Picture corner indicators; defaults to the `expand` artwork                                               |
+| `collapse`                                | Video's lightbox button that returns the player to the page; defaults to a mirror of the fullscreen-exit artwork                 |
+| `seek`                                    | Local audio's forward and backward seek buttons; the backward button mirrors the icon                                            |
+| `check`                                   | Local audio's selected playback-speed indicator                                                                                  |
+| `close`, `previous`, `next`               | Lightbox and carousel controls; previous/next mirror in right-to-left layouts                                                    |
+| `zoom-in`, `zoom-out`                     | Lightbox secondary zoom states                                                                                                   |
 
 Icons are drawn into each page as it is rendered, and into the lightbox's script as it is built, so they are there before any script runs and nothing is swapped in the browser. They apply to the whole site. Use `currentColor` in your SVGs to follow the control color. The kit sizes each icon without overriding its fill, stroke, or viewBox. Icons are decorative: the kit marks them hidden from assistive technology and retains accessible button labels, focus handling, keyboard behavior, and state switching. An unknown icon name, a file that can't be read, or a source that is not exactly one SVG element stops the build with the icon's name in the message. The `MediaIconName` type is exported from `astro-media-kit` and `astro-media-kit/components`.
 

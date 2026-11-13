@@ -206,7 +206,7 @@ it('activates instantly like the player controls and removes transitions with re
 
 it('leaves a mouse-opened item without keyboard-visible focus after Escape', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
-	const items = ['#builtin', '#custom', '#selector'].map((selector) =>
+	const items = ['#builtin', '#captioned', '#selector'].map((selector) =>
 		query(fixture, `${selector} .amk-zoom`),
 	)
 	for (const item of items) {
@@ -237,14 +237,7 @@ it('leaves a mouse-opened item without keyboard-visible focus after Escape', asy
 	expect(document.activeElement).toBe(items[0])
 })
 
-it('keeps custom decorations inert', async () => {
-	const fixture = await mountPage('/zoom-indicator/')
-	const decoration = query(fixture, '[data-custom-interactive]')
-	decoration.focus()
-	expect(document.activeElement).not.toBe(decoration)
-})
-
-it.each(['#builtin', '#custom', '#selector'])(
+it.each(['#builtin', '#captioned', '#selector'])(
 	'fades the %s indicator on its page thumbnail while its media is active in the overlay',
 	async (selector) => {
 		const fixture = await mountPage('/zoom-indicator/')
@@ -289,7 +282,7 @@ it('fades the indicator with an explicitly disabled thumbnail preview', async ()
 
 it('crossfades page indicators as the active overlay item changes', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
-	const items = ['#builtin', '#custom', '#selector'].map((selector) =>
+	const items = ['#builtin', '#captioned', '#selector'].map((selector) =>
 		query(fixture, `${selector} .amk-zoom`),
 	)
 	for (const item of items) {
