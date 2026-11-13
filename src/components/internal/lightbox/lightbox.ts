@@ -29,6 +29,11 @@ const intents = new Map<HTMLElement, Intent>()
 let hovered: HTMLElement | undefined
 let hoverTimer: ReturnType<typeof setTimeout> | undefined
 let isInstalled = false
+/**
+ * The item rendered as a button that Space went down on, to open as the key
+ * comes up.
+ */
+let spacePressed: HTMLElement | undefined
 
 /** Prepare the fitted image on intent without changing the visible thumbnail. */
 export function prepareLightbox(item: HTMLElement) {
@@ -102,6 +107,7 @@ export function installLightbox() {
 	// as a listener on the item itself would be
 	document.addEventListener('click', handleClick, { capture: true })
 	document.addEventListener('keydown', handleKeydown)
+	document.addEventListener('keyup', handleKeyup)
 	document.addEventListener('pointerover', handlePointerover)
 	document.addEventListener('pointerout', handlePointerout)
 	document.addEventListener('focusin', handleFocusin)
@@ -192,8 +198,9 @@ function handleClick(event: MouseEvent) {
 }
 
 /**
- * Enter and Space open an item rendered as a button; a link opens from its
- * click.
+ * Enter and Space open an item rendered as a button, as they press a native
+ * button: Enter as it goes down, and Space as it comes up on the same item. A
+ * link opens from its click.
  */
 function handleKeydown(event: KeyboardEvent) {
 	const item = event.target ?? undefined
@@ -209,8 +216,21 @@ function handleKeydown(event: KeyboardEvent) {
 		return
 	}
 
+	// Space would otherwise scroll the page
 	event.preventDefault()
-	void openLightbox(item)
+	if (event.key === ' ') {
+		spacePressed = item
+	} else {
+		void openLightbox(item)
+	}
+}
+
+function handleKeyup(event: KeyboardEvent) {
+	const item = spacePressed
+	spacePressed = undefined
+	if (item !== undefined && event.key === ' ' && event.target === item) {
+		void openLightbox(item)
+	}
 }
 
 function handleFocusin(event: FocusEvent) {

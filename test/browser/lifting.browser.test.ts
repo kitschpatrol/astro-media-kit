@@ -114,6 +114,31 @@ describe('lifting', () => {
 		await expect.poll(() => viewer().open).toBe(true)
 	})
 
+	it('opens with Space as it comes up on the item, as a native button does', async () => {
+		const fixture = mount(`${item(block('a'))}<button type="button">Elsewhere</button>`)
+		const [box] = boxes(fixture)
+		const isOpen = () => document.querySelector('dialog.amk-lightbox[open]') !== null
+
+		box!.focus()
+		await userEvent.keyboard('[Space>]')
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100)
+		})
+		expect(isOpen()).toBe(false)
+		query(fixture, 'button').focus()
+		await userEvent.keyboard('[/Space]')
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100)
+		})
+		expect(isOpen()).toBe(false)
+
+		box!.focus()
+		await userEvent.keyboard('[Space>]')
+		expect(isOpen()).toBe(false)
+		await userEvent.keyboard('[/Space]')
+		await expect.poll(isOpen).toBe(true)
+	})
+
 	it('holds the subject’s place so the page does not reflow', async () => {
 		const fixture = mount(`${item(block('a'))}<p class="after">after</p>`)
 		const [box] = boxes(fixture)
