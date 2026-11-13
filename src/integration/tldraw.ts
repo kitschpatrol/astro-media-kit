@@ -1,5 +1,7 @@
+// eslint-disable-next-line ts/ban-ts-comment -- `@ts-expect-error` would fail wherever the peer is installed
+// @ts-ignore -- An optional peer: exact types where installed, `any` where not
 import type tldrawVitePluginFn from '@kitschpatrol/unplugin-tldraw/vite'
-import tldrawVitePlugin from '@kitschpatrol/unplugin-tldraw/vite'
+import { requireOptionalVitePlugin } from './optional-peer'
 
 /** Options type extracted from the unplugin-tldraw Vite plugin function. */
 type UnpluginTldrawOptions = NonNullable<Parameters<typeof tldrawVitePluginFn>[0]>
@@ -24,13 +26,19 @@ export type TldrawImageOptions = NonNullable<UnpluginTldrawOptions['defaultImage
 
 /**
  * Creates the Vite plugin for `.tldr` file support. Uses
- * `@kitschpatrol/unplugin-tldraw` for conversion and caching.
+ * `@kitschpatrol/unplugin-tldraw`, an optional peer dependency, for conversion
+ * and caching.
  *
  * @returns A Vite plugin (or array) for Astro's `updateConfig`.
+ * @throws {Error} When `@kitschpatrol/unplugin-tldraw` is not installed.
  */
 // Return type is Plugin[] but we use unknown to avoid TS2742 non-portable Vite type references
 // and to prevent Vite's transitive type graph (postcss, rollup) from bloating the .d.ts output
 export function vitePluginMediaKitTldraw(config: TldrawConfig): unknown {
 	const { enabled: _, ...pluginOptions } = config
+	const { default: tldrawVitePlugin } = requireOptionalVitePlugin(
+		'@kitschpatrol/unplugin-tldraw',
+		'tldraw',
+	) as { default: typeof tldrawVitePluginFn }
 	return tldrawVitePlugin(pluginOptions)
 }

@@ -66,6 +66,8 @@ This library pairs well with [astro-mdx-kit](https://github.com/kitschpatrol/ast
 pnpm add astro-media-kit
 ```
 
+The optional [tldraw](#tldraw) and [Apple Photos](#aphex) support each need one more package, installed only by the sites that use it.
+
 ### Basic setup
 
 The simplest way to use `astro-media-kit` is as an Astro integration. This enables auto-importing of image assets in your `.astro` files so you can write `src="../assets/photo.jpg"` as a string and have it resolved to an ESM import automatically:
@@ -860,6 +862,21 @@ Like icons, labels are rendered into each page and built into the lightbox's scr
 
 Enable `.tldr` file support via [`unplugin-tldraw`](https://github.com/kitschpatrol/unplugin-tldraw), which wraps [`tldraw-cli`](https://github.com/kitschpatrol/tldraw-cli). Tldraw files are converted to SVG/PNG at build time and fed into Astro's image pipeline.
 
+`@kitschpatrol/unplugin-tldraw` is an optional peer dependency, so add it to your project:
+
+```bash
+pnpm add @kitschpatrol/unplugin-tldraw
+```
+
+It draws with [Puppeteer](https://pptr.dev), whose install script downloads Chrome. pnpm stops the install until that script is approved, so allow it in `pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  puppeteer: true
+```
+
+Then enable it:
+
 ```ts
 import mediaKit, { tldrawDarkImport } from 'astro-media-kit'
 
@@ -879,7 +896,22 @@ The `tldrawDarkImport` helper generates a `srcDark` prop with `?dark=true&tldr` 
 
 ### Aphex
 
-Enable Apple Photos `~aphex/` import support via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), which wraps [`aphex`](https://github.com/kitschpatrol/aphex). Photos exported from macOS Photos.app can be referenced by album and title:
+Enable Apple Photos `~aphex/` import support via [`unplugin-aphex`](https://github.com/kitschpatrol/unplugin-aphex), which wraps [`aphex`](https://github.com/kitschpatrol/aphex). It runs on macOS only.
+
+`@kitschpatrol/unplugin-aphex` is an optional peer dependency, so add it to your project:
+
+```bash
+pnpm add @kitschpatrol/unplugin-aphex
+```
+
+Its dependencies include esbuild, whose install script pnpm also waits to have approved:
+
+```yaml
+allowBuilds:
+  esbuild: true
+```
+
+Then enable it, and photos exported from macOS Photos.app can be referenced by album and title:
 
 ```ts
 mediaKit({
