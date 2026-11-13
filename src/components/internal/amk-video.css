@@ -559,9 +559,10 @@ media-captions-button.amk-button:not(:defined) {
 	padding: 3px 6px;
 	border-radius: 4px;
 	font-size: 12px;
+	color: var(--amk-control-color);
 	white-space: nowrap;
 	opacity: 0;
-	background: rgb(0 0 0 / 85%);
+	background: var(--amk-control-background);
 	transition: opacity 0.15s;
 }
 
@@ -614,7 +615,8 @@ media-captions-button.amk-button:not(:defined) {
 
 /* --- Tooltips --- */
 
-/* Tooltips are popovers Video.js positions against their trigger. */
+/* Tooltips are popovers Video.js positions against their trigger. Like the
+   scrub time and the volume popover, they take the control bar's colors */
 .amk-tooltip {
 	--media-tooltip-side-offset: 6px;
 	pointer-events: none;
@@ -625,7 +627,7 @@ media-captions-button.amk-button:not(:defined) {
 	font-size: 12px;
 	color: var(--amk-control-color);
 	white-space: nowrap;
-	background: rgb(0 0 0 / 85%);
+	background: var(--amk-control-background);
 }
 
 .amk-tooltip:not([data-open], [data-ending-style]) {

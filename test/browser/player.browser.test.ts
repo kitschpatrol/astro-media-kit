@@ -158,6 +158,18 @@ it('keeps a larger control bar clear of the video in the lightbox', async () => 
 	expect(frame.bottom).toBeLessThanOrEqual(bar.top)
 })
 
+it('draws tooltips and the scrub time in the control bar’s colors', async () => {
+	const { item, player } = await mountPlayer()
+	const root = query(item, '.amk')
+	root.style.setProperty('--amk-control-color', 'rgb(17 17 17)')
+	root.style.setProperty('--amk-control-background', 'rgb(255 255 255 / 80%)')
+	for (const element of [query(player, '.amk-tooltip'), query(player, '.amk-slider-value')]) {
+		const style = getComputedStyle(element)
+		expect(style.color).toBe('rgb(17, 17, 17)')
+		expect(style.backgroundColor).toBe('rgba(255, 255, 255, 0.8)')
+	}
+})
+
 it('returns the player to the page from its collapse button', async () => {
 	const { item, player } = await mountPlayer()
 	await userEvent.click(query(player, '[data-zoom-open]'))
