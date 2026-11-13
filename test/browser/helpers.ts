@@ -342,6 +342,15 @@ export function fadeOf(element: Element): CSSTransition | undefined {
 		)
 }
 
+/**
+ * The alpha of a computed color, as `rgb()`, `rgba()`, or the `color()` a mixed
+ * color computes to.
+ */
+export function alphaOf(color: string): number {
+	const values = color.match(/[\d.]+/gv) ?? []
+	return values.length > 3 ? Number(values[3]) : 1
+}
+
 /** The middle of where `element` is drawn now, in viewport coordinates. */
 export function middleOf(element: Element): { x: number; y: number } {
 	const box = element.getBoundingClientRect()

@@ -193,10 +193,15 @@
 	outline-offset: -5px;
 }
 
-/* Not disabled, which would drop keyboard focus at either end */
+/* Not disabled, which would drop keyboard focus at either end. Its background
+   and icon dim, rather than the button, so that its focus ring doesn't */
 .amk-carousel-button[aria-disabled='true'] {
 	cursor: default;
-	opacity: 0.3;
+	background: color-mix(in srgb, var(--amk-carousel-resolved-control-background) 30%, transparent);
+}
+
+.amk-carousel-button[aria-disabled='true'] .amk-carousel-icon {
+	opacity: calc(var(--amk-carousel-resolved-icon-opacity) * 0.3);
 }
 
 @media (hover: hover) {
@@ -238,27 +243,27 @@
 	height: 2rem;
 	padding: 0;
 	border: 0;
-	opacity: 0.35;
 	background: none;
-	transition: opacity 0.15s;
 }
 
-/* The dot itself */
+/* The dot itself, dimmed by its fill rather than its opacity, which would dim
+   its focus ring too */
 .amk-carousel-dot::before {
 	content: '';
 	width: 0.5rem;
 	height: 0.5rem;
 	border-radius: 50%;
+	background: color-mix(in srgb, currentcolor 35%, transparent);
+	transition: background-color 0.15s;
+}
+
+.amk-carousel-dot[aria-current='true']::before {
 	background: currentcolor;
 }
 
-.amk-carousel-dot[aria-current='true'] {
-	opacity: 1;
-}
-
 @media (hover: hover) {
-	.amk-carousel-dot:not([aria-current='true']):hover {
-		opacity: 0.6;
+	.amk-carousel-dot:not([aria-current='true']):hover::before {
+		background: color-mix(in srgb, currentcolor 60%, transparent);
 	}
 }
 
@@ -285,7 +290,7 @@
 @media (prefers-reduced-motion: reduce) {
 	.amk-carousel-button,
 	.amk-carousel-icon,
-	.amk-carousel-dot {
+	.amk-carousel-dot::before {
 		transition-duration: 0s !important;
 	}
 }

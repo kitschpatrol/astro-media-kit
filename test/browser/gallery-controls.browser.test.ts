@@ -1,7 +1,17 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
-import { boxes, cleanUp, gallery, mount, query, setUpLightbox, viewer, zoomable } from './helpers'
+import {
+	alphaOf,
+	boxes,
+	cleanUp,
+	gallery,
+	mount,
+	query,
+	setUpLightbox,
+	viewer,
+	zoomable,
+} from './helpers'
 import '../../src/components/internal/carousel/carousel.css'
 
 type GalleryKind = 'carousel' | 'lightbox'
@@ -227,7 +237,7 @@ it.each(['carousel', 'lightbox'] as const)(
 )
 
 it.each(['carousel', 'lightbox'] as const)(
-	'keeps disabled %s icons dim on hover and keyboard focus',
+	'keeps disabled %s buttons dim on hover and keyboard focus, but not their focus ring',
 	async (kind) => {
 		const { previous, root } = await controls(kind)
 		root.style.setProperty('--amk-gallery-icon-opacity', '0.4')
@@ -237,9 +247,11 @@ it.each(['carousel', 'lightbox'] as const)(
 		await userEvent.keyboard('{Tab}')
 		previous.focus()
 		expect(previous.matches(':focus-visible')).toBe(true)
-		await expect.poll(() => getComputedStyle(icon).opacity).toBe('0.4')
-		expect(getComputedStyle(previous).opacity).toBe('0.3')
-		expect(getComputedStyle(previous).backgroundColor).toBe('rgba(0, 0, 0, 0.6)')
+		await expect.poll(() => Number(getComputedStyle(icon).opacity)).toBeCloseTo(0.12)
+		await expect.poll(() => alphaOf(getComputedStyle(previous).backgroundColor)).toBeCloseTo(0.18)
+		expect(getComputedStyle(previous).opacity).toBe('1')
+		expect(getComputedStyle(previous).outlineStyle).toBe('solid')
+		expect(alphaOf(getComputedStyle(previous).outlineColor)).toBe(1)
 	},
 )
 

@@ -585,8 +585,15 @@
 	outline-offset: -5px;
 }
 
+/* Its background and icon dim, rather than the button, so that its focus ring
+   doesn't */
 .amk-lightbox-button[aria-disabled='true'] {
 	cursor: default;
+	background: color-mix(in srgb, var(--amk-lightbox-resolved-control-background) 30%, transparent);
+}
+
+.amk-lightbox-button[aria-disabled='true'] .amk-lightbox-icon {
+	opacity: calc(var(--amk-lightbox-resolved-icon-opacity) * 0.3);
 }
 
 /* The class sets display, which would otherwise outrank the hidden attribute */
@@ -672,10 +679,6 @@
 
 .amk-lightbox[data-state='open'] :is(.amk-lightbox-button, .amk-lightbox-caption) {
 	opacity: var(--amk-lightbox-drag-opacity, 1);
-}
-
-.amk-lightbox[data-state='open'] .amk-lightbox-button[aria-disabled='true'] {
-	opacity: calc(var(--amk-lightbox-drag-opacity, 1) * 0.3);
 }
 
 /* A zoomed subject covers its caption */

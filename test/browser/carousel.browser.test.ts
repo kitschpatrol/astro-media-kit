@@ -8,6 +8,7 @@ import { closeLightbox, openLightbox } from '../../src/components/internal/light
 import { isClickFromDrag } from '../../src/components/internal/lightbox/motion'
 import {
 	activeSlideLabel,
+	alphaOf,
 	cleanUp,
 	clickMiddle,
 	frames,
@@ -131,7 +132,25 @@ it('lays slides out one per viewport, a gap apart, with captions shown on reques
 	expect(boxes[0]!.x).toBe(query(carousel, '.amk-carousel-viewport').getBoundingClientRect().x)
 	expect(track.scrollWidth).toBe(3 * 424)
 	expect(getComputedStyle(query(slides[0]!, 'figcaption')).display).not.toBe('none')
-	expect(getComputedStyle(query(carousel, '.amk-carousel-previous')).opacity).toBe('0.3')
+	const icon = query(carousel, '.amk-carousel-previous .amk-carousel-icon')
+	expect(Number(getComputedStyle(icon).opacity)).toBeCloseTo(0.3)
+})
+
+it('dims the dots of other slides, but not their focus ring', async () => {
+	const { carousel } = await mountCarousel()
+	const current = query(carousel, '.amk-carousel-dot[aria-current="true"]')
+	const other = query(carousel, '.amk-carousel-dot[aria-label="Slide 2"]')
+	await userEvent.keyboard('{Tab}')
+	other.focus()
+	expect(other.matches(':focus-visible')).toBe(true)
+	expect(getComputedStyle(other).opacity).toBe('1')
+	// Relative to the dots' own color, which may be translucent itself
+	const color = alphaOf(getComputedStyle(other).color)
+	const dot = getComputedStyle(other, '::before')
+	expect(alphaOf(dot.backgroundColor) / color).toBeCloseTo(0.35)
+	expect(dot.outlineStyle).toBe('solid')
+	expect(alphaOf(dot.outlineColor)).toBe(color)
+	expect(alphaOf(getComputedStyle(current, '::before').backgroundColor)).toBe(color)
 })
 
 it('leaves the media of players and embeds in its slides to size itself', async () => {
