@@ -1,3 +1,4 @@
+import type { WheelSample } from './wheel'
 import {
 	controlSelector,
 	isPointerClick,
@@ -5,6 +6,7 @@ import {
 	regionSelector,
 	sealedRegionSelector,
 } from './dom'
+import { addSample, gestureEnd, isNewGesture, momentumOnset, recentPeakSpeed } from './wheel'
 
 /** Native scrolling, dragging, and glides have one owner at a time. */
 type MotionOwner = 'drag' | 'glide' | 'idle' | 'native'
@@ -51,6 +53,26 @@ type Drag = {
 	stage: HTMLElement | undefined
 	startX: number
 	startY: number
+}
+
+/**
+ * A wheel gesture, from a trackpad's first event to its last momentum one, or a
+ * mouse wheel's turn. The track follows it as it does a drag, and it turns at
+ * most one slide, as snapping does.
+ */
+type Wheel = {
+	/** How far the gesture has moved the track, before rubber banding. */
+	distance: number
+	/** Across the track, so the page's or a scroll container's throughout. */
+	isAcross: boolean
+	/** Let go of the track, which glides on; the momentum left goes unused. */
+	isReleased: boolean
+	/** The position the gesture moves from, before rubber banding. */
+	origin: number
+	samples: WheelSample[]
+	/** The slide the gesture started from. */
+	slide: number
+	timer: ReturnType<typeof setTimeout> | undefined
 }
 
 /** The track gliding to a slide, a frame at a time. */
@@ -129,6 +151,7 @@ export class CarouselMotion {
 
 	readonly #track: HTMLElement
 
+	#wheel: undefined | Wheel
 	#width = 0
 	get #position(): number {
 		return Math.abs(this.#track.scrollLeft) + this.#overflow
@@ -148,10 +171,10 @@ export class CarouselMotion {
 		track.addEventListener('lostpointercapture', this.#handlePointerEnd, { signal })
 		track.addEventListener('scroll', this.#handleScroll, { passive: true, signal })
 		track.addEventListener('scrollend', this.#realign, { signal })
-		track.addEventListener('touchstart', this.#handleGesture, { passive: true, signal })
+		track.addEventListener('touchstart', this.#handleTouchstart, { passive: true, signal })
 		track.addEventListener('touchend', this.#handleTouchEnd, { passive: true, signal })
 		track.addEventListener('touchcancel', this.#handleTouchEnd, { passive: true, signal })
-		track.addEventListener('wheel', this.#handleGesture, { passive: true, signal })
+		track.addEventListener('wheel', this.#handleWheel, { passive: false, signal })
 	}
 
 	configure(count: number, index: number) {
@@ -223,6 +246,7 @@ export class CarouselMotion {
 	stop() {
 		this.#stopGlide()
 		this.#cancelDrag()
+		this.#dropWheel()
 		clearTimeout(this.#realignTimer)
 		this.#realignTimer = undefined
 		this.#target = undefined
@@ -310,6 +334,12 @@ export class CarouselMotion {
 		)
 	}
 
+	/** Forget the wheel gesture underway, if any, where it has got to. */
+	#dropWheel() {
+		clearTimeout(this.#wheel?.timer)
+		this.#wheel = undefined
+	}
+
 	/**
 	 * End `drag`: let go, cancelled by the browser, or its capture lost. Only a
 	 * release carries its speed on, and only the click after a loss or a release
@@ -339,27 +369,12 @@ export class CarouselMotion {
 		}
 
 		if (drag.stage === undefined) {
-			// Let go while still moving, the track carries on to the next slide that
-			// way, as paging does on iOS: a quick short swipe advances, and swinging
-			// back cancels. Let go at rest, it settles on the nearest slide. Either
-			// way it glides there from the speed it was let go at
-			const position = this.#position
-			const velocity = isRelease ? velocityOf(drag.samples, position, time) : 0
 			// The finger has lifted, though touchend has yet to say so
 			if (isRelease) {
 				this.#isTouching = false
 			}
 
-			const slides = position / this.#width
-			this.go(
-				velocity > flickSpeed
-					? Math.floor(slides) + 1
-					: velocity < -flickSpeed
-						? Math.ceil(slides) - 1
-						: Math.round(slides),
-				'smooth',
-				velocity,
-			)
+			this.#settle(isRelease ? velocityOf(drag.samples, this.#position, time) : 0)
 		}
 
 		// The click that ends a drag is not a click on the content. None follows
@@ -380,6 +395,49 @@ export class CarouselMotion {
 		}
 
 		this.#end(drag, 'cancel', event.timeStamp)
+	}
+
+	/**
+	 * End the wheel gesture underway, if any: one still following the fingers
+	 * lets go at the speed they last flicked at.
+	 */
+	readonly #endWheel = () => {
+		const wheel = this.#wheel
+		if (wheel === undefined) {
+			return
+		}
+
+		clearTimeout(wheel.timer)
+		this.#wheel = undefined
+		if (wheel.isAcross || wheel.isReleased) {
+			return
+		}
+
+		const speed = recentPeakSpeed(wheel.samples)
+		this.#releaseWheel(wheel, speed)
+		if (!(Math.abs(speed) > flickSpeed)) {
+			return
+		}
+
+		// Events held up while the page was busy may yet arrive, the end of
+		// the same flick, which would otherwise start over and settle back
+		this.#wheel = wheel
+		wheel.timer = setTimeout(this.#endWheel, gestureEnd.momentum)
+	}
+
+	/**
+	 * Move the track `delta` further with the fingers, within a slide either side
+	 * of where the gesture started, and let go once momentum takes over.
+	 */
+	#followWheel(wheel: Wheel, delta: number) {
+		wheel.distance += delta
+		const least = Math.max(wheel.slide - 1, 0) * this.#width
+		const most = Math.min(wheel.slide + 1, this.#count - 1) * this.#width
+		this.render(mapPast(wheel.origin + wheel.distance, least, most, this.#width, rubberBand))
+		const onset = momentumOnset(wheel.samples)
+		if (onset !== undefined) {
+			this.#releaseWheel(wheel, onset)
+		}
 	}
 
 	/**
@@ -472,47 +530,6 @@ export class CarouselMotion {
 	}
 
 	/**
-	 * A wheel along the track, or a touch the track leaves to the browser, such
-	 * as a pinch or a press on a control, takes over from any navigation
-	 * underway. A glide it interrupts leaves the track between slides with
-	 * snapping off, so the realign settles it, once the touch lifts or the wheel
-	 * goes quiet. A wheel across the track scrolls the page or a zoomed stage,
-	 * and leaves a glide alone.
-	 */
-	readonly #handleGesture = (event: TouchEvent | WheelEvent) => {
-		if (
-			!this.#options.canNavigate() ||
-			(event instanceof WheelEvent && (event.ctrlKey || !isAlongTrack(event)))
-		) {
-			return
-		}
-
-		if (event.type === 'touchstart') {
-			this.#isTouching = true
-			// Pointerdown precedes touchstart, so a lone finger the track took as a
-			// possible drag, or caught it with, is already its own
-			if ('touches' in event && event.touches.length === 1 && this.#drag?.isTouch) {
-				return
-			}
-		}
-
-		const wasCustom = this.#owner === 'glide' || this.#owner === 'drag'
-		this.#stopGlide()
-		this.#cancelDrag()
-		this.#target = undefined
-		this.#owner = 'native'
-		// Clear synthetic overshoot before the browser takes over scrolling.
-		if (this.#overflow !== 0) {
-			this.render(Math.min(Math.max(this.#position, 0), (this.#count - 1) * this.#width))
-		}
-
-		if (event.type === 'wheel' && (wasCustom || this.#realignTimer !== undefined)) {
-			// A wheel that interrupts a glide need not scroll, so no scrollend follows
-			this.#scheduleRealign()
-		}
-	}
-
-	/**
 	 * A drag's click follows its release at once. A touch drag has none, so a
 	 * press anywhere means the next click is a click again.
 	 */
@@ -524,6 +541,8 @@ export class CarouselMotion {
 
 	readonly #handlePointerdown = (event: PointerEvent) => {
 		this.#isPressSeen = true
+		// A press during a wheel gesture lets go of it, and may catch its glide
+		this.#endWheel()
 		if (!event.isPrimary) {
 			this.#cancelDrag()
 			return
@@ -630,6 +649,81 @@ export class CarouselMotion {
 		this.#scheduleRealign()
 	}
 
+	/**
+	 * A touch the track leaves to the browser, such as a pinch or a press on a
+	 * control, takes over from any navigation underway. A glide it interrupts
+	 * leaves the track between slides with snapping off, so the realign settles
+	 * it once the touch lifts.
+	 */
+	readonly #handleTouchstart = (event: TouchEvent) => {
+		if (!this.#options.canNavigate()) {
+			return
+		}
+
+		this.#isTouching = true
+		// Pointerdown precedes touchstart, so a lone finger the track took as a
+		// possible drag, or caught it with, is already its own
+		if (event.touches.length === 1 && this.#drag?.isTouch) {
+			return
+		}
+
+		this.#stopGlide()
+		this.#cancelDrag()
+		this.#dropWheel()
+		this.#target = undefined
+		this.#owner = 'native'
+		// Clear synthetic overshoot before the browser takes over scrolling.
+		if (this.#overflow !== 0) {
+			this.render(Math.min(Math.max(this.#position, 0), (this.#count - 1) * this.#width))
+		}
+	}
+
+	/**
+	 * A wheel along the track moves it as a drag does: a trackpad's fingers move
+	 * it, and it carries on from the speed they lift at, which only the momentum
+	 * events after that show. A gesture across the track is the page's, or a
+	 * zoomed stage's, throughout. A mouse wheel's lines or pages step a slide.
+	 */
+	readonly #handleWheel = (event: WheelEvent) => {
+		const stage = this.#options.stage()
+		if (
+			!this.#options.canNavigate() ||
+			this.#width === 0 ||
+			event.ctrlKey ||
+			(stage !== undefined && event.composedPath().includes(stage))
+		) {
+			return
+		}
+
+		const isAlong = isAlongTrack(event)
+		const delta = wheelAlong(event) * this.#direction
+		if (this.#drag?.origin !== undefined || event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL) {
+			if (isAlong) {
+				event.preventDefault()
+				// A drag underway keeps the track, and a mouse wheel's notches step
+				if (this.#drag?.origin === undefined) {
+					this.step(Math.sign(delta))
+				}
+			}
+
+			return
+		}
+
+		const wheel = this.#wheelFor(isAlong, delta)
+		if (!wheel.isAcross) {
+			event.preventDefault()
+			if (delta !== 0) {
+				addSample(wheel.samples, { delta, time: event.timeStamp })
+				if (!wheel.isReleased) {
+					this.#followWheel(wheel, delta)
+				}
+			}
+		}
+
+		clearTimeout(wheel.timer)
+		wheel.timer = setTimeout(this.#endWheel, pauseBeforeEnd(wheel))
+	}
+
 	/** Remember that the next click ends a drag, for everyone to let it be. */
 	#ignoreClick(value: boolean) {
 		this.#shouldIgnoreClick = value
@@ -655,9 +749,7 @@ export class CarouselMotion {
 	 * part within the track.
 	 */
 	#mapPastEnds(position: number, map: (distance: number, size: number) => number): number {
-		const inside = Math.min(Math.max(position, 0), (this.#count - 1) * this.#width)
-		const beyond = position - inside
-		return inside + Math.sign(beyond) * map(Math.abs(beyond), this.#width)
+		return mapPast(position, 0, (this.#count - 1) * this.#width, this.#width, map)
 	}
 
 	/**
@@ -734,7 +826,7 @@ export class CarouselMotion {
 			return
 		}
 
-		// Ignore scrollend queued by the cancelled spring until wheel input is quiet.
+		// Ignore scrollend queued by the cancelled spring until native input is quiet.
 		if (event !== undefined && this.#realignTimer !== undefined) {
 			return
 		}
@@ -754,9 +846,8 @@ export class CarouselMotion {
 
 		const index = this.#indexFromScroll()
 		if (this.#owner === 'native') {
-			// Re-enabling snapping inside a wheel event can swallow that wheel.
-			// Restore it only after native input has settled, and let the browser
-			// finish any remaining distance with its own scrolling behavior.
+			// Restore snapping only after native input has settled, and let the
+			// browser finish any remaining distance with its own scrolling behavior.
 			delete this.#track.dataset.moving
 			if (Math.abs(this.#position - index * this.#width) >= onSlide) {
 				this.#track.scrollTo({
@@ -771,6 +862,16 @@ export class CarouselMotion {
 		}
 
 		this.#rest()
+	}
+
+	/**
+	 * Let the track go from a wheel gesture at `velocity`, to a slide next to
+	 * where it started.
+	 */
+	#releaseWheel(wheel: Wheel, velocity: number) {
+		wheel.isReleased = true
+		this.#owner = 'idle'
+		this.#settle(velocity, wheel.slide - 1, wheel.slide + 1)
 	}
 
 	#rest() {
@@ -795,6 +896,55 @@ export class CarouselMotion {
 		this.#options.onChange(index)
 	}
 
+	/**
+	 * Glide on from a release at `velocity`, in px/ms toward later slides, to a
+	 * slide from `least` to `most`. Let go while still moving, the track carries
+	 * on to the next slide that way, as paging does on iOS: a quick short swipe
+	 * advances, and swinging back cancels. Let go at rest, it settles on the
+	 * nearest slide. Either way it glides there from the speed it was let go at.
+	 */
+	#settle(velocity: number, least = 0, most = this.#count - 1) {
+		const slides = this.#position / this.#width
+		const index =
+			velocity > flickSpeed
+				? Math.floor(slides) + 1
+				: velocity < -flickSpeed
+					? Math.ceil(slides) - 1
+					: Math.round(slides)
+		this.go(Math.min(Math.max(index, least), most), 'smooth', velocity)
+	}
+
+	/**
+	 * Begin a wheel gesture, across the track, or along it from wherever the
+	 * track has got to, catching any glide underway as a press does.
+	 */
+	#startWheel(isAcross: boolean): Wheel {
+		const slide = clamp(Math.round(this.#position / this.#width), this.#count)
+		const wheel: Wheel = {
+			distance: 0,
+			isAcross,
+			isReleased: false,
+			origin: 0,
+			samples: [],
+			slide,
+			timer: undefined,
+		}
+		this.#wheel = wheel
+		if (isAcross) {
+			return wheel
+		}
+
+		this.#stopGlide()
+		this.#target = undefined
+		const least = Math.max(slide - 1, 0) * this.#width
+		const most = Math.min(slide + 1, this.#count - 1) * this.#width
+		wheel.origin = mapPast(this.#position, least, most, this.#width, rubberBandDistance)
+		this.#owner = 'drag'
+		// Snapping would pull every position in between back to a slide
+		this.#track.dataset.moving = ''
+		return wheel
+	}
+
 	#stopGlide() {
 		if (this.#glide === undefined) {
 			return
@@ -802,6 +952,24 @@ export class CarouselMotion {
 
 		cancelAnimationFrame(this.#glide.frame)
 		this.#glide = undefined
+	}
+
+	/**
+	 * The wheel gesture an event belongs to, begun anew for the first, and for
+	 * one momentum can't have sent once let go: one across the track, since
+	 * momentum runs straight along it, or one that reverses or grows, from
+	 * fingers back on the trackpad, which catch the glide where it is.
+	 */
+	#wheelFor(isAlong: boolean, delta: number): Wheel {
+		const wheel = this.#wheel
+		const previous = wheel?.samples.at(-1)?.delta
+		const isResumed = delta !== 0 && previous !== undefined && isNewGesture(previous, delta)
+		if (wheel !== undefined && (!wheel.isReleased || (isAlong && !isResumed))) {
+			return wheel
+		}
+
+		clearTimeout(wheel?.timer)
+		return this.#startWheel(!isAlong)
 	}
 }
 
@@ -821,11 +989,13 @@ function clamp(index: number, count: number): number {
 	return Math.min(Math.max(index, 0), count - 1)
 }
 
-/** Whether a wheel moves mostly along the track, as a shifted vertical one does. */
+/**
+ * Whether a wheel moves mostly along the track, as a shifted vertical one does.
+ * A tie goes across, to leave a page's scrolling alone.
+ */
 function isAlongTrack(event: WheelEvent): boolean {
-	const x = event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX
 	const y = event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY
-	return x !== 0 && Math.abs(x) >= Math.abs(y)
+	return Math.abs(wheelAlong(event)) > Math.abs(y)
 }
 
 /**
@@ -847,6 +1017,37 @@ function isKeptByTarget(
 	)
 }
 
+/**
+ * How long, in ms, a wheel gesture goes without events before it ends: briefly
+ * after momentum, or after fingers flicking, and longer after slow ones, which
+ * may only be resting.
+ */
+function pauseBeforeEnd(wheel: Wheel): number {
+	if (wheel.isAcross || wheel.isReleased) {
+		return gestureEnd.momentum
+	}
+
+	return Math.abs(recentPeakSpeed(wheel.samples)) > flickSpeed
+		? gestureEnd.flicking
+		: gestureEnd.resting
+}
+
+/**
+ * Map the part of a track position past `least` or `most` through `map`, for a
+ * track `size` wide, keeping the part between them.
+ */
+function mapPast(
+	position: number,
+	least: number,
+	most: number,
+	size: number,
+	map: (distance: number, size: number) => number,
+): number {
+	const inside = Math.min(Math.max(position, least), most)
+	const beyond = position - inside
+	return inside + Math.sign(beyond) * map(Math.abs(beyond), size)
+}
+
 /** Whether a press landed on one of `element`'s own scrollbars. */
 function isOnScrollbar(event: PointerEvent, element: HTMLElement): boolean {
 	const box = element.getBoundingClientRect()
@@ -866,6 +1067,14 @@ function rubberBand(distance: number, size: number): number {
 /** How far a drag past an end must go to move content `offset`. */
 function rubberBandDistance(offset: number, size: number): number {
 	return (offset * size) / (pull * (size - offset))
+}
+
+/**
+ * How far a wheel moves along the track, in px: a shifted vertical one moves it
+ * too.
+ */
+function wheelAlong(event: WheelEvent): number {
+	return event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX
 }
 
 /**

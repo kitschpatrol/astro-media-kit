@@ -17,6 +17,7 @@ export default cspellConfig({
 		'oscnord',
 		'roledescription',
 		'Schließen',
+		'trackpad',
 		'videoseries',
 		'xlink',
 		'xmpmeta',

@@ -15,8 +15,10 @@ import {
 	mount,
 	mountPage,
 	query,
+	replayWheel,
 	settle,
 	setUpLightbox,
+	trackpadSwipe,
 	viewer,
 } from './helpers'
 import '../../src/components/internal/carousel/carousel.css'
@@ -350,6 +352,36 @@ it('swipes to the next slide under touch without opening the lightbox', async ({
 	expect(currentDot(carousel)).toBe('Slide 2')
 	await settle(200)
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
+})
+
+it('turns a slide for a trackpad flick, and leaves vertical scrolling to the page', async () => {
+	const { carousel, track } = await mountCarousel()
+	const middle = middleOf(track)
+	await replayWheel(middle.x, middle.y, trackpadSwipe('quick flick right'))
+	await expect.poll(() => slideAt(track)).toBe(1)
+	await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+	expect(currentDot(carousel)).toBe('Slide 2')
+
+	let isPrevented = false
+	const check = (event: WheelEvent) => {
+		isPrevented ||= event.defaultPrevented
+	}
+
+	window.addEventListener('wheel', check)
+	try {
+		const { x, y } = middleOf(track)
+		await commands.wheelSwipe(x, y, [
+			[0, 0, 2],
+			[16, 1, 8],
+			[33, 0, 20],
+		])
+	} finally {
+		window.removeEventListener('wheel', check)
+	}
+
+	expect(isPrevented).toBe(false)
+	await settle(300)
+	expect(slideAt(track)).toBe(1)
 })
 
 it('hides captions unless asked, leaving them to the lightbox', async () => {

@@ -3,6 +3,7 @@ import { commands, userEvent } from 'vitest/browser'
 import { lengthOf } from '../../src/components/internal/lightbox/geometry'
 import { installLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/lightbox/lightbox.css'
+import trackpad from '../fixtures/safari-trackpad-swipes.json'
 
 declare module 'vitest/browser' {
 	// eslint-disable-next-line ts/consistent-type-definitions -- Declaration merging requires an interface
@@ -18,6 +19,11 @@ declare module 'vitest/browser' {
 		touchMove: (x: number, y: number) => Promise<void>
 		touchSwipe: (direction?: 'down' | 'left' | 'up') => Promise<boolean>
 		touchUp: () => Promise<void>
+		wheelSwipe: (
+			x: number,
+			y: number,
+			events: Array<[time: number, deltaX: number, deltaY: number]>,
+		) => Promise<void>
 	}
 }
 
@@ -121,6 +127,60 @@ export function activeSlideLabel(): string {
 /** How far the track is scrolled from the first slide, in pixels. */
 export function trackOffset(): number {
 	return Math.abs(query(document, '.amk-lightbox-track').scrollLeft)
+}
+
+/**
+ * A two-finger swipe recorded on a MacBook trackpad in Safari, by name, as
+ * events of [ms since the first, deltaX, deltaY].
+ */
+export function trackpadSwipe(name: string): Array<[number, number, number]> {
+	const swipe = trackpad.swipes.find((each) => each.name === name)
+	if (swipe === undefined) {
+		throw new Error(`No recorded trackpad swipe is named "${name}"`)
+	}
+
+	return swipe.events as Array<[number, number, number]>
+}
+
+/**
+ * Replay recorded wheel events on what is at a point in the viewport, each at
+ * the time it was recorded. They are dispatched in the page, since browser
+ * automation can deliver real input at half the pace, and the pace is what
+ * tells a flick from a drag.
+ */
+export async function replayWheel(
+	x: number,
+	y: number,
+	events: Array<[number, number, number]>,
+): Promise<void> {
+	const target = document.elementFromPoint(x, y)
+	if (target === null) {
+		throw new Error(`Nothing is at ${String(x)}, ${String(y)} to receive wheel events`)
+	}
+
+	const start = performance.now()
+	for (const [time, deltaX, deltaY] of events) {
+		const wait = start + time - performance.now()
+		if (wait > 0) {
+			await new Promise((resolve) => {
+				setTimeout(resolve, wait)
+			})
+		}
+
+		const event = new WheelEvent('wheel', {
+			bubbles: true,
+			cancelable: true,
+			clientX: x,
+			clientY: y,
+			deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+			deltaX,
+			deltaY,
+		})
+		// When the trackpad sent it, as a real event says, rather than when a busy
+		// page got round to dispatching it
+		Object.defineProperty(event, 'timeStamp', { value: start + time })
+		target.dispatchEvent(event)
+	}
 }
 
 /** How far apart the viewer's slides rest: its width and the gap between them. */

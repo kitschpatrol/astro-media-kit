@@ -16,10 +16,12 @@ import {
 	mount,
 	playerItem,
 	query,
+	replayWheel,
 	settle,
 	setUpLightbox,
 	slideSpacing,
 	trackOffset,
+	trackpadSwipe,
 	trackShift,
 	transitionsDone,
 	viewer,
@@ -575,6 +577,67 @@ describe('galleries', () => {
 		await commands.mouseMove(300, 400)
 		await settle()
 		await commands.mouseUp()
+		await expect.poll(trackOffset).toBe(slideSpacing())
+		expect(activeSlideLabel()).toBe('2 of 3')
+	})
+
+	it('turns a slide for a mouse wheel turned sideways', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[0]!)
+
+		await commands.mouseWheel(120, 0)
+
+		await expect.poll(trackOffset).toBe(slideSpacing())
+		expect(activeSlideLabel()).toBe('2 of 3')
+	})
+
+	it('turns a slide for a quick trackpad flick that gets no momentum', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[1]!)
+
+		await replayWheel(640, 400, trackpadSwipe('quick short flick left, no momentum'))
+
+		await expect.poll(activeSlideLabel).toBe('1 of 3')
+		await expect.poll(trackOffset).toBe(0)
+	})
+
+	it.for(['gentlest flick left that should turn a page', 'big fast swipe left'])(
+		'turns only one slide for a trackpad\'s "%s", leaving its momentum unused',
+		async (name) => {
+			const fixture = mount(gallery(['a', 'b', 'c']))
+			await openLightbox(boxes(fixture)[2]!)
+
+			// The replay sends the momentum to its very end
+			await replayWheel(640, 400, trackpadSwipe(name))
+
+			await expect.poll(trackOffset).toBe(slideSpacing())
+			expect(activeSlideLabel()).toBe('2 of 3')
+			await settle(200)
+			expect(trackOffset()).toBe(slideSpacing())
+		},
+	)
+
+	it('follows a slow trackpad drag, then settles back on its slide', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[1]!)
+		const track = query(document, '.amk-lightbox-track')
+		let farthest = 0
+		const follow = () => {
+			farthest = Math.max(farthest, Math.abs(trackOffset() - slideSpacing()))
+		}
+
+		track.addEventListener('scroll', follow)
+		try {
+			await replayWheel(
+				640,
+				400,
+				trackpadSwipe('slow drag left a third, lifted while moving slowly'),
+			)
+		} finally {
+			track.removeEventListener('scroll', follow)
+		}
+
+		expect(farthest).toBeGreaterThan(150)
 		await expect.poll(trackOffset).toBe(slideSpacing())
 		expect(activeSlideLabel()).toBe('2 of 3')
 	})

@@ -87,6 +87,28 @@ const mouseWheel = defineBrowserCommand<[deltaX: number, deltaY: number]>(
 )
 
 /**
+ * Replay recorded wheel events at a point in the test page's viewport, each at
+ * the time it was recorded, as a trackpad sends them.
+ */
+const wheelSwipe = defineBrowserCommand<
+	[x: number, y: number, events: Array<[time: number, deltaX: number, deltaY: number]>]
+>(async (context, x, y, events) => {
+	const point = await toWindow(await context.frame(), x, y)
+	await context.page.mouse.move(point.x, point.y)
+	const start = performance.now()
+	for (const [time, deltaX, deltaY] of events) {
+		const wait = time - (performance.now() - start)
+		if (wait > 0) {
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, wait)
+			})
+		}
+
+		await context.page.mouse.wheel(deltaX, deltaY)
+	}
+})
+
+/**
  * Chromium exposes native touch dragging through its browser protocol. Touch
  * emulation isn't needed for that, and turning it off again would discard
  * Playwright's hover setting for the rest of the run: where the hardware has no
@@ -307,6 +329,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 								touchMove,
 								touchSwipe,
 								touchUp,
+								wheelSwipe,
 							},
 							enabled: true,
 							headless: true,

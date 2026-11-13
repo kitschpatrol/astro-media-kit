@@ -309,7 +309,7 @@ it('returns distant subjects after navigation instead of accumulating lifts', as
 	expect(subjectOf(boxes(fixture)[0]!)).toBeInstanceOf(HTMLElement)
 })
 
-it('hands an interrupted spring to native wheel scrolling and snapping', async () => {
+it('catches a spring with the wheel, and lands on a slide', async () => {
 	await open(
 		Array.from({ length: 3 }, (_value, index) =>
 			item(`<div style="width: 200px; height: 100px">${index}</div>`, 'data-gallery="wheel"'),
