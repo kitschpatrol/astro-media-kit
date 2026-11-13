@@ -7,6 +7,7 @@ import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
 const { title } = pages.find((p) => p.href === '/carousel')!
+const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 ---
 
 <Layout {title}>
@@ -38,7 +39,8 @@ const { title } = pages.find((p) => p.href === '/carousel')!
 	<h2>2. Mixed media, captions hidden</h2>
 	<p class="note">
 		Without <code>captions</code>, the captions stay out of the carousel and appear in the lightbox
-		only. The video keeps its controls, and its sound fades while the lightbox shows a neighbor.
+		only. The videos keep their controls, and the sound of the Bunny video fades while the lightbox
+		shows a neighbor.
 	</p>
 	<Carousel dots label="Mixed">
 		<Image alt="JPEG photo" src="../assets/test.jpeg" zoom="mixed">
@@ -46,6 +48,9 @@ const { title } = pages.find((p) => p.href === '/carousel')!
 		</Image>
 		<Video src="/test.mp4" zoom="mixed">
 			A local video.
+		</Video>
+		<Video initialBandwidth={50_000_000} src={soundBunnyId} zoom="mixed">
+			A Bunny video with sound.
 		</Video>
 		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" />
 	</Carousel>

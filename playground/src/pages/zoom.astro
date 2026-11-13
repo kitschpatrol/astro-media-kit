@@ -9,7 +9,8 @@ import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
 const { title } = pages.find((p) => p.href === '/zoom')!
-const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
+const silentBunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
+const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 ---
 
 <Layout {title}>
@@ -54,7 +55,7 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		<Video
 			controls="full"
 			initialBandwidth={50_000_000}
-			src={bunnyId}
+			src={silentBunnyId}
 			zoom="mixed"
 			zoomLevel="fill"
 		>
@@ -63,17 +64,26 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		<Video
 			controls="full"
 			initialBandwidth={50_000_000}
-			src={bunnyId}
+			src={silentBunnyId}
 			zoom="mixed"
 			zoomLevel="fill"
 		>
 			Caption for the video
 		</Video>
+		<Video
+			controls="full"
+			initialBandwidth={50_000_000}
+			src={soundBunnyId}
+			zoom="mixed"
+			zoomLevel="fill"
+		>
+			Caption for the video with sound
+		</Video>
 		<Image alt="SVG tiger" src="../assets/tiger.svg" zoom="mixed" zoomLevel="fill" />
 		<Video
 			controls="minimal"
 			initialBandwidth={50_000_000}
-			src={bunnyId}
+			src={silentBunnyId}
 			zoom="mixed"
 			zoomLevel="fill"
 		/>
@@ -145,7 +155,7 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 			this photo
 		</ZoomLink>
 		, in a gallery with{' '}
-		<ZoomLink src={bunnyId} zoom="links">
+		<ZoomLink src={silentBunnyId} zoom="links">
 			this video
 		</ZoomLink>
 		, or{' '}

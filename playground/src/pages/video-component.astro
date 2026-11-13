@@ -5,7 +5,8 @@ import Layout from '../layouts/Layout.astro'
 import { pages } from '../pages'
 
 const { title } = pages.find((p) => p.href === '/video-component')!
-const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
+const silentBunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
+const soundBunnyId = '4de22a5b-5af2-43ae-b790-157b3b2245b5'
 ---
 
 <Layout title={title}>
@@ -23,14 +24,32 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 		controls="none"
 		initialBandwidth={50_000_000}
 		loop={true}
-		src={bunnyId}
+		src={silentBunnyId}
 	/>
 	<h3>Minimal</h3>
-	<Video capQualityToSize={false} controls="minimal" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video
+		capQualityToSize={false}
+		controls="minimal"
+		initialBandwidth={50_000_000}
+		src={silentBunnyId}
+	/>
 	<h3>Full</h3>
-	<Video capQualityToSize={false} controls="full" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video
+		capQualityToSize={false}
+		controls="full"
+		initialBandwidth={50_000_000}
+		src={silentBunnyId}
+	/>
 	<h3>Lightbox</h3>
-	<Video controls="lightbox" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video controls="lightbox" initialBandwidth={50_000_000} src={silentBunnyId} />
+	<h3>Full with sound</h3>
+	<p>The videos above have no sound, so their volume buttons are struck out.</p>
+	<Video
+		capQualityToSize={false}
+		controls="full"
+		initialBandwidth={50_000_000}
+		src={soundBunnyId}
+	/>
 
 	<h2>Native controls</h2>
 	<p>
@@ -45,7 +64,7 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<h3>Local</h3>
 	<Video controls="native" src="/test.mp4" />
 	<h3>HLS</h3>
-	<Video controls="native" initialBandwidth={50_000_000} src={bunnyId} />
+	<Video controls="native" initialBandwidth={50_000_000} src={silentBunnyId} />
 
 	<h2>Local file</h2>
 	<Video src="/test.mp4" />
@@ -95,16 +114,25 @@ const bunnyId = 'f24d7806-2cf5-4df9-a340-840d68eef8c9'
 	<Video src="https://vimeo.com/10184668" />
 
 	<h2>Zoom (standalone)</h2>
-	<Video controls="full" initialBandwidth={50_000_000} src={bunnyId} zoom={true} />
+	<Video controls="full" initialBandwidth={50_000_000} src={silentBunnyId} zoom={true} />
 
 	<h2>Zoom (mixed gallery)</h2>
-	<p>Video and image in the same gallery — swipe between them.</p>
+	<p>Videos with and without sound and an image in the same gallery — swipe between them.</p>
 	<div style="display: flex; gap: 1rem; align-items: start;">
 		<div style="flex: 1;">
 			<Video
 				controls="full"
 				initialBandwidth={50_000_000}
-				src={bunnyId}
+				src={silentBunnyId}
+				zoom="mixed"
+				zoomLevel="fill"
+			/>
+		</div>
+		<div style="flex: 1;">
+			<Video
+				controls="full"
+				initialBandwidth={50_000_000}
+				src={soundBunnyId}
 				zoom="mixed"
 				zoomLevel="fill"
 			/>
