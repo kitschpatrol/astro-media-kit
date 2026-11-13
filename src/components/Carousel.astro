@@ -2,7 +2,7 @@
 import { parseHTML } from 'linkedom'
 import { fillLabel } from './internal/labels'
 import { icons, labels } from './internal/theme'
-import { escapeAttributeAmpersands } from './utils/html'
+import { escapeAttributeValues } from './utils/html'
 import './internal/carousel/carousel.css'
 
 /**
@@ -55,7 +55,7 @@ const {
 // emit alongside their markup stay with the carousel, outside the track
 const html = await Astro.slots.render('default')
 const { document } = parseHTML(`<html><body>${html}</body></html>`)
-escapeAttributeAmpersands(document.body)
+escapeAttributeValues(document.body)
 const slides: string[] = []
 const extras: string[] = []
 for (const node of document.body.childNodes) {

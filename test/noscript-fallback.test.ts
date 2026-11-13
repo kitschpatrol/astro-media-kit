@@ -5,6 +5,11 @@ import { buildFixture } from './parity/helpers/build-fixture'
 
 const playerStyle = 'width: 640px; aspect-ratio: 16 / 9'
 
+/** Ends a `<noscript>` early for a browser running scripts, unless escaped. */
+function breakout(name: string): string {
+	return `</noscript><img id=injected-${name} src=x>`
+}
+
 /**
  * The fallback a section renders for browsers without JavaScript, parsed the
  * way such a browser would: cheerio keeps `<noscript>` content as raw text.
@@ -122,4 +127,20 @@ describe('noscript fallback server markup', () => {
 		expect(scriptedAudio.attr('src')).toBeUndefined()
 		expect(scriptedAudio.attr('data-src')).toBe('/media/loop.mp4')
 	})
+
+	it.each([
+		['an embed poster’s alt', 'embed', 'img', 'alt', ''],
+		['a video file’s source', 'file', 'source', 'src', '/media/loop.mp4?'],
+		['an audio file’s source', 'audio', 'audio', 'src', '/media/loop.mp4?'],
+		['an embed poster’s alt a carousel writes out again', 'carousel', 'img', 'alt', ''],
+	])(
+		'keeps %s that closes a noscript inside the noscript',
+		async (_description, name, selector, attribute, prefix) => {
+			const $ = await fixture.readHTML('/noscript-fallback/')
+			expect($(`#injected-${name}`)).toHaveLength(0)
+			expect(fallbackOf($, `#breakout-${name}`)!(selector).attr(attribute)).toBe(
+				prefix + breakout(name),
+			)
+		},
+	)
 })

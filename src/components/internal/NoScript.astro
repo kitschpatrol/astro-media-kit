@@ -1,0 +1,17 @@
+---
+import { parseHTML } from 'linkedom'
+import { escapeAttributeValues } from '../utils/html'
+
+/**
+ * A `<noscript>` around the markup in its slot, with `<` and `>` escaped in its
+ * attribute values. Astro escapes only `&` and `"` there, and a browser running
+ * scripts reads a `<noscript>` as text up to the first `</noscript>`, so a
+ * value such as a video's title could otherwise end the element and put the
+ * rest of itself into the page as markup.
+ */
+const html = await Astro.slots.render('default')
+const { document } = parseHTML(`<html><body>${html}</body></html>`)
+escapeAttributeValues(document.body)
+---
+
+<noscript set:html={document.body.innerHTML} />

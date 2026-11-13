@@ -4,6 +4,7 @@ import { mediaCrossOrigin } from '../utils/media'
 import FallbackLink from './FallbackLink.astro'
 import Icon from './Icon.astro'
 import { fillLabel } from './labels'
+import NoScript from './NoScript.astro'
 import { labels } from './theme'
 import VideoControls from './VideoControls.astro'
 import VideoError from './VideoError.astro'
@@ -179,7 +180,7 @@ const embedService =
 		</video-player>
 	)}
 	{noscriptSources.length > 0 && (
-		<noscript>
+		<NoScript>
 			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
 			<video {...mediaAttributes} controls style={containerStyle}>
 				{noscriptSources.map((source) => (
@@ -187,7 +188,7 @@ const embedService =
 				))}
 				{labels.unsupportedVideo}
 			</video>
-		</noscript>
+		</NoScript>
 	)}
 	{embedService !== undefined && (
 		<FallbackLink

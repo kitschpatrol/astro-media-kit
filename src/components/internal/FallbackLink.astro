@@ -1,4 +1,5 @@
 ---
+import NoScript from './NoScript.astro'
 import './amk-fallback.css'
 
 /**
@@ -20,9 +21,9 @@ export type Props = {
 const { href, label, poster, style } = Astro.props
 ---
 
-<noscript>
+<NoScript>
 	<a class="amk-fallback-link" href={href} style={style}>
 		{poster && <img alt={poster.alt} class="amk-fallback-poster" src={poster.src} />}
 		<span class="amk-fallback-label">{label}</span>
 	</a>
-</noscript>
+</NoScript>

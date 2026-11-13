@@ -7,6 +7,7 @@ import Caption from './Caption.astro'
 import AudioPlayer from './internal/AudioPlayer.astro'
 import FallbackLink from './internal/FallbackLink.astro'
 import { fillLabel } from './internal/labels'
+import NoScript from './internal/NoScript.astro'
 import InternalOembed from './internal/OEmbed.astro'
 import { labels } from './internal/theme'
 import { buildSoundCloudEmbedUrl, resolveAudioSource } from './utils/audio'
@@ -123,9 +124,9 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 			>
 				{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
 				<AudioPlayer attributes={audioAttributes} label={resolvedLabel} />
-				<noscript>
+				<NoScript>
 					<audio {...audioAttributes} controls />
-				</noscript>
+				</NoScript>
 				{/* eslint-enable astro/jsx-a11y/media-has-caption */}
 			</div>
 		) : (

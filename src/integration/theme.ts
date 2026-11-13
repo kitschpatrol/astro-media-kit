@@ -6,7 +6,7 @@ import type { LabelName, Labels } from '../components/internal/labels'
 import type { MediaIconName } from '../components/media-icon-names'
 import { labelNames } from '../components/internal/labels'
 import { mediaIconNames } from '../components/media-icon-names'
-import { escapeAttributeAmpersands } from '../components/utils/html'
+import { escapeAttributeValues } from '../components/utils/html'
 
 /**
  * The site's own artwork for the kit's icons, by icon name. Each is an SVG
@@ -162,6 +162,6 @@ function normalizeIcon(name: string, markup: string): string {
 	// The buttons carry the labels; the artwork is for the eye only
 	svg.setAttribute('aria-hidden', 'true')
 	svg.setAttribute('focusable', 'false')
-	escapeAttributeAmpersands(document.body)
+	escapeAttributeValues(document.body)
 	return svg.outerHTML
 }

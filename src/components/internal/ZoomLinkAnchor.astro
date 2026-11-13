@@ -1,6 +1,6 @@
 ---
 import { parseHTML } from 'linkedom'
-import { escapeAttributeAmpersands } from '../utils/html'
+import { escapeAttributeValues } from '../utils/html'
 
 /**
  * The link `<ZoomLink>` renders: the `text` slot, then the media rendered into
@@ -29,7 +29,7 @@ const attributes = Object.fromEntries(
 )
 
 // Every attribute is read by now; the rest is written out as markup
-escapeAttributeAmpersands(document.body)
+escapeAttributeValues(document.body)
 // Scripts and styles the components emit alongside their markup stay in the
 // page, outside the template, where the browser would not run them
 const extras: string[] = []
