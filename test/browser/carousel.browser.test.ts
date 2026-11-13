@@ -65,9 +65,10 @@ it('sets up the other carousels when one is missing its parts', async () => {
 	}
 })
 
-it('stops reacting to a retained track after disposal and can initialize it again', async () => {
+it('stops reacting to a retained track after disposal, releasing its slides, and can initialize it again', async () => {
 	const { carousel, track } = await mountCarousel()
 	disposeCarousels()
+	expect(track.querySelectorAll(':scope > .amk-carousel-slide[inert]')).toHaveLength(0)
 	track.scrollLeft = track.clientWidth
 	track.dispatchEvent(new Event('scroll'))
 	expect(currentDot(carousel)).toBe('Slide 1')
@@ -215,6 +216,40 @@ it('steps with the arrow keys, Home and End', async () => {
 	await expect.poll(() => slideAt(track)).toBe(1)
 	await userEvent.keyboard('{Home}')
 	await expect.poll(() => slideAt(track)).toBe(0)
+})
+
+it('steps from inside a slide, moving focus out of the slide it leaves', async () => {
+	const { track } = await mountCarousel()
+	const slides = [...track.querySelectorAll<HTMLElement>(':scope > .amk-carousel-slide')]
+	expect(slides.map((slide) => slide.inert)).toEqual([false, true, true])
+
+	query(slides[0]!, '.amk-zoom').focus()
+	await userEvent.keyboard('{ArrowRight}')
+	await expect.poll(() => slideAt(track)).toBe(1)
+	expect(slides.map((slide) => slide.inert)).toEqual([true, false, true])
+	expect(document.activeElement).toBe(track)
+	await userEvent.keyboard('{ArrowRight}')
+	await expect.poll(() => slideAt(track)).toBe(2)
+})
+
+it('leaves Home and End pressed inside a slide to the page', async () => {
+	const { track } = await mountCarousel()
+	const prevented: boolean[] = []
+	const listener = (event: KeyboardEvent) => {
+		prevented.push(event.defaultPrevented)
+	}
+
+	document.addEventListener('keydown', listener)
+	try {
+		query(track, '.amk-zoom').focus()
+		await userEvent.keyboard('{End}{Home}')
+		await frames()
+		expect(prevented).toEqual([false, false])
+		expect(slideAt(track)).toBe(0)
+		expect(Object.hasOwn(track.dataset, 'moving')).toBe(false)
+	} finally {
+		document.removeEventListener('keydown', listener)
+	}
 })
 
 it('leaves a consumed arrow key to a control inside a slide', async () => {

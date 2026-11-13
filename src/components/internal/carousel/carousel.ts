@@ -57,7 +57,8 @@ function setUp(root: HTMLElement): Carousel {
 		throw new TypeError('[astro-media-kit] A carousel is missing its track.', { cause: root })
 	}
 
-	const count = track.querySelectorAll(':scope > .amk-carousel-slide').length
+	const slides = [...track.querySelectorAll<HTMLElement>(':scope > .amk-carousel-slide')]
+	const count = slides.length
 	const previous = root.querySelector<HTMLButtonElement>(':scope > * > .amk-carousel-previous')
 	const next = root.querySelector<HTMLButtonElement>(':scope > * > .amk-carousel-next')
 	const dots = [...root.querySelectorAll<HTMLButtonElement>(':scope > .amk-carousel-dots > button')]
@@ -80,6 +81,18 @@ function setUp(root: HTMLElement): Carousel {
 			} else {
 				dot.removeAttribute('aria-current')
 			}
+		}
+
+		// As in the lightbox, only the slide on show can be reached. Focus inside
+		// a slide that just went inert would otherwise fall to <body> at the next
+		// rendering update
+		const focused = document.activeElement
+		for (const [position, slide] of slides.entries()) {
+			slide.inert = position !== at
+		}
+
+		if (focused !== null && slides.some((slide) => slide.inert && slide.contains(focused))) {
+			track.focus({ preventScroll: true })
 		}
 	}
 
@@ -172,7 +185,11 @@ function setUp(root: HTMLElement): Carousel {
 
 			const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
 			if (step !== 0) {
+				// Pressed inside a slide too, where the browser would scroll the track
 				motion.step(step * motion.direction)
+			} else if (isWithin(event, '.amk-carousel-slide', root)) {
+				// Home and End inside a slide are left to the page, which they scroll
+				return
 			} else if (event.key === 'Home') {
 				motion.go(0, 'instant')
 			} else if (event.key === 'End') {
@@ -206,6 +223,9 @@ function setUp(root: HTMLElement): Carousel {
 			controller.abort()
 			observer.disconnect()
 			motion.destroy()
+			for (const slide of slides) {
+				slide.inert = false
+			}
 		},
 	}
 }

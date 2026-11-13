@@ -100,7 +100,8 @@
 	   stay a track's width apart */
 	width: calc(100% + var(--amk-carousel-resolved-slide-gap));
 	margin-inline: calc(var(--amk-carousel-resolved-slide-gap) / -2);
-	/* It only takes focus from clicks and the arrow keys */
+	/* It only takes focus from clicks, and from a slide that leaves view with
+	   focus inside */
 	outline: none;
 	/* Resolve CSS time units and calc() for the JS spring without adding a
 	   CSS transition to the track's pointer-driven translation. */
