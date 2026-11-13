@@ -422,12 +422,14 @@ Generic oEmbed sources retain the provider's player and do not use the kit's pla
 
 URL formats recognized automatically:
 
-| Service | Formats                                                                   |
-| ------- | ------------------------------------------------------------------------- |
-| YouTube | `youtube.com/watch`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/`, `/v/`  |
-| Vimeo   | `vimeo.com/`, `player.vimeo.com/video/`; an unlisted video keeps its hash |
-| Local   | Direct file URLs (detected by extension)                                  |
-| oEmbed  | Any other URL (falls back to oEmbed discovery)                            |
+| Service | Formats                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------- |
+| YouTube | `youtube.com/watch`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/`, `/v/`, also on `youtube-nocookie.com` |
+| Vimeo   | `vimeo.com/`, `player.vimeo.com/video/`; an unlisted video keeps its hash                                |
+| Local   | Direct file URLs (detected by extension)                                                                 |
+| oEmbed  | Any other URL (falls back to oEmbed discovery)                                                           |
+
+A YouTube source on `youtube-nocookie.com` plays from YouTube's privacy-enhanced embed, while links to the video, such as the one shown without JavaScript, go to its page on `youtube.com`.
 
 Local and direct media sources are probed for dimensions and sound at render time: a local file is read from disk, and a remote direct URL is range-requested, so a server that ignores `Range` sends the whole file once per build. Site-root paths such as `/videos/intro.mp4` are tried under the default `public/` directory first. When probing succeeds, the player reserves the corresponding aspect ratio; if probing fails, the media determines its size after loading. Custom `publicDir` locations are not resolved automatically by this probe. YouTube and Vimeo use oEmbed dimensions to establish an aspect ratio, rather than the source video's pixel resolution.
 

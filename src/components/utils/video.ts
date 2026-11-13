@@ -385,6 +385,8 @@ const YOUTUBE_HOSTS = new Set([
 	'youtube.com',
 ])
 
+const YOUTUBE_NOCOOKIE_HOSTS = new Set(['www.youtube-nocookie.com', 'youtube-nocookie.com'])
+
 const YOUTUBE_PATH_ID_REGEX = /^\/(?:embed|shorts|live|v)\/([\w\-]{11})(?:\/|$)/v
 const VIMEO_VIDEO_PATH_REGEX = /^\/video\/(\d+)(?:\/|$)/v
 /** The hash an unlisted Vimeo video's page URL carries after its ID. */
@@ -418,6 +420,23 @@ function extractYouTubeId(url: URL): string | undefined {
 	}
 
 	return undefined
+}
+
+/** A YouTube video's page, where links to it go. */
+export function youtubeWatchUrl(id: string): string {
+	return `https://www.youtube.com/watch?v=${id}`
+}
+
+/**
+ * Where the player embeds a YouTube video from, given the `src` it was named
+ * by. Video.js embeds from YouTube's privacy-enhanced domain only when the URL
+ * it plays names that domain, so a `src` there keeps it.
+ */
+export function youtubePlayerUrl(src: string, id: string): string {
+	const host = tryParseUrl(src)?.hostname.toLowerCase()
+	return host !== undefined && YOUTUBE_NOCOOKIE_HOSTS.has(host)
+		? `https://www.youtube-nocookie.com/embed/${id}`
+		: youtubeWatchUrl(id)
 }
 
 const VIMEO_HOSTS = new Set(['player.vimeo.com', 'vimeo.com', 'www.vimeo.com'])

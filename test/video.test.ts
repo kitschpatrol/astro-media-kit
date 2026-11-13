@@ -1,3 +1,4 @@
+import { buildYouTubeIframeSrc } from '@videojs/youtube-video'
 import nodePath from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bunnyIsValidMediaId } from '../src/components/utils/bunny'
@@ -10,6 +11,7 @@ import {
 	readServiceConfig,
 	resolveVideoSource,
 	validateServiceConfig,
+	youtubePlayerUrl,
 } from '../src/components/utils/video'
 
 const localOnlyConfig = {
@@ -24,6 +26,28 @@ const localOnlyConfig = {
 
 afterEach(() => {
 	vi.restoreAllMocks()
+})
+
+const NOCOOKIE_EMBED_RE = /^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?/v
+const YOUTUBE_EMBED_RE = /^https:\/\/www\.youtube\.com\/embed\/dQw4w9WgXcQ\?/v
+
+describe('youtubePlayerUrl', () => {
+	it.each([
+		'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+		'https://youtube-nocookie.com/embed/dQw4w9WgXcQ',
+		'https://WWW.YOUTUBE-NOCOOKIE.COM/watch?v=dQw4w9WgXcQ',
+	])('has the player embed %s from the privacy-enhanced domain', (src) => {
+		expect(buildYouTubeIframeSrc(youtubePlayerUrl(src, 'dQw4w9WgXcQ'))).toMatch(NOCOOKIE_EMBED_RE)
+	})
+
+	it.each([
+		'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+		'https://youtu.be/dQw4w9WgXcQ',
+		'https://www.youtube.com/embed/dQw4w9WgXcQ',
+		'dQw4w9WgXcQ',
+	])('has the player embed %s from youtube.com', (src) => {
+		expect(buildYouTubeIframeSrc(youtubePlayerUrl(src, 'dQw4w9WgXcQ'))).toMatch(YOUTUBE_EMBED_RE)
+	})
 })
 
 describe('localVideoProbeCandidates', () => {

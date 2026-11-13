@@ -18,6 +18,8 @@ import {
 	readServiceConfig,
 	resolveVideoSource,
 	validateServiceConfig,
+	youtubePlayerUrl,
+	youtubeWatchUrl,
 } from './utils/video'
 import { toZoomerProps } from './zoom-props-map'
 import Zoomer from './Zoomer.astro'
@@ -169,7 +171,7 @@ switch (resolvedService) {
 	}
 
 	case 'youtube': {
-		videoSrc = `https://www.youtube.com/watch?v=${identifier}`
+		videoSrc = youtubePlayerUrl(src, identifier)
 		break
 	}
 	// No default — ts/switch-exhaustiveness-check enforces all Service cases are handled
@@ -205,9 +207,11 @@ if (capQualityToSize !== undefined) {
 }
 
 // Where a link to the video goes without JavaScript, and what the player's
-// error dialog offers: a plain file where the service has one, else the source
+// error dialog offers: a plain file where the service has one, else the source,
+// or for YouTube, whose source may be an embed, the video's page
+const sourceOrPage = resolvedService === 'youtube' ? youtubeWatchUrl(identifier) : videoSrc
 const fallbackUrl =
-	videoInfo === undefined || videoInfo.mp4Url === '' ? (videoSrc ?? '') : videoInfo.mp4Url
+	videoInfo === undefined || videoInfo.mp4Url === '' ? (sourceOrPage ?? '') : videoInfo.mp4Url
 
 // An explicit poster replaces the service's thumbnail; local files have none
 const serviceThumbnail = oembedInfo?.thumbnailUrl ?? videoInfo?.posterUrl
