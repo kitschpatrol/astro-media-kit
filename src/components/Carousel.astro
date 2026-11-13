@@ -36,9 +36,8 @@ export type Props = {
 	 */
 	dots?: boolean | undefined
 	/**
-	 * Accessible name of the carousel.
-	 *
-	 * @default 'Carousel', or the integration'
+	 * Accessible name of the carousel, read before what it is ("carousel"). A
+	 * carousel without one is announced by that alone.
 	 */
 	label?: string | undefined
 }
@@ -48,7 +47,7 @@ const {
 	class: classFromAstro,
 	className: classFromJsx,
 	dots = false,
-	label = labels.carousel,
+	label,
 } = Astro.props
 
 // Each element the slot renders is a slide. Scripts and styles the components
@@ -79,7 +78,7 @@ const hasNavigation = slides.length > 1
 	aria-roledescription={labels.carouselRole}
 	class:list={['amk-carousel', classFromAstro ?? classFromJsx]}
 	data-captions={captions ? '' : undefined}
-	role="region"
+	role="group"
 >
 	<div class="amk-carousel-viewport">
 		<div class="amk-carousel-track" tabindex="-1">

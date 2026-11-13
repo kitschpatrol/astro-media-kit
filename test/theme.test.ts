@@ -220,7 +220,6 @@ describe('icons configured through the integration', () => {
 		expect($('#video media-controls-group').attr('aria-label')).toBe('Playing controls')
 		// Left out of the configuration, so in English
 		expect($('#video [data-zoom-open]').attr('aria-label')).toBe('Expand video')
-		expect($('#carousel .amk-carousel').attr('aria-label')).toBe('Carousel')
 	})
 
 	it("builds the viewer's labels into the lightbox script, and no others", async () => {

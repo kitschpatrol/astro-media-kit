@@ -494,7 +494,7 @@ import second from '../assets/second.jpg'
 | -------------------- | --------- | ---------------------------- |
 | `captions`           | `boolean` | `false`                      |
 | `dots`               | `boolean` | `false`                      |
-| `label`              | `string`  | `'Carousel'`                 |
+| `label`              | `string`  | —                            |
 | `class`, `className` | `string`  | — (`class` takes precedence) |
 
 The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping. Set `--amk-carousel-duration` (default `0.4s`, `0s` with reduced motion) on the carousel or an ancestor to time its glide. Slides are `1.5rem` apart as the track moves; set `--amk-carousel-slide-gap` to change that for carousels alone (see [shared gallery settings](#shared-gallery-settings)).
@@ -840,7 +840,6 @@ mediaKit({
 | `previous`, `next` | `Previous`, `Next`                           | Lightbox and carousel navigation buttons                    |
 | `slide`            | `{index} of {count}`                         | Each lightbox and carousel slide                            |
 | `goToSlide`        | `Slide {index}`                              | Each carousel dot                                           |
-| `carousel`         | `Carousel`                                   | A carousel without a `label` of its own                     |
 | `carouselRole`     | `carousel`                                   | What a carousel and the lightbox's gallery are announced as |
 | `slideRole`        | `slide`                                      | What a slide is announced as                                |
 | `playbackControls` | `Playback controls`                          | A video's bar of controls                                   |

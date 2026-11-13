@@ -10,7 +10,7 @@ describe('carousel server markup', () => {
 	it('wraps each slotted component in a labeled slide, with the buttons and dots asked for', async () => {
 		const $ = await fixture.readHTML('/carousel/')
 		const carousel = $('#captioned .amk-carousel')
-		expect(carousel.attr('role')).toBe('region')
+		expect(carousel.attr('role')).toBe('group')
 		expect(carousel.attr('aria-roledescription')).toBe('carousel')
 		expect(carousel.attr('aria-label')).toBe('Penguins')
 		expect(carousel.attr('data-captions')).toBe('')
@@ -27,6 +27,14 @@ describe('carousel server markup', () => {
 		expect(dots).toHaveLength(3)
 		expect(dots.eq(0).attr('aria-current')).toBe('true')
 		expect(dots.eq(1).attr('aria-current')).toBeUndefined()
+	})
+
+	it('leaves a carousel without a label unnamed, announced as a carousel alone', async () => {
+		const $ = await fixture.readHTML('/carousel/')
+		const carousel = $('#quiet .amk-carousel')
+		expect(carousel.attr('role')).toBe('group')
+		expect(carousel.attr('aria-roledescription')).toBe('carousel')
+		expect(carousel.attr('aria-label')).toBeUndefined()
 	})
 
 	it('keeps text that reads as a character reference in a slide attribute as written', async () => {
@@ -56,6 +64,5 @@ describe('carousel server markup', () => {
 		expect($('#quiet figcaption')).toHaveLength(1)
 		expect($('#lone .amk-carousel-slide')).toHaveLength(1)
 		expect($('#lone .amk-carousel-button, #lone .amk-carousel-dots')).toHaveLength(0)
-		expect($('#lone .amk-carousel').attr('aria-label')).toBe('Carousel')
 	})
 })

@@ -7,8 +7,6 @@
 export const defaultLabels = {
 	/** A local audio player without a label or a title of its own. */
 	audio: 'Audio',
-	/** A carousel without a label of its own. */
-	carousel: 'Carousel',
 	/** What a carousel, and the lightbox's gallery, is announced as. */
 	carouselRole: 'carousel',
 	/** The lightbox's close button. */
