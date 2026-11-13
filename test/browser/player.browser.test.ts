@@ -170,6 +170,21 @@ it('draws tooltips and the scrub time in the control bar’s colors', async () =
 	}
 })
 
+it('scales its text with the reader’s font size, never below its own sizes', async () => {
+	const { player } = await mountPlayer()
+	const texts = ['.amk-bar', '.amk-tooltip', '.amk-slider-value', '.amk-error', '.amk-error-title']
+	const sizes = () => texts.map((selector) => getComputedStyle(query(player, selector)).fontSize)
+	const root = document.documentElement
+	try {
+		root.style.fontSize = '20px'
+		expect(sizes()).toEqual(['17.5px', '15px', '15px', '17.5px', '22.5px'])
+		root.style.fontSize = '10px'
+		expect(sizes()).toEqual(['14px', '12px', '12px', '14px', '18px'])
+	} finally {
+		root.style.removeProperty('font-size')
+	}
+})
+
 it('returns the player to the page from its collapse button', async () => {
 	const { item, player } = await mountPlayer()
 	await userEvent.click(query(player, '[data-zoom-open]'))
