@@ -12,6 +12,18 @@ import { adoptControls, closePopups, refreshPopups, releaseControls } from './pl
 import { releasePreparation, restorePreparedClone } from './prepare'
 import { releaseWarmup } from './warm-image'
 
+/**
+ * How long, in ms, a returning player stays covered at most, should its poster
+ * never decode.
+ */
+const posterDecodeLimit = 1000
+
+/**
+ * How to finish each return still under way, by item: its player is back in the
+ * page, under its copy, until it can draw itself.
+ */
+const returns = new WeakMap<HTMLElement, () => void>()
+
 /** Put lifted subjects back where they came from, in one task. */
 export function dropSlides(slides: Slide[]) {
 	const subjects: Element[] = []
@@ -47,8 +59,7 @@ export function dropSlides(slides: Slide[]) {
 
 		lift.releasePictureThemes()
 		lift.probe?.remove()
-		removePlaceholder(lift.placeholder)
-		releaseControlPreview(lift.subject)
+		uncover(item, lift.subject, lift.placeholder)
 
 		item.style.removeProperty('--amk-lightbox-placeholder-width')
 		item.style.removeProperty('--amk-lightbox-placeholder-height')
@@ -88,6 +99,9 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	if (slide.lift !== undefined) {
 		return
 	}
+
+	// A copy still covering the subject from its last return makes way for the new one
+	returns.get(measurement.item)?.()
 
 	const { item, subject } = measurement
 	// A link's media was never in the page: nothing holds its place or stands in
@@ -142,6 +156,53 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 
 	releaseWarmup(subject)
+}
+
+/**
+ * Take a returning subject's page copy and control preview away once the
+ * subject can draw itself. WebKit stops holding a player's poster decoded while
+ * the player is out of view, and once it is back draws nothing for a moment,
+ * which shows the player's black, or on iOS a draft of it in one corner. So a
+ * player showing its poster stays covered until the poster is decoded again.
+ */
+function uncover(item: HTMLElement, subject: Element, placeholder: HTMLElement | undefined) {
+	let isDone = false
+	const finish = () => {
+		if (isDone) {
+			return
+		}
+
+		isDone = true
+		if (returns.get(item) === finish) {
+			returns.delete(item)
+		}
+
+		delete item.dataset.playerReturning
+		removePlaceholder(placeholder)
+		releaseControlPreview(subject)
+	}
+
+	const poster = subject.querySelector<HTMLImageElement>(':scope media-poster[data-visible] img')
+	if (placeholder === undefined || poster === null) {
+		finish()
+		return
+	}
+
+	// Positioned, as while lifted, for the copy laid over the player
+	item.dataset.playerReturning = ''
+	returns.set(item, finish)
+	const uncoverDecoded = async () => {
+		try {
+			await poster.decode()
+		} catch {
+			// A poster that can't be decoded draws as it is
+		}
+
+		requestAnimationFrame(finish)
+	}
+
+	void uncoverDecoded()
+	setTimeout(finish, posterDecodeLimit)
 }
 
 /**

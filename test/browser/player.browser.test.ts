@@ -2,7 +2,7 @@
 // viewer: its own control bar floats over the viewer, the viewer handles
 // closing, and its poster stands in for it on the page.
 
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import { setVideoSource } from '../../src/components/internal/video-source'
@@ -265,6 +265,55 @@ it('stands its poster in for the player while it is lifted', async () => {
 	expect(box.width).toBeCloseTo(container.width, 0)
 	expect(box.height).toBeCloseTo(container.height, 0)
 	expect(box.x).toBeCloseTo(container.x, 0)
+})
+
+it('keeps its poster copy over the player as it returns, until the poster can be drawn', async () => {
+	const { item } = await mountPlayer()
+	await expect.poll(() => item.querySelector('media-poster[data-visible]')).not.toBeNull()
+	const container = query(item, 'media-container').getBoundingClientRect()
+	const poster = query(item, 'media-poster img', HTMLImageElement)
+	await userEvent.click(query(item, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	const copy = query(item, '[data-amk-preview]')
+	const controls = query(item, '.amk-page-control-preview')
+	// WebKit can take a moment to decode a poster it stopped holding decoded
+	const decoding = Promise.withResolvers<undefined>()
+	vi.spyOn(poster, 'decode').mockReturnValue(decoding.promise)
+
+	await closeLightbox()
+	expect(item.contains(query(item, 'video-player'))).toBe(true)
+	expect(copy.isConnected).toBe(true)
+	expect(controls.isConnected).toBe(true)
+	const box = copy.getBoundingClientRect()
+	expect(box.x).toBeCloseTo(container.x, 0)
+	expect(box.width).toBeCloseTo(container.width, 0)
+	expect(box.height).toBeCloseTo(container.height, 0)
+
+	decoding.resolve(undefined)
+	await expect.poll(() => copy.isConnected).toBe(false)
+	expect(controls.isConnected).toBe(false)
+	expect(Object.hasOwn(item.dataset, 'playerReturning')).toBe(false)
+})
+
+it('replaces a poster copy still covering a returning player when it lifts again', async () => {
+	const { item } = await mountPlayer()
+	await expect.poll(() => item.querySelector('media-poster[data-visible]')).not.toBeNull()
+	vi.spyOn(query(item, 'media-poster img', HTMLImageElement), 'decode').mockReturnValue(
+		new Promise<void>(() => {
+			// Never decoded, to keep the copy until the next lift
+		}),
+	)
+	await userEvent.click(query(item, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await closeLightbox()
+	const old = query(item, '[data-amk-preview]')
+
+	await userEvent.click(query(item, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+
+	expect(old.isConnected).toBe(false)
+	expect(item.querySelectorAll('[data-amk-preview]')).toHaveLength(1)
+	expect(item.querySelectorAll('.amk-page-control-preview')).toHaveLength(1)
 })
 
 it('keeps the floated controls visible while they are used, and hides them when idle', async () => {

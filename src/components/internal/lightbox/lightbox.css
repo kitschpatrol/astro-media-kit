@@ -59,11 +59,14 @@
 		display: inline;
 	}
 
-	/* Holds the subject's place in the page while it is lifted. A wrapper that
-	   gets its width from its container keeps the subject's aspect ratio, so the
-	   space follows a resize; one sized by its content keeps its measured size */
+	/* Holds the subject's place in the page while it is lifted, positioned for
+	   the copy laid over it, which can stay a moment after the subject returns.
+	   A wrapper that gets its width from its container keeps the subject's
+	   aspect ratio, so the space follows a resize; one sized by its content
+	   keeps its measured size */
 	.amk-zoom[data-lifted],
-	.amk-zoom[data-image-returning] {
+	.amk-zoom[data-image-returning],
+	.amk-zoom[data-player-returning] {
 		position: relative;
 	}
 

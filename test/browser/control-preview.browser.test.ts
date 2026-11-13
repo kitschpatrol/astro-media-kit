@@ -118,7 +118,8 @@ it.each([240, 480])(
 		item.style.setProperty('--amk-page-controls-opacity', '1')
 		await expect.poll(() => getComputedStyle(preview).filter).toBe('opacity(1)')
 		await closeLightbox(true)
-		expect(item.querySelector('.amk-page-control-preview')).toBeNull()
+		// Once the returned player's poster is ready to draw
+		await expect.poll(() => item.querySelector('.amk-page-control-preview')).toBeNull()
 		expect(item.contains(controls)).toBe(true)
 		expect(document.querySelectorAll('video-player')).toHaveLength(players)
 	},
@@ -142,7 +143,7 @@ it('preserves the minimal page controls when a neighboring player is preloaded i
 	expect(centerCopy).toBeDefined()
 	expect(preview.textContent.trim()).toBe('')
 	await closeLightbox(true)
-	expect(neighbor.querySelector('.amk-page-control-preview')).toBeNull()
+	await expect.poll(() => neighbor.querySelector('.amk-page-control-preview')).toBeNull()
 	expect(player.dataset.controls).toBe('minimal')
 })
 
