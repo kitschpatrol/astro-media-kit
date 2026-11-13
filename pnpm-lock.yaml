@@ -241,6 +241,9 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
+      modern-web-guidance:
+        specifier: ^1.0.0
+        version: 1.0.0
       playwright:
         specifier: 1.65.0
         version: 1.65.0
@@ -6080,6 +6083,11 @@ packages:
   modern-tar@0.8.6:
     resolution: {integrity: sha512-LYSks0tNVqbtez/9OB0YFP6qLRSqkdAxJWOQpVaR67lNTbj2zNLyYpowkRMia5lXLCZKzxwoxkxH2MbbBR2aEg==}
     engines: {node: '>=18.0.0'}
+
+  modern-web-guidance@1.0.0:
+    resolution: {integrity: sha512-vafIZwC8AS6QjM2yyoflZbnc7n3/TVOMLbEMRdPTwcFy0f9/Tq8s5rJQ8UIqRt2KPl9ixravyaMR4nTGuUrcmg==}
+    engines: {node: '>=22.0.0', vscode: ^1.90.0}
+    hasBin: true
 
   module-replacements@2.11.0:
     resolution: {integrity: sha512-j5sNQm3VCpQQ7nTqGeOZtoJtV3uKERgCBm9QRhmGRiXiqkf7iRFOkfxdJRZWLkqYY8PNf4cDQF/WfXUYLENrRA==}
@@ -14970,6 +14978,8 @@ snapshots:
       ufo: 1.6.4
 
   modern-tar@0.8.6: {}
+
+  modern-web-guidance@1.0.0: {}
 
   module-replacements@2.11.0: {}
 

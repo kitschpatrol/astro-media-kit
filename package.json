@@ -93,6 +93,7 @@
 		"bumpp": "^12.3.0",
 		"cheerio": "^1.2.0",
 		"happy-dom": "^21.0.4",
+		"modern-web-guidance": "^1.0.0",
 		"playwright": "1.65.0",
 		"sharp": "^0.35.5",
 		"shx": "^0.4.0",
