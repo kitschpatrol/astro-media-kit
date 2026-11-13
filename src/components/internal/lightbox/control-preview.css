@@ -7,7 +7,9 @@
 		filter: opacity(var(--amk-page-controls-opacity, 1));
 	}
 
-	.amk-zoom[data-lifted] > .amk-page-control-preview {
+	/* Shown while the player is away, and while its poster copy still covers it
+	   on its return */
+	.amk-zoom:is([data-lifted], [data-player-returning]) > .amk-page-control-preview {
 		display: block;
 	}
 }

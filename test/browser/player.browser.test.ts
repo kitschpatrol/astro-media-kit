@@ -283,7 +283,8 @@ it('keeps its poster copy over the player as it returns, until the poster can be
 	await closeLightbox()
 	expect(item.contains(query(item, 'video-player'))).toBe(true)
 	expect(copy.isConnected).toBe(true)
-	expect(controls.isConnected).toBe(true)
+	// The copy covers the real controls, so their copy shows on it
+	expect(controls.checkVisibility()).toBe(true)
 	const box = copy.getBoundingClientRect()
 	expect(box.x).toBeCloseTo(container.x, 0)
 	expect(box.width).toBeCloseTo(container.width, 0)
