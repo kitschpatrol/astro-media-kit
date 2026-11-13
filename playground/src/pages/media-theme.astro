@@ -6,12 +6,8 @@ import Layout from '../layouts/Layout.astro'
 <Layout title="Media theme">
 	<h1>Media theme</h1>
 	<p class="note">
-		The <code>icons</code> option of <code>mediaKit()</code> in this site's{' '}
-		<code>astro.config.ts</code> supplies outlined play and pause icons to both players, a close
-		icon to the lightbox, navigation arrows to both galleries, and an expand icon to the video
-		players and image indicators, on every page. They are drawn into the markup, so they are there
-		before any script runs. On this page, one set of gallery variables supplies the rectangular
-		targets, colors, and opacity transitions.
+		On this page, one set of gallery variables supplies the rectangular targets, colors, and opacity
+		transitions, and the <code>zoom-indicator</code> slot gives one picture its own corner artwork.
 	</p>
 	<h2>Audio</h2>
 	<Audio src="/test.mp3" />
