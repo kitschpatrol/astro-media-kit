@@ -60,6 +60,20 @@ describe('local video dimensions', () => {
 		expect(info.width).toBe(0)
 		expect(info.height).toBe(0)
 		expect(info.duration).toBe(-1)
+		expect(info.hasAudio).toBeUndefined()
+	})
+
+	it.for([
+		['/media/loop.mp4', true],
+		['/media/loop.webm', true],
+		['/media/silent.mp4', false],
+	] as const)('tells whether %s has a sound track', async ([source, hasAudio]) => {
+		vi.spyOn(process, 'cwd').mockReturnValue(
+			nodePath.join(import.meta.dirname, 'parity/fixtures/core-image'),
+		)
+		const info = await getVideoInfo(source, 'local', localOnlyConfig)
+		expect(info.width).toBeGreaterThan(0)
+		expect(info.hasAudio).toBe(hasAudio)
 	})
 })
 

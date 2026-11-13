@@ -15,6 +15,7 @@ import {
 } from '@videojs/html/icons'
 import type { MediaIconName } from '../media-icon-names'
 import type { Labels } from './labels'
+import { noAudioIcon } from './audio-icons'
 import { closeIcon, nextIcon, previousIcon, zoomInIcon, zoomOutIcon } from './gallery-icons'
 import { defaultLabels } from './labels'
 import { collapseIcon, expandIcon } from './zoom-icons'
@@ -45,6 +46,7 @@ const defaultIcons: Record<MediaIconName, string> = {
 	'fullscreen-enter': fullscreenEnterIcon,
 	'fullscreen-exit': fullscreenExitIcon,
 	next: nextIcon,
+	'no-audio': noAudioIcon,
 	pause: pauseIcon,
 	play: playIcon,
 	previous: previousIcon,

@@ -20,6 +20,11 @@ export type InternalVideoProps = {
 	controls: Controls
 	/** The video's length in seconds, where its service or a probe reported one. */
 	duration: number | undefined
+	/**
+	 * False for a video known to have no sound, whose controls then offer no
+	 * volume.
+	 */
+	hasAudio: boolean
 	hlsOptions: HlsSourceOptions
 	/** Intrinsic video width in pixels, used for native-like sizing. */
 	intrinsicWidth: number | undefined

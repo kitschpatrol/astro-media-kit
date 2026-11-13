@@ -6,6 +6,7 @@ export const mediaIconNames = [
 	'volume-off',
 	'volume-low',
 	'volume-high',
+	'no-audio',
 	'captions-off',
 	'captions-on',
 	'fullscreen-enter',

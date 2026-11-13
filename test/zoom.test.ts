@@ -105,6 +105,54 @@ describe('zoom server markup', () => {
 		expect($('#video .amk-bar > media-volume-slider')).toHaveLength(0)
 	})
 
+	it('plays and pauses from a tap by any pointer, unless the surface opens the lightbox', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		for (const id of ['#video', '#video-minimal', '#video-background']) {
+			const toggle = $(`${id} media-gesture[action="togglePaused"]`)
+			expect(toggle).toHaveLength(1)
+			expect(toggle.attr('type')).toBe('tap')
+			expect(toggle.attr('pointer')).toBeUndefined()
+			expect(toggle.attr('region')).toBeUndefined()
+			// Claims touch taps from Video.js's own toggle, which would hide the
+			// controls the tap reveals
+			const claim = $(`${id} media-gesture[action="toggleControls"]`)
+			expect(claim.attr('pointer')).toBe('touch')
+			expect(claim.attr('disabled')).toBeDefined()
+			expect($(`${id} video-player`).attr('data-click-to-play')).toBe('')
+		}
+
+		expect($('#video-zoom-only media-gesture')).toHaveLength(0)
+		expect($('#video-zoom-only video-player').attr('data-click-to-play')).toBeUndefined()
+
+		// A lightbox bar without zoom has no other use for the surface; with zoom,
+		// the surface is what opens the lightbox
+		const gallery = await fixture.readHTML('/video-gallery/')
+		expect(gallery('#silent-lightbox video-player').attr('data-click-to-play')).toBe('')
+		expect(gallery('#silent-lightbox media-gesture[action="togglePaused"]')).toHaveLength(1)
+	})
+
+	it('strikes out the volume of a video without sound, with no popover or volume keys', async () => {
+		const $ = await fixture.readHTML('/video-gallery/')
+		for (const id of ['#silent', '#silent-minimal', '#silent-lightbox']) {
+			const button = $(`${id} button.amk-no-audio`)
+			expect(button).toHaveLength(1)
+			expect(button.attr('disabled')).toBeDefined()
+			expect(button.attr('aria-label')).toBe('No audio')
+			expect(button.find('[data-amk-icon="no-audio"] svg')).toHaveLength(1)
+			expect($(`${id} amk-mute-button`)).toHaveLength(0)
+			expect($(`${id} media-volume-popover`)).toHaveLength(0)
+			expect($(`${id} media-hotkey[action="toggleMuted"]`)).toHaveLength(0)
+			expect($(`${id} media-hotkey[action="volumeStep"]`)).toHaveLength(0)
+			expect($(`${id} media-hotkey[action="togglePaused"]`)).toHaveLength(2)
+		}
+
+		expect($('#sound amk-mute-button')).toHaveLength(1)
+		expect($('#sound media-volume-popover')).toHaveLength(1)
+		expect($('#sound button.amk-no-audio')).toHaveLength(0)
+		expect($('#sound media-hotkey[action="toggleMuted"]')).toHaveLength(1)
+		expect($('#sound media-hotkey[action="volumeStep"]')).toHaveLength(2)
+	})
+
 	it('offers only lightbox expansion when playback controls are disabled and zoom is enabled', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		expect($('#video-zoom-only [data-zoom-open]')).toHaveLength(1)

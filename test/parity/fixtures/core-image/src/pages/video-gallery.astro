@@ -1,0 +1,74 @@
+---
+import { Zoomer } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+
+const videoProps = {
+	aspectRatio: '16 / 9',
+	autoPlay: false,
+	captions: [],
+	controls: 'full' as const,
+	duration: 2,
+	element: 'video' as const,
+	fallbackUrl: '/media/silent.mp4',
+	hasAudio: false,
+	hlsOptions: {},
+	intrinsicWidth: 320,
+	loop: true,
+	muted: true,
+	posterUrl: undefined,
+	preload: 'auto' as const,
+	resolvedLabel: 'Silent video',
+	videoSrc: '/media/silent.mp4',
+	zoom: true,
+}
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Videos in a gallery, with and without sound</title>
+	</head>
+	<body>
+		<section id="sound">
+			<Zoomer enabled="reel" href="/media/loop.mp4" interactive>
+				<VideoPlayer
+					{...videoProps}
+					duration={8}
+					fallbackUrl="/media/loop.mp4"
+					hasAudio={true}
+					resolvedLabel="Video with sound"
+					videoSrc="/media/loop.mp4"
+				/>
+			</Zoomer>
+		</section>
+		<section id="silent">
+			<Zoomer enabled="reel" href="/media/silent.mp4" interactive>
+				<VideoPlayer {...videoProps} />
+			</Zoomer>
+		</section>
+		<section id="silent-minimal">
+			<Zoomer enabled="reel" href="/media/silent.mp4" interactive>
+				<VideoPlayer {...videoProps} controls="minimal" resolvedLabel="Silent minimal video" />
+			</Zoomer>
+		</section>
+		<section id="silent-lightbox">
+			<VideoPlayer
+				{...videoProps}
+				controls="lightbox"
+				resolvedLabel="Silent video with a lightbox bar"
+				zoom={false}
+			/>
+		</section>
+	</body>
+</html>
+<style is:global>
+	body {
+		margin: 20px;
+	}
+
+	section {
+		width: 320px;
+		margin-block: 20px;
+	}
+</style>

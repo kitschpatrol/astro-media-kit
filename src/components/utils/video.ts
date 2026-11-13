@@ -1,10 +1,12 @@
 // Shared types for video service integrations
 
+import type { VideoInfo as ProbedVideo } from '@oscnord/get-video-resolution'
 import { getVideoResolution } from '@oscnord/get-video-resolution'
 import type { BunnyConfig } from './bunny'
 import type { CloudflareConfig } from './cloudflare'
 import type { MuxConfig } from './mux'
 import { getPublicFilePath } from '../../utilities/path'
+import { isHlsSource } from '../internal/video-source'
 import { bunnyGetVideoInfo, bunnyIsValidMediaId } from './bunny'
 import { cloudflareGetVideoInfo, cloudflareIsValidMediaId } from './cloudflare'
 import {
@@ -30,6 +32,12 @@ export type VideoInfo = {
 	}>
 	/** Duration in seconds. `-1` if the service does not report it. */
 	duration: number
+	/**
+	 * Whether the video has a sound track: `false` only where the service or a
+	 * probe of the media found none, and `undefined` where neither can tell, as
+	 * for an embed.
+	 */
+	hasAudio: boolean | undefined
 	/** Source video height in pixels. `0` if unknown. */
 	height: number
 	/** HLS manifest URL. Empty string for local files. */
@@ -153,10 +161,41 @@ export function localVideoProbeCandidates(src: string): string[] {
 	return src.startsWith('/') ? [getPublicFilePath(src), src] : [src]
 }
 
+/**
+ * Whether a probed video has sound. A media file's probe lists every audio
+ * track the file holds. A manifest's lists its audio renditions and the audio
+ * codecs its variants declare in `CODECS`; a manifest without `CODECS`, which
+ * names the video codec too, can't tell.
+ */
+function probedAudio(info: ProbedVideo, isManifest: boolean): boolean | undefined {
+	if (info.audioTracks !== undefined && info.audioTracks.length > 0) {
+		return true
+	}
+
+	return isManifest && info.codec === undefined ? undefined : false
+}
+
+/**
+ * Whether an HLS service's video has sound, from its manifest, for a service
+ * whose API doesn't say. Undefined, with a warning, when the manifest can't be
+ * read, and the player then offers its volume as usual.
+ */
+async function manifestAudio(url: string): Promise<boolean | undefined> {
+	try {
+		return probedAudio(await getVideoResolution(url, { signal: requestSignal() }), true)
+	} catch (error) {
+		console.warn(
+			`[astro-media-kit] Could not read whether "${url}" has sound, so its player offers a volume control: ${error instanceof Error ? error.message : String(error)}`,
+		)
+		return undefined
+	}
+}
+
 async function localGetVideoInfo(src: string): Promise<VideoInfo> {
 	let width = 0
 	let height = 0
 	let duration = -1
+	let hasAudio: boolean | undefined
 
 	for (const candidate of localVideoProbeCandidates(src)) {
 		try {
@@ -170,6 +209,7 @@ async function localGetVideoInfo(src: string): Promise<VideoInfo> {
 				duration = info.duration
 			}
 
+			hasAudio = probedAudio(info, isHlsSource(candidate))
 			break
 		} catch (error) {
 			// A file missing at one path may be at the next. A URL has no next, so
@@ -186,6 +226,7 @@ async function localGetVideoInfo(src: string): Promise<VideoInfo> {
 	return {
 		captions: [],
 		duration,
+		hasAudio,
 		height,
 		hlsUrl: '',
 		mp4Url: '',
@@ -231,6 +272,7 @@ async function youtubeGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 	return {
 		captions: [],
 		duration: -1,
+		hasAudio: undefined,
 		height: Math.round(data.height * scale),
 		hlsUrl: '',
 		mp4Url: '',
@@ -270,6 +312,7 @@ async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 	return {
 		captions: [],
 		duration: data.duration,
+		hasAudio: undefined,
 		height: data.height,
 		hlsUrl: '',
 		mp4Url: '',
@@ -280,6 +323,11 @@ async function vimeoGetVideoInfo(mediaId: string): Promise<VideoInfo> {
 }
 
 // --- Shared ---
+
+/** A service's video info, with whether it has sound read from its manifest. */
+async function withManifestAudio(info: VideoInfo): Promise<VideoInfo> {
+	return { ...info, hasAudio: await manifestAudio(info.hlsUrl) }
+}
 
 /**
  * Normalizes different services into params that matter for the media player.
@@ -292,12 +340,12 @@ export async function getVideoInfo(
 	switch (service) {
 		case 'bunny': {
 			validateServiceConfig(service, config)
-			return bunnyGetVideoInfo(mediaIdOrTitle, config[service])
+			return withManifestAudio(await bunnyGetVideoInfo(mediaIdOrTitle, config[service]))
 		}
 
 		case 'cloudflare': {
 			validateServiceConfig(service, config)
-			return cloudflareGetVideoInfo(mediaIdOrTitle, config[service])
+			return withManifestAudio(await cloudflareGetVideoInfo(mediaIdOrTitle, config[service]))
 		}
 
 		case 'local': {

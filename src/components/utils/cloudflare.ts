@@ -165,6 +165,8 @@ export async function cloudflareGetVideoInfo(
 	return {
 		captions: [], // TODO unsupported — signed URLs required for VTT access
 		duration: videoInfo.duration,
+		// The API doesn't say; `getVideoInfo` reads it from the manifest
+		hasAudio: undefined,
 		height: input.height,
 		hlsUrl,
 		mp4Url,

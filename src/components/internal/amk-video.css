@@ -299,8 +299,19 @@ media-captions-button:not([data-active]) .amk-icon-captions-off,
 media-fullscreen-button[data-fullscreen] .amk-icon-fullscreen-exit,
 media-fullscreen-button:not([data-fullscreen]) .amk-icon-fullscreen-enter,
 .amk-zoom-button .amk-icon,
-.amk-collapse-button .amk-icon {
+.amk-collapse-button .amk-icon,
+.amk-no-audio .amk-icon {
 	display: block;
+}
+
+/* A video without sound has its volume button struck through and dimmed. It
+   does nothing, so the pointer passes it by, as it does the bar around it */
+.amk-no-audio {
+	pointer-events: none;
+}
+
+.amk-no-audio .amk-icon {
+	opacity: 0.5;
 }
 
 /* Whether there are captions to show is for the player to find out */

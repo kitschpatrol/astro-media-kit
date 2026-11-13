@@ -29,6 +29,8 @@ export const defaultLabels = {
 	listenOn: 'Listen on {service}',
 	/** The button to the next slide, in a carousel and in the lightbox. */
 	next: 'Next',
+	/** A video's volume button, disabled, when the video has no sound. */
+	noAudio: 'No audio',
 	/** The link a video's error message offers. */
 	openVideo: 'Open video directly',
 	/** A video's bar of controls. */

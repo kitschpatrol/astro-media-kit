@@ -1,4 +1,4 @@
-import type { Asset } from '@mux/ts/resources/video/assets'
+import type { Asset, Track } from '@mux/ts/resources/video/assets'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { muxGetVideoInfo } from '../src/components/utils/mux'
 
@@ -15,14 +15,18 @@ vi.mock('@mux/ts', () => ({
 const mediaId = 'a'.repeat(44)
 const config = { accessToken: 'token', secret: 'secret' }
 
-function stubRenditions(renditions: Asset.StaticRenditions, meta?: Asset['meta']): void {
+function stubRenditions(
+	renditions: Asset.StaticRenditions,
+	meta?: Asset['meta'],
+	tracks: Track[] = [],
+): void {
 	/* eslint-disable ts/naming-convention -- Mux API response field names. */
 	retrieve.mockResolvedValue({
 		...(meta && { meta }),
 		playback_ids: [{ id: 'playback', policy: 'public' }],
 		static_renditions: renditions,
 		status: 'ready',
-		tracks: [{ max_height: 1080, max_width: 1920, type: 'video' }],
+		tracks: [{ max_height: 1080, max_width: 1920, type: 'video' }, ...tracks],
 	} satisfies Partial<Asset>)
 	/* eslint-enable ts/naming-convention */
 }
@@ -58,6 +62,18 @@ describe('muxGetVideoInfo', () => {
 		stubRenditions(renditions, { title: 'Penguins at dusk' })
 		const titled = await muxGetVideoInfo(mediaId, config)
 		expect(titled.title).toBe('Penguins at dusk')
+	})
+
+	it('says whether the asset has sound from its tracks', async () => {
+		const renditions: Asset.StaticRenditions = {
+			files: [{ name: 'high.mp4', status: 'ready', width: 1920 }],
+		}
+		stubRenditions(renditions)
+		const silent = await muxGetVideoInfo(mediaId, config)
+		expect(silent.hasAudio).toBe(false)
+		stubRenditions(renditions, undefined, [{ type: 'audio' }])
+		const sound = await muxGetVideoInfo(mediaId, config)
+		expect(sound.hasAudio).toBe(true)
 	})
 
 	it('supports legacy aggregate readiness and skips audio-only files', async () => {

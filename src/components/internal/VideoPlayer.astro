@@ -30,6 +30,7 @@ const {
 	duration,
 	element,
 	fallbackUrl,
+	hasAudio,
 	hlsOptions,
 	hlsUrl,
 	intrinsicWidth,
@@ -140,7 +141,13 @@ const embedService =
 					<Icon name="spinner" />
 				</media-buffering-indicator>
 				{(hasControls || zoom) && (
-					<VideoControls controls={controls} duration={duration} muted={muted} zoom={zoom} />
+					<VideoControls
+						controls={controls}
+						duration={duration}
+						hasAudio={hasAudio}
+						muted={muted}
+						zoom={zoom}
+					/>
 				)}
 				{hasControls && (
 					<>
@@ -153,13 +160,17 @@ const embedService =
 						/>
 						<media-hotkey action="togglePaused" keys="Space" />
 						<media-hotkey action="togglePaused" keys="k" />
-						<media-hotkey action="toggleMuted" keys="m" />
+						{hasAudio && <media-hotkey action="toggleMuted" keys="m" />}
 						<media-hotkey action="seekStep" keys="ArrowLeft" />
 						<media-hotkey action="seekStep" keys="ArrowRight" />
 						<media-hotkey action="seekStep" keys="j" />
 						<media-hotkey action="seekStep" keys="l" />
-						<media-hotkey action="volumeStep" keys="ArrowUp" />
-						<media-hotkey action="volumeStep" keys="ArrowDown" />
+						{hasAudio && (
+							<>
+								<media-hotkey action="volumeStep" keys="ArrowUp" />
+								<media-hotkey action="volumeStep" keys="ArrowDown" />
+							</>
+						)}
 						<media-hotkey action="toggleSubtitles" keys="c" />
 						{hasFullscreen && <media-hotkey action="toggleFullscreen" keys="f" />}
 					</>

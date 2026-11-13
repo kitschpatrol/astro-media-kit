@@ -7,11 +7,12 @@ import { labels } from './theme'
 export type Props = {
 	controls: InternalVideoProps['controls']
 	duration?: InternalVideoProps['duration']
+	hasAudio?: InternalVideoProps['hasAudio']
 	muted?: boolean
 	zoom?: boolean
 }
 
-const { controls, duration, muted = false, zoom = false } = Astro.props
+const { controls, duration, hasAudio = true, muted = false, zoom = false } = Astro.props
 // A minimal player that can zoom gets the full bar as well, hidden on the page
 // and shown by the lightbox, which gives the player its own control level
 const hasBar = controls === 'full' || controls === 'lightbox' || (controls === 'minimal' && zoom)
@@ -53,32 +54,48 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 								<media-tooltip-label />
 								<media-tooltip-shortcut class="amk-tooltip-shortcut" />
 							</media-tooltip>
-							<amk-mute-button
-								class="amk-button"
-								commandfor={`${uid}-volume`}
-								data-volume-level={muted ? 'off' : undefined}
-								id={`${uid}-mute`}
-							>
-								<Icon class="amk-icon-volume-off" name="volume-off" />
-								<Icon class="amk-icon-volume-low" name="volume-low" />
-								<Icon class="amk-icon-volume-high" name="volume-high" />
-							</amk-mute-button>
-							<media-volume-popover
-								boundary="viewport"
-								class="amk-volume-popover"
-								close-delay="40"
-								delay="0"
-								id={`${uid}-volume`}
-								open-on-hover
-								side="top"
-							>
-								<media-volume-slider class="amk-slider amk-volume-slider" orientation="vertical">
-									<media-slider-track class="amk-slider-track">
-										<media-slider-fill class="amk-slider-fill" />
-									</media-slider-track>
-									<media-slider-thumb class="amk-slider-thumb" />
-								</media-volume-slider>
-							</media-volume-popover>
+							{hasAudio ? (
+								<>
+									<amk-mute-button
+										class="amk-button"
+										commandfor={`${uid}-volume`}
+										data-volume-level={muted ? 'off' : undefined}
+										id={`${uid}-mute`}
+									>
+										<Icon class="amk-icon-volume-off" name="volume-off" />
+										<Icon class="amk-icon-volume-low" name="volume-low" />
+										<Icon class="amk-icon-volume-high" name="volume-high" />
+									</amk-mute-button>
+									<media-volume-popover
+										boundary="viewport"
+										class="amk-volume-popover"
+										close-delay="40"
+										delay="0"
+										id={`${uid}-volume`}
+										open-on-hover
+										side="top"
+									>
+										<media-volume-slider
+											class="amk-slider amk-volume-slider"
+											orientation="vertical"
+										>
+											<media-slider-track class="amk-slider-track">
+												<media-slider-fill class="amk-slider-fill" />
+											</media-slider-track>
+											<media-slider-thumb class="amk-slider-thumb" />
+										</media-volume-slider>
+									</media-volume-popover>
+								</>
+							) : (
+								<button
+									aria-label={labels.noAudio}
+									class="amk-button amk-no-audio"
+									disabled
+									type="button"
+								>
+									<Icon name="no-audio" />
+								</button>
+							)}
 							<media-time-slider class="amk-slider amk-time-slider">
 								<media-slider-track class="amk-slider-track">
 									<media-slider-buffer class="amk-slider-buffer" />

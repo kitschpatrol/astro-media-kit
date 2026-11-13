@@ -239,6 +239,8 @@ export async function bunnyGetVideoInfo(
 	return {
 		captions: captionsWithUrls,
 		duration,
+		// The API doesn't say; `getVideoInfo` reads it from the manifest
+		hasAudio: undefined,
 		height,
 		hlsUrl: `https://${config.hostname}/${guid}/playlist.m3u8`,
 		mp4Url: `https://${config.hostname}/${guid}/play_${fallbackResolution}p.mp4`,

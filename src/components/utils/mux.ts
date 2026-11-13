@@ -126,6 +126,7 @@ export async function muxGetVideoInfo(mediaId: string, config: MuxConfig): Promi
 	return {
 		captions: captionsWithUrls,
 		duration: video.duration ?? -1,
+		hasAudio: video.tracks?.some((track) => track.type === 'audio'),
 		height,
 		hlsUrl: `https://stream.mux.com/${playbackId}.m3u8`,
 		mp4Url: `https://stream.mux.com/${playbackId}/${mp4Name}`,
