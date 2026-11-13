@@ -19,6 +19,8 @@ import {
 	replayWheel,
 	settle,
 	setUpLightbox,
+	slideSpacing,
+	trackOffset,
 	trackpadSwipe,
 	viewer,
 } from './helpers'
@@ -48,7 +50,12 @@ async function mountCarousel(id = 'captioned'): Promise<{
 
 /** The index of the slide the track rests on. */
 function slideAt(track: HTMLElement): number {
-	return Math.round(Math.abs(track.scrollLeft) / track.clientWidth)
+	return Math.round(slideProgress(track))
+}
+
+/** How many slides along the track is scrolled, between slides too. */
+function slideProgress(track: HTMLElement): number {
+	return Math.abs(track.scrollLeft) / track.clientWidth
 }
 
 function currentDot(carousel: HTMLElement): string {
@@ -543,6 +550,67 @@ it.each(['ltr', 'rtl'] as const)(
 		expect({ x: window.scrollX, y: window.scrollY }).toEqual(scroll)
 	},
 )
+
+it.each(['ltr', 'rtl'] as const)(
+	'holds the %s page carousel as far between slides as a lightbox drag, then rests with it',
+	async (direction) => {
+		const { carousel, track } = await mountCarousel()
+		carousel.dir = direction
+		await userEvent.click(query(track, '.amk-zoom'))
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+		const along = () => trackOffset() / slideSpacing()
+
+		// Below the subject, clear of the viewer's buttons
+		await commands.mouseDown(1100, 700)
+		await commands.mouseMove(1100 - 0.3 * slideSpacing(), 700)
+		await expect.poll(along).toBeCloseTo(0.3, 1)
+		expect(slideProgress(track)).toBeCloseTo(along(), 2)
+		// Snapping would pull it back to a slide
+		expect(Object.hasOwn(track.dataset, 'moving')).toBe(true)
+		await commands.mouseMove(1100 - 0.7 * slideSpacing(), 700)
+		await expect.poll(along).toBeCloseTo(0.7, 1)
+		expect(slideProgress(track)).toBeCloseTo(along(), 2)
+		await expect.poll(() => currentDot(carousel)).toBe('Slide 2')
+		await commands.mouseUp()
+
+		await expect.poll(activeSlideLabel).toBe('2 of 3')
+		await expect.poll(() => slideProgress(track)).toBeCloseTo(1, 3)
+		expect(Object.hasOwn(track.dataset, 'moving')).toBe(false)
+	},
+)
+
+it('brings another page carousel in the gallery to its slide once the lightbox is nearer it', async () => {
+	const { track } = await mountCarousel()
+	const other = query(document, '#quiet .amk-carousel')
+	const otherTrack = query(other, '.amk-carousel-track')
+	for (const zoom of other.querySelectorAll<HTMLElement>('.amk-zoom')) {
+		zoom.dataset.gallery = 'penguins'
+	}
+
+	query(other, '.amk-carousel-next').click()
+	await expect.poll(() => slideProgress(otherTrack)).toBeCloseTo(1, 3)
+	await expect(
+		openLightbox(query(track, '.amk-carousel-slide:nth-child(3) .amk-zoom')),
+	).resolves.toBe(true)
+	expect(activeSlideLabel()).toBe('3 of 5')
+	const along = () => trackOffset() / slideSpacing() - 2
+
+	await commands.mouseDown(1100, 700)
+	await commands.mouseMove(1100 - 0.4 * slideSpacing(), 700)
+	await expect.poll(along).toBeCloseTo(0.4, 1)
+	expect(slideProgress(track)).toBeCloseTo(2, 3)
+	expect(slideProgress(otherTrack)).toBeCloseTo(1, 3)
+	await commands.mouseMove(1100 - 0.6 * slideSpacing(), 700)
+	await expect.poll(along).toBeCloseTo(0.6, 1)
+	expect(slideProgress(track)).toBeCloseTo(2, 3)
+	expect(slideProgress(otherTrack)).toBeCloseTo(0, 3)
+	await commands.mouseUp()
+
+	await expect.poll(activeSlideLabel).toBe('4 of 5')
+	await closeLightbox()
+	expect(slideProgress(track)).toBeCloseTo(2, 3)
+	expect(slideProgress(otherTrack)).toBeCloseTo(0, 3)
+})
 
 it.each(['ltr', 'rtl'] as const)(
 	'interrupts an in-flight %s carousel glide when the lightbox returns a different slide',

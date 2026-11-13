@@ -144,6 +144,11 @@ class Viewer {
 				)
 				setLayerStyle(layer, { ...identity, translate: `0 ${distance}px` }, false)
 			},
+			onMove: (position) => {
+				if (this.#isNavigable) {
+					this.#followInCarousels(position)
+				}
+			},
 			onPrepare: (index) => {
 				this.#liftAround(index)
 			},
@@ -202,8 +207,15 @@ class Viewer {
 
 		dropSlides(this.#slides.filter((_slide, position) => position !== index))
 		const slide = this.#slides[index]
-		if (slide !== undefined && slide.lift === undefined) {
-			this.#liftAround(index, 0)
+		if (slide !== undefined) {
+			// A page carousel following the viewer may be between slides, and one
+			// may be gliding on its own: either stops on the slide shown. Its
+			// ancestors never scroll, and other offscreen thumbnails keep their
+			// position as the return target.
+			revealCarouselItem(slide.item)
+			if (slide.lift === undefined) {
+				this.#liftAround(index, 0)
+			}
 		}
 
 		const lift = slide?.lift
@@ -212,10 +224,6 @@ class Viewer {
 			return
 		}
 
-		// An embedded carousel already follows the viewer; a glide underway on
-		// the page still has to stop here. Its ancestors never scroll, and other
-		// offscreen thumbnails keep their position as the return target.
-		revealCarouselItem(lift.item)
 		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
 	}
@@ -340,6 +348,12 @@ class Viewer {
 		const previousFocus = this.#previousFocus
 		this.#previousFocus = undefined
 		endVolumes()
+		if (current !== undefined) {
+			// Closed from outside rather than by close(), the viewer may have left a
+			// page carousel that follows it between slides
+			revealCarouselItem(current.item)
+		}
+
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
 		// Its player is home before the page controls begin fading back in.
@@ -531,6 +545,33 @@ class Viewer {
 		// Any later close or restore bumps the generation
 		if (generation === this.#generation) {
 			this.restore()
+		}
+	}
+
+	/**
+	 * Move page carousels along with the viewer, `position` slides along its
+	 * track. One holding both items the viewer is between moves as far between
+	 * their slides; one holding only one of them shows its slide while that item
+	 * is the nearer.
+	 */
+	#followInCarousels(position: number) {
+		const index = Math.floor(position)
+		const progress = position - index
+		const starts = carouselSlidesOf(this.#slides[index]?.item)
+		const ends = carouselSlidesOf(progress === 0 ? undefined : this.#slides[index + 1]?.item)
+		for (const [track, start] of starts) {
+			const end = ends.get(track)
+			if (end !== undefined) {
+				followCarousel(track, start + (end - start) * progress)
+			} else if (progress < 0.5) {
+				followCarousel(track, start)
+			}
+		}
+
+		for (const [track, end] of ends) {
+			if (progress >= 0.5 && !starts.has(track)) {
+				followCarousel(track, end)
+			}
 		}
 	}
 
@@ -1147,14 +1188,7 @@ class Viewer {
 		}
 
 		this.#index = index
-		const item = this.#slides[index]?.item
-		this.#setPageItem(item)
-		// A page carousel follows the viewer, so the slide on show is the one the
-		// subject returns to. Before lifting neighbors, which keep scroll positions
-		if (item !== undefined) {
-			revealCarouselItem(item)
-		}
-
+		this.#setPageItem(this.#slides[index]?.item)
 		this.#liftAround(index)
 		this.#updateControls()
 	}
@@ -1392,23 +1426,50 @@ function describeSlide(slide: Slide): string {
 	return name === '' ? label : `${label}, ${name}`
 }
 
-/** Reveal the selected slide in its page carousels without moving the document. */
-function revealCarouselItem(item: Element) {
-	let slide = item.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
+/**
+ * The page carousel slides holding `item`, by the track each is in: one for
+ * every carousel it is nested in, innermost first.
+ */
+function carouselSlidesOf(item: Element | undefined): Map<HTMLElement, number> {
+	const slides = new Map<HTMLElement, number>()
+	let slide = item?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
 	while (slide !== undefined) {
 		const track = slide.parentElement
 		if (track?.classList.contains('amk-carousel-track') === true) {
-			const index = [...track.children].indexOf(slide)
-			const reveal = new CustomEvent('amk-carousel-reveal', { cancelable: true, detail: index })
-			// Let a controller cancel its spring; tracks without one still work.
-			if (track.dispatchEvent(reveal)) {
-				const direction = track.matches(':dir(rtl)') ? -1 : 1
-				track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
-			}
+			slides.set(track, [...track.children].indexOf(slide))
 		}
 
 		slide = track?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
 	}
+
+	return slides
+}
+
+/**
+ * Have a page carousel's controller show its track `position` slides along, or
+ * scroll a track without one to the nearest slide, where it would snap to.
+ */
+function followCarousel(track: HTMLElement, position: number) {
+	const follow = new CustomEvent('amk-carousel-follow', { cancelable: true, detail: position })
+	if (track.dispatchEvent(follow)) {
+		scrollToSlide(track, Math.round(position))
+	}
+}
+
+/** Reveal the selected slide in its page carousels without moving the document. */
+function revealCarouselItem(item: Element) {
+	for (const [track, index] of carouselSlidesOf(item)) {
+		const reveal = new CustomEvent('amk-carousel-reveal', { cancelable: true, detail: index })
+		// Let a controller cancel its spring; tracks without one still work.
+		if (track.dispatchEvent(reveal)) {
+			scrollToSlide(track, index)
+		}
+	}
+}
+
+function scrollToSlide(track: HTMLElement, index: number) {
+	const direction = track.matches(':dir(rtl)') ? -1 : 1
+	track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
 }
 
 /**

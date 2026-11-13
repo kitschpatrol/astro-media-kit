@@ -8,8 +8,11 @@ import {
 } from './dom'
 import { addSample, gestureEnd, isNewGesture, momentumOnset, recentPeakSpeed } from './wheel'
 
-/** Native scrolling, dragging, and glides have one owner at a time. */
-type MotionOwner = 'drag' | 'glide' | 'idle' | 'native'
+/**
+ * The track has one owner at a time: native scrolling, a drag, a glide, or
+ * another track it follows.
+ */
+type MotionOwner = 'drag' | 'follow' | 'glide' | 'idle' | 'native'
 
 type MotionOptions = {
 	canNavigate: () => boolean
@@ -18,6 +21,8 @@ type MotionOptions = {
 	onChange: (index: number) => void
 	onDismissEnd: (shouldDismiss: boolean) => void
 	onDismissMove: (distance: number) => void
+	/** The track has moved to `position` slides along it, within its ends. */
+	onMove: (position: number) => void
 	onPrepare: (index: number) => void
 	onRest: () => void
 	stage: () => HTMLElement | undefined
@@ -190,6 +195,25 @@ export class CarouselMotion {
 	}
 
 	/**
+	 * Show the track `position` slides along, where another track it follows is,
+	 * and hold it there, between slides as that one may be, until something else
+	 * moves it.
+	 */
+	follow(position: number) {
+		this.stop()
+		const slide = Math.round(position)
+		if (Math.abs(position - slide) * this.#width < onSlide) {
+			this.render(slide * this.#width)
+			return
+		}
+
+		// Snapping would pull it back to a slide
+		this.#owner = 'follow'
+		this.#track.dataset.moving = ''
+		this.render(position * this.#width)
+	}
+
+	/**
 	 * Glide to a slide, starting at `velocity` (in px/ms toward later slides), or
 	 * jump there. Repeated calls before it arrives keep counting from it, and
 	 * keep its momentum.
@@ -225,6 +249,9 @@ export class CarouselMotion {
 		this.#track.scrollLeft = inside * this.#direction
 		this.#track.style.translate =
 			this.#overflow === 0 ? '' : `${-this.#overflow * this.#direction}px`
+		if (this.#width > 0) {
+			this.#options.onMove(inside / this.#width)
+		}
 	}
 
 	resize(width: number) {
@@ -638,6 +665,8 @@ export class CarouselMotion {
 			this.#options.onPrepare(this.#index)
 		}
 
+		// Native scrolling moves it too, as when the browser finishes a realign
+		this.#options.onMove(Math.abs(this.#track.scrollLeft) / this.#width)
 		this.#setIndex(this.#indexFromScroll())
 	}
 
@@ -817,8 +846,9 @@ export class CarouselMotion {
 
 	/**
 	 * Once a scroll the browser ran has settled, glide on to the nearest slide if
-	 * it left the track between slides, as interrupting a glide can. A drag or a
-	 * glide holds the track itself until it rests, however long it pauses.
+	 * it left the track between slides, as interrupting a glide can. A drag, a
+	 * glide, or another track it follows holds the track until it rests, however
+	 * long it pauses.
 	 */
 	readonly #realign = (event?: Event) => {
 		if (event !== undefined && event.target !== this.#track) {
@@ -835,6 +865,7 @@ export class CarouselMotion {
 		if (
 			this.#isTouching ||
 			this.#owner === 'drag' ||
+			this.#owner === 'follow' ||
 			this.#owner === 'glide' ||
 			this.#width === 0 ||
 			this.#isResizePending() ||

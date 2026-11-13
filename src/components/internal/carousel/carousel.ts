@@ -114,6 +114,9 @@ function setUp(root: HTMLElement): Carousel {
 		onDismissMove() {
 			// Nothing to dismiss in the page
 		},
+		onMove() {
+			// Nothing follows a page carousel
+		},
 		onPrepare() {
 			// Every slide is in the page already
 		},
@@ -134,28 +137,49 @@ function setUp(root: HTMLElement): Carousel {
 	motion.configure(count, 0)
 	update(0)
 
+	/** The position along this track a lightbox event asks for, if it has one. */
+	const requested = (event: Event): number | undefined =>
+		event.target === track &&
+		event instanceof CustomEvent &&
+		typeof event.detail === 'number' &&
+		event.detail >= 0 &&
+		event.detail <= count - 1
+			? event.detail
+			: undefined
+
+	// The lightbox moves the track along with its own, between slides too
+	track.addEventListener(
+		'amk-carousel-follow',
+		(event) => {
+			const position = requested(event)
+			if (position === undefined) {
+				return
+			}
+
+			event.preventDefault()
+			motion.follow(position)
+			// The lightbox names its own slides
+			announced = Math.round(position)
+		},
+		{ signal },
+	)
+
 	// A returning lightbox item takes ownership from any page-carousel glide.
 	track.addEventListener(
 		'amk-carousel-reveal',
 		(event) => {
-			if (
-				event.target !== track ||
-				!(event instanceof CustomEvent) ||
-				typeof event.detail !== 'number' ||
-				!Number.isInteger(event.detail) ||
-				event.detail < 0 ||
-				event.detail >= count
-			) {
+			const index = requested(event)
+			if (index === undefined || !Number.isInteger(index)) {
 				return
 			}
 
 			event.preventDefault()
 			// Configure stops motion and refreshes both width and reading direction.
-			motion.configure(count, event.detail)
+			motion.configure(count, index)
 			width = trackWidth(track)
-			update(event.detail)
+			update(index)
 			// The lightbox names its own slides
-			announced = event.detail
+			announced = index
 		},
 		{ signal },
 	)
