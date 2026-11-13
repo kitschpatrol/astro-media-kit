@@ -105,6 +105,13 @@ describe('zoom server markup', () => {
 		expect($('#video .amk-bar > media-volume-slider')).toHaveLength(0)
 	})
 
+	it('hides from screen readers the tooltips, which repeat their buttons’ names', async () => {
+		const $ = await fixture.readHTML('/zoom/')
+		const tooltips = $('#video media-tooltip')
+		expect(tooltips.length).toBeGreaterThan(1)
+		expect(tooltips.filter('[aria-hidden="true"]')).toHaveLength(tooltips.length)
+	})
+
 	it('plays and pauses from a tap by any pointer, unless the surface opens the lightbox', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		for (const id of ['#video', '#video-minimal', '#video-background']) {

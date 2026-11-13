@@ -36,6 +36,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 			</media-play-button>
 		)}
 		{(hasBar || hasFullscreen) && (
+			/* Each tooltip repeats its button's name, so it is hidden from screen readers */
 			<media-tooltip-group>
 				<media-controls-group aria-label={labels.playbackControls} class="amk-bar">
 					{hasBar && (
@@ -46,6 +47,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 								<Icon class="amk-icon-restart" name="restart" />
 							</media-play-button>
 							<media-tooltip
+								aria-hidden="true"
 								boundary="viewport"
 								class="amk-tooltip"
 								id={`${uid}-play-tooltip`}
@@ -114,6 +116,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 								<Icon class="amk-icon-captions-on" name="captions-on" />
 							</media-captions-button>
 							<media-tooltip
+								aria-hidden="true"
 								boundary="viewport"
 								class="amk-tooltip"
 								id={`${uid}-captions-tooltip`}
@@ -138,6 +141,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 									<Icon class="amk-icon-zoom-enter" name="expand" />
 								</button>
 								<media-tooltip
+									aria-hidden="true"
 									boundary="viewport"
 									class="amk-tooltip amk-zoom-tooltip"
 									id={`${uid}-zoom-tooltip`}
@@ -155,6 +159,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 									<Icon class="amk-icon-zoom-exit" name="collapse" />
 								</button>
 								<media-tooltip
+									aria-hidden="true"
 									boundary="viewport"
 									class="amk-tooltip amk-collapse-tooltip"
 									id={`${uid}-collapse-tooltip`}
@@ -170,6 +175,7 @@ const durationTime = duration === undefined ? undefined : formatMediaTime(durati
 									<Icon class="amk-icon-fullscreen-exit" name="fullscreen-exit" />
 								</media-fullscreen-button>
 								<media-tooltip
+									aria-hidden="true"
 									boundary="viewport"
 									class="amk-tooltip"
 									id={`${uid}-fullscreen-tooltip`}
