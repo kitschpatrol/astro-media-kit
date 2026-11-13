@@ -146,6 +146,18 @@ it('lifts the whole player, swaps expand for collapse, and closes from the light
 	expect(isLifted(item)).toBe(false)
 })
 
+it('keeps a larger control bar clear of the video in the lightbox', async () => {
+	const { item, player } = await mountPlayer()
+	query(item, '.amk').style.setProperty('--amk-control-size', '120px')
+	await userEvent.click(query(player, '[data-zoom-open]'))
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await liftDone()
+	const bar = query(player, '.amk-controls .amk-bar').getBoundingClientRect()
+	expect(bar.height).toBe(120)
+	const frame = query(viewer(), '.amk-lightbox-frame').getBoundingClientRect()
+	expect(frame.bottom).toBeLessThanOrEqual(bar.top)
+})
+
 it('returns the player to the page from its collapse button', async () => {
 	const { item, player } = await mountPlayer()
 	await userEvent.click(query(player, '[data-zoom-open]'))

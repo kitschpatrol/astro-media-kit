@@ -1273,6 +1273,16 @@ function createSlide(item: HTMLElement, index: number, count: number): Slide {
 	}
 
 	element.dir = item.matches(':dir(rtl)') ? 'rtl' : 'ltr'
+	// A player keeps its control size from the page, wherever that was set, and
+	// the slide makes room below it for its floated bar of that size
+	const player = item.querySelector('.amk-player')
+	if (player !== null) {
+		element.style.setProperty(
+			'--amk-control-size',
+			getComputedStyle(player).getPropertyValue('--amk-control-size'),
+		)
+	}
+
 	const { level } = item.dataset
 	if (level !== undefined) {
 		element.dataset.level = level

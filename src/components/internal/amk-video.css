@@ -865,8 +865,12 @@ media-captions-button.amk-button:not(:defined) {
 	opacity: 0;
 }
 
+/* Room for the floated bar below the subject, beyond the slide's own bottom
+   padding. The viewer gives the slide its player's control size */
 .amk-lightbox-slide:has(.amk-player:not([data-controls='none'])) {
-	padding-bottom: calc(var(--amk-lightbox-gutter) + 44px);
+	padding-bottom: calc(
+		max(env(safe-area-inset-bottom), var(--amk-lightbox-gutter)) + var(--amk-control-size)
+	);
 }
 
 /* No player toolbar is needed in the viewer when playback controls are off. */
