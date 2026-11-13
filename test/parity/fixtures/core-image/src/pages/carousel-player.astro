@@ -1,0 +1,51 @@
+---
+import { Carousel, Image, Zoomer } from 'astro-media-kit/components'
+import VideoPlayer from 'astro-media-kit/components/internal/VideoPlayer.astro'
+import sticker from '../assets/penguin2.png'
+const videoProps = {
+	aspectRatio: '16 / 9',
+	autoPlay: false,
+	captions: [],
+	controls: 'full' as const,
+	duration: 75,
+	element: 'video' as const,
+	fallbackUrl: '/media/loop.mp4',
+	hasAudio: true,
+	hlsOptions: {},
+	intrinsicWidth: 640,
+	loop: true,
+	muted: true,
+	posterUrl: '/media/loop-poster.jpg',
+	preload: 'auto' as const,
+	resolvedLabel: 'Test video',
+	videoSrc: '/media/loop.mp4',
+	zoom: true,
+}
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Carousel with a player</title>
+	</head>
+	<body>
+		<section id="player">
+			<Carousel>
+				<Zoomer enabled="slides" href="/media/loop.mp4" interactive>
+					<VideoPlayer {...videoProps} />
+				</Zoomer>
+				<Image alt="After the video" src={sticker} zoom="slides" />
+			</Carousel>
+		</section>
+	</body>
+</html>
+<style is:global>
+	body {
+		margin: 20px;
+	}
+
+	section {
+		width: 400px;
+	}
+</style>

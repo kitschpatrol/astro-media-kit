@@ -761,11 +761,14 @@ export class CarouselMotion {
 			stage === undefined &&
 			Math.abs(this.#position - this.target * this.#width) >= catchDistance
 		const isInRegion = isWithin(event, regionSelector, this.#track)
-		// A player keeps sideways mouse drags, which may be its own, but passes
-		// sideways touch swipes on to the track, unless they may be for native
-		// controls or an embed that can't be seen into
+		// A player keeps sideways mouse drags on its controls, which may be their
+		// own, but passes those on its surface on to the track, as a slide does,
+		// and every sideways touch swipe, unless they may be for native controls
+		// or an embed that can't be seen into
 		const keepsSideways =
-			isInRegion && (!isTouch || isWithin(event, sealedRegionSelector, this.#track))
+			isInRegion &&
+			(isWithin(event, sealedRegionSelector, this.#track) ||
+				(!isTouch && !isOnPlayerSurface(event, this.#track)))
 		if (
 			!this.#options.canNavigate() ||
 			isKeptByTarget(event, this.#track, stage) ||
@@ -990,6 +993,14 @@ function clamp(index: number, count: number): number {
 function isAlongTrack(event: WheelEvent): boolean {
 	const y = event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY
 	return Math.abs(wheelAlong(event)) > Math.abs(y)
+}
+
+/**
+ * Whether a press is on one of the kit's players outside its controls, where a
+ * click or tap plays and pauses it, and a drag is for the track.
+ */
+function isOnPlayerSurface(event: PointerEvent, track: HTMLElement): boolean {
+	return isWithin(event, '.amk-player', track) && !isWithin(event, '[data-interactive]', track)
 }
 
 /**

@@ -5,7 +5,9 @@
 
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
+import { disposeCarousels, setUpCarousels } from '../../src/components/internal/carousel/carousel'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import '../../src/components/internal/carousel/carousel.css'
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
 import '../../src/components/internal/amk-video.css'
@@ -244,6 +246,35 @@ it('drags a playing video down and back, or aside to the next, without pausing i
 	expect(next.paused).toBe(true)
 	expect(viewer().dataset.state).toBe('open')
 	await closeLightbox()
+})
+
+it('drags a page carousel from a video, which a click still plays and pauses', async () => {
+	const { player, video } = await mountVideo('/carousel-player/', 'player')
+	setUpCarousels()
+	try {
+		const track = query(document, '#player .amk-carousel-track')
+		const box = query(player, 'media-container').getBoundingClientRect()
+		// Clear of the carousel's buttons, and of the player's bar
+		const y = box.y + box.height / 4
+		await commands.mouseDown(box.x + 60, y)
+		await commands.mouseUp()
+		await expect.poll(() => video.paused).toBe(false)
+		await commands.mouseDown(box.x + 60, y)
+		await commands.mouseUp()
+		await expect.poll(() => video.paused).toBe(true)
+
+		// Past halfway, so the release settles on the next slide at any speed
+		await commands.mouseDown(box.right - 20, y)
+		await commands.mouseMove(box.right - 40, y)
+		await commands.mouseMove(box.x + 20, y)
+		await commands.mouseUp()
+		await expect.poll(() => Math.round(Math.abs(track.scrollLeft) / track.clientWidth)).toBe(1)
+		await settle(150)
+		expect(video.paused).toBe(true)
+		expect(document.getSelection()?.isCollapsed ?? true).toBe(true)
+	} finally {
+		disposeCarousels()
+	}
 })
 
 it('strikes out the volume of a video without sound, on the page and in the lightbox', async () => {
