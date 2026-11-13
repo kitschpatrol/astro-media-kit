@@ -248,6 +248,23 @@ it('drags a playing video down and back, or aside to the next, without pausing i
 	await closeLightbox()
 })
 
+it('takes its keyboard shortcuts in the lightbox, which keeps its own keys', async () => {
+	const { item, player, video } = await mountVideo('/zoom/', 'video')
+	await openLightbox(item)
+	await liftDone()
+	expect(player.contains(document.activeElement)).toBe(false)
+	await userEvent.keyboard('k')
+	await expect.poll(() => video.paused).toBe(false)
+	await userEvent.keyboard('k')
+	await expect.poll(() => video.paused).toBe(true)
+	expect(video.muted).toBe(true)
+	await userEvent.keyboard('m')
+	await expect.poll(() => video.muted).toBe(false)
+	expect(viewer().dataset.state).toBe('open')
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+})
+
 it('drags a page carousel from a video, which a click still plays and pauses', async () => {
 	const { player, video } = await mountVideo('/carousel-player/', 'player')
 	setUpCarousels()

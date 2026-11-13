@@ -704,7 +704,9 @@ class Viewer {
 		if (stage !== undefined) {
 			const direction = panDirections.get(event.key)
 			if (direction === undefined) {
-				containScrollKey(event, this.#dialog)
+				if (!this.#passToPlayer(event)) {
+					containScrollKey(event, this.#dialog)
+				}
 			} else {
 				event.preventDefault()
 				stage.scrollTo({
@@ -726,7 +728,10 @@ class Viewer {
 		} else if (event.key === 'End') {
 			this.#motion.go(this.#slides.length - 1, 'instant')
 		} else {
-			containScrollKey(event, this.#dialog)
+			if (!this.#passToPlayer(event)) {
+				containScrollKey(event, this.#dialog)
+			}
+
 			return
 		}
 
@@ -1005,6 +1010,34 @@ class Viewer {
 
 		void this.#openItem(item)
 		return true
+	}
+
+	/**
+	 * Hand a key the viewer has no use for to the player on show, if there is
+	 * one, whose shortcuts hear only keys from inside it, while the dialog has
+	 * focus. Returns whether a shortcut took it.
+	 */
+	#passToPlayer(event: KeyboardEvent): boolean {
+		const container =
+			this.#slides[this.#index]?.lift?.subject.querySelector('media-container') ?? undefined
+		if (container === undefined || event.composedPath().includes(container)) {
+			return false
+		}
+
+		// Not bubbling, so the viewer's own listener doesn't hear it again
+		const passed = new KeyboardEvent('keydown', {
+			cancelable: true,
+			code: event.code,
+			key: event.key,
+			repeat: event.repeat,
+			shiftKey: event.shiftKey,
+		})
+		container.dispatchEvent(passed)
+		if (passed.defaultPrevented) {
+			event.preventDefault()
+		}
+
+		return passed.defaultPrevented
 	}
 
 	/**
