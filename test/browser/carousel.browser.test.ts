@@ -253,8 +253,9 @@ it('steps from inside a slide, moving focus out of the slide it leaves', async (
 
 	query(slides[0]!, '.amk-zoom').focus()
 	await userEvent.keyboard('{ArrowRight}')
-	await expect.poll(() => slideAt(track)).toBe(1)
-	expect(slides.map((slide) => slide.inert)).toEqual([true, false, true])
+	// The carousel follows the track from its scroll events, which can trail
+	// its scroll offset
+	await expect.poll(() => slides.map((slide) => slide.inert)).toEqual([true, false, true])
 	expect(document.activeElement).toBe(track)
 	await userEvent.keyboard('{ArrowRight}')
 	await expect.poll(() => slideAt(track)).toBe(2)
