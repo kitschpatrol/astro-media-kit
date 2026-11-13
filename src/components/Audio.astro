@@ -116,16 +116,12 @@ const audioAttributes: astroHTML.JSX.AudioHTMLAttributes = {
 				/>
 			)
 		) : resolvedService === 'local' ? (
-			<div
-				aria-label={resolvedLabel}
-				class="amk amk-audio not-content"
-				role="group"
-				slot="media-component"
-			>
+			<div class="amk amk-audio not-content" slot="media-component">
 				{/* eslint-disable astro/jsx-a11y/media-has-caption -- audio elements don't have captions */}
+				{/* Named once, by the player's container, which Video.js makes a group */}
 				<AudioPlayer attributes={audioAttributes} label={resolvedLabel} />
 				<NoScript>
-					<audio {...audioAttributes} controls />
+					<audio {...audioAttributes} aria-label={resolvedLabel} controls />
 				</NoScript>
 				{/* eslint-enable astro/jsx-a11y/media-has-caption */}
 			</div>

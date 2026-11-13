@@ -1,3 +1,4 @@
+import { load } from 'cheerio'
 import { readFile } from 'node:fs/promises'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFixture } from './parity/helpers/build-fixture'
@@ -25,6 +26,17 @@ describe('audio player server markup', () => {
 		expect(links).toHaveLength(2)
 		expect(new Set(links).size).toBe(1)
 		expect(await readFile(`${distribution}${links[0]!}`, 'utf8')).toContain('.audio-controls-start')
+	})
+
+	it('names local audio once, by its player, and its fallback without JavaScript', async () => {
+		const $ = await readHTML('/noscript-fallback/')
+		const wrapper = $('#audio .amk-audio')
+		expect(wrapper.attr('role')).toBeUndefined()
+		expect(wrapper.attr('aria-label')).toBeUndefined()
+		expect($('#audio [aria-label="Test audio"]')).toHaveLength(1)
+		expect(wrapper.find('audio-player > media-container').attr('aria-label')).toBe('Test audio')
+		const fallback = load(wrapper.children('noscript').text())('audio')
+		expect(fallback.attr('aria-label')).toBe('Test audio')
 	})
 
 	it('gives every audio instance independent menu, popover, and tooltip targets', async () => {
