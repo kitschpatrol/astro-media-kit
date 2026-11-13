@@ -444,6 +444,15 @@
 		cursor: var(--amk-zoom-in-cursor, zoom-in);
 	}
 
+	/* A click on a player with playback controls plays or pauses it, as in the
+	   page, whether or not it zooms; one without them closes, as an image does */
+	.amk-lightbox[data-state='open']
+		.amk-lightbox-track:not([data-dragging])
+		> .amk-lightbox-slide
+		.amk-lightbox-layer:has(.amk-player:not([data-controls='none'])) {
+		cursor: auto;
+	}
+
 	.amk-lightbox-caption {
 		cursor: auto;
 	}

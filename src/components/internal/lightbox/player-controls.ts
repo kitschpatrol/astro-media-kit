@@ -34,6 +34,14 @@ let background: Background | undefined
 /** A Video.js popup, which closes on request. */
 type Popup = Element & { close?: (reason?: string) => void }
 
+/** The playback state and actions a Video.js player's store holds. */
+type Playback = {
+	autoplaying?: boolean
+	pause?: () => void
+	paused?: boolean
+	play?: () => Promise<void>
+}
+
 /** The bars that are floated or on their way out, by their player's subject. */
 const bars = new Map<Element, Bar>()
 
@@ -311,6 +319,46 @@ export function floatControls(subject: Element, viewer: HTMLElement) {
 		floatBackground(subject, controls, viewer, opacity)
 	} else {
 		dropBackground()
+	}
+}
+
+/**
+ * Play or pause the player in `subject`, as a click on its surface does in the
+ * page, and say whether it did: not for a player without playback controls,
+ * which a click closes like an image, nor one Video.js hasn't attached yet.
+ * Pending autoplay counts as playing, as in Video.js's own toggle.
+ */
+export function togglePlayback(subject: Element): boolean {
+	const player = subject.querySelector<HTMLElement & { store?: { state?: Playback } }>(
+		':scope video-player',
+	)
+	const playback = player?.store?.state
+	if (
+		player === null ||
+		player.dataset.controls === 'none' ||
+		playback?.play === undefined ||
+		playback.pause === undefined
+	) {
+		return false
+	}
+
+	if (playback.paused === true && playback.autoplaying !== true) {
+		void play(playback)
+	} else {
+		playback.pause()
+	}
+
+	return true
+}
+
+/** Start playback, reporting why it couldn't, unless a pause cut it short. */
+async function play(playback: Playback) {
+	try {
+		await playback.play?.()
+	} catch (error) {
+		if (!(error instanceof DOMException) || error.name !== 'AbortError') {
+			console.warn('[astro-media-kit] The lifted video could not play.', error)
+		}
 	}
 }
 

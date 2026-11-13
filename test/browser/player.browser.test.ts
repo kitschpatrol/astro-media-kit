@@ -223,17 +223,20 @@ it.each(['pointer', 'Enter', 'Space'] as const)(
 	},
 )
 
-it('keeps zoom cursors off the video toolbar in both zoom states', async () => {
+it('keeps zoom cursors off a zoomable video and its toolbar in both zoom states', async () => {
 	const { item, player } = await mountPlayer()
 	item.dataset.level = 'fill'
 	await openLightbox(item)
 	await liftDone()
-	for (const cursor of ['zoom-in', 'zoom-out']) {
-		if (cursor === 'zoom-out') {
+	for (const isZoomed of [false, true]) {
+		if (isZoomed) {
 			await userEvent.click(query(viewer(), '.amk-lightbox-zoom'))
 		}
 
-		expect(getComputedStyle(currentLayer()).cursor).toBe(cursor)
+		await expect.poll(() => viewer().querySelector('[data-zoomed]') !== null).toBe(isZoomed)
+		// A click on the video plays or pauses it, zoomed or not; the zoom
+		// button zooms
+		expect(getComputedStyle(currentLayer()).cursor).toBe('auto')
 		for (const selector of [
 			'.amk-controls',
 			'.amk-bar',

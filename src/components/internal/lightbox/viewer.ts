@@ -23,7 +23,12 @@ import { dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
-import { closeInactiveTooltips, floatControls, hideControls } from './player-controls'
+import {
+	closeInactiveTooltips,
+	floatControls,
+	hideControls,
+	togglePlayback,
+} from './player-controls'
 import { prepareImage, prepareSlideImage } from './prepare'
 import { containPageScroll, containScrollKey } from './scroll-boundary'
 import { beginVolumes, endVolumes, focusVolumes } from './volume'
@@ -396,6 +401,37 @@ class Viewer {
 	}
 
 	/**
+	 * Act on a click on the current slide of a viewer that is opening or open,
+	 * and say whether it did, or else the click closes the viewer. A player plays
+	 * or pauses from a click on it, as in the page, zoomed or not; dragging it
+	 * still navigates or dismisses, since the click that ends a drag is the
+	 * drag's. Once open, a click anywhere on a zoomed slide zooms it back out,
+	 * and one on a subject that zooms zooms it in.
+	 */
+	#clickSlide(slide: Slide, point: Point, isOnSubject: boolean): boolean {
+		if (isOnSubject && slide.lift !== undefined && togglePlayback(slide.lift.subject)) {
+			return true
+		}
+
+		if (this.#state !== 'open') {
+			return false
+		}
+
+		if (this.#zoom.current === slide) {
+			this.#zoom.set(slide, undefined)
+			return true
+		}
+
+		const width = isOnSubject ? zoomWidth(slide) : undefined
+		if (width !== undefined) {
+			this.#zoom.set(slide, width, point)
+			return true
+		}
+
+		return false
+	}
+
+	/**
 	 * Keep a key from scrolling the page under a subject on its way home, unless
 	 * it is for a control that uses it.
 	 */
@@ -586,23 +622,9 @@ class Viewer {
 			return
 		}
 
-		if (slide !== undefined && this.#state === 'open') {
-			// Anywhere on a zoomed slide zooms back out, rather than closing
-			if (this.#zoom.current === slide) {
-				this.#zoom.set(slide, undefined)
-				return
-			}
-
-			const width = isInside(point, slide.layer.getBoundingClientRect())
-				? zoomWidth(slide)
-				: undefined
-			if (width !== undefined) {
-				this.#zoom.set(slide, width, point)
-				return
-			}
+		if (slide === undefined || !this.#clickSlide(slide, point, isOnSubject)) {
+			void this.close()
 		}
-
-		void this.close()
 	}
 
 	readonly #handleClose = () => {
