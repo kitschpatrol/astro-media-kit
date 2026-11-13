@@ -186,7 +186,7 @@ function setUp(root: HTMLElement): Carousel {
 		{ signal },
 	)
 
-	// The slide widths follow the track's, and the scroll offset with them,
+	// The slides stay a track's width apart, and the scroll offset follows,
 	// landing on the slide a glide under way was heading for
 	const observer = new ResizeObserver(() => {
 		const laidOut = trackWidth(track)

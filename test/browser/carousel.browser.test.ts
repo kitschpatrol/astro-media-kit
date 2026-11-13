@@ -116,19 +116,39 @@ it('shows only the track where scripts are off', async ({ skip }) => {
 	expect(displays).toEqual(['none', 'none', 'flex'])
 })
 
-it('lays slides out one per track width, with captions shown on request', async () => {
+it('lays slides out one per viewport, a gap apart, with captions shown on request', async () => {
 	const { carousel, track } = await mountCarousel()
 	const slides = [...track.querySelectorAll<HTMLElement>('.amk-carousel-slide')]
-	expect(slides.map((slide) => slide.getBoundingClientRect().width)).toEqual([400, 400, 400])
-	expect(track.scrollWidth).toBe(1200)
+	const boxes = slides.map((slide) => slide.getBoundingClientRect())
+	expect(boxes.map((box) => box.width)).toEqual([400, 400, 400])
+	expect(boxes[1]!.x - boxes[0]!.right).toBe(24)
+	expect(boxes[0]!.x).toBe(query(carousel, '.amk-carousel-viewport').getBoundingClientRect().x)
+	expect(track.scrollWidth).toBe(3 * 424)
 	expect(getComputedStyle(query(slides[0]!, 'figcaption')).display).not.toBe('none')
 	expect(getComputedStyle(query(carousel, '.amk-carousel-previous')).opacity).toBe('0.3')
+})
+
+it('spaces slides by its own gap property, else the shared gallery one', async () => {
+	const { carousel, track } = await mountCarousel()
+	const viewport = query(carousel, '.amk-carousel-viewport').getBoundingClientRect()
+	carousel.parentElement!.style.setProperty('--amk-gallery-slide-gap', '40px')
+	await expect.poll(() => track.clientWidth).toBe(viewport.width + 40)
+
+	carousel.style.setProperty('--amk-carousel-slide-gap', '0px')
+	await expect.poll(() => track.clientWidth).toBe(viewport.width)
+	await userEvent.click(query(carousel, '.amk-carousel-next'))
+	await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+	expect(Math.abs(track.scrollLeft)).toBe(viewport.width)
+	expect(query(track, '.amk-carousel-slide:nth-child(2)').getBoundingClientRect().x).toBe(
+		viewport.x,
+	)
 })
 
 it('rests on a slide in a track with a fractional width', async () => {
 	const { carousel, track } = await mountCarousel()
 	carousel.style.width = '300.4px'
-	await expect.poll(() => track.getBoundingClientRect().width).toBeCloseTo(300.4, 1)
+	// Slides rest the viewport's width and the gap apart
+	await expect.poll(() => track.getBoundingClientRect().width).toBeCloseTo(324.4, 1)
 	const next = query(carousel, '.amk-carousel-next')
 	await userEvent.click(next)
 	await expect.poll(() => slideAt(track)).toBe(1)
@@ -292,8 +312,8 @@ it('clips the slides at its edges as the track is pulled past an end', async () 
 })
 
 it('rubber-bands a touch swipe past the first slide, then springs back', async ({ skip }) => {
-	const { carousel, track } = await mountCarousel()
-	const box = query(carousel, '.amk-carousel-viewport').getBoundingClientRect()
+	const { track } = await mountCarousel()
+	const rest = track.getBoundingClientRect().x
 	const middle = middleOf(track)
 	if (!(await commands.touchDown(middle.x, middle.y))) {
 		skip()
@@ -301,12 +321,12 @@ it('rubber-bands a touch swipe past the first slide, then springs back', async (
 
 	try {
 		await commands.touchMove(middle.x + 150, middle.y)
-		expect(track.getBoundingClientRect().x).toBeGreaterThan(box.x + 20)
+		expect(track.getBoundingClientRect().x).toBeGreaterThan(rest + 20)
 	} finally {
 		await commands.touchUp()
 	}
 
-	await expect.poll(() => track.getBoundingClientRect().x).toBe(box.x)
+	await expect.poll(() => track.getBoundingClientRect().x).toBe(rest)
 	expect(slideAt(track)).toBe(0)
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 })

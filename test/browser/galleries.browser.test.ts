@@ -18,6 +18,7 @@ import {
 	query,
 	settle,
 	setUpLightbox,
+	slideSpacing,
 	trackOffset,
 	trackShift,
 	transitionsDone,
@@ -241,7 +242,7 @@ describe('galleries', () => {
 		await commands.mouseMove(5, y)
 		await commands.mouseUp()
 
-		await expect.poll(trackOffset).toBe(1280)
+		await expect.poll(trackOffset).toBe(slideSpacing())
 		expect(activeSlideLabel()).toBe('2 of 3')
 		await settle()
 		expect(viewer().open).toBe(true)
@@ -453,8 +454,57 @@ describe('galleries', () => {
 		requestAnimationFrame(record)
 		await userEvent.click(query(document, '.amk-lightbox-next'))
 
-		await expect.poll(trackOffset).toBe(1280)
-		await expect.poll(() => offsets.some((offset) => offset > 0 && offset < 1280)).toBe(true)
+		await expect.poll(trackOffset).toBe(slideSpacing())
+		await expect
+			.poll(() => offsets.some((offset) => offset > 0 && offset < slideSpacing()))
+			.toBe(true)
+	})
+
+	it('rests each slide over the whole viewer, with a gap between slides as they move', async () => {
+		const fixture = mount(gallery(['a', 'b']))
+		await openLightbox(boxes(fixture)[0]!)
+		const slides = [...document.querySelectorAll('.amk-lightbox-slide')]
+		const viewerBox = viewer().getBoundingClientRect()
+		expect(slides[0]!.getBoundingClientRect().x).toBe(viewerBox.x)
+		expect(slides[0]!.getBoundingClientRect().width).toBe(viewerBox.width)
+
+		await commands.mouseDown(900, 400)
+		try {
+			await commands.mouseMove(600, 400)
+			const [first, second] = slides.map((slide) => slide.getBoundingClientRect())
+			expect(first!.x).toBeLessThan(viewerBox.x - 100)
+			expect(second!.x - first!.right).toBeCloseTo(24, 1)
+			// Back, and still, so letting go flicks nowhere
+			await commands.mouseMove(900, 400)
+			await settle()
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(trackOffset).toBe(0)
+	})
+
+	it('spaces slides by its own gap property, else the shared gallery one', async () => {
+		const root = document.documentElement
+		root.style.setProperty('--amk-gallery-slide-gap', '40px')
+		try {
+			const fixture = mount(gallery(['a', 'b']))
+			await openLightbox(boxes(fixture)[0]!)
+			const { clientWidth } = viewer()
+			expect(slideSpacing()).toBe(clientWidth + 40)
+
+			viewer().style.setProperty('--amk-lightbox-slide-gap', '0px')
+			await expect.poll(slideSpacing).toBe(clientWidth)
+			await userEvent.keyboard('{ArrowRight}')
+			await expect.poll(trackOffset).toBe(clientWidth)
+			expect(activeSlideLabel()).toBe('2 of 2')
+			expect(document.querySelectorAll('.amk-lightbox-slide')[1]!.getBoundingClientRect().x).toBe(
+				viewer().getBoundingClientRect().x,
+			)
+		} finally {
+			root.style.removeProperty('--amk-gallery-slide-gap')
+			viewer().style.removeProperty('--amk-lightbox-slide-gap')
+		}
 	})
 
 	it('gives way less and less when dragged past either end, then springs back', async () => {
@@ -476,7 +526,7 @@ describe('galleries', () => {
 		expect(trackShift()).toBeGreaterThan(-400)
 		await commands.mouseUp()
 		await expect.poll(trackShift).toBe(0)
-		expect(trackOffset()).toBe(1280)
+		expect(trackOffset()).toBe(slideSpacing())
 	})
 
 	it.for([
@@ -506,7 +556,7 @@ describe('galleries', () => {
 		await commands.mouseDown(900, 400)
 		await commands.mouseFlick(780, 400)
 
-		await expect.poll(trackOffset).toBe(1280)
+		await expect.poll(trackOffset).toBe(slideSpacing())
 		expect(activeSlideLabel()).toBe('2 of 3')
 	})
 
@@ -525,7 +575,7 @@ describe('galleries', () => {
 		await commands.mouseMove(300, 400)
 		await settle()
 		await commands.mouseUp()
-		await expect.poll(trackOffset).toBe(1280)
+		await expect.poll(trackOffset).toBe(slideSpacing())
 		expect(activeSlideLabel()).toBe('2 of 3')
 	})
 
@@ -690,7 +740,7 @@ describe('galleries', () => {
 			await commands.mouseDown(380, 400)
 			await commands.mouseFlick(500, 400)
 
-			await expect.poll(trackOffset).toBe(1280)
+			await expect.poll(trackOffset).toBe(slideSpacing())
 			expect(activeSlideLabel()).toBe('2 of 3')
 			await close()
 		} finally {

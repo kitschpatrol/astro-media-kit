@@ -50,6 +50,27 @@ it('opens another item while one is closing, letting the first finish gliding ho
 	expect(query(document, '.amk-lightbox-layer .subject').dataset.label).toBe('b')
 })
 
+it('keeps a ghost where its slide was, over the whole viewer', async () => {
+	const fixture = mount(`${item(block('a'))}${item(block('b'))}`)
+	const [a, b] = boxes(fixture)
+	await openLightbox(a!)
+	const slide = currentLayer().closest<HTMLElement>('.amk-lightbox-slide')!
+	const frame = query(slide, '.amk-lightbox-frame')
+	const box = (element: Element) => {
+		const { height, width, x, y } = element.getBoundingClientRect()
+		return { height, width, x, y }
+	}
+
+	const before = box(frame)
+	const closing = closeLightbox()
+	const opening = openLightbox(b!)
+	expect(Object.hasOwn(slide.dataset, 'ghost')).toBe(true)
+	expect(box(slide)).toEqual(box(viewer()))
+	expect(box(frame)).toEqual(before)
+	await opening
+	await closing
+})
+
 it('opens the item clicked under the viewer while another opens or closes', async () => {
 	const fixture = mount(gallery(['a', 'b', 'c']))
 	const [a, b, c] = boxes(fixture)

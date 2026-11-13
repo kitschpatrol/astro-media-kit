@@ -500,7 +500,7 @@ import second from '../assets/second.jpg'
 | `label`              | `string`  | `'Carousel'`                 |
 | `class`, `className` | `string`  | — (`class` takes precedence) |
 
-The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping. Set `--amk-carousel-duration` (default `0.4s`, `0s` with reduced motion) on the carousel or an ancestor to time its glide.
+The Carousel does not enable zoom or assign a gallery automatically. Give its image/video children the same `zoom` name to open them together in the lightbox; while the lightbox is open, the carousel follows the item on show. Audio and generic oEmbed embeds do not have lightbox zoom. Hidden on-page captions remain available to the lightbox. Without JavaScript, the track remains horizontally scrollable with CSS scroll snapping. Set `--amk-carousel-duration` (default `0.4s`, `0s` with reduced motion) on the carousel or an ancestor to time its glide. Slides are `1.5rem` apart as the track moves; set `--amk-carousel-slide-gap` to change that for carousels alone (see [shared gallery settings](#shared-gallery-settings)).
 
 For video control styling, set `--amk-control-size`, `--amk-control-color`, `--amk-control-background`, `--amk-control-hover-background`, `--amk-icon-size`, `--amk-font-size`, `--amk-slider-track-height`, `--amk-slider-track`, `--amk-slider-buffer`, `--amk-slider-fill`, and `--amk-duration` (the control bar's own fade) on `:root`, on any element around the player, or on `.amk-video` itself. Local audio retains Video.js's `--media-accent-color`, `--media-accent-text-color`, `--media-font-family`, and `--media-scale-unit` theme hooks; set them on `.amk-audio`. Dot styling is available through `.amk-carousel-dot` and its `::before` pseudo-element.
 
@@ -508,9 +508,9 @@ Video button highlights appear immediately on hover and fade back over `0.5s`, b
 
 The volume popup fades and slides toward or away from its mute button over `0.2s`, using the same easing. Set `--amk-volume-popover-transition-duration` on `.amk-video` to adjust its opening and closing duration. Reduced motion disables this animation too.
 
-#### Shared gallery controls
+#### Shared gallery settings
 
-Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:root` in global CSS to style both together. An individual carousel can inherit settings from its surrounding element; the lightbox is appended to `<body>`, so its shared settings need to be global or set on `.amk-lightbox`.
+Carousel and lightbox buttons, and the space between their slides, share `--amk-gallery-*` defaults. Set them on `:root` in global CSS to style both together. An individual carousel can inherit settings from its surrounding element; the lightbox is appended to `<body>`, so its shared settings need to be global or set on `.amk-lightbox`.
 
 | Property                                                      | Default                     |
 | ------------------------------------------------------------- | --------------------------- |
@@ -527,8 +527,11 @@ Carousel and lightbox buttons share `--amk-gallery-*` defaults. Set them on `:ro
 | `--amk-gallery-icon-active-opacity`                           | `1`                         |
 | `--amk-gallery-control-transition-duration`                   | `0.5s`                      |
 | `--amk-gallery-control-active-transition-duration`            | Resting transition duration |
+| `--amk-gallery-slide-gap`                                     | `1.5rem`                    |
 
-Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's controls. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. Each component reads these variables on its root, so set them on `:root`, on an ancestor of a carousel, or on `.amk-lightbox` or `.amk-carousel`, not on individual buttons.
+Component-specific properties take precedence: replace `gallery` with `carousel` or `lightbox` to override an individual component's settings. Existing component `control-size` settings still work and override shared dimensions. Component-specific width or height overrides the component's size for that axis. Each component reads these variables on its root, so set them on `:root`, on an ancestor of a carousel, or on `.amk-lightbox` or `.amk-carousel`, not on individual buttons.
+
+The slide gap is the space between neighboring slides as a carousel or the lightbox moves. A slide at rest still fills the carousel or the viewer, so the gap shows only while swiping, dragging, or gliding between slides, and when the track is pulled past either end. Give it a length (a percentage would be read against different boxes). In the lightbox it comes on top of `--amk-lightbox-gutter`, which pads the content inside each slide: neighboring content is both gutters and the gap apart, so content that fills the viewer with no gutter is still the gap apart.
 
 Component-specific properties are optional overrides rather than populated defaults. If your own CSS reads one directly, include the shared fallback, such as `var(--amk-lightbox-control-size, var(--amk-gallery-control-size))`.
 
@@ -624,7 +627,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-zoom-in-cursor`               | `zoom-in`                         |
 | `--amk-zoom-out-cursor`              | `zoom-out`                        |
 
-`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling comes from the [shared gallery controls](#shared-gallery-controls) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling, and the gap between slides, come from the [shared gallery settings](#shared-gallery-settings) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
 
 The cursor shows what a click does. `--amk-zoom-in-cursor` covers items on the page, content in the viewer that a click zooms into, and content on its way back that a click brings back. `--amk-zoom-out-cursor` covers the rest of the viewer, where a click closes it or zooms back out. Captions, controls, and players keep their own cursors, and ZoomLink text links keep the link pointer. Set both on `:root` to change the page and the viewer together. The page item's cursor rule is unlayered, so a site-wide `a { cursor: pointer }` doesn't replace it on items that render as links.
 

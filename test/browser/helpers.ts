@@ -1,5 +1,6 @@
 import { expect } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
+import { lengthOf } from '../../src/components/internal/lightbox/geometry'
 import { installLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/lightbox/lightbox.css'
 
@@ -122,9 +123,18 @@ export function trackOffset(): number {
 	return Math.abs(query(document, '.amk-lightbox-track').scrollLeft)
 }
 
+/** How far apart the viewer's slides rest: its width and the gap between them. */
+export function slideSpacing(): number {
+	return query(document, '.amk-lightbox-track').clientWidth
+}
+
 /** How far the track is pulled aside, past either end, in pixels. */
 export function trackShift(): number {
-	return query(document, '.amk-lightbox-track').getBoundingClientRect().x
+	const track = query(document, '.amk-lightbox-track')
+	// At rest, its margin puts half the gap between slides past the viewer's edge
+	const rest =
+		track.parentElement!.getBoundingClientRect().x + lengthOf(getComputedStyle(track).marginLeft)
+	return track.getBoundingClientRect().x - rest
 }
 
 /** Whether `box` has its subject lifted into the viewer. */

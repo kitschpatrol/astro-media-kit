@@ -1,4 +1,4 @@
-@import '../gallery-controls.css';
+@import '../gallery.css';
 
 /* Page controls follow their active slide, independently of hover styling. */
 @property --amk-page-controls-opacity {
@@ -270,6 +270,7 @@
 		--amk-lightbox-icon-active-opacity,
 		var(--amk-gallery-icon-active-opacity)
 	);
+	--amk-lightbox-resolved-slide-gap: var(--amk-lightbox-slide-gap, var(--amk-gallery-slide-gap));
 
 	/* Lifted subjects keep the page's colors; the controls set their own */
 	color: inherit;
@@ -297,7 +298,12 @@
 	overscroll-behavior: contain;
 	display: flex;
 	flex-wrap: nowrap;
+	/* Wider than the viewer by the gap between slides, with half of it past
+	   either edge, so a slide at rest fills the viewer exactly and the gap shows
+	   only as the track moves. The slides stay a track's width apart */
+	width: calc(100% + var(--amk-lightbox-resolved-slide-gap));
 	height: 100%;
+	margin-inline: calc(var(--amk-lightbox-resolved-slide-gap) / -2);
 	/* It only takes focus from clicks, where a ring around the viewport doesn't help */
 	outline: none;
 	/* Resolve CSS time units and calc() for the JS spring without adding a
@@ -331,12 +337,13 @@
 	/* A stage beside a caption is sized from the slide */
 	container-type: size;
 	display: flex;
-	flex: 0 0 100%;
+	flex: 0 0 calc(100% - var(--amk-lightbox-resolved-slide-gap));
 	flex-direction: column;
 	align-items: center;
 	box-sizing: border-box;
-	/* Every slide is exactly as wide as the track, whatever its caption holds */
+	/* Every slide is exactly as wide as the viewer, whatever its caption holds */
 	min-width: 0;
+	margin-inline: calc(var(--amk-lightbox-resolved-slide-gap) / 2);
 	padding: max(env(safe-area-inset-top), var(--amk-lightbox-gutter))
 		max(env(safe-area-inset-right), var(--amk-lightbox-gutter))
 		max(env(safe-area-inset-bottom), var(--amk-lightbox-gutter))
@@ -518,6 +525,8 @@
 	scroll-snap-align: none;
 	position: absolute;
 	inset: 0;
+	/* Over the viewer, as the slide it was */
+	margin: 0;
 }
 
 .amk-lightbox-slide[data-ghost] > .amk-lightbox-caption {

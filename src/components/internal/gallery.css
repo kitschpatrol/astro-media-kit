@@ -13,5 +13,6 @@
 		--amk-gallery-icon-opacity: 1;
 		--amk-gallery-icon-active-opacity: 1;
 		--amk-gallery-control-transition-duration: 0.5s;
+		--amk-gallery-slide-gap: 1.5rem;
 	}
 }

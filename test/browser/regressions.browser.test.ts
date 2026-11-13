@@ -17,6 +17,7 @@ import {
 	query,
 	settle,
 	setUpLightbox,
+	trackShift,
 	viewer,
 } from './helpers'
 
@@ -405,7 +406,7 @@ it.for([
 	const track = query(viewer(), '.amk-lightbox-track')
 	let most = 0
 	const observer = new MutationObserver(() => {
-		most = Math.max(most, Math.abs(track.getBoundingClientRect().x))
+		most = Math.max(most, Math.abs(trackShift()))
 	})
 	observer.observe(track, { attributeFilter: ['style'], attributes: true })
 	try {
@@ -417,7 +418,7 @@ it.for([
 	}
 
 	expect(most).toBeGreaterThan(50)
-	await expect.poll(() => track.getBoundingClientRect().x).toBe(0)
+	await expect.poll(trackShift).toBe(0)
 	expect(viewer().open).toBe(true)
 	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
 })
@@ -495,7 +496,7 @@ it('rubber-bands a touch swipe past the last slide, then springs back', async ({
 	const track = query(viewer(), '.amk-lightbox-track')
 	let most = 0
 	const observer = new MutationObserver(() => {
-		most = Math.max(most, Math.abs(track.getBoundingClientRect().x))
+		most = Math.max(most, Math.abs(trackShift()))
 	})
 	observer.observe(track, { attributeFilter: ['style'], attributes: true })
 	try {
@@ -507,7 +508,7 @@ it('rubber-bands a touch swipe past the last slide, then springs back', async ({
 	}
 
 	expect(most).toBeGreaterThan(50)
-	await expect.poll(() => track.getBoundingClientRect().x).toBe(0)
+	await expect.poll(trackShift).toBe(0)
 	expect(activeSlideLabel()).toBe('2 of 2')
 	expect(viewer().open).toBe(true)
 })

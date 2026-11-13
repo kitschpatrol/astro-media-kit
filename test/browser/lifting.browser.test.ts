@@ -732,7 +732,7 @@ describe('content', () => {
 
 		await openLightbox(boxes(fixture)[0]!)
 
-		const { clientWidth } = query(document, '.amk-lightbox-track')
+		const { clientWidth } = query(document, '.amk-lightbox')
 		for (const slide of document.querySelectorAll('.amk-lightbox-slide')) {
 			expect(slide.getBoundingClientRect().width).toBeCloseTo(clientWidth, 0)
 		}

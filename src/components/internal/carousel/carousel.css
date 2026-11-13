@@ -1,4 +1,4 @@
-@import '../gallery-controls.css';
+@import '../gallery.css';
 
 /* The embedded carousel `<Carousel>` renders: the lightbox's track in the
    page, with the same buttons, and dots below. Astro bundles this with the
@@ -70,6 +70,7 @@
 		--amk-carousel-icon-active-opacity,
 		var(--amk-gallery-icon-active-opacity)
 	);
+	--amk-carousel-resolved-slide-gap: var(--amk-carousel-slide-gap, var(--amk-gallery-slide-gap));
 
 	position: relative;
 }
@@ -80,7 +81,8 @@
 	}
 }
 
-/* The track is pulled past either end as a whole, so the viewport clips it */
+/* The track is pulled past either end as a whole, and is wider than the
+   viewport by the gap between slides, so the viewport clips it */
 .amk-carousel-viewport {
 	position: relative;
 	overflow: clip;
@@ -93,6 +95,11 @@
 	overscroll-behavior-x: contain;
 	display: flex;
 	flex-wrap: nowrap;
+	/* Half the gap between slides past either edge, so a slide at rest fills the
+	   viewport exactly and the gap shows only as the track moves. The slides
+	   stay a track's width apart */
+	width: calc(100% + var(--amk-carousel-resolved-slide-gap));
+	margin-inline: calc(var(--amk-carousel-resolved-slide-gap) / -2);
 	/* It only takes focus from clicks and the arrow keys */
 	outline: none;
 	/* Resolve CSS time units and calc() for the JS spring without adding a
@@ -118,12 +125,13 @@
 	scroll-snap-align: center;
 	scroll-snap-stop: always;
 	display: flex;
-	flex: 0 0 100%;
+	flex: 0 0 calc(100% - var(--amk-carousel-resolved-slide-gap));
 	flex-direction: column;
 	align-items: center;
 	box-sizing: border-box;
-	/* Every slide is exactly as wide as the track, whatever its caption holds */
+	/* Every slide is exactly as wide as the viewport, whatever its caption holds */
 	min-width: 0;
+	margin-inline: calc(var(--amk-carousel-resolved-slide-gap) / 2);
 }
 
 .amk-carousel-slide > figure {
