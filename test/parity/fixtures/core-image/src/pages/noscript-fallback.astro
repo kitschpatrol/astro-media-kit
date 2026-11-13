@@ -49,6 +49,16 @@ const breakout = (name: string) => `</noscript><img id=injected-${name} src=x>`
 				videoSrc="/hls/stream.m3u8"
 			/>
 		</section>
+		<section id="hls-captions">
+			<VideoPlayer
+				{...videoProps}
+				captions={[{ label: 'English', src: '/captions/en.vtt', srclang: 'en' }]}
+				element="hlsjs-video"
+				hlsUrl="/hls/stream.m3u8"
+				mp4Url="/media/loop.mp4"
+				videoSrc="/hls/stream.m3u8"
+			/>
+		</section>
 		<section id="youtube">
 			<VideoPlayer
 				{...videoProps}

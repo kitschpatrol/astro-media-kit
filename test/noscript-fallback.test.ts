@@ -56,6 +56,17 @@ describe('noscript fallback server markup', () => {
 		).toEqual(['/hls/stream.m3u8', '/media/loop.mp4'])
 	})
 
+	it('gives the fallback video the caption tracks the service has', async () => {
+		const $ = await fixture.readHTML('/noscript-fallback/')
+		const track = fallbackOf($, '#hls-captions')!('video track')
+		expect(track).toHaveLength(1)
+		expect(track.attr('kind')).toBe('captions')
+		expect(track.attr('src')).toBe('/captions/en.vtt')
+		expect(track.attr('srclang')).toBe('en')
+		expect(track.attr('label')).toBe('English')
+		expect(fallbackOf($, '#local')!('video track')).toHaveLength(0)
+	})
+
 	it('links a service embed to its page, over the poster at the player size', async () => {
 		const $ = await fixture.readHTML('/noscript-fallback/')
 		const fallback = fallbackOf($, '#youtube')!

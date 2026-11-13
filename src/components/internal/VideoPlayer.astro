@@ -181,10 +181,13 @@ const embedService =
 	)}
 	{noscriptSources.length > 0 && (
 		<NoScript>
-			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- noscript fallback is minimal */}
+			{/* eslint-disable-next-line astro/jsx-a11y/media-has-caption -- its tracks are the service's, where it has any */}
 			<video {...mediaAttributes} controls style={containerStyle}>
 				{noscriptSources.map((source) => (
 					<source {...source} />
+				))}
+				{captions.map((caption) => (
+					<track kind="captions" {...caption} />
 				))}
 				{labels.unsupportedVideo}
 			</video>
