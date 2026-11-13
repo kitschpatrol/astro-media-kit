@@ -76,6 +76,8 @@ class Viewer {
 	#openingClickDeadline = 0
 	#openItem: Opener | undefined
 	readonly #previous: HTMLButtonElement
+	/** What had focus as the dialog was shown, where closing it returns focus. */
+	#previousFocus: Element | undefined
 	#slides: Slide[] = []
 	#state: State = 'idle'
 	/** Tells screen readers which slide is current. */
@@ -279,6 +281,7 @@ class Viewer {
 		// Show, lift, and lay out in one task: a video left without a layout box
 		// across tasks can stall or skip in WebKit
 		if (!this.#dialog.open) {
+			this.#previousFocus = document.activeElement ?? undefined
 			this.#dialog.showModal()
 		}
 
@@ -331,6 +334,8 @@ class Viewer {
 	restore() {
 		const current = this.#slides[this.#index]
 		const hasNavigated = this.#index !== this.#openedIndex
+		const previousFocus = this.#previousFocus
+		this.#previousFocus = undefined
 		endVolumes()
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
@@ -368,6 +373,11 @@ class Viewer {
 			current.item.tabIndex >= 0
 		) {
 			current.item.focus({ preventScroll: true })
+		} else if (previousFocus !== undefined) {
+			// A page carousel that followed the viewer may have taken the opener
+			// out of view, inert, where focus can't return: its track takes focus
+			// instead, as from a slide leaving view
+			carouselTrackHiding(previousFocus)?.focus({ preventScroll: true })
 		}
 	}
 
@@ -1344,6 +1354,22 @@ function revealCarouselItem(item: Element) {
 
 		slide = track?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
 	}
+}
+
+/**
+ * The track of the page carousel that has `element` in a slide out of view, if
+ * one has. With carousels nested, the outermost such one's, as an inner track
+ * is out of view along with the slide it is in.
+ */
+function carouselTrackHiding(element: Element): HTMLElement | undefined {
+	let track: HTMLElement | undefined
+	let slide = element.closest('.amk-carousel-slide[inert]') ?? undefined
+	while (slide !== undefined) {
+		track = slide.parentElement ?? undefined
+		slide = track?.closest('.amk-carousel-slide[inert]') ?? undefined
+	}
+
+	return track
 }
 
 function isInViewport(box: Box): boolean {

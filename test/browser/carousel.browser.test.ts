@@ -232,6 +232,20 @@ it('steps from inside a slide, moving focus out of the slide it leaves', async (
 	await expect.poll(() => slideAt(track)).toBe(2)
 })
 
+it('takes focus from a lightbox that closes with its opener out of view', async () => {
+	const { track } = await mountCarousel()
+	query(track, '.amk-carousel-slide:nth-child(1) .amk-zoom').focus()
+	await userEvent.keyboard('{Enter}')
+	await expect.poll(() => viewer().dataset.state).toBe('open')
+	await userEvent.click(query(viewer(), '.amk-lightbox-next'))
+	await expect.poll(activeSlideLabel).toBe('2 of 3')
+	await expect.poll(() => slideAt(track)).toBe(1)
+
+	await userEvent.keyboard('{Escape}')
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(document.activeElement).toBe(track)
+})
+
 it('leaves Home and End pressed inside a slide to the page', async () => {
 	const { track } = await mountCarousel()
 	const prevented: boolean[] = []
