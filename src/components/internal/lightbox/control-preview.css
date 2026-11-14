@@ -1,4 +1,4 @@
-@layer amk-lightbox {
+@layer amk.lightbox {
 	.amk-page-control-preview {
 		pointer-events: none;
 		position: absolute;

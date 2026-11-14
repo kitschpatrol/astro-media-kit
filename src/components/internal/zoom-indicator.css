@@ -11,7 +11,7 @@
    artwork, size, colors, and hover timing, read from the same `--amk-control-*`
    properties, flush with the bottom-right corner. Indicator-specific properties
    override those; opacity follows the shared gallery icons. */
-@layer amk-lightbox {
+@layer amk.lightbox {
 	/* Hug the media in both axes, so the corner is the media's even where a
 	   grid or flex row would stretch the wrapper. */
 	.amk-zoom[data-zoom-indicator] {

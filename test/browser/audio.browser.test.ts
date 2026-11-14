@@ -124,3 +124,28 @@ it('reserves the audio bar without showing raw controls while its skin loads', a
 
 	await expect.poll(() => getComputedStyle(skin).visibility).toBe('visible')
 })
+
+it("keeps the audio skin in the kit's own layer, wherever a page orders it", async () => {
+	const frame = document.createElement('iframe')
+	frame.src = '/audio-startup/index.html'
+	document.body.append(frame)
+	try {
+		await waitForFrame(frame, 'audio-startup')
+		const root = frame.contentDocument!
+		const view = frame.contentWindow!
+		const order = root.createElement('style')
+		order.textContent = `
+			@layer reset, amk, overrides;
+			@layer reset { media-play-button { display: block; width: 7px } }
+			@layer overrides { media-play-button { width: 99px } }
+		`
+		root.head.prepend(order)
+		const button = root.querySelector<HTMLElement>(':scope #playable .media-play-button')!
+		// The skin is above the page's reset, whose selector is no more specific
+		await expect.poll(() => view.getComputedStyle(button).display).toBe('grid')
+		// And below a layer the page puts after it
+		expect(view.getComputedStyle(button).width).toBe('99px')
+	} finally {
+		frame.remove()
+	}
+})

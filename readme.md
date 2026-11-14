@@ -612,7 +612,7 @@ In the viewer:
 
 The viewer's control labels and slide announcements, and the carousel's button and slide labels, are in English unless you give the integration your own through its [`labels`](#labels) option.
 
-The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk-lightbox` cascade layer so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
+The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog, with `data-state` of `open` or `closing`), `.amk-lightbox-track`, `.amk-lightbox-slide`, `.amk-lightbox-stage`, `.amk-lightbox-frame`, `.amk-lightbox-layer`, `.amk-lightbox-caption`, and `.amk-lightbox-button` with `.amk-lightbox-close`, `.amk-lightbox-zoom`, `.amk-lightbox-previous`, and `.amk-lightbox-next`. Normal page-facing rules sit in the `amk.lightbox` [cascade layer](#cascade-layers) so your unlayered styles can override them; essential lifting and overlay layout rules use `!important`. Set these custom properties on `:root` or `.amk-lightbox`:
 
 | Property                             | Default                           |
 | ------------------------------------ | --------------------------------- |
@@ -697,6 +697,21 @@ When a creator or organization is present and credits are enabled, these are ren
 If the `Label` tag is missing or extraction is not applicable, `creditMediaTypeFallback` is used (defaults to `'image'`).
 
 XMP extraction only runs on local image assets passed as metadata. Public and remote image URL strings skip extraction; manual values still work. `<Video>` and `<Audio>` don't read XMP — they accept `credit`, `creditOrganization`, and `creditMediaType` as manual props only, with the media type defaulting to `'video'` or `'audio'`.
+
+### Cascade layers
+
+The kit's layered styles share one top-level cascade layer, `amk`: the custom property defaults (`amk.gallery`, `amk.video`, `amk.lightbox`), the page-facing zoom rules (`amk.lightbox`), and the local audio skin (`amk.audio`). Your unlayered CSS overrides all of them, whatever its specificity. The rest of the kit's CSS is unlayered, and your CSS overrides it by specificity as usual.
+
+If your site orders its own layers, name `amk` in that order: above your reset, and below the layers meant to override the kit. With Tailwind CSS v4, whose Preflight reset is in `base`, declare the order ahead of the import:
+
+```css
+@layer theme, base, amk, components, utilities;
+@import 'tailwindcss';
+```
+
+A layer keeps the place of its first mention in the page, so the statement has to come before any of the kit's styles. If your global stylesheet doesn't reliably load first, put the statement in a `<style is:inline>` at the top of `<head>`.
+
+Without the statement, `amk` falls wherever the kit's CSS is bundled relative to yours: after Tailwind's, the kit's layered rules beat utilities; before it, Preflight overrides them.
 
 ## Video services
 

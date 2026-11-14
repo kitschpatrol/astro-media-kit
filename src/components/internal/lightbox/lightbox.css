@@ -16,7 +16,7 @@
    styles override them. The same layer holds the `!important` rules the lift
    depends on: the held space, the viewer covering the viewport, and the lifted
    element filling its frame. */
-@layer amk-lightbox {
+@layer amk.lightbox {
 	:root {
 		--amk-lightbox-backdrop: rgb(0 0 0 / 28.7%);
 		--amk-lightbox-duration: 0.4s;

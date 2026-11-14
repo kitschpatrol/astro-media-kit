@@ -3,9 +3,11 @@
    The packaged, flattened CSS preserves the browser baseline without @scope.
    Selectors stay inside .amk-audio without adding specificity, and the kit's
    inline icon wrapper, .amk-icon, stands where upstream has its media-icon
-   element. See notice.txt. */
+   element. Upstream's base, components, and utilities layers are nested under
+   amk.audio, so they stay out of a page's own layers of those names. See
+   notice.txt. */
 /* stylelint-disable no-descending-specificity -- Preserve the upstream skin's grouped control states. */
-@layer base {
+@layer amk.audio.base {
 	:where(.amk-audio) {
 		--amk-audio-skin-max-height: none;
 		--amk-audio-skin-visibility: visible;
@@ -101,7 +103,7 @@
 	}
 }
 
-@layer components {
+@layer amk.audio.components {
 	:where(.amk-audio) :where(.media-skin[data-theme='default']) .media-status-announcer {
 		position: absolute;
 		overflow: hidden;
@@ -1869,9 +1871,9 @@
 	}
 }
 
-@layer utilities;
+@layer amk.audio.utilities;
 
-@layer base.theme {
+@layer amk.audio.base.theme {
 	:where(.amk-audio) .media-skin {
 		--media-background: oklch(0% 0 0deg);
 		--media-foreground: oklch(100% 0 0deg);
@@ -2019,7 +2021,7 @@
 	}
 }
 
-@layer base.preset {
+@layer amk.audio.base.preset {
 	:where(.amk-audio) .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
 		--media-background: oklch(100% 0 0deg);
 		--media-foreground: oklch(0% 0 0deg);
@@ -2075,7 +2077,7 @@
 	}
 }
 
-@layer base.preferences {
+@layer amk.audio.base.preferences {
 	@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
 		:where(.amk-audio) .media-skin:not([data-controls-visible]) {
 			--media-duration-controls: 0.3s;

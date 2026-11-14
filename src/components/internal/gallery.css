@@ -1,6 +1,6 @@
 /* Shared defaults stay literal: component overrides resolve them where they
    are used, so values inherited from a local gallery wrapper still work. */
-@layer amk-gallery {
+@layer amk.gallery {
 	:root {
 		--amk-gallery-control-size: 2.75rem;
 		--amk-gallery-control-color: #f4f4f4;

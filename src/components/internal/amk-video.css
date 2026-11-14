@@ -10,7 +10,7 @@
 /* Defaults on the root, in a layer, so that a page's own value wins wherever
    it is set: on the root, on an element around the player, or on the player.
    A value declared on the player itself would beat every ancestor's. */
-@layer amk-video {
+@layer amk.video {
 	:root {
 		--amk-control-size: 44px;
 		--amk-control-background: rgb(20 20 20 / 70%);
