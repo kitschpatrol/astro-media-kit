@@ -115,6 +115,10 @@
 	scroll-snap-type: none;
 }
 
+.amk-carousel-track[data-wheel-across] {
+	overflow-x: hidden;
+}
+
 .amk-carousel-track[data-dragging] {
 	cursor: grabbing;
 	/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */

@@ -22,9 +22,11 @@ import {
 	mount,
 	mountPage,
 	query,
+	recordTransitions,
 	settle,
 	setUpLightbox,
 	viewer,
+	waitForMedia,
 } from './helpers'
 
 setUpLightbox()
@@ -39,6 +41,8 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	const player = query(item, 'video-player')
 	await customElements.whenDefined('video-player')
 	await expect.poll(() => query(item, 'video').getAttribute('src')).toBe('/media/loop.mp4')
+	// Listen for a stalled load before waiting on the page's images.
+	await waitForMedia(query(player, 'video', HTMLVideoElement))
 	// The page's images load now rather than as they scroll into view, so that
 	// none of them shifts the player partway through a test
 	const images = [...fixture.querySelectorAll('img')]
@@ -49,10 +53,7 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	await expect
 		.poll(() => images.every((image) => !image.checkVisibility() || image.complete))
 		.toBe(true)
-	// Wait for the media and volume trigger to connect before sending pointer input.
-	await expect
-		.poll(() => query(player, 'video', HTMLVideoElement).readyState, { timeout: 10_000 })
-		.toBeGreaterThan(0)
+	// Wait for the volume trigger to connect before sending pointer input.
 	await expect
 		.poll(() => query(player, 'media-volume-popover').dataset.availability)
 		.toBe('available')
@@ -69,10 +70,7 @@ async function mountPlayer(): Promise<{ item: HTMLElement; player: HTMLElement }
 	return { item, player }
 }
 
-// WebKit on Linux runners has stalled this file's first video load for over 10s,
-// though the same load works in the next test. The cause is unknown. Keep this
-// test first: it is the one that retries.
-it('is not a button, and leaves clicks on its controls to the player', { retry: 1 }, async () => {
+it('is not a button, and leaves clicks on its controls to the player', async () => {
 	const { item, player } = await mountPlayer()
 	expect(item.hasAttribute('role')).toBe(false)
 	expect(item.hasAttribute('tabindex')).toBe(false)
@@ -808,20 +806,12 @@ it.each([false, true])(
 		await userEvent.hover(button)
 		expect(getComputedStyle(button).transitionDuration).toBe('0s')
 		expect(getComputedStyle(button).backgroundColor).toBe('rgba(50, 50, 50, 0.7)')
+		const transitions = recordTransitions(button)
 		await commands.mouseMove(5, 5)
-		// The pointer's leave reaches the page a moment after the move resolves
-		const fade = () =>
-			button
-				.getAnimations()
-				.find(
-					(animation): animation is CSSTransition =>
-						animation instanceof CSSTransition &&
-						animation.transitionProperty === 'background-color',
-				)
-		await expect.poll(fade).toBeDefined()
-		const transition = fade()!
-		expect(transition.effect!.getTiming().duration).toBe(500)
-		expect(transition.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
+		await expect.poll(() => transitions.has('background-color')).toBe(true)
+		const timing = transitions.get('background-color')!.effect!.getTiming()
+		expect(timing.duration).toBe(500)
+		expect(timing.easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
 		await expect.poll(() => getComputedStyle(button).backgroundColor).toBe('rgba(0, 0, 0, 0)')
 
 		// Theme overrides inherit through the player even when its bar is floated.
@@ -882,15 +872,10 @@ it.each([false, true])(
 		await commands.mouseMove(box.x + box.width / 2, box.y + box.height / 2)
 		await expect.poll(() => getComputedStyle(track).width).toBe('6px')
 		// Keep the popup open while leaving the slider so its shrinking track stays visible.
+		const transitions = recordTransitions(track)
 		await userEvent.hover(mute)
-		const transition = track
-			.getAnimations()
-			.find(
-				(animation) =>
-					animation instanceof CSSTransition && animation.transitionProperty === 'width',
-			)
-		expect(transition).toBeDefined()
-		expect(transition!.effect!.getTiming().duration).toBe(150)
+		await expect.poll(() => transitions.has('width')).toBe(true)
+		expect(transitions.get('width')!.effect!.getTiming().duration).toBe(150)
 		await expect.poll(() => getComputedStyle(track).width).toBe('4px')
 		expect(popover.matches(':popover-open')).toBe(true)
 
@@ -1002,12 +987,12 @@ it('opens the volume popover from the floated bar too, and keeps it open', async
 	await userEvent.hover(mute)
 
 	await expect.poll(() => popover.matches(':popover-open')).toBe(true)
+	await expect.poll(() => getComputedStyle(popover).opacity).toBe('1')
 	await settle(400)
 	expect(popover.matches(':popover-open')).toBe(true)
 	expect(popover.getBoundingClientRect().height).toBeGreaterThan(0)
-	expect(popover.getBoundingClientRect().bottom).toBeLessThanOrEqual(
-		mute.getBoundingClientRect().top,
-	)
+	// Transformed popovers can finish a fraction of a pixel beyond their anchor.
+	expect(popover.getBoundingClientRect().bottom).toBeCloseTo(mute.getBoundingClientRect().top, 0)
 })
 
 it('keeps the volume popover working after a trip through the lightbox', async () => {

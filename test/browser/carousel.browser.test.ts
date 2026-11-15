@@ -104,11 +104,14 @@ it('releases drag click suppression when disposed during a drag', async () => {
 
 it('drags the track from a press on a caption', async () => {
 	const { track } = await mountCarousel()
-	const caption = middleOf(query(track, '.amk-carousel-slide figcaption'))
+	const caption = query(track, '.amk-carousel-slide figcaption').getBoundingClientRect()
+	const start = { x: caption.right - 10, y: caption.y + caption.height / 2 }
 	try {
-		await commands.mouseDown(caption.x, caption.y)
-		await commands.mouseMove(caption.x - 200, caption.y)
+		await commands.mouseDown(start.x, start.y)
+		await commands.mouseMove(start.x - track.clientWidth * 0.65, start.y)
 		expect(Object.hasOwn(track.dataset, 'dragging')).toBe(true)
+		// Past halfway, so even a release delayed by CI settles on the next slide.
+		await settle(150)
 	} finally {
 		await commands.mouseUp()
 	}
@@ -378,10 +381,12 @@ it('moves only the inner carousel when its keyboard handler consumes an arrow ke
 it('drags with the mouse without opening the lightbox, and opens it on a click', async () => {
 	const { track } = await mountCarousel()
 	const box = track.getBoundingClientRect()
-	const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+	// Keep the whole drag inside the page and above the navigation buttons.
+	const start = { x: box.x + box.width * 0.85, y: box.y + box.height / 4 }
 
-	await commands.mouseDown(middle.x, middle.y)
-	await commands.mouseMove(middle.x - 200, middle.y)
+	await commands.mouseDown(start.x, start.y)
+	await commands.mouseMove(start.x - track.clientWidth * 0.65, start.y)
+	await settle(150)
 	await commands.mouseUp()
 	await expect.poll(() => slideAt(track)).toBe(1)
 	await new Promise((resolve) => {
@@ -460,14 +465,16 @@ it('rubber-bands a touch swipe past the first slide, then springs back', async (
 
 it('swipes to the next slide under touch without opening the lightbox', async ({ skip }) => {
 	const { carousel, track } = await mountCarousel()
-	const middle = middleOf(track)
-	if (!(await commands.touchDown(middle.x, middle.y))) {
+	const box = track.getBoundingClientRect()
+	const start = { x: box.x + box.width * 0.85, y: box.y + box.height / 4 }
+	if (!(await commands.touchDown(start.x, start.y))) {
 		skip()
 	}
 
 	try {
-		await commands.touchMove(middle.x - 200, middle.y)
+		await commands.touchMove(start.x - track.clientWidth * 0.65, start.y)
 		expect(Object.hasOwn(track.dataset, 'dragging')).toBe(true)
+		await settle(150)
 	} finally {
 		await commands.touchUp()
 	}
@@ -488,8 +495,10 @@ it('turns a slide for a trackpad flick, and leaves vertical scrolling to the pag
 	expect(currentDot(carousel)).toBe('Slide 2')
 
 	let isPrevented = false
+	const overflowDuringWheel: string[] = []
 	const check = (event: WheelEvent) => {
 		isPrevented ||= event.defaultPrevented
+		overflowDuringWheel.push(getComputedStyle(track).overflowX)
 	}
 
 	window.addEventListener('wheel', check)
@@ -505,8 +514,28 @@ it('turns a slide for a trackpad flick, and leaves vertical scrolling to the pag
 	}
 
 	expect(isPrevented).toBe(false)
+	// A vertical gesture can include a small sideways delta. It must not start
+	// native horizontal snapping, even in engines that do not lock the wheel axis.
+	expect(overflowDuringWheel.length).toBeGreaterThan(0)
+	expect(overflowDuringWheel.every((overflow) => overflow === 'hidden')).toBe(true)
+	await expect.poll(() => getComputedStyle(track).overflowX).toBe('auto')
 	await settle(300)
 	expect(slideAt(track)).toBe(1)
+})
+
+it('restores native horizontal scrolling when disposed during a vertical wheel gesture', async () => {
+	const { track } = await mountCarousel()
+	const event = new WheelEvent('wheel', {
+		bubbles: true,
+		cancelable: true,
+		deltaX: 1,
+		deltaY: 20,
+	})
+	track.dispatchEvent(event)
+	expect(event.defaultPrevented).toBe(false)
+	expect(getComputedStyle(track).overflowX).toBe('hidden')
+	disposeCarousels()
+	expect(getComputedStyle(track).overflowX).toBe('auto')
 })
 
 it('hides captions unless asked, leaving them to the lightbox', async () => {

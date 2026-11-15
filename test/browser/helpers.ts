@@ -1,5 +1,5 @@
-import { expect } from 'vitest'
-import { commands, userEvent } from 'vitest/browser'
+import { expect, onTestFinished } from 'vitest'
+import { commands, server, userEvent } from 'vitest/browser'
 import { lengthOf } from '../../src/components/internal/lightbox/geometry'
 import { installLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/lightbox/lightbox.css'
@@ -18,6 +18,7 @@ declare module 'vitest/browser' {
 		touchDown: (x: number, y: number) => Promise<boolean>
 		touchMove: (x: number, y: number) => Promise<void>
 		touchSwipe: (direction?: 'down' | 'left' | 'up') => Promise<boolean>
+		touchTap: (x: number, y: number) => Promise<boolean>
 		touchUp: () => Promise<void>
 		wheelSwipe: (
 			x: number,
@@ -343,6 +344,43 @@ export function fadeOf(element: Element): CSSTransition | undefined {
 }
 
 /**
+ * Record transitions as they start, before a slow remote pointer command can
+ * return. Pause them when a test needs to inspect an intermediate frame.
+ */
+export function recordTransitions(
+	element: HTMLElement,
+	{ pause = false }: { pause?: boolean } = {},
+): Map<string, CSSTransition> {
+	const transitions = new Map<string, CSSTransition>()
+	const record = (event: TransitionEvent) => {
+		if (event.target !== element) {
+			return
+		}
+
+		const transition = element
+			.getAnimations()
+			.find(
+				(animation): animation is CSSTransition =>
+					animation instanceof CSSTransition && animation.transitionProperty === event.propertyName,
+			)
+		if (!transition) {
+			return
+		}
+
+		transitions.set(event.propertyName, transition)
+		if (pause) {
+			transition.pause()
+		}
+	}
+
+	element.addEventListener('transitionrun', record)
+	onTestFinished(() => {
+		element.removeEventListener('transitionrun', record)
+	})
+	return transitions
+}
+
+/**
  * The alpha of a computed color, as `rgb()`, `rgba()`, or the `color()` a mixed
  * color computes to.
  */
@@ -406,4 +444,30 @@ export async function cleanUp(): Promise<void> {
 
 	// The next hover must enter its target even if a new fixture has the same layout.
 	await commands.mouseMove(5, 5)
+}
+
+/** Wait for fixture media metadata, recovering one stalled WebKit load. */
+export async function waitForMedia(media: HTMLMediaElement): Promise<void> {
+	// Linux WebKit can leave the first fixture's native video at HAVE_NOTHING
+	// after a completed HTTP response, even without Video.js. Reload once on
+	// its stalled event; keep the wait bounded and run the interaction test once.
+	const restartStalledLoad = () => {
+		if (
+			server.browser === 'webkit' &&
+			media.readyState === HTMLMediaElement.HAVE_NOTHING &&
+			media.networkState === HTMLMediaElement.NETWORK_LOADING &&
+			!media.error
+		) {
+			media.load()
+		}
+	}
+
+	media.addEventListener('stalled', restartStalledLoad, { once: true })
+	try {
+		await expect
+			.poll(() => media.readyState, { timeout: 10_000 })
+			.toBeGreaterThan(HTMLMediaElement.HAVE_NOTHING)
+	} finally {
+		media.removeEventListener('stalled', restartStalledLoad)
+	}
 }

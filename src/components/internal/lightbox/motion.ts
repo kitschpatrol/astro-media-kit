@@ -362,6 +362,7 @@ export class CarouselMotion {
 	#dropWheel() {
 		clearTimeout(this.#wheel?.timer)
 		this.#wheel = undefined
+		delete this.#track.dataset.wheelAcross
 	}
 
 	/**
@@ -431,8 +432,7 @@ export class CarouselMotion {
 			return
 		}
 
-		clearTimeout(wheel.timer)
-		this.#wheel = undefined
+		this.#dropWheel()
 		if (wheel.isAcross || wheel.isReleased) {
 			return
 		}
@@ -961,6 +961,9 @@ export class CarouselMotion {
 		}
 		this.#wheel = wheel
 		if (isAcross) {
+			// Leave vertical scrolling native, but keep a diagonal gesture's small
+			// horizontal delta from making the browser snap to another slide.
+			this.#track.dataset.wheelAcross = ''
 			return wheel
 		}
 
@@ -998,7 +1001,7 @@ export class CarouselMotion {
 			return wheel
 		}
 
-		clearTimeout(wheel?.timer)
+		this.#dropWheel()
 		return this.#startWheel(!isAlong)
 	}
 }

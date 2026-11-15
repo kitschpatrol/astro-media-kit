@@ -8,6 +8,7 @@ import {
 	gallery,
 	mount,
 	query,
+	recordTransitions,
 	setUpLightbox,
 	viewer,
 	zoomable,
@@ -76,18 +77,15 @@ it('fades lightbox controls back to rest over half a second with the lightbox ea
 	await userEvent.hover(next)
 	await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
 	await expect.poll(() => getComputedStyle(next).backgroundColor).toBe('rgba(0, 0, 0, 0.8)')
+	const iconTransitions = recordTransitions(icon)
+	const buttonTransitions = recordTransitions(next)
 	await commands.mouseMove(5, 5)
-	for (const [element, property] of [
-		[icon, 'opacity'],
-		[next, 'background-color'],
+	for (const [transitions, property] of [
+		[iconTransitions, 'opacity'],
+		[buttonTransitions, 'background-color'],
 	] as const) {
-		const transition = element
-			.getAnimations()
-			.find(
-				(animation) =>
-					animation instanceof CSSTransition && animation.transitionProperty === property,
-			)
-		expect(transition).toBeDefined()
+		await expect.poll(() => transitions.has(property)).toBe(true)
+		const transition = transitions.get(property)
 		expect(transition!.effect!.getTiming().duration).toBe(500)
 		expect(transition!.effect!.getTiming().easing).toBe('cubic-bezier(0.2, 0.8, 0.1, 1)')
 	}

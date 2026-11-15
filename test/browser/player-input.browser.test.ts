@@ -4,7 +4,7 @@
 // dismisses. And how its controls show a video without sound.
 
 import { afterEach, expect, it } from 'vitest'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, server, userEvent } from 'vitest/browser'
 import { disposeCarousels, setUpCarousels } from '../../src/components/internal/carousel/carousel'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/carousel/carousel.css'
@@ -24,6 +24,7 @@ import {
 	settle,
 	setUpLightbox,
 	viewer,
+	waitForMedia,
 } from './helpers'
 
 setUpLightbox()
@@ -44,7 +45,7 @@ async function mountVideo(
 	const player = query(section, 'video-player')
 	const video = query(player, 'video', HTMLVideoElement)
 	await customElements.whenDefined('video-player')
-	await expect.poll(() => video.readyState, { timeout: 10_000 }).toBeGreaterThan(0)
+	await waitForMedia(video)
 	return { item: boxes(section)[0] ?? section, player, video }
 }
 
@@ -57,8 +58,8 @@ async function touchTap(element: Element) {
 	const box = element.getBoundingClientRect()
 	const x = box.x + 12
 	const y = box.y + 12
-	if (await commands.touchDown(x, y)) {
-		await commands.touchUp()
+	if (server.browser === 'chromium') {
+		await commands.touchTap(x, y)
 		return
 	}
 
@@ -85,16 +86,34 @@ it.each(['video', 'video-minimal'])(
 		const isVisible = () => Object.hasOwn(controls.dataset, 'visible')
 		// On screen, for a finger to reach
 		container.scrollIntoView({ behavior: 'instant', block: 'center' })
-		// Every time the controls go, even for a moment within a task: a change
-		// from a value is a removal, since the attribute has no other value
+		// Watch each tap through its release task, including microtasks. The normal
+		// idle timer may hide controls between remote commands on a slow runner.
 		const hidings: MutationRecord[] = []
 		const observer = new MutationObserver((records) => {
-			hidings.push(...records.filter((record) => record.oldValue !== null))
+			// A redundant write of data-visible is not a hiding. The next record's
+			// old value also catches a removal followed by a show in the same task.
+			for (const [index, record] of records.entries()) {
+				const next = records[index + 1]
+				const value = next ? (next.oldValue ?? undefined) : controls.dataset.visible
+				if (value === undefined && record.oldValue !== null) {
+					hidings.push(record)
+				}
+			}
 		})
+		let releaseTimer: ReturnType<typeof setTimeout> | undefined
+		const startTap = () => {
+			observer.observe(controls, { attributeFilter: ['data-visible'], attributeOldValue: true })
+		}
+
+		const endTap = () => {
+			releaseTimer = setTimeout(() => observer.disconnect(), 0)
+		}
+
+		container.addEventListener('pointerdown', startTap, { capture: true })
+		container.addEventListener('pointerup', endTap, { capture: true })
 		await commands.mouseMove(5, 5)
 
 		try {
-			observer.observe(controls, { attributeFilter: ['data-visible'], attributeOldValue: true })
 			// A tap plays, and the next pauses while the controls are still up
 			await touchTap(container)
 			await expect.poll(() => video.paused).toBe(false)
@@ -105,6 +124,9 @@ it.each(['video', 'video-minimal'])(
 			await frames(2)
 			expect(hidings).toEqual([])
 		} finally {
+			clearTimeout(releaseTimer)
+			container.removeEventListener('pointerdown', startTap, { capture: true })
+			container.removeEventListener('pointerup', endTap, { capture: true })
 			observer.disconnect()
 		}
 
@@ -185,31 +207,39 @@ it('closes from a click on a lifted video without playback controls, as from an 
 	expect(video.paused).toBe(true)
 })
 
-it('plays and pauses a lifted video from a touch tap, and shows its bar', async ({ skip }) => {
-	const { item, player, video } = await mountVideo('/zoom/', 'video')
-	const controls = query(player, '.amk-controls')
-	await openLightbox(item)
-	await liftDone()
-	await video.play()
-	// Idle, the floated bar of a playing video hides
-	await expect
-		.poll(() => Object.hasOwn(controls.dataset, 'userInactive'), { timeout: 4000 })
-		.toBe(true)
-	const { x, y } = middleOf(query(player, 'media-container'))
-	if (!(await commands.touchDown(x, y))) {
-		skip()
-	}
+// Native touch commands are Chromium-only; skip before loading and playing media.
+it.skipIf(server.browser !== 'chromium')(
+	'plays and pauses a lifted video from a touch tap, and shows its bar',
+	async () => {
+		const { item, player, video } = await mountVideo('/zoom/', 'video')
+		const controls = query(player, '.amk-controls')
+		await openLightbox(item)
+		await liftDone()
+		await video.play()
+		// Idle, the floated bar of a playing video hides
+		await expect
+			.poll(() => Object.hasOwn(controls.dataset, 'userInactive'), { timeout: 4000 })
+			.toBe(true)
+		const { x, y } = middleOf(query(player, 'media-container'))
+		const clicks: PointerEvent[] = []
+		player.addEventListener('click', (event) => {
+			clicks.push(event)
+		})
+		expect(await commands.touchTap(x, y)).toBe(true)
 
-	await commands.touchUp()
-	await expect.poll(() => video.paused).toBe(true)
-	expect(Object.hasOwn(controls.dataset, 'userInactive')).toBe(false)
-	expect(controls.matches(':popover-open')).toBe(true)
-	await commands.touchDown(x, y)
-	await commands.touchUp()
-	await expect.poll(() => video.paused).toBe(false)
-	expect(viewer().dataset.state).toBe('open')
-	await closeLightbox()
-})
+		await expect.poll(() => clicks.length).toBe(1)
+		expect(clicks[0]!.isTrusted).toBe(true)
+		expect(clicks[0]!.pointerType).toBe('touch')
+		await expect.poll(() => video.paused).toBe(true)
+		expect(Object.hasOwn(controls.dataset, 'userInactive')).toBe(false)
+		expect(controls.matches(':popover-open')).toBe(true)
+		await commands.touchTap(x, y)
+		await expect.poll(() => clicks.length).toBe(2)
+		await expect.poll(() => video.paused).toBe(false)
+		expect(viewer().dataset.state).toBe('open')
+		await closeLightbox()
+	},
+)
 
 it('drags a playing video down and back, or aside to the next, without pausing it', async () => {
 	const fixture = await mountPage('/video-gallery/')
@@ -218,7 +248,7 @@ it('drags a playing video down and back, or aside to the next, without pausing i
 	const player = query(first!, 'video-player')
 	const video = query(player, 'video', HTMLVideoElement)
 	const next = query(second!, 'video', HTMLVideoElement)
-	await expect.poll(() => video.readyState, { timeout: 10_000 }).toBeGreaterThan(0)
+	await waitForMedia(video)
 	await openLightbox(first!)
 	await liftDone()
 	await video.play()

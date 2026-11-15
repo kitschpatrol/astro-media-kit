@@ -566,7 +566,8 @@ it('drags on from where a touch press caught the track', async ({ skip }) => {
 	const caught = track.scrollLeft
 	await commands.touchMove(560, 700)
 	// Follows the finger from where it was caught, with no threshold to make up
-	expect(track.scrollLeft).toBeCloseTo(caught + 80, -1)
+	// The protocol can acknowledge the move before the last pointer event arrives.
+	await expect.poll(() => track.scrollLeft).toBeCloseTo(caught + 80, -1)
 	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
 	viewer().style.removeProperty('--amk-lightbox-carousel-duration')
 	await settle(150)

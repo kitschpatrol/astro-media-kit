@@ -143,7 +143,10 @@ it.each([false, true])(
 			await expect.poll(() => bitmap.isConnected).toBe(false)
 			await expect.poll(() => copy.currentSrc).toBe(next.original.currentSrc)
 			expect(copy.decoding).toBe('async')
-			expect(getComputedStyle(next.original).opacity).toBe('1')
+			// A late load can replace the retained preview and start another decode.
+			// The saved bitmap being detached does not mean the handoff has finished.
+			await expect.poll(() => getComputedStyle(next.original).opacity).toBe('1')
+			expect(currentLayer().querySelector('.amk-lightbox-image-preview')).toBeNull()
 		} finally {
 			decoding.resolve(undefined)
 			decode.mockRestore()
@@ -240,7 +243,7 @@ it.each([false, true])(
 		const bitmap = preview()
 		await expect.poll(() => original.complete && original.currentSrc.includes('-1600.')).toBe(true)
 		await expect.poll(() => bitmap.isConnected).toBe(false)
-		expect(getComputedStyle(original).opacity).toBe('1')
+		await expect.poll(() => getComputedStyle(original).opacity).toBe('1')
 		expect(viewer().contains(original)).toBe(true)
 		await closeLightbox()
 		expect(box.contains(original)).toBe(true)
@@ -273,7 +276,7 @@ it('retains bounded canvas pixels when a thumbnail cannot be reused from cache',
 		expect(getComputedStyle(original).opacity).toBe('0')
 		await expect.poll(() => bitmap.isConnected).toBe(false)
 		expect(bitmap.width).toBe(0)
-		expect(getComputedStyle(original).opacity).toBe('1')
+		await expect.poll(() => getComputedStyle(original).opacity).toBe('1')
 	} finally {
 		revalidation.mockRestore()
 	}
@@ -299,7 +302,7 @@ it('preserves translucent styling without a page placeholder or doubled painting
 	expect(getComputedStyle(original).opacity).toBe('0')
 	expect(box.querySelector('[data-amk-preview]')).toBeNull()
 	await expect.poll(() => bitmap.isConnected).toBe(false)
-	expect(getComputedStyle(original).opacity).toBe('0.4')
+	await expect.poll(() => getComputedStyle(original).opacity).toBe('0.4')
 })
 
 it('keeps the retained bitmap visible when a selector theme changes during loading', async () => {

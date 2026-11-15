@@ -109,6 +109,33 @@ const wheelSwipe = defineBrowserCommand<
 })
 
 /**
+ * Queue a native touch start/end pair together, as Playwright's touchscreen
+ * does, including the browser's resulting click. Separate browser commands can
+ * hold the finger past Video.js's 250 ms tap limit on a busy runner.
+ */
+const touchTap = defineBrowserCommand<[x: number, y: number]>(async (context, x, y) => {
+	if (context.page.context().browser()?.browserType().name() !== 'chromium') {
+		return false
+	}
+
+	const point = await toWindow(await context.frame(), x, y)
+	const session = await context.page.context().newCDPSession(context.page)
+	try {
+		await Promise.all([
+			session.send('Input.dispatchTouchEvent', {
+				touchPoints: [{ ...point, id: 1 }],
+				type: 'touchStart',
+			}),
+			session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' }),
+		])
+	} finally {
+		await session.detach()
+	}
+
+	return true
+})
+
+/**
  * Chromium exposes native touch dragging through its browser protocol. Touch
  * emulation isn't needed for that, and turning it off again would discard
  * Playwright's hover setting for the rest of the run: where the hardware has no
@@ -328,6 +355,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 								touchDown,
 								touchMove,
 								touchSwipe,
+								touchTap,
 								touchUp,
 								wheelSwipe,
 							},
