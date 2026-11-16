@@ -146,6 +146,14 @@ function playerPlaceholder(container: Element, frame: PreviewFrame): HTMLElement
 	const media = container.querySelector('.amk-media')
 	const video =
 		media instanceof HTMLVideoElement ? media : media?.shadowRoot?.querySelector('video')
+	if (
+		poster !== '' &&
+		video instanceof HTMLVideoElement &&
+		typeof video.requestVideoFrameCallback === 'function'
+	) {
+		return changingPlayerPlaceholder(container, video, poster, frame)
+	}
+
 	const hasFrames = video instanceof HTMLVideoElement && video.readyState >= 2
 	if (
 		poster !== '' &&
@@ -169,6 +177,73 @@ function playerPlaceholder(container: Element, frame: PreviewFrame): HTMLElement
 	}
 
 	return snapshot(video, frame)
+}
+
+/** Keep the same page box as a player's poster gives way to its live frames. */
+function changingPlayerPlaceholder(
+	container: Element,
+	video: HTMLVideoElement,
+	poster: string,
+	frame: PreviewFrame,
+): HTMLElement {
+	const element = document.createElement('div')
+	const image = document.createElement('img')
+	image.alt = ''
+	image.decoding = 'sync'
+	image.src = poster
+	const contentStyle = {
+		borderRadius: 'inherit',
+		boxSizing: 'border-box',
+		display: 'block',
+		height: '100%',
+		margin: '0',
+		objectFit: 'inherit',
+		objectPosition: 'inherit',
+		width: '100%',
+	}
+	Object.assign(image.style, contentStyle)
+	element.append(image)
+	const controller = new AbortController()
+	const posterElement = container.querySelector('media-poster')
+	let canvas: HTMLCanvasElement | undefined
+	const update = () => {
+		if (
+			video.readyState < 2 ||
+			video.videoWidth === 0 ||
+			video.videoHeight === 0 ||
+			posterElement?.hasAttribute('data-visible') === true
+		) {
+			removePlaceholder(canvas)
+			canvas = undefined
+			if (element.firstElementChild !== image) {
+				element.replaceChildren(image)
+			}
+		} else if (canvas === undefined) {
+			canvas = document.createElement('canvas')
+			Object.assign(canvas.style, contentStyle)
+			// Draw the first usable frame before uncovering it, then follow playback.
+			disposers.set(canvas, mirrorVideo(video, canvas, frame))
+			element.replaceChildren(canvas)
+		}
+	}
+
+	// Video.js reflects poster visibility after the native playback event.
+	const observer = new MutationObserver(update)
+	if (posterElement !== null) {
+		observer.observe(posterElement, { attributeFilter: ['data-visible'], attributes: true })
+	}
+
+	for (const type of ['loadeddata', 'play', 'seeked', 'emptied', 'resize']) {
+		video.addEventListener(type, update, { signal: controller.signal })
+	}
+
+	disposers.set(element, () => {
+		controller.abort()
+		observer.disconnect()
+		removePlaceholder(canvas)
+	})
+	update()
+	return element
 }
 
 /**

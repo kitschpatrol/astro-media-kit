@@ -298,8 +298,8 @@ it('stands its poster in for the player while it is lifted', async () => {
 	await userEvent.click(query(item, '[data-zoom-open]'))
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 
-	const preview = query(item, '[data-amk-preview]', HTMLImageElement)
-	expect(preview.src).toContain('/media/loop-poster.jpg')
+	const preview = query(item, '[data-amk-preview]')
+	expect(query(preview, 'img', HTMLImageElement).src).toContain('/media/loop-poster.jpg')
 	expect(preview.inert).toBe(true)
 	const box = preview.getBoundingClientRect()
 	expect(box.width).toBeCloseTo(container.width, 0)
