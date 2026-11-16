@@ -5,11 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0] - 2026-11-16
 
 ### Changed
 
 - **Breaking:** Raise the Astro peer requirement from `^7.4.7` to `^7.4.12` so consumers receive fixes for shared spread-attribute mutation in scoped templates and proxy-header validation. The scoped-template fix is relevant to the kit's attribute forwarding. This is a precautionary increase; no new Astro API is required and no kit failure was demonstrated on the previous minimum.
+- Stop trackpad paging at the first and last slides in lightbox galleries and page carousels, and respond immediately when reversing direction.
+- Smooth trackpad movement and let fingers returning to the trackpad stop a glide before it settles on the nearest slide.
+
+### Fixed
+
+- Keep trackpad scrolls that slow to a stop from flicking to another slide, and handle merged or delayed momentum events without advancing extra slides.
+- Switch page video thumbnails from posters to live frames when playback starts in a lightbox gallery, preserving their dimensions and retaining posters while video data is unavailable.
+
+### Documentation
+
+- Document trackpad end stops and stopping a glide by returning fingers to the trackpad.
+- Correct the image parity test allowlist documentation for fixture IDs and Astro's `data-image-component` marker.
+
+### Maintenance
+
+- Update Video.js dependencies to `^10.4.0`, `@mux/ts` to `^16.2.0`, and `exiftool-vendored` to `^39.3.0`.
+- Refresh development and release tooling, including pnpm `12.21.0`, Playwright, chagent, and an explicit esbuild dependency; replace the Astro checker runtime workaround with `glob` and `minimatch` overrides.
+- Expand trackpad regression coverage for merged and delayed events, end stops, and interrupted glides, and stabilize the Firefox turn-back test.
+- Add `Picture` density parity coverage against Astro `7.4.12`, checking that generated sources contain distinct `1x` and `2x` candidates.
 
 ## [0.9.0] - 2026-11-15
 
@@ -538,4 +557,4 @@ No notable changes.
 [0.7.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.0...v0.7.1
 [0.8.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.1...v0.8.0
 [0.9.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.8.0...v0.9.0
-[unreleased]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...HEAD
+[0.10.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...v0.10.0
