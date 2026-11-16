@@ -758,18 +758,18 @@ describe('galleries', () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
 		await openLightbox(boxes(fixture)[2]!)
 		const last = 2 * slideSpacing()
-		// Well past the last slide, then 200 px back, without a pause
-		const events = Array.from({ length: 60 }, (_value, index): [number, number, number] => [
+		// Well past the last slide, then 200 px back, too slowly to flick, without
+		// a pause
+		const events = Array.from({ length: 90 }, (_value, index): [number, number, number] => [
 			index * 16,
-			index < 40 ? 12 : -10,
+			index < 40 ? 12 : -4,
 			0,
 		])
 		await replayWheel(640, 400, events)
 		// None of the way back is spent undoing the push
 		await expect.poll(trackOffset, { interval: 10 }).toBe(last - 200)
-		// Still moving when the events end, they carry on, as a drag let go does
-		await expect.poll(trackOffset).toBe(slideSpacing())
-		expect(activeSlideLabel()).toBe('2 of 3')
+		await expect.poll(trackOffset).toBe(last)
+		expect(activeSlideLabel()).toBe('3 of 3')
 	})
 
 	it.for([
