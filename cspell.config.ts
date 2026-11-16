@@ -9,7 +9,6 @@ export default cspellConfig({
 		'chagent',
 		'commandfor',
 		'contenteditable',
-		'emnapi',
 		'flowto',
 		'haspopup',
 		'hlsjs',

@@ -1,5 +1,5 @@
-// Ported from: https://github.com/withastro/astro/blob/astro%406.3.5/packages/astro/test/core-image.test.js
-// Upstream Astro pinned: 6.3.5
+// Ported from: https://github.com/withastro/astro/blob/astro%407.4.12/packages/astro/test/core-image.test.ts
+// Upstream Astro pinned: 7.4.12
 // Scope: Astro-standard props only. Media-kit extensions (caption/zoom/darkMode/background) are tested in test/*.test.ts.
 
 import { readdir } from 'node:fs/promises'

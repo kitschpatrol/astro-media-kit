@@ -2,13 +2,14 @@ allowBuilds:
   esbuild: true
   puppeteer: true
 ignoreWorkspaceRootCheck: true
-packageExtensions:
-  # astro2tsx pins @emnapi/core but leaves @emnapi/runtime to peer resolution,
-  # which picks rolldown's 2.0 beta and crashes the 1.x core on load.
-  # Keep in step with its @emnapi/core pin; remove once it declares the runtime.
-  '@astrojs/astro2tsx':
-    dependencies:
-      '@emnapi/runtime': 1.11.3
+overrides:
+  # These callers use the retained glob/minimatch APIs. Remove when upstream
+  # adopts fixes for GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249.
+  '@npmcli/map-workspaces@3>glob': ^14.0.6
+  '@npmcli/map-workspaces@3>minimatch': ^11.0.8
+  '@npmcli/package-json@5>glob': ^14.0.6
+  '@typescript-eslint/typescript-estree@8>minimatch': ^11.0.8
+  'unified-engine@11>glob': ^14.0.6
 packages:
   - .
   - playground

@@ -1,6 +1,6 @@
 ---
-import { Image as MediaKitImage } from 'astro-media-kit/components'
-import { Image as AstroImage } from 'astro:assets'
+import { Image as MediaKitImage, Picture as MediaKitPicture } from 'astro-media-kit/components'
+import { Image as AstroImage, Picture as AstroPicture } from 'astro:assets'
 import penguin from '../assets/penguin1.jpg'
 ---
 
@@ -19,6 +19,22 @@ import penguin from '../assets/penguin1.jpg'
 			densities={[1.5, 2]}
 			height={200}
 			id="astro"
+			src={penguin}
+			width={300}
+		/>
+		<MediaKitPicture
+			alt="a penguin"
+			densities={[1, 2]}
+			height={200}
+			id="local-picture"
+			src={penguin}
+			width={300}
+		/>
+		<AstroPicture
+			alt="a penguin"
+			densities={[1, 2]}
+			height={200}
+			id="astro-picture"
 			src={penguin}
 			width={300}
 		/>

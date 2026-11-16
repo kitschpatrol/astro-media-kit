@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking:** Raise the Astro peer requirement from `^7.4.7` to `^7.4.12` so consumers receive fixes for shared spread-attribute mutation in scoped templates and proxy-header validation. The scoped-template fix is relevant to the kit's attribute forwarding. This is a precautionary increase; no new Astro API is required and no kit failure was demonstrated on the previous minimum.
+
 ## [0.9.0] - 2026-11-15
 
 ### Added
@@ -532,3 +538,4 @@ No notable changes.
 [0.7.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.0...v0.7.1
 [0.8.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.1...v0.8.0
 [0.9.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.8.0...v0.9.0
+[unreleased]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...HEAD

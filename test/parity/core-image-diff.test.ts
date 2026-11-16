@@ -1,7 +1,7 @@
 // Direct-diff parity layer: renders our <Image> / <Picture> alongside
 // Astro's built-in `astro:assets` <Image> / <Picture> with identical props
 // in the same fixture page, then asserts the emitted markup matches modulo
-// the documented allowlist (`amk` class, `data-image-component` marker).
+// the documented allowlist (`amk` class, `data-image-component` marker, fixture ids).
 //
 // Sibling file `core-image.test.ts` holds the ported-assertion layer —
 // invariants Astro's own tests assert against `<Image>` / `<Picture>`. Both
@@ -27,6 +27,19 @@ describe('parity diff: media-kit vs astro:assets output (SSG)', () => {
 	it('local-densities: <img> with `densities` matches astro:assets output', async () => {
 		const $ = await fx.readHTML('/local-densities/')
 		compareImg($, '#local', '#astro')
+	})
+
+	it('local-densities: <picture> matches Astro without duplicating the 1x source', async () => {
+		const $ = await fx.readHTML('/local-densities/')
+		comparePicture($, 'picture:has(#local-picture)', 'picture:has(#astro-picture)')
+		const sources = $('picture:has(#local-picture) source')
+		expect(sources.length).toBeGreaterThan(0)
+		for (const source of sources) {
+			const candidates = $(source).attr('srcset')!.split(',')
+			expect(candidates).toHaveLength(2)
+			expect(candidates[0]!.trim()).toMatch(/\s1x$/v)
+			expect(candidates[1]!.trim()).toMatch(/\s2x$/v)
+		}
 	})
 
 	it('local-format: forced output format matches astro:assets', async () => {

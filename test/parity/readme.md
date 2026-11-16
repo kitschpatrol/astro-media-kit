@@ -14,10 +14,11 @@ The `superset-props.astro` fixture compares numeric string dimensions, import pr
 
 ## Diff allowlist
 
-The diff helpers (`helpers/compare-img.ts`) ignore attributes media-kit adds intentionally:
+The diff helpers (`helpers/compare-img.ts`) ignore these documented differences:
 
 - `class="amk"` — public marker class added by `src/components/Image.astro` and `src/components/Picture.astro` for downstream CSS hooks.
-- `data-image-component="true"` — DEV-only marker added by `src/components/Image.astro`. Should not appear in prod-built fixtures; allowlisted anyway as a guardrail.
+- `data-image-component="true"` — Astro adds this marker unconditionally; `src/components/Image.astro` adds it only in development. The comparison ignores it on both sides.
+- `id` — fixture selectors deliberately differ (`local` versus `astro`) so the tests can locate each component.
 
 If the diff trips on anything else, that's a real divergence. Either fix the component or, if the divergence is intentional, add to the allowlist with a comment pointing at the source.
 
