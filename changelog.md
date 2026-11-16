@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-11-15
+
+### Added
+
+- Add `--amk-gallery-slide-gap` with a `1.5rem` default and component-specific `--amk-carousel-slide-gap` and `--amk-lightbox-slide-gap` overrides.
+- Expose audio-track detection through `VideoInfo.hasAudio` for local/direct files, HLS, Bunny, Cloudflare, and Mux; disable silent-video volume controls and shortcuts with configurable `no-audio` artwork and `noAudio` labels.
+- Warn in development when zoomable `Image` or `Picture` components have empty alt text, leaving their lightbox links without accessible names.
+
+### Changed
+
+- **Breaking:** **Breaking:** Replace `Image`/`Picture` `zoom-indicator` slots and `Zoomer`'s `indicator` slot with the integration's `zoom-indicator` icon, independent of `expand`; indicators now require `zoomIndicator` or `indicator` explicitly.
+- **Breaking:** **Breaking:** Rename the kit's cascade layers to `amk.lightbox`, `amk.gallery`, and `amk.video`, and nest audio skin layers under `amk.audio`; update custom layer orders to use `amk`.
+- Give touch-driven galleries and page carousels elastic end stops, and let a press stop a glide before settling on the nearest slide.
+- Follow trackpad movement directly, advance at most one slide per swipe, ignore trailing system momentum, and prevent vertical gestures from changing slides; support sideways and Shift-wheel paging.
+- Toggle playback from clicks and taps anywhere on full and minimal page videos, reveal controls on touch, and enable surface playback for `controls="lightbox"` players without zoom.
+- Play or pause lightbox videos with playback controls on surface clicks or taps, with video zooming reserved for the Zoom button.
+- Use caption drags for gallery navigation instead of text selection, preserving caption links; lightbox caption clicks now close the viewer or zoom back out.
+- Synchronize page carousels continuously with lightbox drags, swipes, and glides, and settle them on the selected slide when the lightbox closes.
+
+### Removed
+
+- **Breaking:** **Breaking:** Remove the `labels.carousel` integration option from `LabelsConfig`; `Carousel` now renders as a group, named only when its `label` prop is supplied.
+
+### Fixed
+
+- **Breaking:** **Breaking:** Make `@kitschpatrol/unplugin-tldraw` and `@kitschpatrol/unplugin-aphex` optional peers loaded only when enabled, fixing npm installs on Linux/Windows and avoiding unused plugin build scripts; install the corresponding peer when enabling either feature.
+- Keep returning video posters and control previews visible until the poster decodes, preventing black thumbnails and play-button flicker in Safari and iPadOS.
+- Make offscreen carousel slides inert, move or restore focus to the track when a focused slide or lightbox opener becomes hidden, and leave Home/End inside slides to the page.
+- Preserve `youtube-nocookie.com` sources for privacy-enhanced playback while keeping fallback links pointed at the video's YouTube page.
+- Prevent carousel slide styles from overriding video, poster, and fallback-media dimensions inside kit players and embeds.
+- Reserve lightbox space for the player's configured `--amk-control-size` and safe-area padding so larger controls do not cover the video.
+- Keep focus rings fully visible on disabled carousel/lightbox navigation buttons and inactive carousel dots.
+- Use the control bar's configured foreground and background colors for video tooltips and scrub times, keeping light themes readable.
+- Announce carousel and lightbox slide positions and names once navigation settles, avoiding announcements of slides passed during a drag.
+- Scale video control text, tooltips, scrub times, errors, and fallback labels with the reader's default font size without shrinking below existing sizes.
+- Avoid duplicate screen-reader announcements from video tooltips and prerendered times.
+- Remove duplicate accessible grouping for local audio and label its native no-JavaScript fallback directly.
+- Include service-provided caption tracks in the no-JavaScript video fallback.
+- Activate button-style zoom items when Space is released on the same item, matching native button timing.
+- Allow mouse drags from a video's surface to move its page carousel without toggling playback, while controls retain their own gestures.
+- Forward player shortcuts such as K and M while the lightbox dialog has focus, preserving the viewer's navigation and close keys.
+- Delay gallery pointer capture until dragging begins so presses on zoomable images and lifted videos retain the correct cursor.
+
+### Security
+
+- Escape attribute values in no-JavaScript fallbacks and reserialized component markup to prevent `</noscript>` breakout and HTML injection through media metadata or URLs.
+
+### Documentation
+
+- Document gallery gestures, slide-gap properties, carousel labeling, and continuous synchronization with the lightbox.
+- Update video usage guidance for surface playback, silent-video controls, and privacy-enhanced YouTube embeds.
+- Update zoom-indicator customization examples for integration-configured artwork and explicit indicator props.
+- Document optional plugin installation, pnpm build-script approvals, and macOS-only Apple Photos support.
+- Add cascade-layer and Tailwind CSS v4 setup guidance for placing `amk` above resets and below overriding layers.
+
+### Maintenance
+
+- Add the `modern-web-guidance` development skill with pnpm permissions and Knip configuration.
+- Expand gallery, player, and accessibility regression coverage, including recorded Safari trackpad gestures, and stabilize browser tests on macOS and Ubuntu.
+
 ## [0.8.0] - 2026-11-11
 
 ### Added
@@ -471,3 +531,4 @@ No notable changes.
 [0.7.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.6.0...v0.7.0
 [0.7.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.0...v0.7.1
 [0.8.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.1...v0.8.0
+[0.9.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.8.0...v0.9.0
