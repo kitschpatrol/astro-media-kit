@@ -147,12 +147,14 @@ export function trackpadSwipe(name: string): Array<[number, number, number]> {
  * Replay recorded wheel events on what is at a point in the viewport, each at
  * the time it was recorded. They are dispatched in the page, since browser
  * automation can deliver real input at half the pace, and the pace is what
- * tells a flick from a drag.
+ * tells a flick from a drag. Those recorded within `late`, a span of ms, all
+ * arrive at its end, as from a browser that was held up.
  */
 export async function replayWheel(
 	x: number,
 	y: number,
 	events: Array<[number, number, number]>,
+	late?: [from: number, to: number],
 ): Promise<void> {
 	const target = document.elementFromPoint(x, y)
 	if (target === null) {
@@ -161,7 +163,8 @@ export async function replayWheel(
 
 	const start = performance.now()
 	for (const [time, deltaX, deltaY] of events) {
-		const wait = start + time - performance.now()
+		const isLate = late !== undefined && time >= late[0] && time < late[1]
+		const wait = start + (isLate ? late[1] : time) - performance.now()
 		if (wait > 0) {
 			await new Promise((resolve) => {
 				setTimeout(resolve, wait)

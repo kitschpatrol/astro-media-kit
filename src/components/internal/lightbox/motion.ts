@@ -6,7 +6,15 @@ import {
 	regionSelector,
 	sealedRegionSelector,
 } from './dom'
-import { addSample, gestureEnd, isNewGesture, momentumOnset, recentPeakSpeed } from './wheel'
+import {
+	addSample,
+	gestureEnd,
+	isFromFingers,
+	momentumGap,
+	momentumOnset,
+	speedOver,
+	steadySpeed,
+} from './wheel'
 
 /**
  * The track has one owner at a time: native scrolling, a drag, a glide, or
@@ -66,14 +74,27 @@ type Drag = {
  * most one slide, as snapping does.
  */
 type Wheel = {
-	/** How far the gesture has moved the track, before rubber banding. */
+	/**
+	 * The glide stopped when its momentum seemed cut short, to carry on with
+	 * should the momentum only have been late.
+	 */
+	caught: undefined | { index: number; velocity: number }
+	/** How far the gesture has moved the track. */
 	distance: number
+	/** The frame awaited before taking its momentum as cut short, if any. */
+	frame: number | undefined
 	/** Across the track, so the page's or a scroll container's throughout. */
 	isAcross: boolean
-	/** Let go of the track, which glides on; the momentum left goes unused. */
-	isReleased: boolean
-	/** The position the gesture moves from, before rubber banding. */
+	/** The position the gesture moves from. */
 	origin: number
+	/**
+	 * Whether the fingers hold the track, which follows them; or it was let go
+	 * while events still came, taken for momentum since, which goes unused, and
+	 * watched, since fingers back on the trackpad cut it short; or its momentum
+	 * stopped, and the glide with it, where fingers may be holding it; or it was
+	 * let go when they stopped.
+	 */
+	phase: 'caught' | 'coasting' | 'ended' | 'held'
 	samples: WheelSample[]
 	/** The slide the gesture started from. */
 	slide: number
@@ -92,6 +113,34 @@ const flickWindow = 100
 
 /** The speed, in px/ms, at which letting go of a drag goes on to the next slide. */
 const flickSpeed = 0.3
+
+/**
+ * How far back, in ms, wheel events count toward the speed a gesture that just
+ * stops is let go at. Shorter than a drag's, whose release is seen: fingers
+ * that stop and then lift send nothing more, so only their last moves show
+ * whether they had stopped.
+ */
+const haltWindow = 50
+
+/**
+ * How stiff a glide's spring is, per its duration: all but 0.3% of the way
+ * there by the end of it.
+ */
+const glideStiffness = 8
+
+/**
+ * How long, in ms, the track takes to close most of the gap to where a wheel
+ * gesture has it. Wheel events arrive unevenly, none in one frame and two in
+ * the next, and drawing each as it comes stutters.
+ */
+const easeTime = 20
+
+/**
+ * How many frames in a row must pass without a momentum event before it counts
+ * as cut short. A busy page delivers its events late, with a frame, so time
+ * alone can run out just before they land.
+ */
+const cutFrames = 3
 
 /** How hard a drag past either end of the track is held back: iOS's constant. */
 const pull = 0.55
@@ -136,6 +185,8 @@ export class CarouselMotion {
 	#count = 0
 	#direction = 1
 	#drag: Drag | undefined
+	/** The track easing toward where a wheel gesture has it, if it is. */
+	#ease: undefined | { aim: number; at: number; frame: number }
 	#glide: Glide | undefined
 	#index = 0
 	/** Whether the press now underway reached the track, if one is. */
@@ -228,6 +279,7 @@ export class CarouselMotion {
 		}
 
 		this.#cancelDrag()
+		this.#stopEase()
 		this.#target = clamp(index, this.#count)
 		this.#options.onPrepare(this.#target)
 		if (behavior === 'instant') {
@@ -276,6 +328,36 @@ export class CarouselMotion {
 		this.#owner = 'idle'
 		this.#track.style.translate = ''
 		delete this.#track.dataset.moving
+	}
+
+	/**
+	 * Wait for the wheel gesture's next event, and end it if none comes: sooner
+	 * while momentum is fast enough to send one every frame, when none means that
+	 * fingers cut it short.
+	 */
+	#awaitWheel(wheel: Wheel) {
+		this.#clearWheelWait(wheel)
+		if (
+			wheel.phase !== 'coasting' ||
+			Math.abs(speedOver(wheel.samples, haltWindow)) < steadySpeed
+		) {
+			wheel.timer = setTimeout(this.#endWheel, this.#pauseBeforeEnd(wheel))
+			return
+		}
+
+		const since = performance.now()
+		let frames = 0
+		const check = () => {
+			frames++
+			if (frames >= cutFrames && performance.now() - since >= momentumGap) {
+				wheel.frame = undefined
+				this.#catchWheel(wheel)
+			} else {
+				wheel.frame = requestAnimationFrame(check)
+			}
+		}
+
+		wheel.frame = requestAnimationFrame(check)
 	}
 
 	/**
@@ -358,11 +440,84 @@ export class CarouselMotion {
 		)
 	}
 
+	/**
+	 * Fingers back on the trackpad stopped the momentum, to stop the track: catch
+	 * its glide where it is, as a press does. They move it on from there, or
+	 * lift, and it settles on the nearest slide.
+	 */
+	#catchWheel(wheel: Wheel) {
+		if (this.#wheel !== wheel) {
+			return
+		}
+
+		const glide = this.#glide
+		if (
+			glide !== undefined &&
+			Math.abs(this.#position - this.target * this.#width) >= catchDistance
+		) {
+			wheel.caught = { index: this.target, velocity: glide.velocity }
+			wheel.phase = 'caught'
+			this.#stopGlide()
+			this.#target = undefined
+			this.#owner = 'drag'
+		}
+
+		wheel.timer = setTimeout(this.#endWheel, this.#pauseBeforeEnd(wheel))
+	}
+
+	/** Stop waiting for the wheel gesture's next event. */
+	#clearWheelWait(wheel: Wheel) {
+		clearTimeout(wheel.timer)
+		if (wheel.frame === undefined) {
+			return
+		}
+
+		cancelAnimationFrame(wheel.frame)
+		wheel.frame = undefined
+	}
+
 	/** Forget the wheel gesture underway, if any, where it has got to. */
 	#dropWheel() {
-		clearTimeout(this.#wheel?.timer)
+		if (this.#wheel !== undefined) {
+			this.#clearWheelWait(this.#wheel)
+		}
+
 		this.#wheel = undefined
+		this.#stopEase()
 		delete this.#track.dataset.wheelAcross
+	}
+
+	/**
+	 * Ease the track toward `position`, where a wheel gesture has it, over the
+	 * next few frames.
+	 */
+	#easeTo(position: number) {
+		if (this.#ease !== undefined) {
+			this.#ease.aim = position
+			return
+		}
+
+		// Counted from where it was last drawn, since browsers report a scroll
+		// offset rounded
+		let before: number | undefined
+		const ease = { aim: position, at: this.#position, frame: 0 }
+		const step = (time: number) => {
+			const elapsed = before === undefined ? 1000 / 60 : time - before
+			before = time
+			const gap = ease.aim - ease.at
+			if (Math.abs(gap) < 0.5) {
+				this.#ease = undefined
+				this.render(ease.aim)
+				return
+			}
+
+			ease.at += gap * (1 - Math.exp(-elapsed / easeTime))
+			this.render(ease.at)
+			ease.frame = requestAnimationFrame(step)
+		}
+
+		ease.frame = requestAnimationFrame(step)
+		this.#ease = ease
 	}
 
 	/**
@@ -423,8 +578,11 @@ export class CarouselMotion {
 	}
 
 	/**
-	 * End the wheel gesture underway, if any: one still following the fingers
-	 * lets go at the speed they last flicked at.
+	 * End the wheel gesture underway, if any. One whose fingers still hold the
+	 * track lets go at the speed of its last events, as a drag does: fingers that
+	 * slowed to a stop settle on the nearest slide, however fast they were
+	 * before, and only events that stop dead carry on, a mouse wheel's turn, or
+	 * fingers lifting where nothing adds momentum.
 	 */
 	readonly #endWheel = () => {
 		const wheel = this.#wheel
@@ -433,35 +591,81 @@ export class CarouselMotion {
 		}
 
 		this.#dropWheel()
-		if (wheel.isAcross || wheel.isReleased) {
+		if (wheel.phase === 'caught') {
+			this.#owner = 'idle'
+			this.#settle(0)
 			return
 		}
 
-		const speed = recentPeakSpeed(wheel.samples)
-		this.#releaseWheel(wheel, speed)
-		if (!(Math.abs(speed) > flickSpeed)) {
+		if (wheel.isAcross || wheel.phase !== 'held') {
+			return
+		}
+
+		const velocity = speedOver(wheel.samples, haltWindow)
+		wheel.phase = 'ended'
+		this.#owner = 'idle'
+		this.#settle(velocity, wheel.slide - 1, wheel.slide + 1)
+		if (!(Math.abs(velocity) > flickSpeed)) {
 			return
 		}
 
 		// Events held up while the page was busy may yet arrive, the end of
 		// the same flick, which would otherwise start over and settle back
 		this.#wheel = wheel
-		wheel.timer = setTimeout(this.#endWheel, gestureEnd.momentum)
+		this.#awaitWheel(wheel)
 	}
 
 	/**
-	 * Move the track `delta` further with the fingers, within a slide either side
-	 * of where the gesture started, and let go once momentum takes over.
+	 * Move the track on with the fingers, as far as the slide either side of
+	 * where the gesture started, and let go when it is about to reach one of
+	 * those at speed, or once momentum shows that the fingers have lifted. It
+	 * stops at the first and last slides, unlike a drag, which pulls past them:
+	 * wheel events never say when the fingers lift, so the momentum after a flick
+	 * would hold the track out there, or pull it further.
 	 */
 	#followWheel(wheel: Wheel, delta: number) {
-		wheel.distance += delta
 		const least = Math.max(wheel.slide - 1, 0) * this.#width
 		const most = Math.min(wheel.slide + 1, this.#count - 1) * this.#width
-		this.render(mapPast(wheel.origin + wheel.distance, least, most, this.#width, rubberBand))
-		const onset = momentumOnset(wheel.samples)
-		if (onset !== undefined) {
-			this.#releaseWheel(wheel, onset)
+		const from = wheel.origin + wheel.distance
+		const to = from + delta
+		const velocity = speedOver(wheel.samples, flickWindow)
+		// Close enough for the glide to take it there from this speed without
+		// stiffening: fingers moving this fast could not stop short of the slide
+		// either, and momentum would carry it past
+		const direction = Math.sign(delta)
+		const limit = direction > 0 ? most : least
+		if (
+			(limit - from) * direction >= onSlide &&
+			velocity * direction > flickSpeed &&
+			(limit - to) * direction <= (Math.abs(velocity) * this.#glideDuration()) / glideStiffness
+		) {
+			wheel.phase = 'coasting'
+			this.#owner = 'idle'
+			this.go(Math.round(limit / this.#width), 'smooth', velocity)
+			return
 		}
+
+		const held = Math.min(Math.max(to, least), most)
+		wheel.distance = held - wheel.origin
+		this.#easeTo(held)
+		const onset = momentumOnset(wheel.samples)
+		if (onset === undefined) {
+			return
+		}
+
+		wheel.phase = 'coasting'
+		this.#owner = 'idle'
+		this.#settle(onset, wheel.slide - 1, wheel.slide + 1, velocity)
+	}
+
+	/**
+	 * How long a glide takes, in ms, from the carousel duration; 0 if it has
+	 * none.
+	 */
+	#glideDuration(): number {
+		// eslint-disable-next-line unicorn/prefer-number-coercion -- Number() can't read past the unit
+		const duration = Number.parseFloat(this.#options.duration()) * 1000
+		return Number.isNaN(duration) ? 0 : Math.max(duration, 0)
 	}
 
 	/**
@@ -473,18 +677,16 @@ export class CarouselMotion {
 	 */
 	#glideTo(position: number, velocity: number) {
 		this.#stopGlide()
-		const durations = this.#options.duration()
-		// eslint-disable-next-line unicorn/prefer-number-coercion -- Number() can't read past the unit
-		const duration = Number.parseFloat(durations) * 1000
+		const duration = this.#glideDuration()
 		const distance = this.#position - position
-		if (Number.isNaN(duration) || duration <= 0 || Math.abs(distance) < 0.5) {
+		if (duration === 0 || Math.abs(distance) < 0.5) {
 			this.render(position)
 			this.#rest()
 			return
 		}
 
 		const towardSpeed = -Math.sign(distance) * velocity
-		const stiffness = Math.max(8 / duration, towardSpeed / Math.abs(distance))
+		const stiffness = Math.max(glideStiffness / duration, towardSpeed / Math.abs(distance))
 		const sway = velocity + stiffness * distance
 		let start: number | undefined
 		const glide: Glide = { frame: 0, velocity }
@@ -735,19 +937,19 @@ export class CarouselMotion {
 			return
 		}
 
-		const wheel = this.#wheelFor(isAlong, delta)
+		const sample = { delta, time: event.timeStamp }
+		const wheel = this.#wheelFor(isAlong, sample)
 		if (!wheel.isAcross) {
 			event.preventDefault()
 			if (delta !== 0) {
-				addSample(wheel.samples, { delta, time: event.timeStamp })
-				if (!wheel.isReleased) {
+				addSample(wheel.samples, sample)
+				if (wheel.phase === 'held') {
 					this.#followWheel(wheel, delta)
 				}
 			}
 		}
 
-		clearTimeout(wheel.timer)
-		wheel.timer = setTimeout(this.#endWheel, pauseBeforeEnd(wheel))
+		this.#awaitWheel(wheel)
 	}
 
 	/** Remember that the next click ends a drag, for everyone to let it be. */
@@ -776,6 +978,25 @@ export class CarouselMotion {
 	 */
 	#mapPastEnds(position: number, map: (distance: number, size: number) => number): number {
 		return mapPast(position, 0, (this.#count - 1) * this.#width, this.#width, map)
+	}
+
+	/**
+	 * How long, in ms, a wheel gesture goes without events before it ends:
+	 * briefly once let go, or after events fast enough to flick, and longer after
+	 * slow ones, from fingers which may only be resting.
+	 */
+	#pauseBeforeEnd(wheel: Wheel): number {
+		if (wheel.phase === 'caught') {
+			return gestureEnd.resting
+		}
+
+		if (wheel.isAcross || wheel.phase !== 'held') {
+			return gestureEnd.momentum
+		}
+
+		return Math.abs(speedOver(wheel.samples, haltWindow)) > flickSpeed
+			? gestureEnd.flicking
+			: gestureEnd.resting
 	}
 
 	/**
@@ -894,16 +1115,6 @@ export class CarouselMotion {
 		this.#rest()
 	}
 
-	/**
-	 * Let the track go from a wheel gesture at `velocity`, to a slide next to
-	 * where it started.
-	 */
-	#releaseWheel(wheel: Wheel, velocity: number) {
-		wheel.isReleased = true
-		this.#owner = 'idle'
-		this.#settle(velocity, wheel.slide - 1, wheel.slide + 1)
-	}
-
 	#rest() {
 		this.#setIndex(this.#indexFromScroll())
 		this.#target = undefined
@@ -931,9 +1142,10 @@ export class CarouselMotion {
 	 * slide from `least` to `most`. Let go while still moving, the track carries
 	 * on to the next slide that way, as paging does on iOS: a quick short swipe
 	 * advances, and swinging back cancels. Let go at rest, it settles on the
-	 * nearest slide. Either way it glides there from the speed it was let go at.
+	 * nearest slide. Either way it glides there from the speed it was let go at,
+	 * or from `launch` where the track's own speed differs.
 	 */
-	#settle(velocity: number, least = 0, most = this.#count - 1) {
+	#settle(velocity: number, least = 0, most = this.#count - 1, launch = velocity) {
 		const slides = this.#position / this.#width
 		const index =
 			velocity > flickSpeed
@@ -941,7 +1153,7 @@ export class CarouselMotion {
 				: velocity < -flickSpeed
 					? Math.ceil(slides) - 1
 					: Math.round(slides)
-		this.go(Math.min(Math.max(index, least), most), 'smooth', velocity)
+		this.go(Math.min(Math.max(index, least), most), 'smooth', launch)
 	}
 
 	/**
@@ -951,10 +1163,12 @@ export class CarouselMotion {
 	#startWheel(isAcross: boolean): Wheel {
 		const slide = clamp(Math.round(this.#position / this.#width), this.#count)
 		const wheel: Wheel = {
+			caught: undefined,
 			distance: 0,
+			frame: undefined,
 			isAcross,
-			isReleased: false,
 			origin: 0,
+			phase: 'held',
 			samples: [],
 			slide,
 			timer: undefined,
@@ -969,13 +1183,20 @@ export class CarouselMotion {
 
 		this.#stopGlide()
 		this.#target = undefined
-		const least = Math.max(slide - 1, 0) * this.#width
-		const most = Math.min(slide + 1, this.#count - 1) * this.#width
-		wheel.origin = mapPast(this.#position, least, most, this.#width, rubberBandDistance)
+		wheel.origin = this.#position
 		this.#owner = 'drag'
 		// Snapping would pull every position in between back to a slide
 		this.#track.dataset.moving = ''
 		return wheel
+	}
+
+	#stopEase() {
+		if (this.#ease === undefined) {
+			return
+		}
+
+		cancelAnimationFrame(this.#ease.frame)
+		this.#ease = undefined
 	}
 
 	#stopGlide() {
@@ -990,19 +1211,30 @@ export class CarouselMotion {
 	/**
 	 * The wheel gesture an event belongs to, begun anew for the first, and for
 	 * one momentum can't have sent once let go: one across the track, since
-	 * momentum runs straight along it, or one that reverses or grows, from
-	 * fingers back on the trackpad, which catch the glide where it is.
+	 * momentum runs straight along it, or one from fingers back on the trackpad,
+	 * which catch the glide where it is.
 	 */
-	#wheelFor(isAlong: boolean, delta: number): Wheel {
+	#wheelFor(isAlong: boolean, sample: WheelSample): Wheel {
 		const wheel = this.#wheel
-		const previous = wheel?.samples.at(-1)?.delta
-		const isResumed = delta !== 0 && previous !== undefined && isNewGesture(previous, delta)
-		if (wheel !== undefined && (!wheel.isReleased || (isAlong && !isResumed))) {
-			return wheel
+		if (
+			wheel === undefined ||
+			(wheel.phase !== 'held' &&
+				(!isAlong || (sample.delta !== 0 && isFromFingers(wheel.samples, sample))))
+		) {
+			this.#dropWheel()
+			return this.#startWheel(!isAlong)
 		}
 
-		this.#dropWheel()
-		return this.#startWheel(!isAlong)
+		if (wheel.caught !== undefined && sample.delta !== 0) {
+			// Its momentum was only late, and runs on: so does the glide
+			const { index, velocity } = wheel.caught
+			wheel.caught = undefined
+			wheel.phase = 'coasting'
+			this.#owner = 'idle'
+			this.go(index, 'smooth', velocity)
+		}
+
+		return wheel
 	}
 }
 
@@ -1054,21 +1286,6 @@ function isKeptByTarget(
 		isWithin(event, controlSelector, track) ||
 		(stage !== undefined && (isTouch || (event.target === stage && isOnScrollbar(event, stage))))
 	)
-}
-
-/**
- * How long, in ms, a wheel gesture goes without events before it ends: briefly
- * after momentum, or after fingers flicking, and longer after slow ones, which
- * may only be resting.
- */
-function pauseBeforeEnd(wheel: Wheel): number {
-	if (wheel.isAcross || wheel.isReleased) {
-		return gestureEnd.momentum
-	}
-
-	return Math.abs(recentPeakSpeed(wheel.samples)) > flickSpeed
-		? gestureEnd.flicking
-		: gestureEnd.resting
 }
 
 /**

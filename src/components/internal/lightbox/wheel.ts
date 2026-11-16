@@ -1,7 +1,10 @@
 /**
  * Telling a trackpad's fingers from the momentum the operating system adds once
  * they lift, from wheel events alone, which say nothing of either. Tuned on
- * Safari's: see `test/fixtures/safari-trackpad-swipes.json`.
+ * Safari's: see `test/fixtures/safari-trackpad-swipes.json`. Speeds are
+ * measured over spans of time rather than from one event to the next, since
+ * Chromium delivers wheel events with each frame, merging those that arrive
+ * together.
  */
 
 /**
@@ -10,55 +13,85 @@
  */
 export type WheelSample = { delta: number; time: number }
 
-/**
- * A display frame, in ms: the interval taken to lead up to a gesture's first
- * event.
- */
+/** A display frame, in ms: how long a gesture's first event is taken to cover. */
 const frame = 1000 / 60
 
 /**
- * How many events in a row decaying as momentum does mark the fingers as
- * lifted.
+ * The longest, in ms, an event is taken to have been moving for. One later than
+ * this after the last follows a pause, and moved only at its end.
  */
-const momentumRun = 4
+const longestEvent = 3 * frame
 
 /**
- * How much each momentum event may shrink from the one before. Safari's lose
- * 5-15% each; fingers slowing down shrink them by more, and unevenly.
+ * The span, in ms, of each of the speeds compared to tell momentum: two frames,
+ * which evens out events that come early, late, or merged.
  */
-const momentumDecay = { least: 0.8, most: 1 }
+const momentumStep = 2 * frame
 
 /**
- * The least speed, in px/ms, at which momentum is told apart from fingers
- * slowing down. Below it, whole-pixel deltas decay too coarsely to tell, and
- * the momentum is too slow to matter anyway.
+ * How many such spans in a row must decay as momentum does: 200 ms, longer than
+ * fingers easing to a stop over less than a slide stay as steady.
  */
-const momentumSpeed = 0.6
+const momentumSteps = 6
 
 /**
- * The span, in ms, a speed is measured over, and how far back the fastest
- * counts.
+ * How much of its speed momentum keeps from one span to the next. Safari's
+ * keeps 74-86%, short of a hard swipe's, which has the track at the next slide
+ * before it matters; fingers stopping lose more, sooner or later.
  */
-const speedWindow = 50
-const peakWindow = 200
+const momentumKeeps = { least: 0.64, most: 0.9 }
+
+/**
+ * How much less of its speed momentum may keep over the later half of those
+ * spans than over the earlier. It decays evenly, while fingers easing to a stop
+ * lose speed ever faster.
+ */
+const momentumSlack = 0.04
+
+/**
+ * The least speed, in px/ms, momentum must set off at to be told from fingers
+ * slowing down, which the slower they go are the easier to mistake for it.
+ * Safari's sets off about twice as fast as the fingers lifted: at 4 for the
+ * gentlest recorded flick, and at 2.4 after a drag.
+ */
+const momentumSpeed = 1.5
+
+/**
+ * How long, in ms, momentum never goes without an event: Safari's are at most
+ * 34 ms apart, in its last crawl.
+ */
+export const momentumGap = 50
+
+/**
+ * The speed, in px/ms, down to which momentum sends an event every frame, so
+ * that going without one for `momentumGap` means it was cut short.
+ */
+export const steadySpeed = 0.2
 
 /**
  * How long, in ms, a gesture goes without events before it ends: fingers
  * resting on a trackpad mid-drag send none for up to this long. Shorter once
- * the last events were fast enough to flick, and once momentum has started,
- * whose events keep coming until it stops.
+ * the last events were fast enough to flick, which fingers coming to rest are
+ * not, and once momentum has started, whose events keep coming until it stops.
  */
 export const gestureEnd = { flicking: 80, momentum: 150, resting: 250 }
 
-/** Add `sample`, forgetting those too old to count toward a speed or momentum. */
+/** Add `sample`, forgetting those too old to tell momentum by. */
 export function addSample(samples: WheelSample[], sample: WheelSample) {
 	samples.push(sample)
-	while (
-		samples.length > momentumRun + 1 &&
-		sample.time - samples[0]!.time > peakWindow + speedWindow
-	) {
+	const history = momentumSteps * momentumStep + longestEvent
+	while (samples.length > 1 && sample.time - samples[0]!.time > history) {
 		samples.shift()
 	}
+}
+
+/**
+ * How fast the events moved the track over the `span` ms up to the last of
+ * them, in px/ms toward later slides.
+ */
+export function speedOver(samples: readonly WheelSample[], span: number): number {
+	const last = samples.at(-1)
+	return last === undefined ? 0 : movedBetween(samples, last.time - span, last.time) / span
 }
 
 /**
@@ -66,72 +99,81 @@ export function addSample(samples: WheelSample[], sample: WheelSample) {
  * px/ms toward later slides, which is how fast the fingers lifted.
  */
 export function momentumOnset(samples: readonly WheelSample[]): number | undefined {
-	const start = samples.length - momentumRun - 1
-	const first = samples[start]
 	const last = samples.at(-1)
-	if (first === undefined || last === undefined || first.delta === 0) {
+	if (last === undefined) {
 		return undefined
 	}
 
-	for (let index = start + 1; index < samples.length; index++) {
-		const ratio = samples[index]!.delta / samples[index - 1]!.delta
-		if (!(ratio >= momentumDecay.least) || !(ratio <= momentumDecay.most)) {
+	// From the latest span back to the earliest
+	const speeds: number[] = []
+	for (let step = 0; step < momentumSteps; step++) {
+		const end = last.time - step * momentumStep
+		const speed = movedBetween(samples, end - momentumStep, end) / momentumStep
+		const later = speeds.at(-1)
+		// Neither is true of a reversal, or of a span with no events, either
+		if (
+			later !== undefined &&
+			(!(later / speed >= momentumKeeps.least) || !(later / speed <= momentumKeeps.most))
+		) {
 			return undefined
 		}
+
+		speeds.push(speed)
 	}
 
-	// Fingers moving steadily send equal events, which only decay by rounding
-	if (last.delta / first.delta > 0.9) {
+	const half = Math.floor((momentumSteps - 1) / 2)
+	const keptLately = speeds[0]! / speeds[half]!
+	const keptAtFirst = speeds.at(-1 - half)! / speeds.at(-1)!
+	if (keptLately < keptAtFirst - momentumSlack) {
 		return undefined
 	}
 
-	const onset = first.delta / intervalBefore(samples, start)
+	const onset = speeds.at(-1)!
 	return Math.abs(onset) >= momentumSpeed ? onset : undefined
 }
 
 /**
- * The fastest the track moved over any `speedWindow` in the last `peakWindow`
- * of events, in px/ms toward later slides. Fingers that flick and stop before
- * lifting get no momentum, but did move this fast.
+ * Whether `sample`, arriving among the momentum events `samples`, comes from
+ * fingers on the trackpad again. It reverses, follows a silence, grows out of
+ * momentum's last crawl, or is all that is left of momentum that was still
+ * fast, none of which momentum does.
  */
-export function recentPeakSpeed(samples: readonly WheelSample[]): number {
+export function isFromFingers(samples: readonly WheelSample[], sample: WheelSample): boolean {
 	const last = samples.at(-1)
-	if (last === undefined) {
-		return 0
+	if (
+		last === undefined ||
+		Math.sign(sample.delta) !== Math.sign(last.delta) ||
+		sample.time - last.time > momentumGap
+	) {
+		return true
 	}
 
-	let peak = 0
-	for (let end = samples.length - 1; end >= 0; end--) {
-		const { time } = samples[end]!
-		if (last.time - time > peakWindow) {
-			break
-		}
-
-		let distance = 0
-		let span = 0
-		for (let index = end; index >= 0 && time - samples[index]!.time < speedWindow; index--) {
-			distance += samples[index]!.delta
-			span = time - samples[index]!.time + intervalBefore(samples, index)
-		}
-
-		const speed = distance / Math.max(span, speedWindow)
-		if (Math.abs(speed) > Math.abs(peak)) {
-			peak = speed
-		}
-	}
-
-	return peak
+	// Momentum never loses most of its speed within a span, and from its last
+	// crawl never gains more than rounding does, a pixel a frame
+	const before = Math.abs(movedBetween(samples, last.time - momentumStep, last.time))
+	const now = Math.abs(movedBetween([...samples, sample], sample.time - momentumStep, sample.time))
+	return before >= steadySpeed * momentumStep
+		? now < before * 0.4
+		: now > before * 1.5 + momentumStep / frame
 }
 
 /**
- * Whether `delta`, among momentum events, comes from fingers on the trackpad
- * again: it reverses, or grows, which momentum never does.
+ * How far the events moved the track between two times, taking each to have
+ * moved it evenly since the one before.
  */
-export function isNewGesture(previous: number, delta: number): boolean {
-	return Math.sign(delta) !== Math.sign(previous) || Math.abs(delta) > Math.abs(previous) * 1.5 + 1
-}
+function movedBetween(samples: readonly WheelSample[], from: number, to: number): number {
+	let moved = 0
+	for (const [index, { delta, time }] of samples.entries()) {
+		const previous = samples[index - 1]
+		const span = previous === undefined ? frame : Math.min(time - previous.time, longestEvent)
+		if (span <= 0) {
+			// Sent together with the one before
+			moved += time > from && time <= to ? delta : 0
+			continue
+		}
 
-function intervalBefore(samples: readonly WheelSample[], index: number): number {
-	const previous = samples[index - 1]
-	return previous === undefined ? frame : Math.max(samples[index]!.time - previous.time, 1)
+		moved += (delta * Math.max(0, Math.min(time, to) - Math.max(time - span, from))) / span
+	}
+
+	return moved
 }

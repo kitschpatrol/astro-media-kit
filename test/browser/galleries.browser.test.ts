@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { subjectOf } from '../../src/components/internal/lightbox/dom'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { easedScroll } from '../wheel-events'
 import {
 	activeSlideLabel,
 	block,
@@ -591,31 +592,245 @@ describe('galleries', () => {
 		expect(activeSlideLabel()).toBe('2 of 3')
 	})
 
-	it('turns a slide for a quick trackpad flick that gets no momentum', async () => {
+	it('settles back after a quick trackpad scroll that slows to a stop', async () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
 		await openLightbox(boxes(fixture)[1]!)
+		const track = query(document, '.amk-lightbox-track')
+		let farthest = 0
+		const follow = () => {
+			farthest = Math.max(farthest, Math.abs(trackOffset() - slideSpacing()))
+		}
 
-		await replayWheel(640, 400, trackpadSwipe('quick short flick left, no momentum'))
+		track.addEventListener('scroll', follow)
+		try {
+			// It moves fast, but stops before the fingers lift, so nothing adds momentum
+			await replayWheel(640, 400, trackpadSwipe('quick short flick left, no momentum'))
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		} finally {
+			track.removeEventListener('scroll', follow)
+		}
 
-		await expect.poll(activeSlideLabel).toBe('1 of 3')
-		await expect.poll(trackOffset).toBe(0)
+		expect(farthest).toBeGreaterThan(100)
+		expect(farthest).toBeLessThan(150)
+		expect(trackOffset()).toBe(slideSpacing())
+		expect(activeSlideLabel()).toBe('2 of 3')
 	})
 
-	it.for(['gentlest flick left that should turn a page', 'big fast swipe left'])(
-		'turns only one slide for a trackpad\'s "%s", leaving its momentum unused',
-		async (name) => {
-			const fixture = mount(gallery(['a', 'b', 'c']))
-			await openLightbox(boxes(fixture)[2]!)
+	it('follows fingers that scroll quickly and ease to a stop, never running ahead', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[0]!)
+		const track = query(document, '.amk-lightbox-track')
+		const distance = 500
+		expect(distance).toBeLessThan(slideSpacing() / 2)
+		let farthest = 0
+		const follow = () => {
+			farthest = Math.max(farthest, trackOffset())
+		}
 
+		track.addEventListener('scroll', follow)
+		try {
+			await replayWheel(640, 400, easedScroll(500, distance, 0.25))
+			await expect.poll(trackOffset, { interval: 10 }).toBe(distance)
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		} finally {
+			track.removeEventListener('scroll', follow)
+		}
+
+		expect(farthest).toBe(distance)
+		expect(trackOffset()).toBe(0)
+		expect(activeSlideLabel()).toBe('1 of 3')
+	})
+
+	it.for([
+		'gentlest flick left that should turn a page',
+		'quick flick left',
+		'big fast swipe left',
+	])('turns only one slide for a trackpad\'s "%s", leaving its momentum unused', async (name) => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[2]!)
+		const track = query(document, '.amk-lightbox-track')
+		let nearest = trackOffset()
+		const follow = () => {
+			nearest = Math.min(nearest, trackOffset())
+		}
+
+		track.addEventListener('scroll', follow)
+		// As long a glide as the kit's own, which it lets go for from further away
+		viewer().style.setProperty('--amk-lightbox-carousel-duration', '0.4s')
+		try {
 			// The replay sends the momentum to its very end
 			await replayWheel(640, 400, trackpadSwipe(name))
-
 			await expect.poll(trackOffset).toBe(slideSpacing())
 			expect(activeSlideLabel()).toBe('2 of 3')
 			await settle(200)
+		} finally {
+			track.removeEventListener('scroll', follow)
+			viewer().style.removeProperty('--amk-lightbox-carousel-duration')
+		}
+
+		expect(trackOffset()).toBe(slideSpacing())
+		// However fast it arrives, it never shows the slide beyond
+		expect(nearest).toBeGreaterThan(slideSpacing() - 1)
+	})
+
+	it('stops where it is when fingers stop the momentum, then settles', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[2]!)
+		const track = query(document, '.amk-lightbox-track')
+		const betweenSlides = () => {
+			const slides = trackOffset() / slideSpacing()
+			return Math.abs(slides - Math.round(slides)) * slideSpacing()
+		}
+
+		// A glide long enough to catch
+		viewer().style.setProperty('--amk-lightbox-carousel-duration', '0.4s')
+		try {
+			// The momentum's events end short, as when fingers touch down again
+			const flick = trackpadSwipe('gentlest flick left that should turn a page')
+			await replayWheel(
+				640,
+				400,
+				flick.filter(([time]) => time < 420),
+			)
+			await settle(120)
+			const caught = trackOffset()
+			expect(betweenSlides()).toBeGreaterThan(5)
+			await settle(80)
+			expect(trackOffset()).toBe(caught)
+
+			// The fingers lift without moving, which nothing reports
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+			expect(betweenSlides()).toBe(0)
+		} finally {
+			viewer().style.removeProperty('--amk-lightbox-carousel-duration')
+		}
+	})
+
+	// Fingers that never lift, toward earlier slides, fast and slow by turns
+	const pushing: Array<[number, number, number]> = []
+	for (const [count, delta] of [
+		[60, -12],
+		[25, -3],
+		[25, -12],
+		[20, -2],
+		[20, -14],
+	] as const) {
+		for (let index = 0; index < count; index++) {
+			pushing.push([pushing.length * 16, delta, 0])
+		}
+	}
+
+	it.for([
+		// Its momentum pushes on at the end for most of a second
+		['a flick', trackpadSwipe('quick flick left')],
+		[
+			'a flick whose momentum falters',
+			trackpadSwipe('quick flick left').filter(([time]) => time < 450 || time >= 520),
+		],
+		['fingers that keep pushing', pushing],
+	] as const)('stays on the first slide for %s past it on a trackpad', async ([, events]) => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[0]!)
+		const track = query(document, '.amk-lightbox-track')
+		let farthest = 0
+		let isTicking = true
+		const follow = () => {
+			farthest = Math.max(farthest, Math.abs(trackShift()), trackOffset())
+			if (isTicking) {
+				requestAnimationFrame(follow)
+			}
+		}
+
+		requestAnimationFrame(follow)
+		try {
+			await replayWheel(640, 400, [...events])
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		} finally {
+			isTicking = false
+		}
+
+		// Only a drag pulls the track past its ends
+		expect(farthest).toBe(0)
+		expect(activeSlideLabel()).toBe('1 of 3')
+	})
+
+	it('turns back at once with fingers that pushed past the last slide on a trackpad', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[2]!)
+		const last = 2 * slideSpacing()
+		// Well past the last slide, then 200 px back, without a pause
+		const events = Array.from({ length: 60 }, (_value, index): [number, number, number] => [
+			index * 16,
+			index < 40 ? 12 : -10,
+			0,
+		])
+		await replayWheel(640, 400, events)
+		// None of the way back is spent undoing the push
+		await expect.poll(trackOffset, { interval: 10 }).toBe(last - 200)
+		// Still moving when the events end, they carry on, as a drag let go does
+		await expect.poll(trackOffset).toBe(slideSpacing())
+		expect(activeSlideLabel()).toBe('2 of 3')
+	})
+
+	it.for([
+		// While the glide is on its way, and once it has arrived
+		[150, 230],
+		[350, 430],
+	] as const)(
+		'turns only one slide when momentum from %i to %i ms arrives late',
+		async ([from, to]) => {
+			const fixture = mount(gallery(['a', 'b', 'c']))
+			await openLightbox(boxes(fixture)[0]!)
+			const track = query(document, '.amk-lightbox-track')
+			let farthest = 0
+			const follow = () => {
+				farthest = Math.max(farthest, trackOffset())
+			}
+
+			track.addEventListener('scroll', follow)
+			// As long a glide as the kit's own
+			viewer().style.setProperty('--amk-lightbox-carousel-duration', '0.4s')
+			try {
+				await replayWheel(640, 400, trackpadSwipe('quick flick right'), [from, to])
+				await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+			} finally {
+				track.removeEventListener('scroll', follow)
+				viewer().style.removeProperty('--amk-lightbox-carousel-duration')
+			}
+
+			// Events that only came late are no stop, and no fingers moving it on
+			expect(farthest).toBeLessThan(slideSpacing() + 1)
 			expect(trackOffset()).toBe(slideSpacing())
+			expect(activeSlideLabel()).toBe('2 of 3')
 		},
 	)
+
+	it('goes no further than the next slide with fingers that keep scrolling', async () => {
+		const fixture = mount(gallery(['a', 'b', 'c']))
+		await openLightbox(boxes(fixture)[0]!)
+		const track = query(document, '.amk-lightbox-track')
+		let farthest = 0
+		const follow = () => {
+			farthest = Math.max(farthest, trackOffset())
+		}
+
+		track.addEventListener('scroll', follow)
+		try {
+			// Steadily, for two slides' worth
+			const events = Array.from(
+				{ length: Math.ceil((2 * slideSpacing()) / 10) },
+				(_value, index): [number, number, number] => [index * 16, 10, 0],
+			)
+			await replayWheel(640, 400, events)
+			await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		} finally {
+			track.removeEventListener('scroll', follow)
+		}
+
+		expect(farthest).toBe(slideSpacing())
+		expect(trackOffset()).toBe(slideSpacing())
+		expect(activeSlideLabel()).toBe('2 of 3')
+	})
 
 	it('follows a slow trackpad drag, then settles back on its slide', async () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
