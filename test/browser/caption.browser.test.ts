@@ -10,8 +10,10 @@ import {
 	mount,
 	query,
 	setUpLightbox,
+	transitionsDone,
 	viewer,
 } from './helpers'
+import { lift, pinch } from './touch'
 
 setUpLightbox()
 afterEach(cleanUp)
@@ -48,6 +50,37 @@ it('puts the caption beside a subject with room next to it, and below one withou
 	const wideCaption = query(wide!, '.amk-lightbox-caption').getBoundingClientRect()
 	expect(wideCaption.y).toBeGreaterThanOrEqual(wideFrame.bottom)
 })
+
+it.each([
+	{ height: 3600, name: 'dune', placement: 'aside' },
+	{ height: 1029, name: 'horizon', placement: 'below' },
+])(
+	'holds a caption $placement its subject in place while a pinch zooms in, and brings it back',
+	async ({ height, name, placement }) => {
+		const fixture = mount(captioned(name, height))
+		await query(fixture, 'img', HTMLImageElement).decode()
+		await openLightbox(boxes(fixture)[0]!)
+		const slide = query(document, '.amk-lightbox-slide:not([inert])')
+		const caption = query(slide, '.amk-lightbox-caption')
+		expect(slide.dataset.caption).toBe(placement)
+		const before = caption.getBoundingClientRect()
+
+		// The stage leaves the slide's flow; the caption fades out where it was
+		await pinch(2)
+		expect(Object.hasOwn(slide.dataset, 'zoomed')).toBe(true)
+		const held = caption.getBoundingClientRect()
+		expect(held.x).toBeCloseTo(before.x, 0)
+		expect(held.y).toBeCloseTo(before.y, 0)
+		lift()
+
+		await pinch(0.2)
+		lift()
+		await transitionsDone()
+		expect(Object.hasOwn(slide.dataset, 'zoomed')).toBe(false)
+		expect(caption.style.translate).toBe('')
+		expect(caption.getBoundingClientRect().toJSON()).toEqual(before.toJSON())
+	},
+)
 
 it('drags the track from a press on a caption, whose text is not selectable', async () => {
 	const fixture = mount(captioned('dune', 3600) + captioned('horizon', 1029))

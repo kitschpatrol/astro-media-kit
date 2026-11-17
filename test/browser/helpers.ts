@@ -302,13 +302,18 @@ export function currentStage(): HTMLElement {
 	return query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-stage')
 }
 
-/** Wait until no animation in the viewer is running, and its end is rendered. */
+/**
+ * Wait until no animation in the viewer is running, no zoomed subject is
+ * settling or coasting, and its end is rendered.
+ */
 export async function transitionsDone(): Promise<void> {
 	await expect
-		.poll(() =>
-			viewer()
-				.getAnimations({ subtree: true })
-				.every((a) => a.playState !== 'running'),
+		.poll(
+			() =>
+				viewer().querySelector('[data-panning]') === null &&
+				viewer()
+					.getAnimations({ subtree: true })
+					.every((a) => a.playState !== 'running'),
 		)
 		.toBe(true)
 	// WebKit reports a transition finished before the frame that applies its

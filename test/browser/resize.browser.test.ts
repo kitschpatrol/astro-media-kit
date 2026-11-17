@@ -88,7 +88,8 @@ it('recalculates fill zoom after rotation and clamps panning to the resized imag
 		await transitionsDone()
 		expect(viewer().querySelector('[data-zoomed]')).toBeNull()
 		expect(currentLayer().getBoundingClientRect().width).toBeLessThan(1180)
-		expect(frame.right).toBeCloseTo(currentLayer().getBoundingClientRect().right - 32, -0.5)
+		// Panned as far as it goes: the pan padding short of the viewer's edge
+		expect(frame.right).toBeCloseTo(stage.right - 32, -0.5)
 	} finally {
 		await page.viewport(1280, 800)
 	}

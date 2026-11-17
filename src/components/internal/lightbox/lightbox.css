@@ -443,10 +443,12 @@
 	background: transparent;
 }
 
+/* A held pinch scales the frame from the corner its translation places */
 .amk-lightbox-slide[data-zoomed] .amk-lightbox-frame {
 	position: absolute;
 	top: 0;
 	left: 0;
+	transform-origin: 0 0;
 	width: var(--amk-lightbox-zoomed-width);
 }
 
@@ -716,8 +718,11 @@
 	}
 }
 
-/* A zoomed subject covers its caption */
-.amk-lightbox[data-state='open'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-caption {
+/* A zoomed subject covers its caption. One pinched smaller, to close, dims it
+   with the backdrop instead */
+.amk-lightbox[data-state='open']:not([data-dismissing])
+	.amk-lightbox-slide[data-zoomed]
+	> .amk-lightbox-caption {
 	opacity: 0;
 }
 

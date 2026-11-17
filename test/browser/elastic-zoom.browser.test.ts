@@ -9,6 +9,7 @@ import {
 	frames,
 	middleOf,
 	mount,
+	query,
 	setUpLightbox,
 	transitionsDone,
 	viewer,
@@ -27,17 +28,77 @@ async function open() {
 	return currentLayer().getBoundingClientRect()
 }
 
-it('shrinks below fit with resistance and returns to the fitted geometry on release', async () => {
+it('follows a pinch below fit from the fitted image, dimming the viewer, and closes on release', async () => {
 	const fitted = await open()
-	await pinch(0.4)
+	const { x, y } = await pinch(0.4)
+	const held = currentLayer().getBoundingClientRect()
+	expect(held.width).toBeCloseTo(fitted.width * 0.4, 0)
+	expect(held.x + held.width / 2).toBeCloseTo(x, 0)
+	expect(held.y + held.height / 2).toBeCloseTo(y, 0)
+	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(true)
+	expect(Number(viewer().style.getPropertyValue('--amk-lightbox-drag-opacity'))).toBeCloseTo(
+		0.28,
+		2,
+	)
+	// Nothing to reset on the way out
+	expect(query(viewer(), '.amk-lightbox-zoom').inert).toBe(true)
+
+	// The shrunken image goes wherever the fingers take it
+	pointer('pointermove', 1, x - 20 + 300, y + 200)
+	pointer('pointermove', 2, x + 20 + 300, y + 200)
+	await frames()
+	const moved = currentLayer().getBoundingClientRect()
+	expect(moved.width).toBeCloseTo(fitted.width * 0.4, 0)
+	expect(moved.x + moved.width / 2).toBeCloseTo(x + 300, 0)
+	expect(moved.y + moved.height / 2).toBeCloseTo(y + 200, 0)
+
+	lift()
+	expect(viewer().dataset.state).toBe('closing')
+	// Home from where it was let go, not from the fitted layout
+	expect(currentLayer().getBoundingClientRect().width).toBeLessThan(fitted.width * 0.41)
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(viewer().style.getPropertyValue('--amk-lightbox-drag-opacity')).toBe('')
+})
+
+it('brings the viewer back when a pinch to close grows past fit again', async () => {
+	await open()
+	const { x, y } = await pinch(0.4)
+	pointer('pointermove', 1, x - 50, y)
+	pointer('pointermove', 2, x + 50, y)
+	await frames()
+	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
+	expect(viewer().style.getPropertyValue('--amk-lightbox-drag-opacity')).toBe('')
+	lift()
+	await transitionsDone()
+	expect(viewer().open).toBe(true)
+	expect(viewer().querySelector('[data-zoomed]')).toBeNull()
+})
+
+it('resists a pinch below fit once enlarged, and returns to the fitted geometry on release', async () => {
+	const fitted = await open()
+	await pinch(2)
+	lift()
+	await pinch(0.2)
 	const held = currentLayer().getBoundingClientRect()
 	expect(held.width).toBeLessThan(fitted.width)
 	expect(held.width).toBeGreaterThan(fitted.width * 0.85)
+	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
 	lift()
 	await transitionsDone()
 	expect(currentLayer().getBoundingClientRect().toJSON()).toEqual(fitted.toJSON())
 	expect(viewer().querySelector('[data-zoomed]')).toBeNull()
 	expect(viewer().open).toBe(true)
+})
+
+it('scales the laid-out frame while held and lays it out again on release', async () => {
+	const fitted = await open()
+	await pinch(2)
+	const frame = query(viewer(), '.amk-lightbox-slide:not([inert]) .amk-lightbox-frame')
+	expect(frame.offsetWidth).toBeCloseTo(fitted.width, 0)
+	expect(Number(getComputedStyle(frame).scale)).toBeCloseTo(2, 2)
+	lift()
+	expect(frame.offsetWidth).toBeCloseTo(fitted.width * 2, 0)
+	expect(getComputedStyle(frame).scale).toBe('none')
 })
 
 it('crosses fit in both directions without releasing or changing the focal point', async () => {
@@ -92,20 +153,20 @@ it.each([0.4, 12])(
 	},
 )
 
-it.each([0.4, 12])(
+it.each([0.2, 6])(
 	'catches the return from scale %s without shifting the displayed image',
 	async (scale) => {
-		await open()
-		const { x, y } = await pinch(scale)
+		const fitted = await open()
+		await pinch(2)
 		lift()
-		const animations = currentLayer().getAnimations()
-		for (const animation of animations) {
-			animation.pause()
-			animation.currentTime = Number(animation.effect!.getTiming().duration) / 2
-		}
-
-		await frames()
+		const { x, y } = await pinch(scale)
+		const held = currentLayer().getBoundingClientRect()
+		lift()
+		// Part of the way back to its limit
+		await frames(3)
 		const before = currentLayer().getBoundingClientRect()
+		expect(Math.abs(before.width - held.width)).toBeGreaterThan(1)
+		expect(Math.abs(before.width - fitted.width * (scale < 1 ? 1 : 8))).toBeGreaterThan(1)
 		pointer('pointerdown', 1, x - 50, y)
 		pointer('pointerdown', 2, x + 50, y)
 		pointer('pointermove', 1, x - 50, y)

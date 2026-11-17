@@ -5,6 +5,7 @@ import {
 	boxes,
 	cleanUp,
 	currentStage,
+	fadeOf,
 	frames,
 	mount,
 	query,
@@ -34,13 +35,9 @@ it('fades the reset icon before hiding it, moving focus and disabling input imme
 	button.focus()
 	await pinch(0.4)
 	lift()
-	const fade = button
-		.getAnimations()
-		.find(
-			(animation) =>
-				animation instanceof CSSTransition && animation.transitionProperty === 'opacity',
-		)
-	expect(fade).toBeDefined()
+	// The image springs back to fit first
+	await expect.poll(() => fadeOf(button)).toBeDefined()
+	const fade = fadeOf(button)
 	fade!.pause()
 	fade!.currentTime = 40
 	expect(button.hidden).toBe(false)
@@ -57,6 +54,7 @@ it('reverses a pending fade when another pinch needs the reset control', async (
 	const button = await open()
 	await pinch(0.4)
 	lift()
+	await expect.poll(() => fadeOf(button)).toBeDefined()
 	const fades = button.getAnimations()
 	for (const fade of fades) {
 		fade.pause()

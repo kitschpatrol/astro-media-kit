@@ -88,8 +88,13 @@ class Viewer {
 	readonly #status: HTMLElement
 	readonly #track: HTMLElement
 	#width = 0
-	readonly #zoom = new Zoom(() => {
-		this.#updateZoomState()
+	readonly #zoom = new Zoom({
+		onChange: () => {
+			this.#updateZoomState()
+		},
+		onFade: (opacity) => {
+			this.#fadeWithPinch(opacity)
+		},
 	})
 	readonly #zoomButton: HTMLButtonElement
 	#zoomVisibility = 0
@@ -193,6 +198,9 @@ class Viewer {
 			() => this.#pinchSlide,
 			() => {
 				this.#motion.cancelGesture()
+			},
+			() => {
+				void this.close()
 			},
 		)
 		new ResizeObserver(this.#handleResize).observe(this.#track)
@@ -587,6 +595,28 @@ class Viewer {
 		this.#state = 'open'
 		this.#updateZoomState()
 		this.#liftAround(this.#index)
+	}
+
+	/**
+	 * Dim the backdrop, the controls and the caption with a pinch that shrinks
+	 * the fitted subject to close, as a drag away does, or bring them back.
+	 */
+	#fadeWithPinch(opacity: number | undefined) {
+		if (opacity !== undefined) {
+			this.#dialog.dataset.dismissing = ''
+			this.#dialog.style.setProperty('--amk-lightbox-drag-opacity', String(opacity))
+			return
+		}
+
+		// A drag away or a close under way has the dimming to itself
+		if (this.#dismissLayer !== undefined || this.#state !== 'open') {
+			return
+		}
+
+		// Commit the fingers' last opacity before restoring CSS transitions.
+		this.#dialog.getAnimations()
+		delete this.#dialog.dataset.dismissing
+		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
 	}
 
 	/** Finish the return zoom, then restore the original. */
@@ -1366,7 +1396,8 @@ class Viewer {
 	 */
 	#updateZoomState() {
 		const slide = this.#slides[this.#index]
-		const isZoomed = slide !== undefined && this.#zoom.current === slide
+		// A subject pinched smaller is on its way out, with nothing to reset
+		const isZoomed = slide !== undefined && this.#zoom.current === slide && !this.#zoom.isShrinking
 		const canZoom = slide !== undefined && zoomWidth(slide) !== undefined
 		for (const each of this.#slides) {
 			each.element.toggleAttribute('data-zoomable', each === slide && canZoom)

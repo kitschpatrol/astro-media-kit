@@ -5,6 +5,9 @@ import { lengthOf } from './geometry'
 type Axis = { at: number; end?: number; speed: number }
 type Bounds = { min: Point; max: Point }
 
+/** How a position past the limits is treated. */
+export type Resistance = 'clamp' | 'elastic' | 'free'
+
 /** Translation, edge resistance, and release motion for one enlarged subject. */
 export class Pan {
 	get center(): Point {
@@ -29,42 +32,63 @@ export class Pan {
 		this.#slide = slide
 	}
 
-	/** Measure only when the viewport or media size changes, never during a glide. */
-	measure(fitted: Box) {
-		const { frame, stage } = this.#slide
-		const width = stage.clientWidth
-		const height = stage.clientHeight
-		const box = frame.getBoundingClientRect()
+	/** The nearest position within the limits. */
+	bound(point: Point): Point {
+		const { min, max } = this.#bounds
+		return { x: limit(point.x, min.x, max.x, false), y: limit(point.y, min.y, max.y, false) }
+	}
+
+	/**
+	 * Set the limits for a subject of `size`, as PhotoSwipe does: an edge that
+	 * can reach the viewport's padding stops there, with the same padding on
+	 * every side. An axis too short to reach both stays centered where the fitted
+	 * subject is, so zooming in from the fitted layout never jumps. Measure only
+	 * when the viewport or media size changes, never during a glide.
+	 */
+	measure(fitted: Box, size: Point) {
+		const { stage } = this.#slide
 		const configured = lengthOf(
 			getComputedStyle(stage).getPropertyValue('--amk-lightbox-pan-padding'),
 		)
 		const padding = Number.isFinite(configured) ? Math.max(0, configured) : 32
-		// Preserve the fitted edges so corners stay under the fingers, then add
-		// the same persistent padding on every side, independently of zoom.
+		this.#viewport = { x: stage.clientWidth, y: stage.clientHeight }
+		this.#media = size
+		const centered = {
+			x: fitted.x + (fitted.width - size.x) / 2,
+			y: fitted.y + (fitted.height - size.y) / 2,
+		}
 		this.#bounds = {
 			min: {
-				x: Math.min(fitted.x, fitted.x + fitted.width - box.width) - padding,
-				y: Math.min(fitted.y, fitted.y + fitted.height - box.height) - padding,
+				x: Math.min(centered.x, this.#viewport.x - padding - size.x),
+				y: Math.min(centered.y, this.#viewport.y - padding - size.y),
 			},
 			max: {
-				x: Math.max(fitted.x, fitted.x + fitted.width - box.width) + padding,
-				y: Math.max(fitted.y, fitted.y + fitted.height - box.height) + padding,
+				x: Math.max(centered.x, padding),
+				y: Math.max(centered.y, padding),
 			},
 		}
-		this.#viewport = { x: width, y: height }
-		this.#media = { x: box.width, y: box.height }
 	}
 
-	/** Move with resistance while held, or clamp a discrete keyboard/wheel step. */
-	move(point: Point, elastic = false) {
+	/**
+	 * Move within the limits, as a keyboard or wheel step does; with resistance
+	 * past them, as under one held finger; or freely, as under a pinch.
+	 */
+	move(point: Point, resistance: Resistance = 'clamp') {
 		const { min, max } = this.#bounds
-		this.#draw({
-			x: limit(point.x, min.x, max.x, elastic),
-			y: limit(point.y, min.y, max.y, elastic),
-		})
+		this.#draw(
+			resistance === 'free'
+				? point
+				: {
+						x: limit(point.x, min.x, max.x, resistance === 'elastic'),
+						y: limit(point.y, min.y, max.y, resistance === 'elastic'),
+					},
+		)
 	}
 
-	/** Undo edge resistance when fingers change, so the next move cannot jump. */
+	/**
+	 * The position an elastic move would draw here: undo edge resistance when
+	 * fingers change, so the next move cannot jump.
+	 */
 	origin(): Point {
 		const { min, max } = this.#bounds
 		return {

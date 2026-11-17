@@ -93,7 +93,6 @@ it.each([
 	{ x: 0, y: -1 },
 ])('moves in direction $x, $y and springs back from an overshoot', async (direction) => {
 	await open()
-	const fitted = currentLayer().getBoundingClientRect()
 	viewer().style.setProperty('--amk-lightbox-pan-padding', '24px')
 	await pinch(2)
 	lift()
@@ -108,7 +107,9 @@ it.each([
 	const axis = direction.x === 0 ? 'y' : 'x'
 	const size = direction.x === 0 ? 'height' : 'width'
 	const sign = direction.x + direction.y
-	const bound = fitted[axis] + (sign < 0 ? fitted[size] - before[size] : 0) + sign * 24
+	// The same padding short of each edge of the viewer
+	const stage = currentStage().getBoundingClientRect()
+	const bound = stage[axis] + (sign < 0 ? stage[size] - before[size] : 0) + sign * 24
 	const distance = Math.abs(bound - before[axis]) + 400
 	pointer('pointermove', 1, x + direction.x * distance, y + direction.y * distance)
 	await frames()

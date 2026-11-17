@@ -1,5 +1,5 @@
 import type { Point, Slide } from './types'
-import type { Zoom } from './zoom'
+import type { PinchEnding, PinchOutcome, Zoom } from './zoom'
 import { controlSelector, isWithin, sealedRegionSelector } from './dom'
 
 type Contact = Point & { isOnMedia: boolean }
@@ -19,6 +19,7 @@ export class Pinch {
 	readonly #getSlide: () => Slide | undefined
 	#isPinching = false
 	#moveTime = 0
+	readonly #onClose: () => void
 	readonly #onStart: () => void
 	#previous: Point | undefined
 	readonly #samples: Sample[] = []
@@ -31,10 +32,12 @@ export class Pinch {
 		zoom: Zoom,
 		getSlide: () => Slide | undefined,
 		onStart: () => void,
+		onClose: () => void,
 	) {
 		this.#zoom = zoom
 		this.#getSlide = getSlide
 		this.#onStart = onStart
+		this.#onClose = onClose
 		root.addEventListener('pointerdown', this.#down, { capture: true })
 		root.addEventListener(
 			'wheel',
@@ -45,10 +48,14 @@ export class Pinch {
 		)
 	}
 
-	/** Release gesture listeners before closing, resizing, or changing slides. */
-	stop() {
-		let corrected = false
-		this.#zoom.stopPan()
+	/**
+	 * Release gesture listeners before closing, resizing, or changing slides,
+	 * which cut a held pinch short, or as its fingers lift. Returns what became
+	 * of the pinch.
+	 */
+	stop(ending: PinchEnding = 'interrupt'): PinchOutcome {
+		let outcome: PinchOutcome = 'kept'
+		this.#zoom.stopPan(this.#isPinching)
 		if (this.#frame !== undefined) {
 			cancelAnimationFrame(this.#frame)
 			this.#frame = undefined
@@ -57,7 +64,7 @@ export class Pinch {
 		this.#controller?.abort()
 		this.#controller = undefined
 		if (this.#isPinching) {
-			corrected = this.#zoom.finishPinch()
+			outcome = this.#zoom.finishPinch(ending)
 		}
 
 		this.#contacts.clear()
@@ -68,7 +75,7 @@ export class Pinch {
 		this.#previous = undefined
 		this.#travel = { x: 0, y: 0 }
 		this.#canPan = false
-		return corrected
+		return outcome
 	}
 
 	readonly #down = (event: PointerEvent) => {
@@ -91,7 +98,7 @@ export class Pinch {
 
 			this.#slide = slide
 			this.#canPan = !isWithin(event, sealedRegionSelector, slide.stage)
-			if (this.#zoom.stopPan() && this.#canPan) {
+			if (this.#zoom.stopPan(this.#canPan) && this.#canPan) {
 				// A press catches the glide; its release must not become a tap.
 				this.#onStart()
 				this.#isPinching = true
@@ -137,7 +144,13 @@ export class Pinch {
 		}
 
 		const scale = this.#basis.distance > 0 ? points.distance / this.#basis.distance : 1
-		this.#zoom.pinch(this.#slide, this.#basis.width * scale, this.#basis.anchor, points.center)
+		this.#zoom.pinch(
+			this.#slide,
+			this.#basis.width * scale,
+			this.#basis.anchor,
+			points.center,
+			this.#contacts.size > 1,
+		)
 		this.#record(points.center)
 	}
 
@@ -201,7 +214,7 @@ export class Pinch {
 			points === undefined || box === undefined || box.width <= 0 || box.height <= 0
 				? undefined
 				: {
-						anchor: this.#zoom.anchor(this.#slide!, points.center),
+						anchor: this.#zoom.anchor(this.#slide!, points.center, this.#contacts.size > 1),
 						center: { x: points.center.x, y: points.center.y },
 						distance: points.distance,
 						width: this.#zoom.gestureWidth(this.#slide!),
@@ -243,10 +256,13 @@ export class Pinch {
 
 		if (event.type === 'pointercancel' || this.#contacts.size === 0) {
 			const velocity = this.#velocity(event.timeStamp)
-			const shouldGlide = this.#isPinching
-			const corrected = this.stop()
-			if (shouldGlide && !corrected) {
-				this.#zoom.fling(event.type === 'pointerup' ? velocity : { x: 0, y: 0 })
+			const wasPinching = this.#isPinching
+			const isReleased = event.type === 'pointerup'
+			const outcome = this.stop(isReleased ? 'release' : 'cancel')
+			if (outcome === 'close') {
+				this.#onClose()
+			} else if (wasPinching && outcome === 'kept') {
+				this.#zoom.fling(isReleased ? velocity : { x: 0, y: 0 })
 			}
 		} else if (this.#isPinching) {
 			this.#rebase(event.timeStamp)
