@@ -388,15 +388,14 @@
 	outline: none;
 }
 
-/* Fitted subjects navigate and dismiss; images also pinch and pan. Keep their
-   pointer stream intact so fingers can move between those gestures. Captions
-   and zoomed subjects without pinch handling still scroll natively. */
-.amk-lightbox-slide:is(:not([data-zoomed]), [data-pinch]) > .amk-lightbox-stage {
+/* Keep the pointer stream intact for navigation, dismissal, and media panning.
+   Captions retain their own native scrolling outside the stage. */
+.amk-lightbox-slide > .amk-lightbox-stage {
 	touch-action: none;
 }
 
-/* Fits the subject's aspect ratio into the stage. Never transformed, so it
-   always reports where the subject is laid out */
+/* Fits the subject's aspect ratio into the stage. The frame carries panning;
+   the layer inside it independently carries opening and closing transitions. */
 .amk-lightbox-frame {
 	position: relative;
 	aspect-ratio: var(--amk-lightbox-ratio);
@@ -423,28 +422,24 @@
 	padding-bottom: 0.75rem;
 }
 
-/* A zoomed subject is laid out at its zoomed size, so a larger srcset candidate
-   loads by itself, in a stage that covers the whole slide and pans by native
-   scrolling. Centering stays safe: the grid's auto tracks grow with the frame,
-   so it never overflows past the start edges, where it couldn't be scrolled to */
+/* Enlarged media moves inside a transparent viewport. Clip without creating
+   a scroll container: transforms can then move equally in every direction. */
 .amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
-	/* The scroll offset is set explicitly. WebKit otherwise shifts it to anchor
-	   on the subject when a larger srcset candidate loads mid-transition */
-	overflow-anchor: none;
-	/* Thin but visible: a way to pan without dragging, and a sense of where you are */
-	scrollbar-color: rgb(255 255 255 / 45%) transparent;
-	scrollbar-width: thin;
 	position: absolute;
 	inset: 0;
-	overflow: auto;
-	/* Panning past an edge would otherwise scroll the track to a neighbor */
+	overflow: clip;
 	overscroll-behavior: contain;
 	/* The whole slide again, whatever a caption beside it took */
 	width: 100%;
 	height: 100%;
+	padding: 0;
+	background: transparent;
 }
 
 .amk-lightbox-slide[data-zoomed] .amk-lightbox-frame {
+	position: absolute;
+	top: 0;
+	left: 0;
 	width: var(--amk-lightbox-zoomed-width);
 }
 

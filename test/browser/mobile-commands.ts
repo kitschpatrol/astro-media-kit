@@ -57,7 +57,7 @@ export const mobileGallery = defineBrowserCommand<
 			await page.waitForFunction(
 				() =>
 					document.querySelector(
-						'.amk-carousel-track[data-moving], .amk-lightbox-track[data-moving]',
+						'.amk-carousel-track[data-moving], .amk-lightbox-track[data-moving], .amk-lightbox-stage[data-panning]',
 					) === null,
 			)
 			await page.evaluate(async () => {
@@ -179,14 +179,14 @@ async function snapshot(page: Page) {
 		const dialog = document.querySelector<HTMLDialogElement>('.amk-lightbox')
 		const slideState = () => {
 			const slide = dialog?.querySelector<HTMLElement>('.amk-lightbox-slide:not([inert])')
-			const stage = slide?.querySelector('.amk-lightbox-stage')
+			const stage = slide?.querySelector('.amk-lightbox-stage')?.getBoundingClientRect()
 			const image = slide?.querySelector('.amk-lightbox-frame')?.getBoundingClientRect()
 			return {
 				imageWidth: image?.width ?? 0,
 				isZoomed: slide?.hasAttribute('data-zoomed') ?? false,
 				label: slide?.getAttribute('aria-label') ?? '',
-				stageX: stage?.scrollLeft ?? 0,
-				stageY: stage?.scrollTop ?? 0,
+				stageX: (stage?.x ?? 0) - (image?.x ?? 0),
+				stageY: (stage?.y ?? 0) - (image?.y ?? 0),
 			}
 		}
 

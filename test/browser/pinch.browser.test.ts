@@ -16,6 +16,7 @@ import {
 	viewer,
 	zoomable,
 } from './helpers'
+import { lift, pinch, pointer } from './touch'
 
 setUpLightbox()
 afterEach(async () => {
@@ -30,37 +31,6 @@ async function open(level = 'fit') {
 	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
 	await openLightbox(boxes(fixture)[0]!)
 	return fixture
-}
-
-function pointer(type: string, id: number, x: number, y: number, target: Element = currentLayer()) {
-	target.dispatchEvent(
-		new PointerEvent(type, {
-			bubbles: true,
-			button: 0,
-			buttons: type === 'pointerup' || type === 'pointercancel' ? 0 : 1,
-			cancelable: true,
-			clientX: x,
-			clientY: y,
-			isPrimary: id === 1,
-			pointerId: id,
-			pointerType: 'touch',
-		}),
-	)
-}
-
-async function pinch(scale: number) {
-	const { x, y } = middleOf(currentStage())
-	pointer('pointerdown', 1, x - 50, y)
-	pointer('pointerdown', 2, x + 50, y)
-	pointer('pointermove', 1, x - 50 * scale, y)
-	pointer('pointermove', 2, x + 50 * scale, y)
-	await frames()
-	return { x, y }
-}
-
-function lift() {
-	pointer('pointerup', 1, 0, 0)
-	pointer('pointerup', 2, 0, 0)
 }
 
 it.each(['fit', 'fill', 'native'])(
@@ -170,6 +140,34 @@ it('forgets cancelled contacts and accepts a fresh pinch', async () => {
 	expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(width * 1.5, 0)
 })
 
+it.each(['mouse', 'pen'])(
+	'ignores unrelated %s input while fingers are held',
+	async (pointerType) => {
+		await open()
+		const { x, y } = await pinch(2)
+		const before = currentLayer().getBoundingClientRect()
+		for (const type of ['pointermove', 'pointerup', 'pointercancel']) {
+			currentLayer().dispatchEvent(
+				new PointerEvent(type, {
+					bubbles: true,
+					clientX: 5,
+					clientY: 5,
+					pointerId: 1,
+					pointerType,
+				}),
+			)
+		}
+
+		await frames()
+		expect(currentLayer().getBoundingClientRect().toJSON()).toEqual(before.toJSON())
+		pointer('pointermove', 1, x - 120, y)
+		pointer('pointermove', 2, x + 120, y)
+		await frames()
+		expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(before.width * 1.2, 0)
+		lift()
+	},
+)
+
 it.each(['held', 'released'])(
 	'preserves pinch size and focal point through resize with fingers %s',
 	async (state) => {
@@ -244,13 +242,17 @@ it('bounds extreme zoom and pan without moving to another slide', async () => {
 	pointer('pointerup', 1, x - 600, y)
 	pointer('pointermove', 2, -10_000, -10_000)
 	await frames()
-	const stage = currentStage()
-	expect(stage.scrollLeft).toBeCloseTo(stage.scrollWidth - stage.clientWidth, 0)
-	expect(stage.scrollTop).toBeCloseTo(stage.scrollHeight - stage.clientHeight, 0)
+	const stage = currentStage().getBoundingClientRect()
+	const left = currentLayer().getBoundingClientRect()
+	expect(left.right).toBeGreaterThan(stage.x + stage.width * 0.3)
+	expect(left.bottom).toBeGreaterThan(stage.y + stage.height * 0.3)
 	pointer('pointermove', 2, 10_000, 10_000)
 	await frames()
-	expect(stage.scrollLeft).toBe(0)
-	expect(stage.scrollTop).toBe(0)
+	const right = currentLayer().getBoundingClientRect()
+	expect(right.x).toBeLessThan(stage.x + stage.width * 0.7)
+	expect(right.y).toBeLessThan(stage.y + stage.height * 0.7)
+	expect(right.x).toBeGreaterThan(left.x)
+	expect(right.y).toBeGreaterThan(left.y)
 	lift()
 	expect(activeSlideLabel()).toBe('1 of 2')
 	expect(viewer().open).toBe(true)
@@ -314,10 +316,10 @@ it.for(['fit', 'fill', 'native'])(
 		await commands.touchContacts([])
 
 		// A new, mostly vertical drag also pans instead of dismissing the image.
-		const panned = currentLayer().getBoundingClientRect()
 		first.x = x
 		first.y = y
 		await commands.touchContacts([first])
+		const panned = currentLayer().getBoundingClientRect()
 		first.x -= 10
 		first.y -= 80
 		await commands.touchContacts([first])

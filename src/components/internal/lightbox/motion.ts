@@ -1,3 +1,4 @@
+import type { Point } from './types'
 import type { WheelSample } from './wheel'
 import {
 	controlSelector,
@@ -33,6 +34,8 @@ type MotionOptions = {
 	onMove: (position: number) => void
 	onPrepare: (index: number) => void
 	onRest: () => void
+	/** Move an enlarged subject independently of native scrolling. */
+	pan?: { end: () => void; move: (point: Point) => void; position: () => Point }
 	/** Let a magnified page pan over an embedded carousel. */
 	panPageWhenZoomed?: boolean
 	stage: () => HTMLElement | undefined
@@ -428,7 +431,10 @@ export class CarouselMotion {
 		} else if (drag.stage === undefined) {
 			return this.#grab(drag, event.pointerId)
 		} else {
-			drag.origin = { x: drag.stage.scrollLeft, y: drag.stage.scrollTop }
+			drag.origin = this.#options.pan?.position() ?? {
+				x: drag.stage.scrollLeft,
+				y: drag.stage.scrollTop,
+			}
 			// Keep receiving the drag when it passes over the controls, or leaves
 			// the stage
 			this.#track.setPointerCapture(event.pointerId)
@@ -591,6 +597,8 @@ export class CarouselMotion {
 			}
 
 			this.#settle(isRelease ? velocityOf(drag.samples, this.#position, time) : 0)
+		} else {
+			this.#options.pan?.end()
 		}
 
 		// The click that ends a drag is not a click on the content. None follows
@@ -878,12 +886,14 @@ export class CarouselMotion {
 			while (event.timeStamp - (drag.samples[0]?.time ?? event.timeStamp) > flickWindow) {
 				drag.samples.shift()
 			}
-		} else {
+		} else if (this.#options.pan === undefined) {
 			drag.stage.scrollTo({
 				behavior: 'instant',
 				left: origin.x - distanceX,
 				top: origin.y - distanceY,
 			})
+		} else {
+			this.#options.pan.move({ x: origin.x - distanceX, y: origin.y - distanceY })
 		}
 	}
 
@@ -1066,7 +1076,7 @@ export class CarouselMotion {
 		if (
 			!this.#options.canNavigate() ||
 			(isTouch && this.#isPageZoomed) ||
-			isKeptByTarget(event, this.#track, stage) ||
+			isKeptByTarget(event, this.#track, stage, this.#options.pan !== undefined) ||
 			(!canDismiss && !isCatch && keepsSideways)
 		) {
 			return
@@ -1344,20 +1354,21 @@ function isOnPlayerSurface(event: PointerEvent, track: HTMLElement): boolean {
 
 /**
  * Whether a press belongs to what it landed on, whatever the track is doing: a
- * control, or a zoomed stage's scrollbar. Zoomed subjects without image pinch
- * handling keep native touch panning.
+ * control, or a native scroll container when no custom pan handler is
+ * supplied.
  */
 function isKeptByTarget(
 	event: PointerEvent,
 	track: HTMLElement,
 	stage: HTMLElement | undefined,
+	hasPan: boolean,
 ): boolean {
 	const isTouch = event.pointerType !== 'mouse'
 	return (
 		isWithin(event, controlSelector, track) ||
 		(stage !== undefined &&
-			((isTouch && !stage.parentElement?.hasAttribute('data-pinch')) ||
-				(event.target === stage && isOnScrollbar(event, stage))))
+			!hasPan &&
+			(isTouch || (event.target === stage && isOnScrollbar(event, stage))))
 	)
 }
 

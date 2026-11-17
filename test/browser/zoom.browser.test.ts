@@ -73,7 +73,7 @@ describe('zoom', () => {
 		const zoomed = currentLayer().getBoundingClientRect()
 		expect(zoomed.width).toBeCloseTo(window.innerWidth, 0)
 		expect(zoomed.height).toBeGreaterThan(window.innerHeight)
-		expect(currentStage().scrollHeight).toBeGreaterThan(currentStage().clientHeight)
+		expect(getComputedStyle(currentStage()).overflow).toBe('clip')
 		expect(viewer().open).toBe(true)
 
 		await userEvent.click(currentStage(), { position: { x: 200, y: 200 } })
@@ -149,7 +149,7 @@ describe('zoom', () => {
 		await openLightbox(boxes(fixture)[0]!)
 		await clickSubject(0.5, 0.5)
 		await transitionsDone()
-		const { scrollLeft, scrollTop } = currentStage()
+		const before = currentLayer().getBoundingClientRect()
 
 		const target = page.elementLocator(currentStage())
 		await userEvent.dragAndDrop(target, target, {
@@ -158,8 +158,8 @@ describe('zoom', () => {
 		})
 		await transitionsDone()
 
-		expect(currentStage().scrollLeft).toBeCloseTo(scrollLeft + 200, -1)
-		expect(currentStage().scrollTop).toBeCloseTo(scrollTop + 150, -1)
+		expect(currentLayer().getBoundingClientRect().x).toBeCloseTo(before.x - 200, -1)
+		expect(currentLayer().getBoundingClientRect().y).toBeCloseTo(before.y - 150, -1)
 		expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(2400, 0)
 		expect(activeSlideLabel()).toBe('1 of 2')
 	})
@@ -169,12 +169,12 @@ describe('zoom', () => {
 		await openLightbox(boxes(fixture)[0]!)
 		await clickSubject(0.5, 0.5)
 		await transitionsDone()
-		const { scrollLeft, scrollTop } = currentStage()
+		const before = currentLayer().getBoundingClientRect()
 
 		await userEvent.keyboard('{ArrowRight}{ArrowDown}')
 
-		await expect.poll(() => currentStage().scrollLeft).toBeGreaterThan(scrollLeft)
-		await expect.poll(() => currentStage().scrollTop).toBeGreaterThan(scrollTop)
+		await expect.poll(() => currentLayer().getBoundingClientRect().x).toBeLessThan(before.x)
+		await expect.poll(() => currentLayer().getBoundingClientRect().y).toBeLessThan(before.y)
 		expect(viewer().open).toBe(true)
 	})
 
@@ -209,10 +209,10 @@ describe('zoom', () => {
 		await expect.poll(() => button.ariaPressed).toBe('true')
 		await transitionsDone()
 		expect(document.activeElement).toBe(button)
-		const { scrollTop } = currentStage()
+		const before = currentLayer().getBoundingClientRect()
 		await userEvent.keyboard('{ArrowDown}')
 
-		await expect.poll(() => currentStage().scrollTop).toBeGreaterThan(scrollTop)
+		await expect.poll(() => currentLayer().getBoundingClientRect().y).toBeLessThan(before.y)
 		expect(activeSlideLabel()).toBe('1 of 2')
 		await userEvent.keyboard('{Enter}')
 		await expect.poll(() => button.ariaPressed).toBe('false')

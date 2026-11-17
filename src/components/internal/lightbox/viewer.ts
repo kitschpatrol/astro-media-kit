@@ -166,6 +166,15 @@ class Viewer {
 			onRest: () => {
 				this.#rest()
 			},
+			pan: {
+				end: () => {
+					this.#zoom.fling()
+				},
+				move: (point) => {
+					this.#zoom.panTo(point, true)
+				},
+				position: () => this.#zoom.position,
+			},
 			stage: () =>
 				this.#zoom.current === this.#slides[this.#index] ? this.#zoom.current?.stage : undefined,
 		})
@@ -778,11 +787,7 @@ class Viewer {
 				}
 			} else {
 				event.preventDefault()
-				stage.scrollTo({
-					behavior: 'instant',
-					left: stage.scrollLeft + direction[0] * panStep,
-					top: stage.scrollTop + direction[1] * panStep,
-				})
+				this.#zoom.panBy({ x: direction[0] * panStep, y: direction[1] * panStep })
 			}
 
 			return
@@ -1356,7 +1361,6 @@ class Viewer {
 		const canZoom = slide !== undefined && zoomWidth(slide) !== undefined
 		for (const each of this.#slides) {
 			each.element.toggleAttribute('data-zoomable', each === slide && canZoom)
-			each.element.toggleAttribute('data-pinch', each === this.#pinchSlide)
 		}
 
 		const isHidden = !isZoomed && (slide === undefined || !hasZoomLevel(slide.item))

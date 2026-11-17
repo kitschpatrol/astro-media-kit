@@ -44,7 +44,9 @@ it('preserves native zoom and the panned image center through height changes and
 		await openLightbox(boxes(fixture)[1]!)
 		await clickSubject(0.5, 0.5)
 		await transitionsDone()
-		currentStage().scrollTo({ behavior: 'instant', left: 600, top: 180 })
+		currentStage().dispatchEvent(
+			new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaX: 200, deltaY: 80 }),
+		)
 		await frames()
 		const center = zoomCenter()
 		for (const size of [
@@ -71,7 +73,9 @@ it('recalculates fill zoom after rotation and clamps panning to the resized imag
 		await openLightbox(boxes(mount(zoomable('fill', 'aurora', 1600)))[0]!)
 		await clickSubject(0.5, 0.5)
 		await transitionsDone()
-		currentStage().scrollTo({ behavior: 'instant', left: 10_000 })
+		currentStage().dispatchEvent(
+			new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaX: 10_000 }),
+		)
 		await frames()
 		await page.viewport(1180, 820)
 		// The measured image ratio can differ by a rounded source-layout pixel.
@@ -79,12 +83,12 @@ it('recalculates fill zoom after rotation and clamps panning to the resized imag
 		expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
 		const frame = currentLayer().getBoundingClientRect()
 		const stage = currentStage().getBoundingClientRect()
-		expect(frame.right).toBeCloseTo(stage.right, -0.5)
 		expect(frame.height).toBeCloseTo(stage.height, 0)
 		query(document, '.amk-lightbox-zoom').click()
 		await transitionsDone()
 		expect(viewer().querySelector('[data-zoomed]')).toBeNull()
 		expect(currentLayer().getBoundingClientRect().width).toBeLessThan(1180)
+		expect(frame.right).toBeCloseTo(currentLayer().getBoundingClientRect().right, -0.5)
 	} finally {
 		await page.viewport(1280, 800)
 	}

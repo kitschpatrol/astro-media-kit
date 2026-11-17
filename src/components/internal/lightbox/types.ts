@@ -52,12 +52,12 @@ export type Slide = {
 	/** A copy of the item's figcaption, if it has one. */
 	caption: HTMLElement | undefined
 	element: HTMLElement
-	/** Sized to fit the stage; never transformed. */
+	/** Sized to fit or zoom, and translated while panning. */
 	frame: HTMLElement
 	item: HTMLElement
 	/** Fills the frame and carries the lift transition. */
 	layer: HTMLElement
 	lift: Lift | undefined
-	/** Holds the frame, and scrolls in both axes while the slide is zoomed. */
+	/** Holds the frame and clips it to the viewport while zoomed. */
 	stage: HTMLElement
 }
