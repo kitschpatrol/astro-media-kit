@@ -14,6 +14,20 @@
 	syntax: '<length>';
 }
 
+/* How many times its fitted size media can be pinched to. */
+@property --amk-lightbox-max-zoom {
+	inherits: true;
+	initial-value: 8;
+	syntax: '<number>';
+}
+
+/* Whether fitted media pinched smaller closes the viewer: 1, or 0 for not. */
+@property --amk-lightbox-pinch-to-close {
+	inherits: true;
+	initial-value: 1;
+	syntax: '<integer>';
+}
+
 /* The lightbox: the `.amk-zoom` items `<Zoomer>` renders in the page, and the
    `.amk-lightbox` dialog their content is lifted into. Astro bundles this with
    the page's own CSS, so it is in place before the first paint and the script

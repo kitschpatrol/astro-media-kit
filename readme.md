@@ -636,10 +636,14 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
 | `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
 | `--amk-lightbox-pan-padding`         | `32px`                            |
+| `--amk-lightbox-max-zoom`            | `8`                               |
+| `--amk-lightbox-pinch-to-close`      | `1`                               |
 | `--amk-zoom-in-cursor`               | `zoom-in`                         |
 | `--amk-zoom-out-cursor`              | `zoom-out`                        |
 
 `--amk-lightbox-pan-padding` is how far enlarged media stays from each edge of the viewer when panned as far as it goes, equally on all four sides. It accepts a CSS length, stays the same as the media enlarges, and defaults to `32px`; use `0px` to pan the media's edges to the viewer's own. Along an axis where the media is too small to reach both edges, it stays centered where it fitted. Pulling beyond these resting limits adds elastic resistance, then springs back on release. The media moves inside a transparent viewport without adding scrollbars.
+
+`--amk-lightbox-max-zoom` is how many times its fitted size media can be pinched to, as a number of 1 or more; a `zoomLevel` that enlarges it further is still reached. Set `--amk-lightbox-pinch-to-close` to `0` to keep a pinch from closing the viewer: fitted media pinched smaller then resists and springs back, and the other ways to close remain. Both are read as a zoom begins.
 
 `--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling, and the gap between slides, come from the [shared gallery settings](#shared-gallery-settings) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it. Opening and closing pace the content's travel and its size separately: on the way up it moves toward its place on `--amk-lightbox-lead-easing` and grows on `--amk-lightbox-follow-easing`, and on the way home it shrinks on the lead curve and travels on the follow curve. Give both the same curve to move and resize in step; a zoom inside the viewer always uses `--amk-lightbox-easing` for both.
 

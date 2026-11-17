@@ -87,6 +87,45 @@ it('resists a pinch below fit once enlarged, and returns to the fitted geometry 
 	expect(viewer().open).toBe(true)
 })
 
+it('keeps to a zoom limit set on the viewer, past which a pinch resists', async () => {
+	const fitted = await open()
+	viewer().style.setProperty('--amk-lightbox-max-zoom', '3')
+	try {
+		const { x, y } = await pinch(6)
+		const held = currentLayer().getBoundingClientRect()
+		expect(held.width).toBeGreaterThan(fitted.width * 3)
+		expect(held.width).toBeLessThan(fitted.width * 3.3)
+		lift()
+		await transitionsDone()
+		const settled = currentLayer().getBoundingClientRect()
+		expect(settled.width).toBeCloseTo(fitted.width * 3, 0)
+		expect(settled.x + settled.width / 2).toBeCloseTo(x, 0)
+		expect(settled.y + settled.height / 2).toBeCloseTo(y, 0)
+	} finally {
+		viewer().style.removeProperty('--amk-lightbox-max-zoom')
+	}
+})
+
+it('resists a pinch below fit and stays open when pinching to close is turned off', async () => {
+	const fitted = await open()
+	viewer().style.setProperty('--amk-lightbox-pinch-to-close', '0')
+	try {
+		await pinch(0.4)
+		const held = currentLayer().getBoundingClientRect()
+		expect(held.width).toBeLessThan(fitted.width)
+		expect(held.width).toBeGreaterThan(fitted.width * 0.85)
+		expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
+		lift()
+		await transitionsDone()
+		expect(viewer().open).toBe(true)
+		expect(viewer().dataset.state).toBe('open')
+		expect(viewer().querySelector('[data-zoomed]')).toBeNull()
+		expect(currentLayer().getBoundingClientRect().toJSON()).toEqual(fitted.toJSON())
+	} finally {
+		viewer().style.removeProperty('--amk-lightbox-pinch-to-close')
+	}
+})
+
 it('scales the laid-out frame while held and lays it out again on release', async () => {
 	const fitted = await open()
 	await pinch(2)

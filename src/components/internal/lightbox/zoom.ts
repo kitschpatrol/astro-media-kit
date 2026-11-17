@@ -58,6 +58,8 @@ export class Zoom {
 	}
 	/** Whether the pinch under way started fitted and has stayed about there. */
 	#canClose = false
+	/** Whether fitted media pinched smaller closes the viewer, as set in CSS. */
+	#closesOnPinch = true
 	#fade: number | undefined
 	#fitted: Box = { height: 0, width: 0, x: 0, y: 0 }
 	#isPinched = false
@@ -227,7 +229,7 @@ export class Zoom {
 			this.#enter(slide)
 			this.#size(slide, this.#fitted.width)
 			this.#pan?.measure()
-			this.#canClose = true
+			this.#canClose = this.#closesOnPinch
 		}
 
 		this.#dropSettle()
@@ -566,7 +568,11 @@ export class Zoom {
 
 	#track(slide: Slide, width: number) {
 		this.#slide = slide
-		this.#maximumWidth = maximumWidth(this.#fitted.width, width)
+		// The viewer's own settings, read as a zoom begins
+		const style = getComputedStyle(slide.stage)
+		const zoom = Number(style.getPropertyValue('--amk-lightbox-max-zoom'))
+		this.#maximumWidth = maximumWidth(this.#fitted.width, width, zoom >= 1 ? zoom : undefined)
+		this.#closesOnPinch = style.getPropertyValue('--amk-lightbox-pinch-to-close').trim() !== '0'
 		this.#pan = new Pan(slide)
 		slide.stage.focus({ preventScroll: true })
 		slide.stage.addEventListener('wheel', this.#handleWheel, { passive: false })
