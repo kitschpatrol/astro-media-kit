@@ -214,7 +214,7 @@ it('covers the viewport in both reading directions', async () => {
 	}
 })
 
-it('resets stale zoom geometry after a height-only resize', async () => {
+it('preserves zoom and its accessible toggle state after a height-only resize', async () => {
 	const fixture = mount(
 		item(
 			'<img src="/media/tile-2400.jpg" width="2400" height="2400" alt="Tile" style="width: 100%; height: auto" />',
@@ -228,11 +228,14 @@ it('resets stale zoom geometry after a height-only resize', async () => {
 	expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
 	try {
 		await page.viewport(1280, 1500)
-		await expect.poll(() => viewer().querySelector('[data-zoomed]')).toBeNull()
-		zoom.click()
 		await expect
 			.poll(() => query(document, '.amk-lightbox-frame').getBoundingClientRect().width)
 			.toBe(1500)
+		expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
+		expect(zoom.ariaPressed).toBe('true')
+		zoom.click()
+		expect(viewer().querySelector('[data-zoomed]')).toBeNull()
+		expect(zoom.ariaPressed).toBe('false')
 	} finally {
 		await page.viewport(1280, 800)
 	}

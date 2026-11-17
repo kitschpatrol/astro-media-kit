@@ -6,6 +6,9 @@ import {
 	block,
 	boxes,
 	cleanUp,
+	clickSubject,
+	currentLayer,
+	currentStage,
 	frames,
 	gallery,
 	item,
@@ -13,11 +16,79 @@ import {
 	mountPage,
 	query,
 	setUpLightbox,
+	transitionsDone,
 	viewer,
+	zoomable,
 } from './helpers'
 
 setUpLightbox()
 afterEach(cleanUp)
+
+/** The image coordinates at the center of the scrollable stage. */
+function zoomCenter() {
+	const stage = currentStage().getBoundingClientRect()
+	const frame = query(
+		viewer(),
+		'.amk-lightbox-slide:not([inert]) .amk-lightbox-frame',
+	).getBoundingClientRect()
+	return {
+		x: (stage.x + stage.width / 2 - frame.x) / frame.width,
+		y: (stage.y + stage.height / 2 - frame.y) / frame.height,
+	}
+}
+
+it('preserves native zoom and the panned image center through height changes and rotation', async () => {
+	try {
+		await page.viewport(820, 1180)
+		const fixture = mount(zoomable('native') + zoomable('native', 'aurora', 1600))
+		await openLightbox(boxes(fixture)[1]!)
+		await clickSubject(0.5, 0.5)
+		await transitionsDone()
+		currentStage().scrollTo({ behavior: 'instant', left: 600, top: 180 })
+		await frames()
+		const center = zoomCenter()
+		for (const size of [
+			{ width: 820, height: 1100 },
+			{ width: 1180, height: 820 },
+		]) {
+			await page.viewport(size.width, size.height)
+			await expect.poll(() => currentStage().clientHeight).toBe(size.height)
+			await frames()
+			expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
+			expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(2400, 0)
+			expect(zoomCenter().x).toBeCloseTo(center.x, 2)
+			expect(zoomCenter().y).toBeCloseTo(center.y, 2)
+			expect(activeSlideLabel()).toBe('2 of 2')
+		}
+	} finally {
+		await page.viewport(1280, 800)
+	}
+})
+
+it('recalculates fill zoom after rotation and clamps panning to the resized image', async () => {
+	try {
+		await page.viewport(820, 1180)
+		await openLightbox(boxes(mount(zoomable('fill', 'aurora', 1600)))[0]!)
+		await clickSubject(0.5, 0.5)
+		await transitionsDone()
+		currentStage().scrollTo({ behavior: 'instant', left: 10_000 })
+		await frames()
+		await page.viewport(1180, 820)
+		// The measured image ratio can differ by a rounded source-layout pixel.
+		await expect.poll(() => currentLayer().getBoundingClientRect().width).toBeCloseTo(1230, -0.5)
+		expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
+		const frame = currentLayer().getBoundingClientRect()
+		const stage = currentStage().getBoundingClientRect()
+		expect(frame.right).toBeCloseTo(stage.right, -0.5)
+		expect(frame.height).toBeCloseTo(stage.height, 0)
+		query(document, '.amk-lightbox-zoom').click()
+		await transitionsDone()
+		expect(viewer().querySelector('[data-zoomed]')).toBeNull()
+		expect(currentLayer().getBoundingClientRect().width).toBeLessThan(1180)
+	} finally {
+		await page.viewport(1280, 800)
+	}
+})
 
 /** A fluid image, 40% of the viewport wide, as a responsive page lays it out. */
 function fluidImage(): string {

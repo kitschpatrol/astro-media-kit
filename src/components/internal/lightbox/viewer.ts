@@ -853,10 +853,7 @@ class Viewer {
 				this.restore()
 			}
 		} else {
-			// The zoomed size and the point it was centered on are out of date
-			if (this.#zoom.current !== undefined) {
-				this.#zoom.reset()
-			}
+			this.#zoom.resize()
 
 			for (const slide of this.#slides) {
 				prepareSlideImage(slide)
