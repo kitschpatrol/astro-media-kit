@@ -108,6 +108,10 @@
 
 	/* The viewer covers the viewport, whatever the page's own dialog styles */
 	.amk-lightbox:modal {
+		/* Keep native panning inside zoomed images and captions, without adding
+		   a second, browser-level zoom to this modal. Page zoom stays available
+		   outside the viewer, including before it opens. */
+		touch-action: pan-x pan-y;
 		position: fixed !important;
 		inset: 0 !important;
 		transform: none !important;
@@ -132,7 +136,18 @@
 	}
 
 	.amk-lightbox::backdrop {
+		touch-action: pan-x pan-y;
+		overflow: hidden;
+		overscroll-behavior: contain;
 		background: var(--amk-lightbox-backdrop) !important;
+	}
+
+	/* Fixed positioning otherwise follows the layout viewport, leaving controls
+	   outside the visible screen when the page was already pinch-zoomed. */
+	.amk-lightbox:modal[data-viewport] {
+		inset: var(--amk-lightbox-viewport-top) auto auto var(--amk-lightbox-viewport-left) !important;
+		width: var(--amk-lightbox-viewport-width) !important;
+		height: var(--amk-lightbox-viewport-height) !important;
 	}
 
 	/* The lifted subject fills its frame, whatever its page styles say */
@@ -357,10 +372,10 @@
 		max(env(safe-area-inset-left), var(--amk-lightbox-gutter));
 }
 
-/* Script drags the track and a fitted subject under touch, as under a mouse, so
-   the browser keeps only pinch zoom. A zoomed stage pans natively. */
+/* Script handles sideways swipes. The scroll-boundary guard keeps vertical
+   drags on fitted subjects in the viewer, while captions scroll natively. */
 .amk-lightbox-slide:not([data-zoomed]) {
-	touch-action: pinch-zoom;
+	touch-action: pan-y;
 }
 
 .amk-lightbox-stage {

@@ -2,6 +2,7 @@ import type { CDPSession, Frame, Page } from 'playwright'
 import type { ViteUserConfig } from 'vitest/config'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
+import { mobileGallery } from './test/browser/mobile-commands.ts'
 import { buildFixture } from './test/parity/helpers/build-fixture.ts'
 
 const emulateReducedMotion = defineBrowserCommand<[isReduced: boolean]>(
@@ -389,6 +390,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 							commands: {
 								displayWithoutScripts,
 								emulateReducedMotion,
+								mobileGallery,
 								mouseDown,
 								mouseFlick,
 								mouseMove,

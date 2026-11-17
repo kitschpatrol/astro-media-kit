@@ -1,0 +1,64 @@
+---
+import { Carousel, Zoomer } from 'astro-media-kit/components'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width, initial-scale=1" name="viewport" />
+		<title>Mobile gallery gestures</title>
+	</head>
+	<body>
+		<div aria-hidden="true" class="spacer"></div>
+		<section aria-label="Gallery" id="gallery">
+			{['native', 'fit', 'fill'].map((level) => (
+				<Zoomer enabled="mobile" level={level as 'fill' | 'fit' | 'native'} nativeWidth={2400}>
+					<img
+						alt={`Aurora at ${level} size`}
+						height="1600"
+						src="/media/aurora-2400.jpg"
+						width="2400"
+					/>
+				</Zoomer>
+			))}
+		</section>
+		<section aria-label="Inline gallery" id="inline">
+			<Carousel>
+				<img alt="Aurora" height="1600" src="/media/aurora-2400.jpg" width="2400" />
+				<img alt="Tile" height="2400" src="/media/tile-2400.jpg" width="2400" />
+			</Carousel>
+		</section>
+		<div aria-hidden="true" class="spacer"></div>
+	</body>
+</html>
+
+<style is:global>
+	body {
+		margin: 0;
+	}
+
+	.spacer {
+		height: 1200px;
+	}
+
+	#gallery {
+		width: 240px;
+		margin-inline: auto;
+	}
+
+	#inline {
+		width: 100%;
+	}
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.amk-lightbox {
+		--amk-lightbox-duration: 60ms;
+		--amk-lightbox-carousel-duration: 60ms;
+	}
+</style>

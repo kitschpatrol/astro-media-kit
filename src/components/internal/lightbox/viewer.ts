@@ -290,6 +290,9 @@ class Viewer {
 
 		// Show, lift, and lay out in one task: a video left without a layout box
 		// across tasks can stall or skip in WebKit
+		window.visualViewport?.addEventListener('resize', this.#syncViewport)
+		window.visualViewport?.addEventListener('scroll', this.#syncViewport)
+		this.#syncViewport()
 		if (!this.#dialog.open) {
 			this.#previousFocus = document.activeElement ?? undefined
 			this.#dialog.showModal()
@@ -356,6 +359,13 @@ class Viewer {
 
 		dropSlides([...this.#slides, ...this.#ghosts])
 		this.#dialog.close()
+		window.visualViewport?.removeEventListener('resize', this.#syncViewport)
+		window.visualViewport?.removeEventListener('scroll', this.#syncViewport)
+		delete this.#dialog.dataset.viewport
+		for (const part of ['left', 'top', 'width', 'height']) {
+			this.#dialog.style.removeProperty(`--amk-lightbox-viewport-${part}`)
+		}
+
 		// Its player is home before the page controls begin fading back in.
 		this.#setPageItem(undefined)
 		if (current !== undefined) {
@@ -1222,6 +1232,24 @@ class Viewer {
 		slide.element.remove()
 		if (this.#state === 'open') {
 			this.#liftAround(this.#index)
+		}
+	}
+
+	readonly #syncViewport = () => {
+		const viewport = window.visualViewport
+		if (viewport === null || this.#state === 'idle') {
+			return
+		}
+
+		this.#dialog.dataset.viewport = ''
+		const geometry = {
+			height: viewport.height,
+			left: viewport.offsetLeft,
+			top: viewport.offsetTop,
+			width: viewport.width,
+		}
+		for (const [part, value] of Object.entries(geometry)) {
+			this.#dialog.style.setProperty(`--amk-lightbox-viewport-${part}`, `${value}px`)
 		}
 	}
 

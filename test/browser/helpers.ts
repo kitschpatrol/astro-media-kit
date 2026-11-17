@@ -1,5 +1,6 @@
 import { expect, onTestFinished } from 'vitest'
 import { commands, server, userEvent } from 'vitest/browser'
+import type { MobileAction, MobileSnapshot } from './mobile-commands'
 import { lengthOf } from '../../src/components/internal/lightbox/geometry'
 import { installLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/lightbox/lightbox.css'
@@ -10,6 +11,10 @@ declare module 'vitest/browser' {
 	interface BrowserCommands {
 		displayWithoutScripts: (path: string, selector: string) => Promise<false | string>
 		emulateReducedMotion: (isReduced: boolean) => Promise<void>
+		mobileGallery: (
+			actions: MobileAction[],
+			size?: { width: number; height: number },
+		) => Promise<false | MobileSnapshot[]>
 		mouseDown: (x: number, y: number) => Promise<void>
 		mouseFlick: (x: number, y: number) => Promise<void>
 		mouseMove: (x: number, y: number) => Promise<void>

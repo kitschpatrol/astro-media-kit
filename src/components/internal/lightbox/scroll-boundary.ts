@@ -19,33 +19,52 @@ export function containPageScroll(dialog: HTMLDialogElement) {
 		{ passive: false },
 	)
 
-	let touch: undefined | { x: number; y: number }
-	dialog.addEventListener(
-		'touchstart',
-		(event) => {
-			const point = event.touches.length === 1 ? event.touches[0] : undefined
-			touch = point === undefined ? undefined : { x: point.clientX, y: point.clientY }
-		},
-		{ passive: true },
-	)
+	let touch: ReturnType<typeof touchPosition>
+	const rebase = (event: TouchEvent) => {
+		touch = touchPosition(event.touches)
+	}
+
+	for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) {
+		dialog.addEventListener(type, rebase, { passive: true })
+	}
+
 	dialog.addEventListener(
 		'touchmove',
 		(event) => {
-			const point = event.touches.length === 1 ? event.touches[0] : undefined
+			const point = touchPosition(event.touches)
+			// Multiple fingers can pan an inner image or caption, but must not
+			// turn slides or bypass containment and reach the page behind it.
+			const boundary =
+				event.touches.length > 1 ? (dialog.querySelector('.amk-lightbox-track') ?? dialog) : dialog
 			if (
 				point !== undefined &&
-				touch !== undefined &&
+				point.count === touch?.count &&
 				event.cancelable &&
 				!event.defaultPrevented &&
-				!canScroll(event, dialog, touch.x - point.clientX, touch.y - point.clientY)
+				!canScroll(event, boundary, touch.x - point.x, touch.y - point.y)
 			) {
 				event.preventDefault()
 			}
 
-			touch = point === undefined ? undefined : { x: point.clientX, y: point.clientY }
+			touch = point
 		},
 		{ passive: false },
 	)
+}
+
+function touchPosition(touches: TouchList): undefined | { count: number; x: number; y: number } {
+	if (touches.length === 0) {
+		return undefined
+	}
+
+	let x = 0
+	let y = 0
+	for (const point of touches) {
+		x += point.clientX
+		y += point.clientY
+	}
+
+	return { count: touches.length, x: x / touches.length, y: y / touches.length }
 }
 
 /** Contain scrolling keys left unused by the viewer. */
