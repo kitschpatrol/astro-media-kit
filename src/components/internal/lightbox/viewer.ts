@@ -1293,9 +1293,6 @@ class Viewer {
 		this.#pinch.stop()
 		this.#motion.stop()
 		if (isZoomed) {
-			// Focus before resetting so an all-fit gallery keeps this control
-			// visible even in browsers that do not focus buttons on pointer clicks.
-			this.#zoomButton.focus({ preventScroll: true })
 			this.#zoom.set(slide, undefined)
 		} else {
 			const width = zoomWidth(slide)
@@ -1307,8 +1304,10 @@ class Viewer {
 			this.#zoom.set(slide, width, { x: box.x + box.width / 2, y: box.y + box.height / 2 })
 		}
 
-		// A toggle button keeps focus
-		this.#zoomButton.focus({ preventScroll: true })
+		// A fit preset has no zoom-in action after resetting.
+		;(this.#zoomButton.hidden === true ? slide.stage : this.#zoomButton).focus({
+			preventScroll: true,
+		})
 	}
 
 	#updateControls() {
@@ -1346,11 +1345,10 @@ class Viewer {
 	}
 
 	/**
-	 * Show the zoom button when anything in the gallery zooms, pressed while the
-	 * current slide is zoomed, and disabled (not hidden, which would drop
-	 * keyboard focus) when the current slide can't zoom. The current slide is
-	 * marked `data-zoomable` while its subject can zoom, for the cursor, which
-	 * shows it while the subject is still opening too.
+	 * Show the zoom button for a secondary preset or to reset a pinch. Move focus
+	 * before hiding it on a fitted item without a secondary preset. The current
+	 * slide is marked `data-zoomable` while its subject can zoom, for the cursor,
+	 * which shows it while the subject is still opening too.
 	 */
 	#updateZoomState() {
 		const slide = this.#slides[this.#index]
@@ -1361,10 +1359,12 @@ class Viewer {
 			each.element.toggleAttribute('data-pinch', each === this.#pinchSlide)
 		}
 
-		this.#zoomButton.hidden =
-			!isZoomed &&
-			document.activeElement !== this.#zoomButton &&
-			this.#slides.every((each) => !hasZoomLevel(each.item))
+		const isHidden = !isZoomed && (slide === undefined || !hasZoomLevel(slide.item))
+		if (isHidden && document.activeElement === this.#zoomButton) {
+			;(slide?.stage ?? this.#dialog).focus({ preventScroll: true })
+		}
+
+		this.#zoomButton.hidden = isHidden
 		this.#zoomButton.ariaPressed = String(isZoomed)
 		this.#zoomButton.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
 	}

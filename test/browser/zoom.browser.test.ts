@@ -218,7 +218,7 @@ describe('zoom', () => {
 		await expect.poll(() => button.ariaPressed).toBe('false')
 	})
 
-	it('shows the Zoom button only in galleries that zoom, disabled on items that can’t', async () => {
+	it('shows the Zoom button for a secondary preset and hides it on fit items', async () => {
 		await openLightbox(boxes(mount(gallery(['a', 'b'])))[0]!)
 		expect(query(document, '.amk-lightbox-zoom').hidden).toBe(true)
 		await close()
@@ -231,7 +231,7 @@ describe('zoom', () => {
 
 		await userEvent.click(query(document, '.amk-lightbox-next'))
 		await expect.poll(activeSlideLabel).toBe('2 of 2')
-		await expect.poll(() => button.ariaDisabled).toBe('true')
+		await expect.poll(() => button.hidden).toBe(true)
 	})
 
 	it('closes from a zoomed state onto the page', async () => {
