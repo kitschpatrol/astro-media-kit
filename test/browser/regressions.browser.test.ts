@@ -1063,3 +1063,74 @@ it('stands a poster in for an embedded player with nothing to draw, started or n
 	expect(preview.getBoundingClientRect().width).toBeCloseTo(container.width, 0)
 	expect(preview.getBoundingClientRect().height).toBeCloseTo(container.height, 0)
 })
+
+it('leaves an SVG image in the page and lifts a copy of it, as a neighbor and when opened', async () => {
+	// No intrinsic size of its own, as artwork with only a viewBox
+	const fixture = mount(
+		item(
+			`<img id="artwork" src="/media/outline.svg?vector" width="900" height="900" alt="Outline"
+				style="display: block; width: 100%; height: auto" />`,
+			'data-gallery="vector" style="width: 200px"',
+		) +
+			item(
+				`<img src="/media/tile-480.jpg" width="480" height="480" alt=""
+					style="display: block; width: 100%; height: auto" />`,
+				'data-gallery="vector" style="width: 200px"',
+			),
+	)
+	const [vector, photo] = boxes(fixture)
+	const original = query(vector!, 'img', HTMLImageElement)
+	await original.decode()
+	const home = original.getBoundingClientRect()
+	const copyInViewer = () => viewer().querySelector<HTMLImageElement>('img[src*="outline.svg"]')
+
+	// Lifted as a neighbor, once the photo's opening settles: the page keeps its
+	// element, with nothing laid over it
+	await openLightbox(photo!)
+	await expect.poll(copyInViewer).not.toBeNull()
+	expect(vector!.firstElementChild).toBe(original)
+	expect(vector!.children).toHaveLength(1)
+	expect(original.getBoundingClientRect().toJSON()).toEqual(home.toJSON())
+	expect(Object.hasOwn(vector!.dataset, 'lifted')).toBe(true)
+	expect(copyInViewer()!.id).toBe('')
+	expect(copyInViewer()!.alt).toBe('Outline')
+	// A photo leaves a copy and goes itself
+	expect(photo!.querySelector('[data-amk-preview]')).not.toBeNull()
+
+	await closeLightbox()
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(copyInViewer()).toBeNull()
+	expect(vector!.firstElementChild).toBe(original)
+	expect(Object.hasOwn(vector!.dataset, 'lifted')).toBe(false)
+
+	// Opened itself, the copy grows out of the original's place and lands on it
+	await openLightbox(vector!)
+	expect(copyInViewer()!.closest('.amk-lightbox-layer')).not.toBeNull()
+	expect(vector!.firstElementChild).toBe(original)
+	const shown = copyInViewer()!.getBoundingClientRect()
+	expect(shown.width).toBeGreaterThan(home.width * 2)
+	expect(shown.width / shown.height).toBeCloseTo(1, 2)
+	await closeLightbox()
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(copyInViewer()).toBeNull()
+	expect(document.querySelectorAll('[id="artwork"]')).toHaveLength(1)
+})
+
+it('moves an SVG image itself when its item leaves no copy in the page', async () => {
+	const fixture = mount(
+		item(
+			`<img src="/media/outline.svg?moved" width="900" height="900" alt=""
+				style="display: block; width: 100%; height: auto" />`,
+			'data-placeholder="none" style="width: 200px"',
+		),
+	)
+	const box = boxes(fixture)[0]!
+	const original = query(box, 'img', HTMLImageElement)
+	await original.decode()
+	await openLightbox(box)
+	expect(original.closest('.amk-lightbox-layer')).not.toBeNull()
+	expect(box.querySelector('img')).toBeNull()
+	await closeLightbox()
+	await expect.poll(() => viewer().open).toBe(false)
+	expect(box.firstElementChild).toBe(original)
+})

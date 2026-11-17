@@ -29,6 +29,15 @@ function nativeWidth(item: HTMLElement, subject: Element): number | undefined {
 	return undefined
 }
 
+/** Whether an image shows vector artwork, going by its address. */
+export function isVectorImage(image: HTMLImageElement): boolean {
+	const source = image.currentSrc
+	return (
+		source.startsWith('data:image/svg+xml') ||
+		(URL.parse(source, document.baseURI)?.pathname.toLowerCase().endsWith('.svg') ?? false)
+	)
+}
+
 /**
  * The natural aspect ratio of an element's content: an image's or a video's own
  * once it has one, else its width and height attributes, which a loading image

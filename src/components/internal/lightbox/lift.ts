@@ -5,7 +5,7 @@ import { releaseControlPreview, retainControlPreview } from './control-preview'
 import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { releaseImagePreview, retainImage, returnImagePreview } from './image-preview'
-import { ratioOf } from './media'
+import { isVectorImage, ratioOf } from './media'
 import { retainPictureThemes } from './picture-theme'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
@@ -35,11 +35,11 @@ export function dropSlides(slides: Slide[]) {
 
 		slide.lift = undefined
 		const { item } = lift
-		if (isLinkItem(item)) {
+		if (lift.isCopy || isLinkItem(item)) {
 			lift.releasePictureThemes()
 			releaseImagePreview(lift.subject)
-			// A link's media is for the viewer alone: it goes away, and the next
-			// use starts afresh
+			// A link's media, like a copy of what stays in the page, is for the
+			// viewer alone: it goes away, and the next use starts afresh
 			releaseControls(lift.subject)
 			releasePreparation(lift.subject)
 			lift.subject.remove()
@@ -103,27 +103,33 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	// A copy still covering the subject from its last return makes way for the new one
 	returns.get(measurement.item)?.()
 
-	const { item, subject } = measurement
-	// A link's media was never in the page: nothing holds its place or stands in
+	const { item } = measurement
+	// A link's media was never in the page, and vector artwork never leaves it:
+	// nothing holds its place or stands in
 	const isLink = isLinkItem(item)
-	if (!isLink) {
+	const isCopy = !isLink && staysInPage(item, measurement.subject)
+	const subject = isCopy ? copyForViewer(measurement.subject) : measurement.subject
+	const isAway = !isLink && !isCopy
+	if (isAway) {
 		retainControlPreview(item, subject)
 	}
 
-	const placeholder = isLink ? undefined : createPlaceholder(item, subject)
+	const placeholder = isAway ? createPlaceholder(item, subject) : undefined
 	retainImage(subject, slide.layer)
 	slide.lift = {
 		...measurement,
 		hadStyle: item.hasAttribute('style'),
+		isCopy,
 		nextSibling: subject.nextSibling ?? undefined,
 		placeholder: placeholder?.element,
 		placeholderBox: placeholder?.box,
 		probe: undefined,
 		releasePictureThemes: retainPictureThemes(subject, item),
+		subject,
 	}
 	// On the slide, where both the frame and a stage beside a caption read it
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
-	const hold = isLink ? '' : holdOf(item, subject, measurement.wrapper)
+	const hold = isAway ? holdOf(item, subject, measurement.wrapper) : ''
 	item.dataset.lifted = hold
 	// A popup still on its way out can't be carried by a move in this task
 	if (closePopups(subject)) {
@@ -155,7 +161,37 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		placePlaceholder(item, placeholder, measurement.home, hold !== 'size')
 	}
 
-	releaseWarmup(subject)
+	releaseWarmup(measurement.subject)
+}
+
+/**
+ * Whether a subject stays in the page while the viewer shows a copy of it: an
+ * SVG image whose place a copy would otherwise take. A bitmap's copy draws the
+ * pixels the original has decoded, but a second element showing an SVG draws
+ * the artwork again, and flashes on iPadOS as it takes the original's place in
+ * the page. A copy in the viewer arrives out of view, or over the original as
+ * it opens, and the page's own element stays as sharp as it is, however far the
+ * page is zoomed.
+ */
+function staysInPage(item: HTMLElement, subject: Element): boolean {
+	const visible = rendered(subject)
+	return (
+		item.dataset.placeholder !== 'none' &&
+		visible instanceof HTMLImageElement &&
+		isVectorImage(visible) &&
+		isPlainMarkup(subject)
+	)
+}
+
+/** A copy of ordinary markup for the viewer, without the original's identity. */
+function copyForViewer(subject: Element): Element {
+	const copy = subject.cloneNode(true) as Element
+	for (const element of [copy, ...copy.querySelectorAll('*')]) {
+		element.removeAttribute('id')
+		element.removeAttribute('name')
+	}
+
+	return copy
 }
 
 /**

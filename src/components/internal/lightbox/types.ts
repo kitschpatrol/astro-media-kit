@@ -34,6 +34,11 @@ export type Lift = Measurement & {
 	/** The start of the opening transition, reused to reverse it exactly. */
 	from?: LayerStyle
 	hadStyle: boolean
+	/**
+	 * Whether the subject is a copy made for the viewer, of an original that
+	 * stays in the page.
+	 */
+	isCopy: boolean
 	nextSibling: ChildNode | undefined
 	/** A decorative placeholder left in the page, if enabled. */
 	placeholder: HTMLElement | undefined
