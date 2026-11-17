@@ -20,6 +20,8 @@ export function containPageScroll(dialog: HTMLDialogElement) {
 	)
 
 	let touch: ReturnType<typeof touchPosition>
+	// Looked up once it is there, rather than for every move of a finger
+	let track: Element | undefined
 	const rebase = (event: TouchEvent) => {
 		touch = touchPosition(event.touches)
 	}
@@ -35,8 +37,8 @@ export function containPageScroll(dialog: HTMLDialogElement) {
 			// Script owns touch navigation, even when the track has room to scroll.
 			// Letting native scrolling take that same drag can cancel its pointer
 			// events. Only an inner image or caption may scroll natively.
-			const track = dialog.querySelector('.amk-lightbox-track')
-			const boundary = track !== null && event.composedPath().includes(track) ? track : dialog
+			track ??= dialog.querySelector('.amk-lightbox-track') ?? undefined
+			const boundary = track !== undefined && event.composedPath().includes(track) ? track : dialog
 			if (
 				point !== undefined &&
 				point.count === touch?.count &&
