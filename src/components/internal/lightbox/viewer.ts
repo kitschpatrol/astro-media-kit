@@ -18,12 +18,12 @@ import {
 	textEntrySelector,
 } from './dom'
 import { lengthOf } from './geometry'
+import { SubjectGesture } from './gesture'
 import { refreshImagePreview } from './image-preview'
 import { dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
-import { hasZoomLevel, zoomWidth } from './media'
+import { canPinch, hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
-import { Pinch } from './pinch'
 import {
 	closeInactiveTooltips,
 	floatControls,
@@ -67,6 +67,7 @@ class Viewer {
 	readonly #dialog: HTMLDialogElement
 	#dismissLayer: HTMLElement | undefined
 	#generation = 0
+	readonly #gesture: SubjectGesture
 	/** Slides finishing their way home after another item took over. */
 	#ghosts: Slide[] = []
 	#height = 0
@@ -78,7 +79,6 @@ class Viewer {
 	#openedIndex = 0
 	#openingClickDeadline = 0
 	#openItem: Opener | undefined
-	readonly #pinch: Pinch
 	readonly #previous: HTMLButtonElement
 	/** What had focus as the dialog was shown, where closing it returns focus. */
 	#previousFocus: Element | undefined
@@ -101,22 +101,6 @@ class Viewer {
 
 	get #isNavigable(): boolean {
 		return this.#state === 'open' || this.#state === 'opening'
-	}
-
-	get #pinchSlide(): Slide | undefined {
-		const slide = this.#slides[this.#index]
-		if (this.#state !== 'open' || slide?.lift === undefined) {
-			return
-		}
-
-		const media = rendered(slide.lift.subject)
-		return media instanceof HTMLImageElement ||
-			media instanceof HTMLVideoElement ||
-			media.matches('hlsjs-video, vimeo-video, youtube-video') ||
-			(media.matches('media-container') && media.closest('video-player') !== null) ||
-			slide.lift.subject.matches('.amk-video')
-			? slide
-			: undefined
 	}
 
 	constructor() {
@@ -179,30 +163,22 @@ class Viewer {
 			onRest: () => {
 				this.#rest()
 			},
-			pan: {
-				end: (velocity) => {
-					this.#zoom.fling(velocity)
-				},
-				move: (point) => {
-					this.#zoom.panTo(point, true)
-				},
-				position: () => this.#zoom.dragOrigin,
-				stop: () => this.#zoom.stopPan(),
-			},
 			stage: () =>
 				this.#zoom.current === this.#slides[this.#index] ? this.#zoom.current?.stage : undefined,
 		})
-		this.#pinch = new Pinch(
-			this.#dialog,
-			this.#zoom,
-			() => this.#pinchSlide,
-			() => {
-				this.#motion.cancelGesture()
-			},
-			() => {
+		this.#gesture = new SubjectGesture(this.#dialog, this.#zoom, {
+			canPinch: (slide) => slide.lift !== undefined && canPinch(slide.lift.subject),
+			onClose: () => {
 				void this.close()
 			},
-		)
+			onStart: () => {
+				this.#motion.cancelGesture()
+			},
+			slide: () => {
+				const slide = this.#slides[this.#index]
+				return this.#state === 'open' && slide?.lift !== undefined ? slide : undefined
+			},
+		})
 		new ResizeObserver(this.#handleResize).observe(this.#track)
 		document.body.append(this.#dialog)
 	}
@@ -217,7 +193,7 @@ class Viewer {
 			return
 		}
 
-		this.#pinch.stop()
+		this.#gesture.stop()
 
 		const isOpening = this.#state === 'opening'
 		const generation = ++this.#generation
@@ -393,7 +369,7 @@ class Viewer {
 	 * dialog or removes it from the page.
 	 */
 	restore() {
-		this.#pinch.stop()
+		this.#gesture.stop()
 		const current = this.#slides[this.#index]
 		const hasNavigated = this.#index !== this.#openedIndex
 		const previousFocus = this.#previousFocus
@@ -899,7 +875,7 @@ class Viewer {
 
 		this.#width = width
 		this.#height = height
-		this.#pinch.stop()
+		this.#gesture.stop()
 		const { target } = this.#motion
 		this.#motion.resize(width)
 		if (this.#state === 'idle') {
@@ -1266,7 +1242,7 @@ class Viewer {
 			return
 		}
 
-		this.#pinch.stop()
+		this.#gesture.stop()
 
 		this.#index = index
 		this.#setPageItem(this.#slides[index]?.item)
@@ -1339,7 +1315,7 @@ class Viewer {
 
 		this.#openingClickDeadline = 0
 		const isZoomed = this.#zoom.current === slide
-		this.#pinch.stop()
+		this.#gesture.stop()
 		this.#motion.stop()
 		if (isZoomed) {
 			this.#zoom.set(slide, undefined)

@@ -29,6 +29,21 @@ function nativeWidth(item: HTMLElement, subject: Element): number | undefined {
 	return undefined
 }
 
+/**
+ * Whether two fingers pinch a subject to resize it: an image, or a video,
+ * whether the kit's player, an embed's, or the browser's own.
+ */
+export function canPinch(subject: Element): boolean {
+	const media = rendered(subject)
+	return (
+		media instanceof HTMLImageElement ||
+		media instanceof HTMLVideoElement ||
+		media.matches('hlsjs-video, vimeo-video, youtube-video') ||
+		(media.matches('media-container') && media.closest('video-player') !== null) ||
+		subject.matches('.amk-video')
+	)
+}
+
 /** Whether an image shows vector artwork, going by its address. */
 export function isVectorImage(image: HTMLImageElement): boolean {
 	const source = image.currentSrc

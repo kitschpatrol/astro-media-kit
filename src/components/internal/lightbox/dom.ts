@@ -158,6 +158,17 @@ export function isItem(node: EventTarget | undefined): node is HTMLElement {
 	)
 }
 
+/**
+ * Whether a press is on one of the kit's players outside its controls, between
+ * its target and `boundary`, where a click or tap plays and pauses it, and a
+ * drag is for whatever holds the player.
+ */
+export function isOnPlayerSurface(event: Event, boundary: Element): boolean {
+	return (
+		isWithin(event, '.amk-player', boundary) && !isWithin(event, '[data-interactive]', boundary)
+	)
+}
+
 /** Whether `item` is a text link, whose media isn't in the page. */
 export function isLinkItem(item: Element): boolean {
 	return item.matches(linkSelector)

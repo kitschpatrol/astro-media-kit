@@ -18,15 +18,15 @@ export type Resistance = 'clamp' | 'elastic' | 'free'
 
 /** Translation, edge resistance, and release motion for one enlarged subject. */
 export class Pan {
+	/** Where the subject's top-left corner is drawn in its stage. */
+	get at(): Point {
+		return { ...this.#at }
+	}
 	get center(): Point {
 		return {
 			x: (this.#viewport.x / 2 - this.#at.x) / this.#media.x,
 			y: (this.#viewport.y / 2 - this.#at.y) / this.#media.y,
 		}
-	}
-	/** Scroll-like coordinates used by mouse dragging and keyboard movement. */
-	get position(): Point {
-		return { x: -this.#at.x, y: -this.#at.y }
 	}
 	#at: Point = { x: 0, y: 0 }
 	#bounds: Bounds = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }

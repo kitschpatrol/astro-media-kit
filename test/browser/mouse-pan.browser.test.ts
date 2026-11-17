@@ -3,12 +3,14 @@ import { commands } from 'vitest/browser'
 import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
 	activeSlideLabel,
+	block,
 	boxes,
 	cleanUp,
 	clickSubject,
 	currentLayer,
 	currentStage,
 	frames,
+	item,
 	middleOf,
 	mount,
 	query,
@@ -18,6 +20,7 @@ import {
 	viewer,
 	zoomable,
 } from './helpers'
+import { lift, pointer } from './touch'
 
 setUpLightbox()
 afterEach(async () => {
@@ -38,8 +41,10 @@ it('shows a grabbing hand on the captured pointer and carries a quick release in
 	const before = currentLayer().getBoundingClientRect()
 	await commands.mouseDown(x, y)
 	await commands.mouseMove(x - 50, y - 30)
+	// The stage holds the pointer, so its cursor shows wherever the drag goes
 	const track = query(viewer(), '.amk-lightbox-track')
-	expect(getComputedStyle(track).cursor).toBe('grabbing')
+	expect(currentStage().hasPointerCapture(1)).toBe(true)
+	expect(getComputedStyle(currentStage()).cursor).toBe('grabbing')
 	expect(getComputedStyle(currentLayer()).cursor).toBe('grabbing')
 	await commands.mouseFlick(x - 150, y - 90)
 	await expect.poll(() => currentLayer().getBoundingClientRect().x).toBeLessThan(before.x - 170)
@@ -81,9 +86,11 @@ it.each(['pause', 'capture loss', 'reduced motion'])(
 		if (ending === 'pause') {
 			await settle(120)
 		} else if (ending === 'capture loss') {
-			query(viewer(), '.amk-lightbox-track').releasePointerCapture(1)
+			currentStage().releasePointerCapture(1)
 		}
 
+		// A move shows with the next frame
+		await frames()
 		const held = currentLayer().getBoundingClientRect()
 		await commands.mouseUp()
 		await frames(5)
@@ -100,4 +107,48 @@ it('cleans up mouse momentum and its cursor when closing', async () => {
 	await closeLightbox()
 	expect(Object.hasOwn(stage.dataset, 'panning')).toBe(false)
 	expect(viewer().querySelector('[data-dragging]')).toBeNull()
+})
+
+it('pans an enlarged subject that does not pinch the same way under fingers and a mouse', async () => {
+	const fixture = mount(
+		item(block('plain'), 'data-level="native" data-native-width="3000" style="width: 240px"'),
+	)
+	await openLightbox(boxes(fixture)[0]!)
+	await clickSubject(0.5, 0.5)
+	await transitionsDone()
+	expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
+	const { x, y } = middleOf(currentStage())
+	const start = currentLayer().getBoundingClientRect()
+
+	// One finger pans
+	pointer('pointerdown', 1, x, y)
+	pointer('pointermove', 1, x - 80, y - 40)
+	await frames()
+	const panned = currentLayer().getBoundingClientRect()
+	expect(panned.x).toBeCloseTo(start.x - 80, 0)
+	expect(panned.y).toBeCloseTo(start.y - 40, 0)
+
+	// A second finger moves it with the pair's middle, and never resizes it
+	pointer('pointerdown', 2, x + 100, y - 40)
+	pointer('pointermove', 2, x + 300, y - 40)
+	await frames()
+	const held = currentLayer().getBoundingClientRect()
+	expect(held.width).toBeCloseTo(start.width, 0)
+	expect(held.x).toBeCloseTo(panned.x + 100, 0)
+	lift()
+	await transitionsDone()
+	expect(viewer().open).toBe(true)
+
+	// And so does a pressed mouse, without zooming back out as it lets go
+	const before = currentLayer().getBoundingClientRect()
+	await commands.mouseDown(x, y)
+	await commands.mouseMove(x + 60, y + 30)
+	await frames()
+	expect(currentLayer().getBoundingClientRect().x).toBeCloseTo(before.x + 60, 0)
+	expect(currentLayer().getBoundingClientRect().y).toBeCloseTo(before.y + 30, 0)
+	await settle(120)
+	await commands.mouseUp()
+	await frames()
+	expect(viewer().querySelector('[data-zoomed]')).not.toBeNull()
+	expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(start.width, 0)
 })

@@ -57,17 +57,9 @@ export class Zoom {
 	get current(): Slide | undefined {
 		return this.#slide
 	}
-	/** Raw drag coordinates before resistance, for catching beyond an edge. */
-	get dragOrigin(): Point {
-		const origin = this.#pan?.origin()
-		return origin === undefined ? { x: 0, y: 0 } : { x: -origin.x, y: -origin.y }
-	}
 	/** Whether a pinch holds the fitted subject smaller, on its way to closing. */
 	get isShrinking(): boolean {
 		return this.#fade !== undefined
-	}
-	get position(): Point {
-		return this.#pan?.position ?? { x: 0, y: 0 }
 	}
 	/** Whether the pinch under way started fitted and has stayed about there. */
 	#canClose = false
@@ -151,8 +143,7 @@ export class Zoom {
 			return 'kept'
 		}
 
-		const at = this.#pan.position
-		const from = { x: -at.x, y: -at.y, width }
+		const from = { ...this.#pan.at, width }
 		if (isFit) {
 			this.#settle(slide, from, { x: this.#fitted.x, y: this.#fitted.y, width: fit }, true)
 			return 'settling'
@@ -208,16 +199,16 @@ export class Zoom {
 		return width
 	}
 
-	/** Pan by a discrete wheel or keyboard step, within the shared limits. */
+	/**
+	 * Pan by a discrete wheel or keyboard step, within the shared limits: the
+	 * view moves by `point`, as a scroll would, so the subject moves against it.
+	 */
 	panBy(point: Point) {
 		this.stopPan()
-		const from = this.position
-		this.panTo({ x: from.x + point.x, y: from.y + point.y })
-	}
-
-	/** Pan to scroll-like coordinates, optionally resisting a held overshoot. */
-	panTo(point: Point, elastic = false) {
-		this.#pan?.move({ x: -point.x, y: -point.y }, elastic ? 'elastic' : 'clamp')
+		const at = this.#pan?.at
+		if (at !== undefined) {
+			this.#pan?.move({ x: at.x - point.x, y: at.y - point.y })
+		}
 	}
 
 	/**

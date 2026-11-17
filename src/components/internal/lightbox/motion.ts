@@ -1,7 +1,7 @@
-import type { Point } from './types'
 import type { WheelSample } from './wheel'
 import {
 	controlSelector,
+	isOnPlayerSurface,
 	isPointerClick,
 	isWithin,
 	regionSelector,
@@ -34,22 +34,18 @@ type MotionOptions = {
 	onMove: (position: number) => void
 	onPrepare: (index: number) => void
 	onRest: () => void
-	/** Move the enlarged subject of a stage, which `stage` needs to return one. */
-	pan?: {
-		end: (velocity: Point) => void
-		move: (point: Point) => void
-		position: () => Point
-		stop: () => boolean
-	}
 	/** Let a magnified page pan over an embedded carousel. */
 	panPageWhenZoomed?: boolean
+	/**
+	 * The stage of a zoomed subject, which keeps its own presses and wheel
+	 * gestures, to pan it.
+	 */
 	stage: () => HTMLElement | undefined
 }
 
 /**
- * A drag scrolls the track, with mouse, pen, or touch input, or pans a zoomed
- * stage under a mouse or an image under touch. A vertical drag on a fitted
- * image dismisses it.
+ * A drag scrolls the track, with mouse, pen, or touch input. A vertical drag on
+ * a fitted image dismisses it.
  */
 type Drag = {
 	axis: 'dismiss' | 'scroll' | undefined
@@ -65,18 +61,13 @@ type Drag = {
 	keepsSideways: boolean
 	/**
 	 * What the drag moves from, taken once the pointer has moved far enough to
-	 * count as a drag, so it catches a glide where it is: the stage's scroll
-	 * offset, or the track's position before any rubber banding. Undefined until
-	 * then.
+	 * count as a drag, so it catches a glide where it is: the track's position
+	 * before any rubber banding. Undefined until then.
 	 */
 	origin: undefined | { x: number; y: number }
-	/** Vertical pointer travel when panning an enlarged subject. */
-	panSamplesY: Array<{ position: number; time: number }>
 	pointerId: number
 	/** Recent track positions, to tell whether it was still moving when let go. */
 	samples: Array<{ position: number; time: number }>
-	/** The zoomed stage being panned, or undefined for the track. */
-	stage: HTMLElement | undefined
 	startX: number
 	startY: number
 }
@@ -261,7 +252,10 @@ export class CarouselMotion {
 		this.#syncPageZoom()
 	}
 
-	/** Give a pinch the current image without leaving a drag or a trailing click. */
+	/**
+	 * Give the current subject to a gesture of its own, a pinch or a pan, without
+	 * leaving a drag or a trailing click.
+	 */
 	cancelGesture() {
 		this.#yieldToNative()
 		this.render(this.#index * this.#width)
@@ -405,16 +399,13 @@ export class CarouselMotion {
 
 	/**
 	 * Decide what a press that has moved far enough drags: the subject away to
-	 * dismiss it, the track, or a zoomed stage. Returns where the drag moves
-	 * from, or undefined while it is still a press or once the browser takes it.
+	 * dismiss it, or the track. Returns where the drag moves from, or undefined
+	 * while it is still a press or once the browser takes it.
 	 */
 	#begin(drag: Drag, event: PointerEvent, distanceX: number, distanceY: number): Drag['origin'] {
 		// A player gets a longer and stricter look, so its own drags stay its own.
 		// A touch moving mostly up or down is decided as soon, for the page
-		const distance = Math.hypot(
-			distanceX,
-			drag.canDismiss || drag.stage !== undefined || drag.isTouch ? distanceY : 0,
-		)
+		const distance = Math.hypot(distanceX, drag.canDismiss || drag.isTouch ? distanceY : 0)
 		if (distance < (drag.isInRegion ? 12 : 6)) {
 			return
 		}
@@ -427,22 +418,17 @@ export class CarouselMotion {
 			// a measurable velocity when released in the same frame.
 			drag.samples[0]!.position = 0
 			this.#track.setPointerCapture(event.pointerId)
-		} else if (
-			drag.keepsSideways ||
-			(drag.stage === undefined && drag.isTouch && Math.abs(distanceY) > Math.abs(distanceX))
-		) {
+		} else if (drag.keepsSideways || (drag.isTouch && Math.abs(distanceY) > Math.abs(distanceX))) {
 			// What was pressed keeps any other drag, and the browser scrolls the page,
 			// or a caption, under a mostly vertical swipe
 			this.#cancelDrag()
 			return
-		} else if (drag.stage === undefined) {
-			return this.#grab(drag, event.pointerId)
 		} else {
-			this.#grabPan(drag, event.pointerId)
+			return this.#grab(drag, event.pointerId)
 		}
 
 		this.#owner = 'drag'
-		;(drag.stage ?? this.#track).dataset.dragging = ''
+		this.#track.dataset.dragging = ''
 		return drag.origin
 	}
 
@@ -454,7 +440,6 @@ export class CarouselMotion {
 		}
 
 		this.#ignoreClick(drag.origin !== undefined)
-		delete (drag.stage ?? this.#track).dataset.dragging
 		delete this.#track.dataset.dragging
 		if (this.#owner === 'drag') {
 			this.#owner = 'idle'
@@ -473,10 +458,9 @@ export class CarouselMotion {
 	 * Whether a press on the current subject can start a vertical drag to dismiss
 	 * it: not while zoomed, or while the track is between slides.
 	 */
-	#canDismiss(event: PointerEvent, stage: HTMLElement | undefined): boolean {
+	#canDismiss(event: PointerEvent): boolean {
 		const dismissible = this.#options.dismissible()
 		return (
-			stage === undefined &&
 			dismissible !== undefined &&
 			this.#glide === undefined &&
 			Math.abs(this.#position - this.#index * this.#width) < onSlide &&
@@ -577,7 +561,6 @@ export class CarouselMotion {
 		}
 
 		const isRelease = outcome === 'release'
-		delete (drag.stage ?? this.#track).dataset.dragging
 		delete this.#track.dataset.dragging
 		this.#owner = 'idle'
 		if (drag.axis === 'dismiss') {
@@ -593,19 +576,12 @@ export class CarouselMotion {
 			return
 		}
 
-		if (drag.stage === undefined) {
-			// The finger has lifted, though touchend has yet to say so
-			if (isRelease) {
-				this.#isTouching = false
-			}
-
-			this.#settle(isRelease ? velocityOf(drag.samples, this.#position, time) : 0)
-		} else {
-			this.#options.pan?.end({
-				x: isRelease ? velocityOf(drag.samples, drag.samples.at(-1)!.position, time) : 0,
-				y: isRelease ? velocityOf(drag.panSamplesY, drag.panSamplesY.at(-1)!.position, time) : 0,
-			})
+		// The finger has lifted, though touchend has yet to say so
+		if (isRelease) {
+			this.#isTouching = false
 		}
+
+		this.#settle(isRelease ? velocityOf(drag.samples, this.#position, time) : 0)
 
 		// The click that ends a drag is not a click on the content. None follows
 		// a drag the browser cancelled, so the next click is a click again
@@ -784,16 +760,6 @@ export class CarouselMotion {
 		return drag.origin
 	}
 
-	/** Capture on the track, whose cursor is used even while a stage is moving. */
-	#grabPan(drag: Drag, pointerId: number) {
-		drag.samples[0]!.position = 0
-		drag.origin = this.#options.pan?.position() ?? { x: 0, y: 0 }
-		this.#owner = 'drag'
-		this.#track.dataset.dragging = ''
-		drag.stage!.dataset.dragging = ''
-		this.#track.setPointerCapture(pointerId)
-	}
-
 	/** The click that ends a drag is not a click on anything. */
 	readonly #handleClick = (event: MouseEvent) => {
 		if (!this.#shouldIgnoreClick) {
@@ -895,16 +861,13 @@ export class CarouselMotion {
 			}
 
 			this.#options.onDismissMove(distanceY)
-		} else if (drag.stage === undefined) {
+		} else {
 			const position = this.#mapPastEnds(origin.x - distanceX * this.#direction, rubberBand)
 			this.render(position)
 			drag.samples.push({ position, time: event.timeStamp })
 			while (event.timeStamp - (drag.samples[0]?.time ?? event.timeStamp) > flickWindow) {
 				drag.samples.shift()
 			}
-		} else {
-			this.#options.pan?.move({ x: origin.x - distanceX, y: origin.y - distanceY })
-			this.#samplePan(drag, { x: distanceX, y: distanceY }, event.timeStamp)
 		}
 	}
 
@@ -1067,13 +1030,15 @@ export class CarouselMotion {
 	 * on from there, and letting go settles it on the nearest slide.
 	 */
 	#press(event: PointerEvent) {
-		// A zoomed stage pans instead of the track scrolling
-		const stage = this.#options.stage()
-		const canDismiss = this.#canDismiss(event, stage)
+		// A zoomed subject pans under its own gesture, instead of the track moving
+		if (this.#options.stage() !== undefined) {
+			return
+		}
+
+		const canDismiss = this.#canDismiss(event)
 		const isTouch = event.pointerType !== 'mouse'
 		const isCatch =
 			this.#glide !== undefined &&
-			stage === undefined &&
 			Math.abs(this.#position - this.target * this.#width) >= catchDistance
 		const isInRegion = isWithin(event, regionSelector, this.#track)
 		// A player keeps sideways mouse drags on its controls, which may be their
@@ -1114,19 +1079,15 @@ export class CarouselMotion {
 			isTouch,
 			keepsSideways,
 			origin: undefined,
-			panSamplesY: [{ position: 0, time: event.timeStamp }],
 			pointerId: event.pointerId,
 			samples: [{ position: this.#position, time: event.timeStamp }],
-			stage,
 			startX: event.clientX,
 			startY: event.clientY,
 		}
 		// Otherwise the track captures the pointer only once a drag begins: a
 		// press holding it would show the track's cursor rather than the one
 		// under the pointer, and send its click to the track
-		if (this.#options.pan?.stop() === true) {
-			this.#grabPan(this.#drag, event.pointerId)
-		} else if (isCatch) {
+		if (isCatch) {
 			// Captured, so a player under the press never takes its release as a tap
 			this.#grab(this.#drag, event.pointerId)
 		}
@@ -1188,15 +1149,6 @@ export class CarouselMotion {
 		this.#owner = 'idle'
 		delete this.#track.dataset.moving
 		this.#options.onRest()
-	}
-
-	#samplePan(drag: Drag, point: Point, time: number) {
-		drag.samples.push({ position: point.x, time })
-		drag.panSamplesY.push({ position: point.y, time })
-		while (drag.samples.length > 2 && time - drag.samples[1]!.time > flickWindow) {
-			drag.samples.shift()
-			drag.panSamplesY.shift()
-		}
 	}
 
 	readonly #scheduleRealign = () => {
@@ -1366,14 +1318,6 @@ function clamp(index: number, count: number): number {
 function isAlongTrack(event: WheelEvent): boolean {
 	const y = event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY
 	return Math.abs(wheelAlong(event)) > Math.abs(y)
-}
-
-/**
- * Whether a press is on one of the kit's players outside its controls, where a
- * click or tap plays and pauses it, and a drag is for the track.
- */
-function isOnPlayerSurface(event: PointerEvent, track: HTMLElement): boolean {
-	return isWithin(event, '.amk-player', track) && !isWithin(event, '[data-interactive]', track)
 }
 
 /**
