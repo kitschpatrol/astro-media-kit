@@ -7,6 +7,13 @@ type Basis = { anchor: Point; center: Point; distance: number; width: number }
 type Sample = Point & { time: number }
 
 /**
+ * How far back, in ms, finger travel counts toward the speed a pan is let go
+ * at. A flick speeds up until it lifts, so a longer look reads it as slower
+ * than it left the screen.
+ */
+const releaseWindow = 60
+
+/**
  * A pinch owns its remaining fingers until they all lift, including one-finger
  * panning.
  */
@@ -237,7 +244,7 @@ export class Pinch {
 
 		this.#previous = { x: point.x, y: point.y }
 		this.#samples.push({ ...this.#travel, time: this.#moveTime })
-		while (this.#samples.length > 2 && this.#samples[1]!.time < this.#moveTime - 100) {
+		while (this.#samples.length > 2 && this.#samples[1]!.time < this.#moveTime - releaseWindow) {
 			this.#samples.shift()
 		}
 	}
@@ -276,7 +283,7 @@ export class Pinch {
 			return { x: 0, y: 0 }
 		}
 
-		const elapsed = Math.max(8, Math.min(last.time - first.time, 100))
+		const elapsed = Math.max(8, Math.min(last.time - first.time, releaseWindow))
 		return { x: (last.x - first.x) / elapsed, y: (last.y - first.y) / elapsed }
 	}
 }

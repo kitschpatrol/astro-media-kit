@@ -5,6 +5,14 @@ import { lengthOf } from './geometry'
 type Axis = { at: number; end?: number; speed: number }
 type Bounds = { min: Point; max: Point }
 
+/**
+ * How long, in ms, a released pan takes to lose all but a third of its speed:
+ * it coasts as far as it would travel in this time at the speed it was let go.
+ * PhotoSwipe's 200 feels heavy under a finger, and an iOS scroll view's 500
+ * would carry a small flick across the whole subject.
+ */
+const coastTime = 325
+
 /** How a position past the limits is treated. */
 export type Resistance = 'clamp' | 'elastic' | 'free'
 
@@ -187,8 +195,8 @@ function advance(axis: Axis, min: number, max: number, elapsed: number) {
 	}
 
 	if (axis.end === undefined) {
-		const decay = Math.exp(-elapsed / 200)
-		axis.at += axis.speed * 200 * (1 - decay)
+		const decay = Math.exp(-elapsed / coastTime)
+		axis.at += axis.speed * coastTime * (1 - decay)
 		axis.speed *= decay
 	} else {
 		// A spring with a small bounce uses PhotoSwipe's edge-return tuning.
