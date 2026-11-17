@@ -117,9 +117,9 @@
 
 	/* The viewer covers the viewport, whatever the page's own dialog styles */
 	.amk-lightbox:modal {
-		/* Keep native panning inside zoomed images and captions, without adding
-		   a second, browser-level zoom to this modal. Page zoom stays available
-		   outside the viewer, including before it opens. */
+		/* Leave captions their native scrolling, without adding a second,
+		   browser-level zoom to this modal. Page zoom stays available outside
+		   the viewer, including before it opens. */
 		touch-action: pan-x pan-y;
 		position: fixed !important;
 		inset: 0 !important;
@@ -393,7 +393,7 @@
 	place-items: center;
 	width: 100%;
 	min-height: 0;
-	/* Focused only to direct keyboard scrolling while zoomed */
+	/* Takes focus while zoomed, where a ring around the viewport doesn't help */
 	outline: none;
 }
 
@@ -437,7 +437,6 @@
 	position: absolute;
 	inset: 0;
 	overflow: clip;
-	overscroll-behavior: contain;
 	/* The whole slide again, whatever a caption beside it took */
 	width: 100%;
 	height: 100%;
@@ -491,11 +490,6 @@
 		-webkit-user-select: none;
 		user-select: none;
 	}
-}
-
-/* Momentum would carry a closing subject away from home here too */
-.amk-lightbox[data-state='closing'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-stage {
-	overflow: hidden;
 }
 
 /* A lifted subject leaves its place and lands on it as it is, over the preview
