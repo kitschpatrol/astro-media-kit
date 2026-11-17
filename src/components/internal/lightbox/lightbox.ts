@@ -145,12 +145,11 @@ function handleClick(event: MouseEvent) {
 		const item = path.slice(at + 1).find(isItem)
 		if (item !== undefined) {
 			event.preventDefault()
-			const opener = path[at]
 			// A pointer-opened dialog must not restore keyboard-visible focus to
 			// this button after Escape, which also reopens its tooltip. Keyboard
 			// and virtual clicks keep normal focus restoration.
-			if (isPointerClick(event) && opener instanceof HTMLElement) {
-				opener.blur()
+			if (isPointerClick(event)) {
+				blurWithin(item)
 			}
 
 			void openLightbox(item)
@@ -169,10 +168,23 @@ function handleClick(event: MouseEvent) {
 	// keyboard-visible focus to the item after Escape, which would leave its
 	// indicator in the active state
 	if (isPointerClick(event)) {
-		item.blur()
+		blurWithin(item)
 	}
 
 	void openLightbox(item)
+}
+
+/**
+ * Take focus off whatever a press left focused in an item, or the item itself.
+ * Safari focuses the nearest focusable ancestor of a pressed button rather than
+ * the button, such as a player's container, where the closing dialog would
+ * otherwise return focus with a visible ring.
+ */
+function blurWithin(item: HTMLElement) {
+	const focused = document.activeElement
+	if (focused instanceof HTMLElement && item.contains(focused)) {
+		focused.blur()
+	}
 }
 
 /**

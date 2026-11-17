@@ -200,6 +200,27 @@ it('returns the player to the page from its collapse button', async () => {
 	expect(getComputedStyle(query(player, '[data-zoom-open]')).display).not.toBe('none')
 })
 
+it.each(['Escape', 'its collapse button'])(
+	'leaves focus off a player opened with a pointer, closed with %s',
+	async (how) => {
+		const { item, player } = await mountPlayer()
+		// Safari focuses the player's container, not the pressed button
+		await userEvent.click(query(player, '[data-zoom-open]'))
+		await expect.poll(() => viewer().dataset.state).toBe('open')
+		await liftDone()
+
+		await (how === 'Escape'
+			? userEvent.keyboard('{Escape}')
+			: userEvent.click(query(player, '[data-zoom-close]')))
+		await expect.poll(() => viewer().open).toBe(false)
+		await frames()
+
+		// Nowhere the closing dialog could return focus to, with a visible ring
+		expect(item.contains(document.activeElement)).toBe(false)
+		expect(item.querySelector(':focus-visible')).toBeNull()
+	},
+)
+
 it('floats the controls again when a closing player is reopened', async () => {
 	const { item, player } = await mountPlayer()
 	await openLightbox(item)
