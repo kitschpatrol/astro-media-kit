@@ -6,6 +6,15 @@ import { controlSelector, isWithin } from './dom'
 import { refreshImagePreview } from './image-preview'
 import { Pan } from './pan'
 import { prepareSlideImage } from './prepare'
+import {
+	isPastClosing,
+	maximumWidth,
+	requestedWidth,
+	resist,
+	settledWidth,
+	settleRemaining,
+	shrink,
+} from './zoom-math'
 
 /**
  * How a pinch ended: its fingers lifted, the browser took them away, or
@@ -32,20 +41,6 @@ type ZoomOptions = {
 /** A frame's width and position in its stage. */
 type Geometry = Point & { width: number }
 
-// PhotoSwipe's zoom gesture tuning.
-/** How much of a pinch past the largest size the subject follows. */
-const upperFriction = 0.05
-/** How much of a pinch below fit an enlarged subject follows. */
-const lowerFriction = 0.15
-/** How far past fit a pinch that started fitted can grow and still close. */
-const closeAllowance = 1 / 15
-/** The share of fit at which a pinch to close has dimmed the viewer fully. */
-const fadeSpan = 1 / 1.2
-/** A critically damped spring's frequency, per millisecond. */
-const settleFrequency = 0.04
-
-/** Below any size fingers can hold, and clear of dividing by zero. */
-const smallestShare = 0.1
 /**
  * The largest frame, in device pixels, kept on a compositor layer of its own.
  * Pinching a larger one back out would have every one of its tiles drawn.
@@ -138,7 +133,7 @@ export class Zoom {
 			return 'kept'
 		}
 
-		const target = Math.min(Math.max(width, fit), this.#maximumWidth)
+		const target = settledWidth(width, { fit, maximum: this.#maximumWidth })
 		const isFit = target <= fit + 1
 		if (target === width && !isFit) {
 			this.#size(slide, width)
@@ -188,18 +183,15 @@ export class Zoom {
 		const { width } = slide.layer.getBoundingClientRect()
 		const minimum =
 			this.#slide === slide ? this.#fitted.width : slide.frame.getBoundingClientRect().width
-		if (width < minimum) {
-			// A pinch to close follows the fingers as they are
-			return this.isShrinking ? width : Math.max(0, minimum + (width - minimum) / lowerFriction)
+		// A pinch to close follows the fingers as they are
+		if (width < minimum && this.isShrinking) {
+			return width
 		}
 
-		const maximum = this.#slide === slide ? this.#maximumWidth : minimum * 8
-		if (width > maximum) {
-			const distance = width - maximum
-			return maximum + distance / (upperFriction * Math.max(0.01, 1 - distance / (maximum * 0.1)))
-		}
-
-		return width
+		return requestedWidth(width, {
+			fit: minimum,
+			maximum: this.#slide === slide ? this.#maximumWidth : maximumWidth(minimum),
+		})
 	}
 
 	/**
@@ -240,19 +232,15 @@ export class Zoom {
 
 		this.#dropSettle()
 		const fit = this.#fitted.width
-		if (width > fit * (1 + closeAllowance)) {
+		if (isPastClosing(width, fit)) {
 			this.#canClose = false
 		}
 
 		let fade: number | undefined
 		if (width < fit && this.#canClose) {
-			width = Math.max(width, fit * smallestShare)
-			fade = Math.max(0, 1 - (fit - width) / (fit * fadeSpan))
-		} else if (width < fit) {
-			width = fit + (width - fit) * lowerFriction
-		} else if (width > this.#maximumWidth) {
-			const distance = (width - this.#maximumWidth) * upperFriction
-			width = this.#maximumWidth + distance / (1 + distance / (this.#maximumWidth * 0.1))
+			;({ fade, width } = shrink(width, fit))
+		} else {
+			width = resist(width, { fit, maximum: this.#maximumWidth })
 		}
 
 		this.#pinchPoint = { ...point }
@@ -531,8 +519,7 @@ export class Zoom {
 
 		const start = performance.now()
 		const step = (time: number) => {
-			const elapsed = Math.max(0, time - start) * settleFrequency
-			const remaining = (1 + elapsed) * Math.exp(-elapsed)
+			const remaining = settleRemaining(time - start)
 			if (remaining < 0.001) {
 				finish()
 				return
@@ -579,7 +566,7 @@ export class Zoom {
 
 	#track(slide: Slide, width: number) {
 		this.#slide = slide
-		this.#maximumWidth = Math.max(this.#fitted.width * 8, width)
+		this.#maximumWidth = maximumWidth(this.#fitted.width, width)
 		this.#pan = new Pan(slide)
 		slide.stage.focus({ preventScroll: true })
 		slide.stage.addEventListener('wheel', this.#handleWheel, { passive: false })

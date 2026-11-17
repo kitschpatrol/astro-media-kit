@@ -1,17 +1,11 @@
 import type { Box } from './geometry'
+import type { Axis, Bounds } from './pan-math'
 import type { Point, Slide } from './types'
 import { lengthOf } from './geometry'
+import { advance, atRest, launch, limit, limitsOf, unlimit } from './pan-math'
 
-type Axis = { at: number; end?: number; speed: number }
-type Bounds = { min: Point; max: Point }
-
-/**
- * How long, in ms, a released pan takes to lose all but a third of its speed:
- * it coasts as far as it would travel in this time at the speed it was let go.
- * PhotoSwipe's 200 feels heavy under a finger, and an iOS scroll view's 500
- * would carry a small flick across the whole subject.
- */
-const coastTime = 325
+/** How long, in ms, a released pan may go on before it is put to rest. */
+const longestRelease = 1800
 
 /** How a position past the limits is treated. */
 export type Resistance = 'clamp' | 'elastic' | 'free'
@@ -107,10 +101,9 @@ export class Pan {
 			return
 		}
 
-		const speed = Math.hypot(velocity.x, velocity.y)
-		const factor = speed < 0.08 ? 0 : Math.min(1, 3 / speed)
-		const x: Axis = { at: this.#at.x, speed: velocity.x * factor }
-		const y: Axis = { at: this.#at.y, speed: velocity.y * factor }
+		const speed = launch(velocity)
+		const x: Axis = { at: this.#at.x, speed: speed.x }
+		const y: Axis = { at: this.#at.y, speed: speed.y }
 		const { min, max } = this.#bounds
 		if (atRest(x, min.x, max.x) && atRest(y, min.y, max.y)) {
 			this.move(this.#at)
@@ -126,7 +119,7 @@ export class Pan {
 			advance(y, min.y, max.y, elapsed)
 			const done =
 				reduced.matches ||
-				time - start >= 1800 ||
+				time - start >= longestRelease ||
 				(atRest(x, min.x, max.x) && atRest(y, min.y, max.y))
 			if (done) {
 				this.move({ x: x.end ?? x.at, y: y.end ?? y.at })
@@ -142,29 +135,12 @@ export class Pan {
 	}
 
 	/**
-	 * Set the limits for a subject of `size`, as PhotoSwipe does: an edge that
-	 * can reach the viewport's padding stops there, with the same padding on
-	 * every side. An axis too short to reach both stays centered where the fitted
-	 * subject is, so zooming in from the fitted layout never jumps. Works from
-	 * the stage as last measured, without reading the page.
+	 * Set the limits for a subject of `size`, from the stage as last measured,
+	 * without reading the page.
 	 */
 	setLimits(fitted: Box, size: Point) {
-		const padding = this.#padding
 		this.#media = size
-		const centered = {
-			x: fitted.x + (fitted.width - size.x) / 2,
-			y: fitted.y + (fitted.height - size.y) / 2,
-		}
-		this.#bounds = {
-			min: {
-				x: Math.min(centered.x, this.#viewport.x - padding - size.x),
-				y: Math.min(centered.y, this.#viewport.y - padding - size.y),
-			},
-			max: {
-				x: Math.max(centered.x, padding),
-				y: Math.max(centered.y, padding),
-			},
-		}
+		this.#bounds = limitsOf(fitted, size, this.#viewport, this.#padding)
 	}
 
 	/** Catch at the displayed position; a new press must not finish the glide. */
@@ -182,53 +158,5 @@ export class Pan {
 	#draw(point: Point) {
 		this.#at = point
 		this.#slide.frame.style.translate = `${point.x}px ${point.y}px`
-	}
-}
-
-function limit(at: number, min: number, max: number, elastic: boolean): number {
-	const bound = Math.min(Math.max(at, min), max)
-	// PhotoSwipe's pan resistance: keep following the hand at 35% of its
-	// travel beyond an edge, rather than approaching a hard overshoot cap.
-	return elastic ? bound + (at - bound) * 0.35 : bound
-}
-
-function unlimit(at: number, min: number, max: number): number {
-	const bound = Math.min(Math.max(at, min), max)
-	return bound + (at - bound) / 0.35
-}
-
-function atRest(axis: Axis, min: number, max: number): boolean {
-	return (
-		Math.abs(axis.speed) < 0.015 &&
-		(axis.end === undefined
-			? axis.at >= min - 0.5 && axis.at <= max + 0.5
-			: Math.abs(axis.at - axis.end) < 0.5)
-	)
-}
-
-function advance(axis: Axis, min: number, max: number, elapsed: number) {
-	const bound = Math.min(Math.max(axis.at, min), max)
-	if (axis.end === undefined && bound !== axis.at) {
-		axis.end = bound
-	}
-
-	if (axis.end === undefined) {
-		const decay = Math.exp(-elapsed / coastTime)
-		axis.at += axis.speed * coastTime * (1 - decay)
-		axis.speed *= decay
-	} else {
-		// A spring with a small bounce uses PhotoSwipe's edge-return tuning.
-		// Retain the target through the small bounce so crossing the edge cannot
-		// accidentally restart free momentum. Units here are pixels and ms.
-		const distance = axis.at - axis.end
-		const damping = 0.82 * 0.012
-		const frequency = 0.012 * Math.sqrt(1 - 0.82 ** 2)
-		const carry = (axis.speed + damping * distance) / frequency
-		const decay = Math.exp(-damping * elapsed)
-		const cosine = Math.cos(frequency * elapsed)
-		const sine = Math.sin(frequency * elapsed)
-		const offset = decay * (distance * cosine + carry * sine)
-		axis.at = axis.end + offset
-		axis.speed = -damping * offset + decay * frequency * (carry * cosine - distance * sine)
 	}
 }
