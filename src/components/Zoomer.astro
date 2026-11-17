@@ -27,7 +27,10 @@ export type Props = {
 	 * `data-zoom-open` button of its own.
 	 */
 	interactive?: boolean | undefined
-	/** Secondary zoom level. */
+	/**
+	 * Secondary tap/button zoom level. Images also support touch pinch zoom at
+	 * every level.
+	 */
 	level?: 'fill' | 'fit' | 'native' | undefined
 	/**
 	 * The width at which the media shows one of its pixels per CSS pixel, which

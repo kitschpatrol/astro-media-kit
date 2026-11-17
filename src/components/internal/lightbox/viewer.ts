@@ -23,6 +23,7 @@ import { dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
+import { Pinch } from './pinch'
 import {
 	closeInactiveTooltips,
 	floatControls,
@@ -77,6 +78,7 @@ class Viewer {
 	#openedIndex = 0
 	#openingClickDeadline = 0
 	#openItem: Opener | undefined
+	readonly #pinch: Pinch
 	readonly #previous: HTMLButtonElement
 	/** What had focus as the dialog was shown, where closing it returns focus. */
 	#previousFocus: Element | undefined
@@ -93,6 +95,15 @@ class Viewer {
 
 	get #isNavigable(): boolean {
 		return this.#state === 'open' || this.#state === 'opening'
+	}
+
+	get #pinchSlide(): Slide | undefined {
+		const slide = this.#slides[this.#index]
+		return this.#state === 'open' &&
+			slide?.lift !== undefined &&
+			rendered(slide.lift.subject) instanceof HTMLImageElement
+			? slide
+			: undefined
 	}
 
 	constructor() {
@@ -158,6 +169,14 @@ class Viewer {
 			stage: () =>
 				this.#zoom.current === this.#slides[this.#index] ? this.#zoom.current?.stage : undefined,
 		})
+		this.#pinch = new Pinch(
+			this.#dialog,
+			this.#zoom,
+			() => this.#pinchSlide,
+			() => {
+				this.#motion.cancelGesture()
+			},
+		)
 		new ResizeObserver(this.#handleResize).observe(this.#track)
 		document.body.append(this.#dialog)
 	}
@@ -171,6 +190,8 @@ class Viewer {
 		if (!this.#isNavigable) {
 			return
 		}
+
+		this.#pinch.stop()
 
 		const isOpening = this.#state === 'opening'
 		const generation = ++this.#generation
@@ -346,6 +367,7 @@ class Viewer {
 	 * dialog or removes it from the page.
 	 */
 	restore() {
+		this.#pinch.stop()
 		const current = this.#slides[this.#index]
 		const hasNavigated = this.#index !== this.#openedIndex
 		const previousFocus = this.#previousFocus
@@ -830,6 +852,7 @@ class Viewer {
 
 		this.#width = width
 		this.#height = height
+		this.#pinch.stop()
 		const { target } = this.#motion
 		this.#motion.resize(width)
 		if (this.#state === 'idle') {
@@ -1194,6 +1217,8 @@ class Viewer {
 			return
 		}
 
+		this.#pinch.stop()
+
 		this.#index = index
 		this.#setPageItem(this.#slides[index]?.item)
 		this.#liftAround(index)
@@ -1264,8 +1289,13 @@ class Viewer {
 		}
 
 		this.#openingClickDeadline = 0
+		const isZoomed = this.#zoom.current === slide
+		this.#pinch.stop()
 		this.#motion.stop()
-		if (this.#zoom.current === slide) {
+		if (isZoomed) {
+			// Focus before resetting so an all-fit gallery keeps this control
+			// visible even in browsers that do not focus buttons on pointer clicks.
+			this.#zoomButton.focus({ preventScroll: true })
 			this.#zoom.set(slide, undefined)
 		} else {
 			const width = zoomWidth(slide)
@@ -1328,9 +1358,13 @@ class Viewer {
 		const canZoom = slide !== undefined && zoomWidth(slide) !== undefined
 		for (const each of this.#slides) {
 			each.element.toggleAttribute('data-zoomable', each === slide && canZoom)
+			each.element.toggleAttribute('data-pinch', each === this.#pinchSlide)
 		}
 
-		this.#zoomButton.hidden = this.#slides.every((each) => !hasZoomLevel(each.item))
+		this.#zoomButton.hidden =
+			!isZoomed &&
+			document.activeElement !== this.#zoomButton &&
+			this.#slides.every((each) => !hasZoomLevel(each.item))
 		this.#zoomButton.ariaPressed = String(isZoomed)
 		this.#zoomButton.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
 	}

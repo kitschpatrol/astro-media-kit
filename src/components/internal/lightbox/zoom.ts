@@ -8,6 +8,8 @@ export class Zoom {
 	get current(): Slide | undefined {
 		return this.#slide
 	}
+	#fittedWidth = 0
+	#isPinched = false
 	readonly #onChange: () => void
 	#slide: Slide | undefined
 	#view: undefined | { center: Point; height: number; width: number }
@@ -15,6 +17,19 @@ export class Zoom {
 		this.#onChange = onChange
 	}
 
+	/** Restore the fitted layout, or load the final image size after a pinch. */
+	finishPinch() {
+		const slide = this.#slide
+		if (slide === undefined || !this.#isPinched) {
+			return
+		}
+
+		if (slide.frame.getBoundingClientRect().width <= this.#fittedWidth + 1) {
+			this.set(slide, undefined)
+		} else {
+			prepareSlideImage(slide)
+		}
+	}
 	/**
 	 * Stop tracking a slide that is leaving as it is, zoomed or not, so its
 	 * styles stay untouched while it finishes its way home.
@@ -27,6 +42,40 @@ export class Zoom {
 		this.#untrack()
 		this.#onChange()
 	}
+
+	/** Resize about an image point under the fingers, independently of the preset. */
+	pinch(slide: Slide, width: number, anchor: Point, point: Point) {
+		const isStarting = this.#slide !== slide
+		if (isStarting) {
+			this.reset()
+			this.#fittedWidth = slide.frame.getBoundingClientRect().width
+			// Two fingers moving together on a fitted image must not turn it into
+			// a zoomed image, or move its caption out of the way.
+			if (width <= this.#fittedWidth + 1) {
+				return
+			}
+
+			this.#slide = slide
+			slide.stage.focus({ preventScroll: true })
+			slide.stage.addEventListener('scroll', this.#handleScroll, { passive: true })
+			if (slide.caption !== undefined) {
+				slide.caption.inert = true
+			}
+		}
+
+		this.#isPinched = true
+		const maximum = Math.max(this.#fittedWidth * 8, slide.frame.getBoundingClientRect().width)
+		width = Math.min(Math.max(width, this.#fittedWidth), maximum)
+		slide.element.dataset.zoomed = ''
+		slide.frame.style.setProperty('--amk-lightbox-zoomed-width', `${width}px`)
+		setLayerStyle(slide.layer, identity, false)
+		this.#place(slide, anchor, point)
+		this.#remember()
+		if (isStarting) {
+			this.#onChange()
+		}
+	}
+
 	/**
 	 * Put a zoomed slide straight back to fitting the stage, without animating:
 	 * once it has been navigated away from and is out of view.
@@ -54,7 +103,17 @@ export class Zoom {
 			return
 		}
 
-		if (slide.item.dataset.level === 'fill' && slide.lift !== undefined) {
+		// Measure the fitted layout without painting it. Restoring the remembered
+		// center below also restores offsets clamped by this temporary layout.
+		delete slide.element.dataset.zoomed
+		this.#fittedWidth = slide.frame.getBoundingClientRect().width
+		slide.element.dataset.zoomed = ''
+		if (this.#isPinched && slide.frame.getBoundingClientRect().width <= this.#fittedWidth) {
+			this.reset()
+			return
+		}
+
+		if (!this.#isPinched && slide.item.dataset.level === 'fill' && slide.lift !== undefined) {
 			const width = Math.max(
 				slide.element.clientWidth,
 				slide.element.clientHeight * slide.lift.ratio,
@@ -65,25 +124,11 @@ export class Zoom {
 		// Layout can change during the zoom transition too. Measure the frame,
 		// whose coordinates are independent of the animated layer inside it.
 		setLayerStyle(slide.layer, identity, false)
-		const frame = slide.frame.getBoundingClientRect()
 		const { stage } = slide
 		const box = stage.getBoundingClientRect()
-		stage.scrollTo({
-			behavior: 'instant',
-			left:
-				stage.scrollLeft +
-				frame.x +
-				view.center.x * frame.width -
-				box.x -
-				stage.clientLeft -
-				stage.clientWidth / 2,
-			top:
-				stage.scrollTop +
-				frame.y +
-				view.center.y * frame.height -
-				box.y -
-				stage.clientTop -
-				stage.clientHeight / 2,
+		this.#place(slide, view.center, {
+			x: box.x + stage.clientLeft + stage.clientWidth / 2,
+			y: box.y + stage.clientTop + stage.clientHeight / 2,
 		})
 		// Native scrolling clamps the center at an edge. Remember that actual
 		// position, so a later resize does not jump back to an unreachable point.
@@ -102,6 +147,7 @@ export class Zoom {
 		}
 
 		const from = slide.layer.getBoundingClientRect()
+		this.#isPinched = false
 		if (slide.lift !== undefined) {
 			refreshImagePreview(slide.lift.subject)
 		}
@@ -112,20 +158,21 @@ export class Zoom {
 			delete slide.element.dataset.zoomed
 			slide.frame.style.removeProperty('--amk-lightbox-zoomed-width')
 		} else {
+			if (this.#slide !== slide) {
+				this.#fittedWidth = slide.frame.getBoundingClientRect().width
+			}
+
 			slide.element.dataset.zoomed = ''
 			slide.frame.style.setProperty('--amk-lightbox-zoomed-width', `${width}px`)
 			this.#slide = slide
 			// Keyboard scrolling goes to the focused scroll container
 			stage.focus({ preventScroll: true })
 			if (point !== undefined) {
-				// Measured with the stage at its current scroll offset, so this is an
-				// absolute target
-				const to = slide.frame.getBoundingClientRect()
-				stage.scrollTo({
-					behavior: 'instant',
-					left: stage.scrollLeft + to.x + ((point.x - from.x) / from.width) * to.width - point.x,
-					top: stage.scrollTop + to.y + ((point.y - from.y) / from.height) * to.height - point.y,
-				})
+				this.#place(
+					slide,
+					{ x: (point.x - from.x) / from.width, y: (point.y - from.y) / from.height },
+					point,
+				)
 			}
 
 			this.#remember()
@@ -158,6 +205,19 @@ export class Zoom {
 		}
 	}
 
+	/**
+	 * Place a normalized image point at a viewport point, within native scroll
+	 * bounds.
+	 */
+	#place(slide: Slide, anchor: Point, point: Point) {
+		const frame = slide.frame.getBoundingClientRect()
+		slide.stage.scrollBy({
+			behavior: 'instant',
+			left: frame.x + anchor.x * frame.width - point.x,
+			top: frame.y + anchor.y * frame.height - point.y,
+		})
+	}
+
 	#remember() {
 		const slide = this.#slide
 		if (slide === undefined) {
@@ -181,5 +241,7 @@ export class Zoom {
 		this.#slide?.stage.removeEventListener('scroll', this.#handleScroll)
 		this.#slide = undefined
 		this.#view = undefined
+		this.#isPinched = false
+		this.#fittedWidth = 0
 	}
 }

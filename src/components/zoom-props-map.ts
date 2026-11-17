@@ -36,9 +36,12 @@ export type PrefixedProps = {
 	/**
 	 * Secondary zoom level — the zoom applied when the user taps/clicks the
 	 * opened lightbox image or presses its Zoom button. `'fit'` adds no second
-	 * level: the lightbox shows no Zoom button, and a click closes it. `'fill'`
-	 * zooms to cover the viewport (cropping the overflowing axis), and `'native'`
-	 * zooms to 100% (1:1 pixels).
+	 * level: a click closes the fitted image. `'fill'` zooms to cover the
+	 * viewport (cropping the overflowing axis), and `'native'` zooms to 100% (1:1
+	 * pixels).
+	 *
+	 * Touchscreen pinch zoom and panning are available for images at every level.
+	 * While pinched in, the Zoom button resets the image to fit.
 	 *
 	 * @default 'fit'
 	 */

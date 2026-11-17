@@ -4,8 +4,9 @@ import { defineBrowserCommand } from '@vitest/browser-playwright'
 export type MobileAction =
 	| { dx: number; dy: number; fingers?: number; type: 'drag'; x: number; y: number }
 	| { height: number; type: 'resize'; width: number }
+	| { index?: number; type: 'open' }
 	| { scale: number; type: 'pinch' | 'scale' }
-	| { type: 'close' | 'inline' | 'next' | 'open' | 'zoom' }
+	| { type: 'close' | 'inline' | 'next' | 'zoom' }
 
 export type MobileSnapshot = Awaited<ReturnType<typeof snapshot>>
 
@@ -95,11 +96,11 @@ async function perform(page: Page, action: MobileAction, session: CDPSession | u
 		}
 
 		case 'open': {
-			const opener = page.locator('#gallery .amk-zoom').first()
+			const opener = page.locator('#gallery .amk-zoom').nth(action.index ?? 0)
 			await opener.evaluate((element) => {
 				element.scrollIntoView({ block: 'center', inline: 'center' })
 			})
-			await tap(page, '#gallery .amk-zoom')
+			await tap(page, '#gallery .amk-zoom', action.index)
 			await page.locator('dialog[open]').waitFor()
 			return
 		}
@@ -128,8 +129,8 @@ async function perform(page: Page, action: MobileAction, session: CDPSession | u
 	}
 }
 
-async function tap(page: Page, selector: string) {
-	const target = page.locator(selector).first()
+async function tap(page: Page, selector: string, index = 0) {
+	const target = page.locator(selector).nth(index)
 	if (await page.evaluate(() => (visualViewport?.scale ?? 1) === 1)) {
 		await target.tap()
 		return

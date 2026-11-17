@@ -40,7 +40,8 @@ type MotionOptions = {
 
 /**
  * A drag scrolls the track, with mouse, pen, or touch input, or pans a zoomed
- * stage under a mouse. A vertical drag on a fitted image dismisses it.
+ * stage under a mouse or an image under touch. A vertical drag on a fitted
+ * image dismisses it.
  */
 type Drag = {
 	axis: 'dismiss' | 'scroll' | undefined
@@ -250,6 +251,14 @@ export class CarouselMotion {
 		this.#syncPageZoom()
 	}
 
+	/** Give a pinch the current image without leaving a drag or a trailing click. */
+	cancelGesture() {
+		this.#yieldToNative()
+		this.render(this.#index * this.#width)
+		delete this.#track.dataset.moving
+		this.#ignoreClick(true)
+	}
+
 	configure(count: number, index: number) {
 		this.stop()
 		this.#count = count
@@ -408,7 +417,10 @@ export class CarouselMotion {
 			// a measurable velocity when released in the same frame.
 			drag.samples[0]!.position = 0
 			this.#track.setPointerCapture(event.pointerId)
-		} else if (drag.keepsSideways || (drag.isTouch && Math.abs(distanceY) > Math.abs(distanceX))) {
+		} else if (
+			drag.keepsSideways ||
+			(drag.stage === undefined && drag.isTouch && Math.abs(distanceY) > Math.abs(distanceX))
+		) {
 			// What was pressed keeps any other drag, and the browser scrolls the page,
 			// or a caption, under a mostly vertical swipe
 			this.#cancelDrag()
@@ -1332,8 +1344,8 @@ function isOnPlayerSurface(event: PointerEvent, track: HTMLElement): boolean {
 
 /**
  * Whether a press belongs to what it landed on, whatever the track is doing: a
- * control, or a zoomed stage's scrollbar. The browser pans a zoomed stage under
- * touch.
+ * control, or a zoomed stage's scrollbar. Zoomed subjects without image pinch
+ * handling keep native touch panning.
  */
 function isKeptByTarget(
 	event: PointerEvent,
@@ -1343,7 +1355,9 @@ function isKeptByTarget(
 	const isTouch = event.pointerType !== 'mouse'
 	return (
 		isWithin(event, controlSelector, track) ||
-		(stage !== undefined && (isTouch || (event.target === stage && isOnScrollbar(event, stage))))
+		(stage !== undefined &&
+			((isTouch && !stage.parentElement?.hasAttribute('data-pinch')) ||
+				(event.target === stage && isOnScrollbar(event, stage))))
 	)
 }
 

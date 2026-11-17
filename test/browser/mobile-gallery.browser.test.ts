@@ -83,7 +83,9 @@ it('contains two-finger drags and pinches inside the open mobile gallery', async
 	expect(states[6]!.viewport.scale).toBeGreaterThan(1.5)
 }, 20_000)
 
-it('pans the built-in zoom and recovers after ignored two-finger gestures', async ({ skip }) => {
+it('pans and pinches the built-in zoom without moving the page or changing slides', async ({
+	skip,
+}) => {
 	const states = await commands.mobileGallery([
 		{ type: 'open' },
 		{ type: 'zoom' },
@@ -107,8 +109,9 @@ it('pans the built-in zoom and recovers after ignored two-finger gestures', asyn
 
 	expect(states[2]!.stageX).toBeGreaterThan(states[1]!.stageX + 40)
 	expect(states[2]!.stageY).toBeGreaterThan(states[1]!.stageY + 40)
-	expect(states[3]!.stageX).toBeCloseTo(states[2]!.stageX, 0)
+	expect(states[3]!.stageX).toBeGreaterThan(states[2]!.stageX + 40)
 	expect(states[4]!.stageX).toBeLessThan(states[3]!.stageX - 40)
+	expect(states[5]!.imageWidth).toBeGreaterThan(states[4]!.imageWidth * 1.5)
 	expect(states[6]!.isOpen).toBe(false)
 }, 20_000)
 

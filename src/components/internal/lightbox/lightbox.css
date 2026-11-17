@@ -388,10 +388,10 @@
 	outline: none;
 }
 
-/* Fitted subjects navigate sideways and dismiss vertically. Allowing native
-   panning here lets Safari interrupt either drag. Keep this on the stage so
-   captions and zoomed images retain their native scrolling. */
-.amk-lightbox-slide:not([data-zoomed]) > .amk-lightbox-stage {
+/* Fitted subjects navigate and dismiss; images also pinch and pan. Keep their
+   pointer stream intact so fingers can move between those gestures. Captions
+   and zoomed subjects without pinch handling still scroll natively. */
+.amk-lightbox-slide:is(:not([data-zoomed]), [data-pinch]) > .amk-lightbox-stage {
 	touch-action: none;
 }
 
