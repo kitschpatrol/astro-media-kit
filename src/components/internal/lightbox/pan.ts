@@ -1,7 +1,8 @@
 import type { Box } from './geometry'
 import type { Point, Slide } from './types'
+import { lengthOf } from './geometry'
 
-type Axis = { at: number; speed: number }
+type Axis = { at: number; end?: number; speed: number }
 type Bounds = { min: Point; max: Point }
 
 /** Translation, edge resistance, and release motion for one enlarged subject. */
@@ -20,7 +21,6 @@ export class Pan {
 	#bounds: Bounds = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
 	#frame: number | undefined
 	#media: Point = { x: 0, y: 0 }
-	#room: Point = { x: 0, y: 0 }
 	readonly #slide: Slide
 
 	#viewport: Point = { x: 0, y: 0 }
@@ -35,23 +35,32 @@ export class Pan {
 		const width = stage.clientWidth
 		const height = stage.clientHeight
 		const box = frame.getBoundingClientRect()
-		// Preserve the fitted image's edges, so a corner can stay under the
-		// fingers without introducing additional empty space around the media.
+		const configured = lengthOf(
+			getComputedStyle(stage).getPropertyValue('--amk-lightbox-pan-padding'),
+		)
+		const padding = Number.isFinite(configured) ? Math.max(0, configured) : 32
+		// Preserve the fitted edges so corners stay under the fingers, then add
+		// the same persistent padding on every side, independently of zoom.
 		this.#bounds = {
-			min: { x: fitted.x + fitted.width - box.width, y: fitted.y + fitted.height - box.height },
-			max: { x: fitted.x, y: fitted.y },
+			min: {
+				x: Math.min(fitted.x, fitted.x + fitted.width - box.width) - padding,
+				y: Math.min(fitted.y, fitted.y + fitted.height - box.height) - padding,
+			},
+			max: {
+				x: Math.max(fitted.x, fitted.x + fitted.width - box.width) + padding,
+				y: Math.max(fitted.y, fitted.y + fitted.height - box.height) + padding,
+			},
 		}
 		this.#viewport = { x: width, y: height }
 		this.#media = { x: box.width, y: box.height }
-		this.#room = { x: Math.min(96, width * 0.15), y: Math.min(96, height * 0.15) }
 	}
 
 	/** Move with resistance while held, or clamp a discrete keyboard/wheel step. */
 	move(point: Point, elastic = false) {
 		const { min, max } = this.#bounds
 		this.#draw({
-			x: limit(point.x, min.x, max.x, elastic ? this.#room.x : 0),
-			y: limit(point.y, min.y, max.y, elastic ? this.#room.y : 0),
+			x: limit(point.x, min.x, max.x, elastic),
+			y: limit(point.y, min.y, max.y, elastic),
 		})
 	}
 
@@ -59,8 +68,8 @@ export class Pan {
 	origin(): Point {
 		const { min, max } = this.#bounds
 		return {
-			x: unlimit(this.#at.x, min.x, max.x, this.#room.x),
-			y: unlimit(this.#at.y, min.y, max.y, this.#room.y),
+			x: unlimit(this.#at.x, min.x, max.x),
+			y: unlimit(this.#at.y, min.y, max.y),
 		}
 	}
 
@@ -96,7 +105,7 @@ export class Pan {
 				time - start >= 1800 ||
 				(atRest(x, min.x, max.x) && atRest(y, min.y, max.y))
 			if (done) {
-				this.move({ x: x.at, y: y.at })
+				this.move({ x: x.end ?? x.at, y: y.end ?? y.at })
 				this.stop()
 			} else {
 				this.#draw({ x: x.at, y: y.at })
@@ -126,36 +135,50 @@ export class Pan {
 	}
 }
 
-function limit(at: number, min: number, max: number, room: number): number {
+function limit(at: number, min: number, max: number, elastic: boolean): number {
 	const bound = Math.min(Math.max(at, min), max)
-	const distance = at - bound
-	return room === 0 ? bound : bound + (distance * 0.55) / (1 + (Math.abs(distance) * 0.55) / room)
+	// PhotoSwipe's pan resistance: keep following the hand at 35% of its
+	// travel beyond an edge, rather than approaching a hard overshoot cap.
+	return elastic ? bound + (at - bound) * 0.35 : bound
 }
 
-function unlimit(at: number, min: number, max: number, room: number): number {
+function unlimit(at: number, min: number, max: number): number {
 	const bound = Math.min(Math.max(at, min), max)
-	const distance = at - bound
-	return bound + distance / (0.55 * Math.max(0.01, 1 - Math.abs(distance) / room))
+	return bound + (at - bound) / 0.35
 }
 
 function atRest(axis: Axis, min: number, max: number): boolean {
-	return Math.abs(axis.speed) < 0.015 && axis.at >= min - 0.5 && axis.at <= max + 0.5
+	return (
+		Math.abs(axis.speed) < 0.015 &&
+		(axis.end === undefined
+			? axis.at >= min - 0.5 && axis.at <= max + 0.5
+			: Math.abs(axis.at - axis.end) < 0.5)
+	)
 }
 
 function advance(axis: Axis, min: number, max: number, elapsed: number) {
 	const bound = Math.min(Math.max(axis.at, min), max)
-	if (bound === axis.at) {
-		const decay = Math.exp(-elapsed / 240)
-		axis.at += axis.speed * 240 * (1 - decay)
+	if (axis.end === undefined && bound !== axis.at) {
+		axis.end = bound
+	}
+
+	if (axis.end === undefined) {
+		const decay = Math.exp(-elapsed / 200)
+		axis.at += axis.speed * 200 * (1 - decay)
 		axis.speed *= decay
 	} else {
-		// An analytic, critically damped spring retains the release velocity and
-		// settles without frame-rate-dependent oscillation or an abrupt stop.
-		const distance = axis.at - bound
-		const spring = 0.018
-		const carry = axis.speed + spring * distance
-		const decay = Math.exp(-spring * elapsed)
-		axis.at = bound + (distance + carry * elapsed) * decay
-		axis.speed = (axis.speed - spring * carry * elapsed) * decay
+		// A spring with a small bounce uses PhotoSwipe's edge-return tuning.
+		// Retain the target through the small bounce so crossing the edge cannot
+		// accidentally restart free momentum. Units here are pixels and ms.
+		const distance = axis.at - axis.end
+		const damping = 0.82 * 0.012
+		const frequency = 0.012 * Math.sqrt(1 - 0.82 ** 2)
+		const carry = (axis.speed + damping * distance) / frequency
+		const decay = Math.exp(-damping * elapsed)
+		const cosine = Math.cos(frequency * elapsed)
+		const sine = Math.sin(frequency * elapsed)
+		const offset = decay * (distance * cosine + carry * sine)
+		axis.at = axis.end + offset
+		axis.speed = -damping * offset + decay * frequency * (carry * cosine - distance * sine)
 	}
 }

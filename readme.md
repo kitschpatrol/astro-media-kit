@@ -625,8 +625,11 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
 | `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
 | `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
+| `--amk-lightbox-pan-padding`         | `32px`                            |
 | `--amk-zoom-in-cursor`               | `zoom-in`                         |
 | `--amk-zoom-out-cursor`              | `zoom-out`                        |
+
+`--amk-lightbox-pan-padding` adds persistent panning room beyond the fitted media's edges, equally on all four sides. It accepts a CSS length, stays the same as the media enlarges, and defaults to `32px`; use `0px` to keep just enough room to zoom into any corner without shifting that corner. Pulling beyond these resting limits adds elastic resistance, then springs back on release. The media moves inside a transparent viewport without adding scrollbars.
 
 `--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling, and the gap between slides, come from the [shared gallery settings](#shared-gallery-settings) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
 

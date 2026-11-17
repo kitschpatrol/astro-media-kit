@@ -7,6 +7,13 @@
 	syntax: '<number>';
 }
 
+/* A length resolved by CSS, shared equally by all four pan edges. */
+@property --amk-lightbox-pan-padding {
+	inherits: true;
+	initial-value: 32px;
+	syntax: '<length>';
+}
+
 /* The lightbox: the `.amk-zoom` items `<Zoomer>` renders in the page, and the
    `.amk-lightbox` dialog their content is lifted into. Astro bundles this with
    the page's own CSS, so it is in place before the first paint and the script

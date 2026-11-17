@@ -20,6 +20,7 @@ import { lift, pinch, pointer } from './touch'
 
 setUpLightbox()
 afterEach(async () => {
+	viewer().style.removeProperty('--amk-lightbox-pan-padding')
 	await commands.touchContacts([])
 	await commands.emulateReducedMotion(false)
 	await cleanUp()
@@ -93,9 +94,9 @@ it.each([
 ])('moves in direction $x, $y and springs back from an overshoot', async (direction) => {
 	await open()
 	const fitted = currentLayer().getBoundingClientRect()
+	viewer().style.setProperty('--amk-lightbox-pan-padding', '24px')
 	await pinch(2)
 	lift()
-	const stage = currentStage().getBoundingClientRect()
 	const before = currentLayer().getBoundingClientRect()
 	const { x, y } = middleOf(currentStage())
 	pointer('pointerdown', 1, x, y)
@@ -104,15 +105,16 @@ it.each([
 	const moved = currentLayer().getBoundingClientRect()
 	expect(moved.x).toBeCloseTo(before.x + direction.x * 100, 0)
 	expect(moved.y).toBeCloseTo(before.y + direction.y * 100, 0)
-	pointer('pointermove', 1, x + direction.x * 10_000, y + direction.y * 10_000)
-	await frames()
-	const held = currentLayer().getBoundingClientRect()
 	const axis = direction.x === 0 ? 'y' : 'x'
 	const size = direction.x === 0 ? 'height' : 'width'
 	const sign = direction.x + direction.y
-	const bound = fitted[axis] + (sign < 0 ? fitted[size] - held[size] : 0)
-	expect((held[axis] - bound) * sign).toBeGreaterThan(10)
-	expect((held[axis] - bound) * sign).toBeLessThan(stage[size] * 0.2)
+	const bound = fitted[axis] + (sign < 0 ? fitted[size] - before[size] : 0) + sign * 24
+	const distance = Math.abs(bound - before[axis]) + 400
+	pointer('pointermove', 1, x + direction.x * distance, y + direction.y * distance)
+	await frames()
+	const held = currentLayer().getBoundingClientRect()
+	// Long pulls continue to give way instead of flattening against a 96px cap.
+	expect((held[axis] - bound) * sign).toBeCloseTo(140, 0)
 	await settle(120)
 	lift()
 	expect(Object.hasOwn(currentStage().dataset, 'panning')).toBe(true)
