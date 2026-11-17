@@ -17,7 +17,7 @@ export type Fit = 'contain' | 'cover' | 'fill'
  * frame (laid out at its final size and position), so that it looks exactly
  * like the element as rendered in the page. Insets are in the layer's local,
  * pre-transform pixels, because `clip-path` applies before `translate` and
- * `scale`. Assumes `transform-origin: 0 0` on the layer.
+ * `scale`. The translation is for a layer scaled from its top-left corner.
  */
 type FrameTransform = {
 	insetBottom: number

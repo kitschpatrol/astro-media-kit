@@ -623,6 +623,8 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 | `--amk-lightbox-close-fade-duration` | `0.3s` (`0s` with reduced motion) |
 | `--amk-lightbox-carousel-duration`   | `0.4s` (`0s` with reduced motion) |
 | `--amk-lightbox-easing`              | `cubic-bezier(0.2, 0.8, 0.1, 1)`  |
+| `--amk-lightbox-lead-easing`         | `var(--amk-lightbox-easing)`      |
+| `--amk-lightbox-follow-easing`       | `cubic-bezier(0.3, 0.5, 0.1, 1)`  |
 | `--amk-lightbox-gutter`              | `clamp(0.75rem, 5vmin, 4rem)`     |
 | `--amk-lightbox-caption-width`       | `min(20rem, 30vw)`                |
 | `--amk-lightbox-pan-padding`         | `32px`                            |
@@ -631,7 +633,7 @@ The viewer's parts are plain classes you can style: `.amk-lightbox` (the dialog,
 
 `--amk-lightbox-pan-padding` is how far enlarged media stays from each edge of the viewer when panned as far as it goes, equally on all four sides. It accepts a CSS length, stays the same as the media enlarges, and defaults to `32px`; use `0px` to pan the media's edges to the viewer's own. Along an axis where the media is too small to reach both edges, it stays centered where it fitted. Pulling beyond these resting limits adds elastic resistance, then springs back on release. The media moves inside a transparent viewport without adding scrollbars.
 
-`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling, and the gap between slides, come from the [shared gallery settings](#shared-gallery-settings) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it.
+`--amk-lightbox-duration` times opening, closing, secondary zoom, and the backdrop and control fades; the two fade durations time a ZoomLink's media fading in and out, and the active thumbnail's control fades (set them on `:root` to customize both); `--amk-lightbox-carousel-duration` times the carousel spring. Button and icon styling, and the gap between slides, come from the [shared gallery settings](#shared-gallery-settings) properties. Transparent images show the page through their clear areas in the viewer too; give the image a `background` for a matte, which travels with it. Opening and closing pace the content's travel and its size separately: on the way up it moves toward its place on `--amk-lightbox-lead-easing` and grows on `--amk-lightbox-follow-easing`, and on the way home it shrinks on the lead curve and travels on the follow curve. Give both the same curve to move and resize in step; a zoom inside the viewer always uses `--amk-lightbox-easing` for both.
 
 The cursor shows what a click does. `--amk-zoom-in-cursor` covers items on the page, content in the viewer that a click zooms into, and content on its way back that a click brings back. `--amk-zoom-out-cursor` covers the rest of the viewer, where a click closes it or zooms back out. Captions, controls, and players keep their own cursors, and ZoomLink text links keep the link pointer. Set both on `:root` to change the page and the viewer together. The page item's cursor rule is unlayered, so a site-wide `a { cursor: pointer }` doesn't replace it on items that render as links.
 

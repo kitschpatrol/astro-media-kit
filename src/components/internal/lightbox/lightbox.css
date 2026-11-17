@@ -31,6 +31,8 @@
 		--amk-lightbox-close-fade-duration: 0.3s;
 		--amk-lightbox-carousel-duration: 0.4s;
 		--amk-lightbox-easing: cubic-bezier(0.2, 0.8, 0.1, 1);
+		--amk-lightbox-lead-easing: var(--amk-lightbox-easing);
+		--amk-lightbox-follow-easing: cubic-bezier(0.3, 0.5, 0.1, 1);
 		--amk-lightbox-gutter: clamp(0.75rem, 5vmin, 4rem);
 		--amk-lightbox-caption-width: min(20rem, 30vw);
 	}
@@ -502,7 +504,8 @@
 .amk-lightbox-layer {
 	position: absolute;
 	inset: 0;
-	transform-origin: 0 0;
+	/* About its middle, so its travel and its growth can each keep their pace */
+	transform-origin: 50% 50%;
 	clip-path: inset(0);
 	transition:
 		translate var(--amk-lightbox-duration) var(--amk-lightbox-easing),
@@ -511,8 +514,22 @@
 		opacity var(--amk-lightbox-open-fade-duration) cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-/* Closing mirrors it, as the media shrinks back into the link */
-.amk-lightbox[data-state='closing'] .amk-lightbox-layer {
+/* On its way up from the page, a subject travels toward its place ahead of
+   growing to its size, and its crop opens with its growth. A zoom once open
+   keeps one pace for both, so the point zoomed about stays put */
+.amk-lightbox-slide[data-opening] .amk-lightbox-layer {
+	transition-timing-function:
+		var(--amk-lightbox-lead-easing), var(--amk-lightbox-follow-easing),
+		var(--amk-lightbox-follow-easing), cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+/* Closing mirrors it: the subject shrinks ahead of traveling home, and a
+   link's media fades as it shrinks back into the link */
+.amk-lightbox[data-state='closing'] .amk-lightbox-layer,
+.amk-lightbox-slide[data-ghost] .amk-lightbox-layer {
+	transition-timing-function:
+		var(--amk-lightbox-follow-easing), var(--amk-lightbox-lead-easing),
+		var(--amk-lightbox-lead-easing), cubic-bezier(0.2, 0.8, 0.4, 1);
 	transition-duration:
 		var(--amk-lightbox-duration), var(--amk-lightbox-duration), var(--amk-lightbox-duration),
 		var(--amk-lightbox-close-fade-duration);

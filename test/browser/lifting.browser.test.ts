@@ -12,9 +12,11 @@ import {
 	boxes,
 	cleanUp,
 	clickMiddle,
+	clickSubject,
 	close,
 	currentLayer,
 	fadeOf,
+	frames,
 	gallery,
 	imageItem,
 	isLifted,
@@ -28,6 +30,7 @@ import {
 	trackOffset,
 	transitionsDone,
 	viewer,
+	zoomable,
 } from './helpers'
 
 const clippedPattern = /^inset\(/v
@@ -940,4 +943,77 @@ describe('content', () => {
 			decode.mockRestore()
 		}
 	})
+})
+
+it('travels ahead of its growth as it opens, and shrinks ahead of its travel home', async () => {
+	const fixture = mount(zoomable('native'))
+	const box = boxes(fixture)[0]!
+	const image = query(box, 'img', HTMLImageElement)
+	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
+	const home = image.getBoundingClientRect()
+	const middleOfBox = (rect: DOMRect) => ({
+		x: rect.x + rect.width / 2,
+		y: rect.y + rect.height / 2,
+	})
+	const opening = openLightbox(box)
+	const layer = currentLayer()
+	const transitions = () =>
+		layer.getAnimations().filter((animation) => animation instanceof CSSTransition)
+	/** The easing each property's transition runs on. */
+	const paces = (): Record<string, string | undefined> =>
+		Object.fromEntries(
+			transitions().map((transition) => [
+				transition.transitionProperty,
+				transition.effect?.getTiming().easing,
+			]),
+		)
+
+	const up = paces()
+	expect(up.translate).toBeDefined()
+	expect(up.scale).toBeDefined()
+	expect(up.translate).not.toBe(up.scale)
+
+	// A fifth of the way through, it is further along its way than in its growth
+	for (const transition of transitions()) {
+		transition.pause()
+		transition.currentTime = Number(transition.effect!.getTiming().duration) / 5
+	}
+
+	await frames()
+	const early = layer.getBoundingClientRect()
+	for (const transition of transitions()) {
+		transition.finish()
+	}
+
+	await opening
+	await transitionsDone()
+	const full = layer.getBoundingClientRect()
+	const traveled =
+		Math.hypot(
+			middleOfBox(early).x - middleOfBox(home).x,
+			middleOfBox(early).y - middleOfBox(home).y,
+		) /
+		Math.hypot(middleOfBox(full).x - middleOfBox(home).x, middleOfBox(full).y - middleOfBox(home).y)
+	const grown = (early.width - home.width) / (full.width - home.width)
+	expect(traveled).toBeGreaterThan(grown + 0.1)
+	expect(grown).toBeGreaterThan(0)
+	expect(traveled).toBeLessThan(1)
+
+	// A zoom once open keeps one pace, so the point under the click stays put
+	await clickSubject(0.5, 0.5)
+	const zoom = paces()
+	expect(zoom.scale).toBe(up.translate)
+	expect(zoom.translate ?? zoom.scale).toBe(zoom.scale)
+
+	await transitionsDone()
+	await clickSubject(0.5, 0.5)
+	await transitionsDone()
+
+	// The way home swaps the two
+	const closing = closeLightbox()
+	const down = paces()
+	expect(down.scale).toBe(up.translate)
+	expect(down.translate).toBe(up.scale)
+	await closing
+	expect(viewer().open).toBe(false)
 })

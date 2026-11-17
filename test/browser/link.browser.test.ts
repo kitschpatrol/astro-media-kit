@@ -132,8 +132,9 @@ it('grows the image out of the link, and shrinks it back into it', async () => {
 		expect(frame.height * scale).toBeCloseTo(link.height, 1)
 		expect(link.height).toBeLessThan(40)
 		const [x = '', y = ''] = String(keyframesOf(layer, 'translate')[0]?.translate).split(' ', 2)
-		expect(frame.x + numberOf({ x }, 'x') + (frame.width * scale) / 2).toBeCloseTo(linkCenter.x, 0)
-		expect(frame.y + numberOf({ y }, 'y') + (frame.height * scale) / 2).toBeCloseTo(linkCenter.y, 0)
+		// The layer turns about its middle, which the translation carries
+		expect(frame.x + numberOf({ x }, 'x') + frame.width / 2).toBeCloseTo(linkCenter.x, 0)
+		expect(frame.y + numberOf({ y }, 'y') + frame.height / 2).toBeCloseTo(linkCenter.y, 0)
 		expect(numberOf(keyframesOf(layer, 'opacity')[0], 'opacity')).toBe(0)
 		await liftDone(3000)
 

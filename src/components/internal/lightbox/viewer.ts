@@ -586,8 +586,11 @@ class Viewer {
 	 */
 	async #expand(slide: Slide, generation: number) {
 		this.#dialog.dataset.state = 'open'
+		// Travels ahead of its growth on the way up, unlike a zoom once open
+		slide.element.dataset.opening = ''
 		setLayerStyle(slide.layer, identity)
 		await settle(slide.layer)
+		delete slide.element.dataset.opening
 		if (generation !== this.#generation) {
 			return
 		}
@@ -982,6 +985,8 @@ class Viewer {
 			return
 		}
 
+		// On its way home from here, however far up it got
+		delete slide.element.dataset.opening
 		if (isOpening) {
 			setLayerStyle(slide.layer, this.#homeStyle(slide, lift, true))
 		}

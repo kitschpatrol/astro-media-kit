@@ -13,7 +13,9 @@ export const identity: LayerStyle = {
 /**
  * The layer style that makes a frame at `frame` look like the subject as
  * rendered at `target` in the page. Values within half a pixel of identity are
- * written as identity, so they don't start transitions that do nothing.
+ * written as identity, so they don't start transitions that do nothing. The
+ * layer turns about its center, so `translate` is how far the subject's middle
+ * travels and `scale` how much it grows, and each can keep a pace of its own.
  */
 export function layerStyle(
 	frame: Box,
@@ -21,7 +23,10 @@ export function layerStyle(
 	{ fit, position, radius }: Pick<Measurement, 'fit' | 'radius'> & { position?: Point },
 ): LayerStyle {
 	const transform = mapFrameToBox(frame, target, fit, position)
-	const isTranslated = Math.abs(transform.x) >= 0.5 || Math.abs(transform.y) >= 0.5
+	// From the frame's top-left corner, where the mapping scales from
+	const x = transform.x + ((transform.scaleX - 1) * frame.width) / 2
+	const y = transform.y + ((transform.scaleY - 1) * frame.height) / 2
+	const isTranslated = Math.abs(x) >= 0.5 || Math.abs(y) >= 0.5
 	const isScaled = Math.abs(transform.scaleX - 1) >= 1e-4 || Math.abs(transform.scaleY - 1) >= 1e-4
 	const scaledRadius = transform.scaleX > 0 ? radius / transform.scaleX : 0
 	const isClipped =
@@ -36,7 +41,7 @@ export function layerStyle(
 			: identity.clipPath,
 		opacity: '1',
 		scale: isScaled ? `${transform.scaleX} ${transform.scaleY}` : identity.scale,
-		translate: isTranslated ? `${transform.x}px ${transform.y}px` : identity.translate,
+		translate: isTranslated ? `${x}px ${y}px` : identity.translate,
 	}
 }
 
@@ -47,8 +52,8 @@ export function layerStyle(
  */
 export function linkStyle(frame: Box, target: Box): LayerStyle {
 	const scale = frame.height > 0 ? Math.min(1, target.height / frame.height) : 1
-	const x = target.x + target.width / 2 - frame.x - (frame.width * scale) / 2
-	const y = target.y + target.height / 2 - frame.y - (frame.height * scale) / 2
+	const x = target.x + target.width / 2 - frame.x - frame.width / 2
+	const y = target.y + target.height / 2 - frame.y - frame.height / 2
 	return {
 		clipPath: identity.clipPath,
 		opacity: '0',
