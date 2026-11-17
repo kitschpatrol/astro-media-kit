@@ -89,6 +89,9 @@ export class Zoom {
 	anchor(slide: Slide, point: Point, isFree: boolean): Point {
 		const box = slide.layer.getBoundingClientRect()
 		const pan = this.#slide === slide ? this.#pan : undefined
+		// Fingers have just landed or changed: the one time a gesture reads the
+		// stage, which its moves then place the subject in without looking again
+		pan?.measure()
 		const origin = isFree || this.isShrinking ? undefined : pan?.origin()
 		const stage = slide.stage.getBoundingClientRect()
 		const frame = slide.frame.getBoundingClientRect()
@@ -156,7 +159,7 @@ export class Zoom {
 		}
 		const held = { x: point.x - stage.x, y: point.y - stage.y }
 		const scale = target / width
-		this.#pan.measure(this.#fitted, this.#sizeOf(target))
+		this.#pan.setLimits(this.#fitted, this.#sizeOf(target))
 		const to = this.#pan.bound({
 			x: held.x - (held.x - from.x) * scale,
 			y: held.y - (held.y - from.y) * scale,
@@ -231,6 +234,7 @@ export class Zoom {
 			this.#track(slide, this.#fitted.width)
 			this.#enter(slide)
 			this.#size(slide, this.#fitted.width)
+			this.#pan?.measure()
 			this.#canClose = true
 		}
 
@@ -257,7 +261,7 @@ export class Zoom {
 		this.#enter(slide)
 		this.#size(slide, width, true)
 		setLayerStyle(slide.layer, identity, false)
-		this.#place(slide, width, anchor, point, isFree || fade !== undefined ? 'free' : 'elastic')
+		this.#place(width, anchor, point, isFree || fade !== undefined ? 'free' : 'elastic')
 		if (isStarting) {
 			this.#options.onChange()
 		}
@@ -309,8 +313,9 @@ export class Zoom {
 		}
 
 		setLayerStyle(slide.layer, identity, false)
+		this.#pan?.measure()
 		const box = slide.stage.getBoundingClientRect()
-		this.#place(slide, this.#layoutWidth, center, {
+		this.#place(this.#layoutWidth, center, {
 			x: box.x + box.width / 2,
 			y: box.y + box.height / 2,
 		})
@@ -340,9 +345,9 @@ export class Zoom {
 
 			this.#enter(slide)
 			this.#size(slide, width)
+			this.#pan?.measure()
 			point ??= { x: from.x + from.width / 2, y: from.y + from.height / 2 }
 			this.#place(
-				slide,
 				width,
 				{ x: (point.x - from.x) / from.width, y: (point.y - from.y) / from.height },
 				point,
@@ -466,17 +471,20 @@ export class Zoom {
 		}
 	}
 
-	#place(
-		slide: Slide,
-		width: number,
-		anchor: Point,
-		point: Point,
-		resistance: Resistance = 'clamp',
-	) {
-		const stage = slide.stage.getBoundingClientRect()
+	/**
+	 * Draw the subject `width` wide, with the point `anchor` of it under `point`
+	 * in the viewport: in the stage as last measured, reading nothing.
+	 */
+	#place(width: number, anchor: Point, point: Point, resistance: Resistance = 'clamp') {
+		const pan = this.#pan
+		if (pan === undefined) {
+			return
+		}
+
+		const { stage } = pan
 		const size = this.#sizeOf(width)
-		this.#pan?.measure(this.#fitted, size)
-		this.#pan?.move(
+		pan.setLimits(this.#fitted, size)
+		pan.move(
 			{
 				x: point.x - stage.x - anchor.x * size.x,
 				y: point.y - stage.y - anchor.y * size.y,

@@ -28,11 +28,17 @@ export class Pan {
 			y: (this.#viewport.y / 2 - this.#at.y) / this.#media.y,
 		}
 	}
+	/** Where the stage's top-left corner was in the viewport when measured. */
+	get stage(): Point {
+		return { ...this.#stage }
+	}
 	#at: Point = { x: 0, y: 0 }
 	#bounds: Bounds = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
 	#frame: number | undefined
 	#media: Point = { x: 0, y: 0 }
+	#padding = 32
 	readonly #slide: Slide
+	#stage: Point = { x: 0, y: 0 }
 
 	#viewport: Point = { x: 0, y: 0 }
 
@@ -47,34 +53,20 @@ export class Pan {
 	}
 
 	/**
-	 * Set the limits for a subject of `size`, as PhotoSwipe does: an edge that
-	 * can reach the viewport's padding stops there, with the same padding on
-	 * every side. An axis too short to reach both stays centered where the fitted
-	 * subject is, so zooming in from the fitted layout never jumps. Measure only
-	 * when the viewport or media size changes, never during a glide.
+	 * Read the stage's box and the pan padding. Both hold through a gesture, so
+	 * read them as one begins or the viewport changes, never for each move: a
+	 * read among a move's writes has the browser lay the subject out twice a
+	 * frame.
 	 */
-	measure(fitted: Box, size: Point) {
+	measure() {
 		const { stage } = this.#slide
+		const box = stage.getBoundingClientRect()
 		const configured = lengthOf(
 			getComputedStyle(stage).getPropertyValue('--amk-lightbox-pan-padding'),
 		)
-		const padding = Number.isFinite(configured) ? Math.max(0, configured) : 32
-		this.#viewport = { x: stage.clientWidth, y: stage.clientHeight }
-		this.#media = size
-		const centered = {
-			x: fitted.x + (fitted.width - size.x) / 2,
-			y: fitted.y + (fitted.height - size.y) / 2,
-		}
-		this.#bounds = {
-			min: {
-				x: Math.min(centered.x, this.#viewport.x - padding - size.x),
-				y: Math.min(centered.y, this.#viewport.y - padding - size.y),
-			},
-			max: {
-				x: Math.max(centered.x, padding),
-				y: Math.max(centered.y, padding),
-			},
-		}
+		this.#padding = Number.isFinite(configured) ? Math.max(0, configured) : 32
+		this.#stage = { x: box.x, y: box.y }
+		this.#viewport = { x: box.width, y: box.height }
 	}
 
 	/**
@@ -147,6 +139,32 @@ export class Pan {
 
 		this.#slide.stage.dataset.panning = ''
 		this.#frame = requestAnimationFrame(step)
+	}
+
+	/**
+	 * Set the limits for a subject of `size`, as PhotoSwipe does: an edge that
+	 * can reach the viewport's padding stops there, with the same padding on
+	 * every side. An axis too short to reach both stays centered where the fitted
+	 * subject is, so zooming in from the fitted layout never jumps. Works from
+	 * the stage as last measured, without reading the page.
+	 */
+	setLimits(fitted: Box, size: Point) {
+		const padding = this.#padding
+		this.#media = size
+		const centered = {
+			x: fitted.x + (fitted.width - size.x) / 2,
+			y: fitted.y + (fitted.height - size.y) / 2,
+		}
+		this.#bounds = {
+			min: {
+				x: Math.min(centered.x, this.#viewport.x - padding - size.x),
+				y: Math.min(centered.y, this.#viewport.y - padding - size.y),
+			},
+			max: {
+				x: Math.max(centered.x, padding),
+				y: Math.max(centered.y, padding),
+			},
+		}
 	}
 
 	/** Catch at the displayed position; a new press must not finish the glide. */

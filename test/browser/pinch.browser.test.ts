@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { commands, page, userEvent } from 'vitest/browser'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
@@ -72,6 +72,40 @@ it('keeps the pinched image point under the moving midpoint', async () => {
 	const zoomed = currentLayer().getBoundingClientRect()
 	expect(zoomed.x + zoomed.width * 0.4).toBeCloseTo(x - 20, 0)
 	expect(zoomed.y + zoomed.height * 0.4).toBeCloseTo(y - 30, 0)
+	lift()
+})
+
+it('reads the page as fingers land, and not again for each move they make', async () => {
+	await open()
+	const { width } = currentLayer().getBoundingClientRect()
+	const { x, y } = await pinch(2)
+	// The opened image's own decode has settled, which reads its style once
+	await expect.poll(() => viewer().querySelector('[data-zoom-image-pending]')).toBeNull()
+	await frames()
+	// A read among a frame's writes would lay the image out a second time
+	const reads = [
+		vi.spyOn(Element.prototype, 'getBoundingClientRect'),
+		vi.spyOn(globalThis, 'getComputedStyle'),
+		vi.spyOn(Element.prototype, 'clientWidth', 'get'),
+		vi.spyOn(Element.prototype, 'clientHeight', 'get'),
+	]
+	let count: number
+	try {
+		for (const scale of [2.2, 2.5, 1.8]) {
+			pointer('pointermove', 1, x - 50 * scale, y + 10)
+			pointer('pointermove', 2, x + 50 * scale, y + 10)
+			await frames()
+		}
+
+		count = reads.reduce((total, read) => total + read.mock.calls.length, 0)
+	} finally {
+		for (const read of reads) {
+			read.mockRestore()
+		}
+	}
+
+	expect(count).toBe(0)
+	expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(width * 1.8, 0)
 	lift()
 })
 
