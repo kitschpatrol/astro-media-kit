@@ -35,6 +35,28 @@ function touch(target: HTMLElement, type: string, points: Array<[x: number, y: n
 	return event.defaultPrevented
 }
 
+it.each([0, 200, 400])(
+	'keeps single-finger gallery drags out of native scrolling at track offset %i',
+	(offset) => {
+		const { track } = fixture()
+		track.scrollLeft = offset
+		for (const distance of [-20, 20]) {
+			touch(track, 'touchstart', [[100, 100]])
+			expect(touch(track, 'touchmove', [[100 + distance, 102]])).toBe(true)
+			touch(track, 'touchend', [])
+		}
+	},
+)
+
+it('keeps one-finger scrolling available inside an image or caption', () => {
+	const { inner } = fixture()
+	touch(inner, 'touchstart', [[60, 100]])
+	expect(touch(inner, 'touchmove', [[60, 80]])).toBe(false)
+	inner.scrollTop = inner.scrollHeight
+	expect(touch(inner, 'touchmove', [[60, 60]])).toBe(true)
+	expect(touch(inner, 'touchmove', [[60, 80]])).toBe(false)
+})
+
 it('contains two-finger movement without allowing the outer track to scroll', () => {
 	const { track } = fixture()
 	touch(track, 'touchstart', [

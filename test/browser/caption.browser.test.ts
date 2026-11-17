@@ -70,6 +70,31 @@ it('drags the track from a press on a caption, whose text is not selectable', as
 	await expect.poll(activeSlideLabel).toBe('2 of 2')
 })
 
+it('keeps native touch scrolling available in a long caption', async ({ skip }) => {
+	const fixture = mount(captioned('dune', 3600) + captioned('horizon', 1029))
+	query(fixture, 'figcaption').textContent = 'A long caption with more detail. '.repeat(200)
+	await query(fixture, 'img', HTMLImageElement).decode()
+	await openLightbox(boxes(fixture)[0]!)
+	const caption = query(viewer(), '.amk-lightbox-slide:not([inert]) .amk-lightbox-caption')
+	expect(caption.scrollHeight).toBeGreaterThan(caption.clientHeight)
+	const { x, y } = middleOf(caption)
+	if (!(await commands.touchDown(x, y))) {
+		skip()
+		return
+	}
+
+	try {
+		await commands.touchMove(x + 2, y - 100)
+		await expect.poll(() => caption.scrollTop).toBeGreaterThan(20)
+	} finally {
+		await commands.touchUp()
+	}
+
+	expect(activeSlideLabel()).toBe('1 of 2')
+	expect(viewer().open).toBe(true)
+	expect(Object.hasOwn(viewer().dataset, 'dismissing')).toBe(false)
+})
+
 it('closes for a click on a caption, as for the space around the subject', async () => {
 	const fixture = mount(captioned('dune', 3600) + captioned('horizon', 1029))
 	for (const image of fixture.querySelectorAll('img')) {

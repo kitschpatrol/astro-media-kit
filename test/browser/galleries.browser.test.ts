@@ -258,9 +258,7 @@ describe('galleries', () => {
 		await openLightbox(boxes(fixture)[0]!)
 		const home = currentLayer().getBoundingClientRect()
 		// Script takes touch drags on either axis, as it does a mouse's
-		expect(getComputedStyle(currentLayer().closest('.amk-lightbox-slide')!).touchAction).toBe(
-			'pan-y',
-		)
+		expect(getComputedStyle(currentStage()).touchAction).toBe('none')
 		await commands.mouseDown(640, 400)
 		await commands.mouseMove(640, 400 + direction * 100)
 		expect(currentLayer().getBoundingClientRect().y).toBeCloseTo(home.y + direction * 100, 0)

@@ -32,10 +32,11 @@ export function containPageScroll(dialog: HTMLDialogElement) {
 		'touchmove',
 		(event) => {
 			const point = touchPosition(event.touches)
-			// Multiple fingers can pan an inner image or caption, but must not
-			// turn slides or bypass containment and reach the page behind it.
-			const boundary =
-				event.touches.length > 1 ? (dialog.querySelector('.amk-lightbox-track') ?? dialog) : dialog
+			// Script owns touch navigation, even when the track has room to scroll.
+			// Letting native scrolling take that same drag can cancel its pointer
+			// events. Only an inner image or caption may scroll natively.
+			const track = dialog.querySelector('.amk-lightbox-track')
+			const boundary = track !== null && event.composedPath().includes(track) ? track : dialog
 			if (
 				point !== undefined &&
 				point.count === touch?.count &&

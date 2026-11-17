@@ -2,6 +2,58 @@ import { expect, it } from 'vitest'
 import { commands } from 'vitest/browser'
 import './helpers'
 
+it.for([
+	{ width: 390, height: 844 },
+	{ width: 820, height: 1180 },
+])(
+	'navigates both ways with slightly diagonal touch drags at $width × $height',
+	{ timeout: 20_000 },
+	async (size, { skip }) => {
+		const left = {
+			dx: -size.width * 0.65,
+			dy: 24,
+			type: 'drag' as const,
+			x: size.width * 0.8,
+			y: size.height / 2,
+		}
+		const right = { ...left, dx: -left.dx, dy: -left.dy, x: size.width * 0.2 }
+		const states = await commands.mobileGallery(
+			[
+				{ type: 'open' },
+				right,
+				left,
+				left,
+				left,
+				right,
+				right,
+				{ ...left, fingers: 2 },
+				{ type: 'zoom' },
+				{ type: 'zoom' },
+				left,
+			],
+			size,
+		)
+		if (states === false) {
+			skip()
+			return
+		}
+
+		expect(states.map(({ label }) => label)).toEqual(
+			[1, 1, 2, 3, 3, 2, 1, 1, 1, 1, 2].map((index) => `${index} of 3`),
+		)
+		for (const state of states) {
+			expect(state.isOpen).toBe(true)
+			expect(state.isDragging).toBe(false)
+			expect(state.isDismissing).toBe(false)
+			expect(state.scrollY).toBe(states[0]!.scrollY)
+			expect(state.viewport.scale).toBeCloseTo(1, 2)
+		}
+
+		expect(states[8]!.isZoomed).toBe(true)
+		expect(states[9]!.isZoomed).toBe(false)
+	},
+)
+
 it('contains two-finger drags and pinches inside the open mobile gallery', async ({ skip }) => {
 	const states = await commands.mobileGallery([
 		{ type: 'open' },

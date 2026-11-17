@@ -372,8 +372,7 @@
 		max(env(safe-area-inset-left), var(--amk-lightbox-gutter));
 }
 
-/* Script handles sideways swipes. The scroll-boundary guard keeps vertical
-   drags on fitted subjects in the viewer, while captions scroll natively. */
+/* Captions keep native vertical scrolling; script handles sideways swipes. */
 .amk-lightbox-slide:not([data-zoomed]) {
 	touch-action: pan-y;
 }
@@ -387,6 +386,13 @@
 	min-height: 0;
 	/* Focused only to direct keyboard scrolling while zoomed */
 	outline: none;
+}
+
+/* Fitted subjects navigate sideways and dismiss vertically. Allowing native
+   panning here lets Safari interrupt either drag. Keep this on the stage so
+   captions and zoomed images retain their native scrolling. */
+.amk-lightbox-slide:not([data-zoomed]) > .amk-lightbox-stage {
+	touch-action: none;
 }
 
 /* Fits the subject's aspect ratio into the stage. Never transformed, so it
