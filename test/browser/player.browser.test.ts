@@ -793,6 +793,35 @@ it('raises a minimal player to the full bar while lifted, and lowers it again af
 	expect(getComputedStyle(centerPlay).display).not.toBe('none')
 })
 
+it('preserves playback, the original node, and author display styling through a move', async () => {
+	const { item, player } = await mountPlayer()
+	const subject = item.firstElementChild as HTMLElement
+	const video = query(player, 'video', HTMLVideoElement)
+	subject.style.setProperty('display', 'inline-block', 'important')
+	await video.play()
+	await expect.poll(() => video.currentTime).toBeGreaterThan(0.2)
+	const events: string[] = []
+	for (const type of ['pause', 'emptied', 'abort', 'loadstart']) {
+		video.addEventListener(type, () => {
+			events.push(type)
+		})
+	}
+
+	const before = video.currentTime
+	await openLightbox(item)
+	await liftDone()
+	expect(query(currentLayer(), 'video')).toBe(video)
+	expect(subject.style.getPropertyValue('display')).toBe('inline-block')
+	expect(subject.style.getPropertyPriority('display')).toBe('important')
+	await closeLightbox()
+	await expect.poll(() => video.currentTime).toBeGreaterThan(before)
+	expect(item.firstElementChild).toBe(subject)
+	expect(subject.style.getPropertyValue('display')).toBe('inline-block')
+	expect(subject.style.getPropertyPriority('display')).toBe('important')
+	expect(video.paused).toBe(false)
+	expect(events).toEqual([])
+})
+
 it.each([false, true])(
 	'fades video button hover highlights out smoothly, lifted=%s',
 	async (lifted) => {

@@ -209,6 +209,7 @@ export function isWithin(event: Event, selector: string, boundary: Element): boo
 export function move(parent: Element, node: Element, reference?: ChildNode): boolean {
 	const before = reference?.parentNode === parent ? reference : undefined
 	if ('moveBefore' in parent) {
+		const restorePaint = suspendPlayerPaint(node)
 		try {
 			// eslint-disable-next-line unicorn/no-null -- The DOM API takes null to mean "append"
 			parent.moveBefore(node, before ?? null)
@@ -219,6 +220,8 @@ export function move(parent: Element, node: Element, reference?: ChildNode): boo
 			if (!(error instanceof Error) || error.name !== 'HierarchyRequestError') {
 				throw error
 			}
+		} finally {
+			restorePaint?.()
 		}
 	}
 
@@ -229,6 +232,34 @@ export function move(parent: Element, node: Element, reference?: ChildNode): boo
 	}
 
 	return false
+}
+
+/** Discard a player's old paint state without disconnecting its media. */
+function suspendPlayerPaint(node: Element): (() => void) | undefined {
+	if (!(node instanceof HTMLElement) || node.querySelector('video-player') === null) {
+		return
+	}
+
+	// Chromium can briefly omit the page behind a translucent dialog when
+	// moveBefore carries a player's existing paint layers into it, even for an
+	// offscreen neighbor. Recreate the layout box within this same task: the
+	// media stays connected, and its stream, playback time, and state survive.
+	const display = node.style.getPropertyValue('display')
+	const priority = node.style.getPropertyPriority('display')
+	const hadStyle = node.hasAttribute('style')
+	node.style.setProperty('display', 'none', 'important')
+	node.getBoundingClientRect()
+	return () => {
+		if (display === '') {
+			node.style.removeProperty('display')
+		} else {
+			node.style.setProperty('display', display, priority)
+		}
+
+		if (!hadStyle && node.style.length === 0) {
+			node.removeAttribute('style')
+		}
+	}
 }
 
 /** Forget a link item's media, so that its next use starts afresh. */

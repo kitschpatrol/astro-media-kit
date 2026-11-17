@@ -11,6 +11,7 @@ declare module 'vitest/browser' {
 	interface BrowserCommands {
 		displayWithoutScripts: (path: string, selector: string) => Promise<false | string>
 		emulateReducedMotion: (isReduced: boolean) => Promise<void>
+		lightboxPaint: () => Promise<false | { frames: number; opaque: number }>
 		mobileGallery: (
 			actions: MobileAction[],
 			size?: { width: number; height: number },
