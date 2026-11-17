@@ -92,6 +92,7 @@ class Viewer {
 		this.#updateZoomState()
 	})
 	readonly #zoomButton: HTMLButtonElement
+	#zoomVisibility = 0
 
 	get #isNavigable(): boolean {
 		return this.#state === 'open' || this.#state === 'opening'
@@ -1310,7 +1311,7 @@ class Viewer {
 		}
 
 		// A fit preset has no zoom-in action after resetting.
-		;(this.#zoomButton.hidden === true ? slide.stage : this.#zoomButton).focus({
+		;(this.#zoomButton.inert ? slide.stage : this.#zoomButton).focus({
 			preventScroll: true,
 		})
 	}
@@ -1368,9 +1369,30 @@ class Viewer {
 			;(slide?.stage ?? this.#dialog).focus({ preventScroll: true })
 		}
 
-		this.#zoomButton.hidden = isHidden
-		this.#zoomButton.ariaPressed = String(isZoomed)
-		this.#zoomButton.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
+		const button = this.#zoomButton
+		button.inert = isHidden
+		if (!isHidden) {
+			this.#zoomVisibility++
+			delete button.dataset.hiding
+			button.hidden = false
+			button.ariaPressed = String(isZoomed)
+			button.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
+		} else if (button.hidden !== true && !Object.hasOwn(button.dataset, 'hiding')) {
+			const visibility = ++this.#zoomVisibility
+			// Preserve the reset icon while it fades. Inert removes its focus and
+			// input immediately; hidden follows the opacity transition in every engine.
+			button.dataset.hiding = ''
+			void settle(button).then(() => {
+				if (visibility !== this.#zoomVisibility) {
+					return
+				}
+
+				button.hidden = true
+				button.ariaPressed = 'false'
+				button.ariaDisabled = 'true'
+				delete button.dataset.hiding
+			})
+		}
 	}
 }
 

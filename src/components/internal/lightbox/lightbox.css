@@ -698,6 +698,17 @@
 	opacity: var(--amk-lightbox-drag-opacity, 1);
 }
 
+.amk-lightbox[data-state='open'] .amk-lightbox-zoom[data-hiding] {
+	pointer-events: none;
+	opacity: 0;
+}
+
+@starting-style {
+	.amk-lightbox[data-state='open'] .amk-lightbox-zoom {
+		opacity: 0;
+	}
+}
+
 /* A zoomed subject covers its caption */
 .amk-lightbox[data-state='open'] .amk-lightbox-slide[data-zoomed] > .amk-lightbox-caption {
 	opacity: 0;
