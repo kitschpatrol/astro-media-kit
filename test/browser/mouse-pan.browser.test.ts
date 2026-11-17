@@ -13,12 +13,12 @@ import {
 	item,
 	middleOf,
 	mount,
+	openZoomable,
 	query,
 	settle,
 	setUpLightbox,
 	transitionsDone,
 	viewer,
-	zoomable,
 } from './helpers'
 import { lift, pointer } from './touch'
 
@@ -30,7 +30,7 @@ afterEach(async () => {
 })
 
 async function open() {
-	await openLightbox(boxes(mount(zoomable('native') + zoomable('native', 'aurora', 1600)))[0]!)
+	await openZoomable('native')
 	await clickSubject(0.5, 0.5)
 	await transitionsDone()
 	return middleOf(currentStage())

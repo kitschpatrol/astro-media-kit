@@ -2,7 +2,7 @@ import { expect, onTestFinished } from 'vitest'
 import { commands, server, userEvent } from 'vitest/browser'
 import type { MobileAction, MobileSnapshot } from './mobile-commands'
 import { lengthOf } from '../../src/components/internal/lightbox/geometry'
-import { installLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { installLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import '../../src/components/internal/lightbox/lightbox.css'
 import trackpad from '../fixtures/safari-trackpad-swipes.json'
 
@@ -290,6 +290,18 @@ export function zoomable(level: string, name = 'tile', height = 2400): string {
 			style="width: 100%; height: auto" />`,
 		`data-gallery="z" data-level="${level}" data-native-width="2400" style="width: 240px"`,
 	)
+}
+
+/**
+ * Open the first of two zoomable images at `level`, once it has loaded, and
+ * return their fixture: what the zoom, pinch, and pan tests start from.
+ */
+export async function openZoomable(level = 'fit'): Promise<HTMLElement> {
+	const fixture = mount(zoomable(level) + zoomable(level, 'aurora', 1600))
+	const image = query(fixture, 'img', HTMLImageElement)
+	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
+	await openLightbox(boxes(fixture)[0]!)
+	return fixture
 }
 
 /** The current slide's layer, which shows the subject wherever it is drawn. */

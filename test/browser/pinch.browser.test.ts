@@ -10,6 +10,7 @@ import {
 	frames,
 	middleOf,
 	mount,
+	openZoomable,
 	query,
 	setUpLightbox,
 	transitionsDone,
@@ -25,18 +26,10 @@ afterEach(async () => {
 	await page.viewport(1280, 800)
 })
 
-async function open(level = 'fit') {
-	const fixture = mount(zoomable(level) + zoomable(level, 'aurora', 1600))
-	const image = query(fixture, 'img', HTMLImageElement)
-	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
-	await openLightbox(boxes(fixture)[0]!)
-	return fixture
-}
-
 it.each(['fit', 'fill', 'native'])(
 	'pinches an image with the %s preset and exposes a reset control',
 	async (level) => {
-		await open(level)
+		await openZoomable(level)
 		const { width } = currentLayer().getBoundingClientRect()
 		const controls = query(viewer(), '.amk-lightbox-close').getBoundingClientRect()
 		await pinch(2)
@@ -60,7 +53,7 @@ it.each(['fit', 'fill', 'native'])(
 )
 
 it('keeps the pinched image point under the moving midpoint', async () => {
-	await open()
+	await openZoomable()
 	const box = currentLayer().getBoundingClientRect()
 	const x = box.x + box.width * 0.4
 	const y = box.y + box.height * 0.4
@@ -76,7 +69,7 @@ it('keeps the pinched image point under the moving midpoint', async () => {
 })
 
 it('reads the page as fingers land, and not again for each move they make', async () => {
-	await open()
+	await openZoomable()
 	const { width } = currentLayer().getBoundingClientRect()
 	const { x, y } = await pinch(2)
 	// The opened image's own decode has settled, which reads its style once
@@ -110,7 +103,7 @@ it('reads the page as fingers land, and not again for each move they make', asyn
 })
 
 it('continues panning with the remaining finger without navigating or dismissing', async () => {
-	await open()
+	await openZoomable()
 	const { x, y } = await pinch(3)
 	pointer('pointerup', 1, x - 150, y)
 	const before = currentLayer().getBoundingClientRect()
@@ -126,7 +119,7 @@ it('continues panning with the remaining finger without navigating or dismissing
 })
 
 it('returns to fit and suppresses the release click before allowing navigation', async () => {
-	await open()
+	await openZoomable()
 	const { width } = currentLayer().getBoundingClientRect()
 	await pinch(2)
 	lift()
@@ -143,7 +136,7 @@ it('returns to fit and suppresses the release click before allowing navigation',
 })
 
 it('ignores a third contact and rebases the surviving pair without jumping', async () => {
-	await open()
+	await openZoomable()
 	const { x, y } = await pinch(2)
 	const { width } = currentLayer().getBoundingClientRect()
 	pointer('pointerdown', 3, 40, 40, query(viewer(), '.amk-lightbox-close'))
@@ -161,7 +154,7 @@ it('ignores a third contact and rebases the surviving pair without jumping', asy
 })
 
 it('forgets cancelled contacts and accepts a fresh pinch', async () => {
-	await open()
+	await openZoomable()
 	const { x, y } = await pinch(2)
 	const { width } = currentLayer().getBoundingClientRect()
 	pointer('pointercancel', 1, x - 100, y)
@@ -177,7 +170,7 @@ it('forgets cancelled contacts and accepts a fresh pinch', async () => {
 it.each(['mouse', 'pen'])(
 	'ignores unrelated %s input while fingers are held',
 	async (pointerType) => {
-		await open()
+		await openZoomable()
 		const { x, y } = await pinch(2)
 		const before = currentLayer().getBoundingClientRect()
 		for (const type of ['pointermove', 'pointerup', 'pointercancel']) {
@@ -205,7 +198,7 @@ it.each(['mouse', 'pen'])(
 it.each(['held', 'released'])(
 	'preserves pinch size and focal point through resize with fingers %s',
 	async (state) => {
-		await open('fill')
+		await openZoomable('fill')
 		await pinch(2)
 		if (state === 'released') {
 			lift()
@@ -236,7 +229,7 @@ it.each(['held', 'released'])(
 )
 
 it('stops a held pinch when the reset control is activated', async () => {
-	await open()
+	await openZoomable()
 	const { width } = currentLayer().getBoundingClientRect()
 	const { x, y } = await pinch(2)
 	query(viewer(), '.amk-lightbox-zoom', HTMLButtonElement).click()
@@ -269,7 +262,7 @@ it('restores the caption and fitted image geometry after pinching out', async ()
 })
 
 it('settles extreme zoom and pan within bounds without moving to another slide', async () => {
-	await open()
+	await openZoomable()
 	const fitted = currentLayer().getBoundingClientRect()
 	const { x, y } = await pinch(12)
 	expect(currentLayer().getBoundingClientRect().width).toBeGreaterThan(fitted.width * 8)
@@ -298,7 +291,7 @@ it('settles extreme zoom and pan within bounds without moving to another slide',
 })
 
 it('hands an existing swipe to a pinch without changing slides', async ({ skip }) => {
-	await open()
+	await openZoomable()
 	const { x, y } = middleOf(currentStage())
 	const { width } = currentLayer().getBoundingClientRect()
 	const first = { id: 1, x, y }
@@ -326,7 +319,7 @@ it('hands an existing swipe to a pinch without changing slides', async ({ skip }
 it.for(['fit', 'fill', 'native'])(
 	'pinches, pans, returns to fit and swipes with native touch input for %s',
 	async (level, { skip }) => {
-		await open(level)
+		await openZoomable(level)
 		const { width } = currentLayer().getBoundingClientRect()
 		const { x, y } = middleOf(currentStage())
 		const first = { id: 1, x: x - 60, y }

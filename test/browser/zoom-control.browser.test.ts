@@ -1,18 +1,15 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands } from 'vitest/browser'
-import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
-	boxes,
 	cleanUp,
 	currentStage,
 	fadeOf,
 	frames,
-	mount,
+	openZoomable,
 	query,
 	setUpLightbox,
 	transitionsDone,
 	viewer,
-	zoomable,
 } from './helpers'
 import { lift, pinch } from './touch'
 
@@ -23,7 +20,7 @@ afterEach(async () => {
 })
 
 async function open() {
-	await openLightbox(boxes(mount(zoomable('fit')))[0]!)
+	await openZoomable()
 	await pinch(2)
 	lift()
 	await transitionsDone()

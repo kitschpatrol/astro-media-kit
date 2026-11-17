@@ -1,19 +1,16 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands } from 'vitest/browser'
-import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
-	boxes,
 	cleanUp,
 	currentLayer,
 	currentStage,
 	frames,
 	middleOf,
-	mount,
+	openZoomable,
 	query,
 	setUpLightbox,
 	transitionsDone,
 	viewer,
-	zoomable,
 } from './helpers'
 import { lift, pinch, pointer } from './touch'
 
@@ -24,7 +21,7 @@ afterEach(async () => {
 })
 
 async function open() {
-	await openLightbox(boxes(mount(zoomable('fit')))[0]!)
+	await openZoomable()
 	return currentLayer().getBoundingClientRect()
 }
 

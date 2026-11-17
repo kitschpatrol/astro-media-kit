@@ -1,20 +1,17 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands } from 'vitest/browser'
-import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { closeLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
 	activeSlideLabel,
-	boxes,
 	cleanUp,
 	currentLayer,
 	currentStage,
 	frames,
 	middleOf,
-	mount,
-	query,
+	openZoomable,
 	settle,
 	setUpLightbox,
 	viewer,
-	zoomable,
 } from './helpers'
 import { lift, pinch, pointer } from './touch'
 
@@ -25,13 +22,6 @@ afterEach(async () => {
 	await commands.emulateReducedMotion(false)
 	await cleanUp()
 })
-
-async function open() {
-	const fixture = mount(zoomable('fit') + zoomable('fit', 'aurora', 1600))
-	const image = query(fixture, 'img', HTMLImageElement)
-	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
-	await openLightbox(boxes(fixture)[0]!)
-}
 
 async function drag(fingers = 1) {
 	const { x, y } = middleOf(currentStage())
@@ -56,7 +46,7 @@ it.each([
 	{ x: 0, y: 1 },
 	{ x: 1, y: 1 },
 ])('keeps the corner at $x, $y under a pinch without centering the image', async (anchor) => {
-	await open()
+	await openZoomable()
 	const before = currentLayer().getBoundingClientRect()
 	const point = { x: before.x + before.width * anchor.x, y: before.y + before.height * anchor.y }
 	pointer('pointerdown', 1, point.x - 20, point.y)
@@ -72,7 +62,7 @@ it.each([
 })
 
 it.each([1, 2])('coasts after a %i-finger pan and stays on the same slide', async (fingers) => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	await drag(fingers)
@@ -92,7 +82,7 @@ it.each([
 	{ x: 0, y: 1 },
 	{ x: 0, y: -1 },
 ])('moves in direction $x, $y and springs back from an overshoot', async (direction) => {
-	await open()
+	await openZoomable()
 	viewer().style.setProperty('--amk-lightbox-pan-padding', '24px')
 	await pinch(2)
 	lift()
@@ -128,7 +118,7 @@ it.each([
 })
 
 it('keeps the stage transparent and free of scrollbars while panning', async () => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	await drag(2)
@@ -146,7 +136,7 @@ it('keeps the stage transparent and free of scrollbars while panning', async () 
 })
 
 it('catches momentum on a fresh press without turning its release into a tap', async () => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	await drag(2)
@@ -165,7 +155,7 @@ it('catches momentum on a fresh press without turning its release into a tap', a
 })
 
 it.each(['pause', 'cancel', 'reduced motion'])('does not coast after a %s', async (ending) => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	if (ending === 'reduced motion') {
@@ -187,7 +177,7 @@ it.each(['pause', 'cancel', 'reduced motion'])('does not coast after a %s', asyn
 })
 
 it('stops momentum before closing and starts the next opening fitted', async () => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	await drag()
@@ -196,12 +186,12 @@ it('stops momentum before closing and starts the next opening fitted', async () 
 	expect(Object.hasOwn(stage.dataset, 'panning')).toBe(true)
 	await closeLightbox()
 	expect(Object.hasOwn(stage.dataset, 'panning')).toBe(false)
-	await open()
+	await openZoomable()
 	expect(viewer().querySelector('[data-zoomed]')).toBeNull()
 })
 
 it.for([1, 2])('preserves native %i-finger release velocity', async (fingers, { skip }) => {
-	await open()
+	await openZoomable()
 	await pinch(3)
 	lift()
 	const { x, y } = middleOf(currentStage())
