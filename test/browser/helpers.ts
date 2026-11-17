@@ -297,7 +297,7 @@ export function currentLayer(): HTMLElement {
 	return query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-layer')
 }
 
-/** The current slide's stage, which scrolls while zoomed. */
+/** The current slide's stage, which clips the subject while zoomed. */
 export function currentStage(): HTMLElement {
 	return query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-stage')
 }

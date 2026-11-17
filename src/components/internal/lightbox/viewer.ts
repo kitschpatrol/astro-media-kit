@@ -1498,7 +1498,8 @@ function createSlide(item: HTMLElement, index: number, count: number): Slide {
 
 	const stage = document.createElement('div')
 	stage.className = 'amk-lightbox-stage'
-	// Focused while zoomed, so the keyboard scrolls it, but never a tab stop
+	// Takes focus while zoomed, and from a zoom button that hides, but is never
+	// a tab stop
 	stage.tabIndex = -1
 	const frame = document.createElement('div')
 	frame.className = 'amk-lightbox-frame'
