@@ -145,11 +145,7 @@ class Viewer {
 				}
 
 				this.#dismissLayer = layer
-				this.#dialog.dataset.dismissing = ''
-				this.#dialog.style.setProperty(
-					'--amk-lightbox-drag-opacity',
-					String(Math.max(0, 1 - Math.abs(distance) / (this.#height * 0.5))),
-				)
+				this.#dim(Math.max(0, 1 - Math.abs(distance) / (this.#height * 0.5)))
 				setLayerStyle(layer, { ...identity, translate: `0 ${distance}px` }, false)
 			},
 			onMove: (position) => {
@@ -203,12 +199,11 @@ class Viewer {
 		// Escape or a close command can interrupt a held drag. Commit its
 		// backdrop opacity before enabling the closing transition.
 		this.#dialog.getAnimations()
-		delete this.#dialog.dataset.dismissing
 		this.#state = 'closing'
 		this.#dialog.dataset.state = 'closing'
 		// The open-state rules no longer apply, so dropping a drag's dimming
 		// here keeps the fade smooth and brings a reopened viewer back in full
-		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		this.#dim()
 
 		// Settle on the slide that is showing, even if a swipe, drag, or glide is
 		// underway
@@ -407,8 +402,7 @@ class Viewer {
 		this.#track.replaceChildren()
 		this.#motion.stop()
 		this.#dismissLayer = undefined
-		delete this.#dialog.dataset.dismissing
-		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		this.#dim()
 		delete this.#dialog.dataset.state
 		document.removeEventListener('keydown', this.#handleKeydown)
 		document.removeEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
@@ -525,6 +519,21 @@ class Viewer {
 		}
 	}
 
+	/**
+	 * Hold the backdrop, the controls and the caption at `opacity` of their own,
+	 * following a drag or a pinch without their transitions; or, with none, give
+	 * them back to their transitions, at full opacity while the viewer is open.
+	 */
+	#dim(opacity?: number) {
+		if (opacity === undefined) {
+			delete this.#dialog.dataset.dismissing
+			this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		} else {
+			this.#dialog.dataset.dismissing = ''
+			this.#dialog.style.setProperty('--amk-lightbox-drag-opacity', String(opacity))
+		}
+	}
+
 	/** Put the given ghosts back straight away. */
 	#dropGhosts(ghosts: Slide[]) {
 		this.#ghosts = this.#ghosts.filter((ghost) => !ghosts.includes(ghost))
@@ -543,14 +552,13 @@ class Viewer {
 
 		// Commit the pointer's last position before restoring CSS transitions.
 		this.#dialog.getAnimations()
-		delete this.#dialog.dataset.dismissing
 		this.#dismissLayer = undefined
 		if (shouldDismiss) {
 			void this.close()
 			return
 		}
 
-		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		this.#dim()
 		if (this.#state === 'open') {
 			setLayerStyle(layer, identity)
 		}
@@ -582,8 +590,7 @@ class Viewer {
 	 */
 	#fadeWithPinch(opacity: number | undefined) {
 		if (opacity !== undefined) {
-			this.#dialog.dataset.dismissing = ''
-			this.#dialog.style.setProperty('--amk-lightbox-drag-opacity', String(opacity))
+			this.#dim(opacity)
 			return
 		}
 
@@ -594,8 +601,7 @@ class Viewer {
 
 		// Commit the fingers' last opacity before restoring CSS transitions.
 		this.#dialog.getAnimations()
-		delete this.#dialog.dataset.dismissing
-		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		this.#dim()
 	}
 
 	/** Finish the return zoom, then restore the original. */
@@ -939,8 +945,7 @@ class Viewer {
 		this.#activeSubject = undefined
 		this.#motion.stop()
 		this.#dismissLayer = undefined
-		delete this.#dialog.dataset.dismissing
-		this.#dialog.style.removeProperty('--amk-lightbox-drag-opacity')
+		this.#dim()
 		dropSlides(others)
 		for (const other of others) {
 			other.element.remove()
