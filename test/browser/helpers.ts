@@ -15,6 +15,7 @@ declare module 'vitest/browser' {
 		mouseMove: (x: number, y: number) => Promise<void>
 		mouseUp: () => Promise<void>
 		mouseWheel: (deltaX: number, deltaY: number) => Promise<void>
+		touchContacts: (points: Array<{ id: number; x: number; y: number }>) => Promise<boolean>
 		touchDown: (x: number, y: number) => Promise<boolean>
 		touchMove: (x: number, y: number) => Promise<void>
 		touchSwipe: (direction?: 'down' | 'left' | 'up') => Promise<boolean>

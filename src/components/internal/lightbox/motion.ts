@@ -221,9 +221,23 @@ export class CarouselMotion {
 		track.addEventListener('lostpointercapture', this.#handlePointerEnd, { signal })
 		track.addEventListener('scroll', this.#handleScroll, { passive: true, signal })
 		track.addEventListener('scrollend', this.#realign, { signal })
-		track.addEventListener('touchstart', this.#handleTouchstart, { passive: true, signal })
-		track.addEventListener('touchend', this.#handleTouchEnd, { passive: true, signal })
-		track.addEventListener('touchcancel', this.#handleTouchEnd, { passive: true, signal })
+		// A gesture can span the track and a sibling control. Its second finger
+		// and final release must be seen even when their targets are elsewhere.
+		document.addEventListener('touchstart', this.#handleTouchstart, {
+			capture: true,
+			passive: true,
+			signal,
+		})
+		document.addEventListener('touchend', this.#handleTouchEnd, {
+			capture: true,
+			passive: true,
+			signal,
+		})
+		document.addEventListener('touchcancel', this.#handleTouchEnd, {
+			capture: true,
+			passive: true,
+			signal,
+		})
 		track.addEventListener('wheel', this.#handleWheel, { passive: false, signal })
 	}
 
@@ -759,8 +773,8 @@ export class CarouselMotion {
 	 * A drag's click follows its release at once. A touch drag has none, so a
 	 * press anywhere means the next click is a click again.
 	 */
-	readonly #handleNextPress = () => {
-		if (this.#shouldIgnoreClick) {
+	readonly #handleNextPress = (event: PointerEvent) => {
+		if (event.isPrimary && !this.#isTouching && this.#shouldIgnoreClick) {
 			this.#ignoreClick(false)
 		}
 	}
@@ -873,6 +887,10 @@ export class CarouselMotion {
 	}
 
 	readonly #handleTouchEnd = (event: TouchEvent) => {
+		if (!this.#isTouching) {
+			return
+		}
+
 		this.#isTouching = event.touches.length > 0
 		this.#scheduleRealign()
 	}
@@ -884,7 +902,10 @@ export class CarouselMotion {
 	 * it once the touch lifts.
 	 */
 	readonly #handleTouchstart = (event: TouchEvent) => {
-		if (!this.#options.canNavigate()) {
+		if (
+			!this.#options.canNavigate() ||
+			(!this.#isTouching && !event.composedPath().includes(this.#track))
+		) {
 			return
 		}
 
@@ -897,6 +918,12 @@ export class CarouselMotion {
 
 		this.#stopGlide()
 		this.#cancelDrag()
+		if (event.touches.length > 1) {
+			// Adding a finger is not a tap on the content, even if the first
+			// finger had not moved far enough to start a drag.
+			this.#ignoreClick(true)
+		}
+
 		this.#dropWheel()
 		this.#target = undefined
 		this.#owner = 'native'

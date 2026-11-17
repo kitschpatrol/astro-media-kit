@@ -253,6 +253,48 @@ const touchUp = defineBrowserCommand(async (context) => {
 	}
 })
 
+const contacts = new WeakMap<Page, CDPSession>()
+
+/**
+ * Set all fingers currently down, retaining their identities across calls. The
+ * protocol emits starts and ends for added and removed contacts, including a
+ * release outside the element where another finger started the gesture.
+ */
+const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: number; y: number }>]>(
+	async (context, points) => {
+		if (context.page.context().browser()?.browserType().name() !== 'chromium') {
+			return false
+		}
+
+		let session = contacts.get(context.page)
+		if (points.length === 0) {
+			if (session !== undefined) {
+				contacts.delete(context.page)
+				try {
+					await session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
+				} finally {
+					await session.detach()
+				}
+			}
+
+			return true
+		}
+
+		const type = session === undefined ? 'touchStart' : 'touchMove'
+		if (session === undefined) {
+			session = await context.page.context().newCDPSession(context.page)
+			contacts.set(context.page, session)
+		}
+
+		const frame = await context.frame()
+		const touchPoints = await Promise.all(
+			points.map(async ({ id, x, y }) => ({ ...(await toWindow(frame, x, y)), id })),
+		)
+		await session.send('Input.dispatchTouchEvent', { touchPoints, type })
+		return true
+	},
+)
+
 /**
  * How the first match of a selector displays in a fixture page opened with
  * scripting off, or false where turning it off doesn't match `(scripting:
@@ -352,6 +394,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 								mouseMove,
 								mouseUp,
 								mouseWheel,
+								touchContacts,
 								touchDown,
 								touchMove,
 								touchSwipe,
