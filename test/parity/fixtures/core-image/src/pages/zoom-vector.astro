@@ -1,0 +1,27 @@
+---
+import { Image, Picture } from 'astro-media-kit/components'
+import photo from '../assets/penguin1.jpg'
+import artwork from '../assets/penguin3.svg'
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Vector and bitmap images that zoom</title>
+	</head>
+	<body>
+		<section id="vector-image">
+			<Image alt="Artwork" src={artwork} width={300} zoom />
+		</section>
+		<section id="vector-picture">
+			<Picture alt="Artwork" formats={{ svg: ['svg'] }} src={artwork} width={300} zoom />
+		</section>
+		<section id="bitmap-image">
+			<Image alt="Photo" src={photo} width={300} zoom />
+		</section>
+		<section id="bitmap-picture">
+			<Picture alt="Photo" src={photo} width={300} zoom />
+		</section>
+	</body>
+</html>

@@ -1134,3 +1134,40 @@ it('moves an SVG image itself when its item leaves no copy in the page', async (
 	await expect.poll(() => viewer().open).toBe(false)
 	expect(box.firstElementChild).toBe(original)
 })
+
+it.each([true, false])(
+	'goes by the rendered hint for vector artwork at an address that does not say (hint=%s)',
+	async (hinted) => {
+		// As an image service would serve it, with no `.svg` in its path
+		const address = URL.createObjectURL(
+			new Blob(
+				[
+					'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90"><rect width="90" height="90" fill="teal"/></svg>',
+				],
+				{ type: 'image/svg+xml' },
+			),
+		)
+		try {
+			const fixture = mount(
+				item(
+					`<img src="${address}" width="900" height="900" alt=""
+						style="display: block; width: 100%; height: auto" />`,
+					`${hinted ? 'data-vector ' : ''}style="width: 200px"`,
+				),
+			)
+			const box = boxes(fixture)[0]!
+			const original = query(box, 'img', HTMLImageElement)
+			await original.decode()
+			await openLightbox(box)
+			// Hinted, the page keeps its element and the viewer shows a copy
+			expect(box.firstElementChild === original).toBe(hinted)
+			expect(viewer().contains(original)).toBe(!hinted)
+			expect(viewer().querySelectorAll(':scope .amk-lightbox-layer img')).toHaveLength(1)
+			await closeLightbox()
+			await expect.poll(() => viewer().open).toBe(false)
+			expect(box.firstElementChild).toBe(original)
+		} finally {
+			URL.revokeObjectURL(address)
+		}
+	},
+)

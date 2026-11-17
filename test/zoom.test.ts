@@ -30,6 +30,21 @@ describe('zoom server markup', () => {
 		expect(link.parent('figure').children('figcaption').text()).toContain('Picture caption')
 	})
 
+	it('marks vector artwork on the server, whatever address it is served from', async () => {
+		const $ = await fixture.readHTML('/zoom-vector/')
+		for (const id of ['vector-image', 'vector-picture']) {
+			const item = $(`#${id} .amk-zoom`)
+			expect(item).toHaveLength(1)
+			expect(item.attr('data-vector')).toBe('')
+		}
+
+		for (const id of ['bitmap-image', 'bitmap-picture']) {
+			const item = $(`#${id} .amk-zoom`)
+			expect(item).toHaveLength(1)
+			expect(item.attr('data-vector')).toBeUndefined()
+		}
+	})
+
 	it('renders link and button semantics on the server, and omits default values', async () => {
 		const $ = await fixture.readHTML('/zoom/')
 		const link = $('#first a.amk-zoom').first()

@@ -519,6 +519,7 @@ if (isSelector && hasDarkMode) {
 		{...zoomTarget(fallbackImage)}
 		indicator={zoomIndicator}
 		slot="media-component"
+		vector={formats.includes('svg') || resultFallbackFormat === 'svg'}
 	>
 		{isSelector && hasDarkMode ? (
 			<div
