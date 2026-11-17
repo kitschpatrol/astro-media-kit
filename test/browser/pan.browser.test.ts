@@ -76,10 +76,9 @@ it.each([1, 2])('coasts after a %i-finger pan and stays on the same slide', asyn
 	expect(viewer().open).toBe(true)
 })
 
+// Each axis once, toward either end: the limits themselves are unit tested
 it.each([
 	{ x: 1, y: 0 },
-	{ x: -1, y: 0 },
-	{ x: 0, y: 1 },
 	{ x: 0, y: -1 },
 ])('moves in direction $x, $y and springs back from an overshoot', async (direction) => {
 	await openZoomable()
