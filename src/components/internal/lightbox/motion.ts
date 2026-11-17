@@ -35,7 +35,12 @@ type MotionOptions = {
 	onPrepare: (index: number) => void
 	onRest: () => void
 	/** Move an enlarged subject independently of native scrolling. */
-	pan?: { end: () => void; move: (point: Point) => void; position: () => Point }
+	pan?: {
+		end: (velocity: Point) => void
+		move: (point: Point) => void
+		position: () => Point
+		stop: () => boolean
+	}
 	/** Let a magnified page pan over an embedded carousel. */
 	panPageWhenZoomed?: boolean
 	stage: () => HTMLElement | undefined
@@ -65,6 +70,8 @@ type Drag = {
 	 * then.
 	 */
 	origin: undefined | { x: number; y: number }
+	/** Vertical pointer travel when panning an enlarged subject. */
+	panSamplesY: Array<{ position: number; time: number }>
 	pointerId: number
 	/** Recent track positions, to tell whether it was still moving when let go. */
 	samples: Array<{ position: number; time: number }>
@@ -431,13 +438,7 @@ export class CarouselMotion {
 		} else if (drag.stage === undefined) {
 			return this.#grab(drag, event.pointerId)
 		} else {
-			drag.origin = this.#options.pan?.position() ?? {
-				x: drag.stage.scrollLeft,
-				y: drag.stage.scrollTop,
-			}
-			// Keep receiving the drag when it passes over the controls, or leaves
-			// the stage
-			this.#track.setPointerCapture(event.pointerId)
+			this.#grabPan(drag, event.pointerId)
 		}
 
 		this.#owner = 'drag'
@@ -454,6 +455,7 @@ export class CarouselMotion {
 
 		this.#ignoreClick(drag.origin !== undefined)
 		delete (drag.stage ?? this.#track).dataset.dragging
+		delete this.#track.dataset.dragging
 		if (this.#owner === 'drag') {
 			this.#owner = 'idle'
 		}
@@ -576,6 +578,7 @@ export class CarouselMotion {
 
 		const isRelease = outcome === 'release'
 		delete (drag.stage ?? this.#track).dataset.dragging
+		delete this.#track.dataset.dragging
 		this.#owner = 'idle'
 		if (drag.axis === 'dismiss') {
 			const velocity = velocityOf(drag.samples, drag.distanceY, time)
@@ -598,7 +601,10 @@ export class CarouselMotion {
 
 			this.#settle(isRelease ? velocityOf(drag.samples, this.#position, time) : 0)
 		} else {
-			this.#options.pan?.end()
+			this.#options.pan?.end({
+				x: isRelease ? velocityOf(drag.samples, drag.samples.at(-1)!.position, time) : 0,
+				y: isRelease ? velocityOf(drag.panSamplesY, drag.panSamplesY.at(-1)!.position, time) : 0,
+			})
 		}
 
 		// The click that ends a drag is not a click on the content. None follows
@@ -778,6 +784,19 @@ export class CarouselMotion {
 		return drag.origin
 	}
 
+	/** Capture on the track, whose cursor is used even while a stage is moving. */
+	#grabPan(drag: Drag, pointerId: number) {
+		drag.samples[0]!.position = 0
+		drag.origin = this.#options.pan?.position() ?? {
+			x: drag.stage!.scrollLeft,
+			y: drag.stage!.scrollTop,
+		}
+		this.#owner = 'drag'
+		this.#track.dataset.dragging = ''
+		drag.stage!.dataset.dragging = ''
+		this.#track.setPointerCapture(pointerId)
+	}
+
 	/** The click that ends a drag is not a click on anything. */
 	readonly #handleClick = (event: MouseEvent) => {
 		if (!this.#shouldIgnoreClick) {
@@ -894,6 +913,7 @@ export class CarouselMotion {
 			})
 		} else {
 			this.#options.pan.move({ x: origin.x - distanceX, y: origin.y - distanceY })
+			this.#samplePan(drag, { x: distanceX, y: distanceY }, event.timeStamp)
 		}
 	}
 
@@ -1102,6 +1122,7 @@ export class CarouselMotion {
 			isTouch,
 			keepsSideways,
 			origin: undefined,
+			panSamplesY: [{ position: 0, time: event.timeStamp }],
 			pointerId: event.pointerId,
 			samples: [{ position: this.#position, time: event.timeStamp }],
 			stage,
@@ -1111,7 +1132,9 @@ export class CarouselMotion {
 		// Otherwise the track captures the pointer only once a drag begins: a
 		// press holding it would show the track's cursor rather than the one
 		// under the pointer, and send its click to the track
-		if (isCatch) {
+		if (this.#options.pan?.stop() === true) {
+			this.#grabPan(this.#drag, event.pointerId)
+		} else if (isCatch) {
 			// Captured, so a player under the press never takes its release as a tap
 			this.#grab(this.#drag, event.pointerId)
 		}
@@ -1173,6 +1196,15 @@ export class CarouselMotion {
 		this.#owner = 'idle'
 		delete this.#track.dataset.moving
 		this.#options.onRest()
+	}
+
+	#samplePan(drag: Drag, point: Point, time: number) {
+		drag.samples.push({ position: point.x, time })
+		drag.panSamplesY.push({ position: point.y, time })
+		while (drag.samples.length > 2 && time - drag.samples[1]!.time > flickWindow) {
+			drag.samples.shift()
+			drag.panSamplesY.shift()
+		}
 	}
 
 	readonly #scheduleRealign = () => {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { page, userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
 	activeSlideLabel,
@@ -14,6 +14,7 @@ import {
 	item,
 	mount,
 	query,
+	settle,
 	setUpLightbox,
 	transitionsDone,
 	viewer,
@@ -151,11 +152,10 @@ describe('zoom', () => {
 		await transitionsDone()
 		const before = currentLayer().getBoundingClientRect()
 
-		const target = page.elementLocator(currentStage())
-		await userEvent.dragAndDrop(target, target, {
-			sourcePosition: { x: 700, y: 500 },
-			targetPosition: { x: 500, y: 350 },
-		})
+		await commands.mouseDown(700, 500)
+		await commands.mouseMove(500, 350)
+		await settle(120)
+		await commands.mouseUp()
 		await transitionsDone()
 
 		expect(currentLayer().getBoundingClientRect().x).toBeCloseTo(before.x - 200, -1)

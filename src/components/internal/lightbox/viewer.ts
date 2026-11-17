@@ -100,9 +100,16 @@ class Viewer {
 
 	get #pinchSlide(): Slide | undefined {
 		const slide = this.#slides[this.#index]
-		return this.#state === 'open' &&
-			slide?.lift !== undefined &&
-			rendered(slide.lift.subject) instanceof HTMLImageElement
+		if (this.#state !== 'open' || slide?.lift === undefined) {
+			return
+		}
+
+		const media = rendered(slide.lift.subject)
+		return media instanceof HTMLImageElement ||
+			media instanceof HTMLVideoElement ||
+			media.matches('hlsjs-video, vimeo-video, youtube-video') ||
+			(media.matches('media-container') && media.closest('video-player') !== null) ||
+			slide.lift.subject.matches('.amk-video')
 			? slide
 			: undefined
 	}
@@ -168,13 +175,14 @@ class Viewer {
 				this.#rest()
 			},
 			pan: {
-				end: () => {
-					this.#zoom.fling()
+				end: (velocity) => {
+					this.#zoom.fling(velocity)
 				},
 				move: (point) => {
 					this.#zoom.panTo(point, true)
 				},
-				position: () => this.#zoom.position,
+				position: () => this.#zoom.dragOrigin,
+				stop: () => this.#zoom.stopPan(),
 			},
 			stage: () =>
 				this.#zoom.current === this.#slides[this.#index] ? this.#zoom.current?.stage : undefined,

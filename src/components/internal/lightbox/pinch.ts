@@ -2,7 +2,7 @@ import type { Point, Slide } from './types'
 import type { Zoom } from './zoom'
 import { controlSelector, isWithin, sealedRegionSelector } from './dom'
 
-type Contact = Point & { isOnImage: boolean }
+type Contact = Point & { isOnMedia: boolean }
 type Basis = { anchor: Point; center: Point; distance: number; width: number }
 type Sample = Point & { time: number }
 
@@ -47,6 +47,7 @@ export class Pinch {
 
 	/** Release gesture listeners before closing, resizing, or changing slides. */
 	stop() {
+		let corrected = false
 		this.#zoom.stopPan()
 		if (this.#frame !== undefined) {
 			cancelAnimationFrame(this.#frame)
@@ -56,7 +57,7 @@ export class Pinch {
 		this.#controller?.abort()
 		this.#controller = undefined
 		if (this.#isPinching) {
-			this.#zoom.finishPinch()
+			corrected = this.#zoom.finishPinch()
 		}
 
 		this.#contacts.clear()
@@ -67,6 +68,7 @@ export class Pinch {
 		this.#previous = undefined
 		this.#travel = { x: 0, y: 0 }
 		this.#canPan = false
+		return corrected
 	}
 
 	readonly #down = (event: PointerEvent) => {
@@ -75,25 +77,21 @@ export class Pinch {
 			return
 		}
 
-		const isOnImage =
+		const isOnMedia =
 			event.composedPath().includes(slide.stage) &&
 			!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
 		if (event.pointerType !== 'touch') {
-			if (isOnImage) {
-				this.#zoom.stopPan()
-			}
-
 			return
 		}
 
 		if (this.#contacts.size === 0) {
-			if (!isOnImage || !event.isPrimary) {
+			if (!isOnMedia || !event.isPrimary) {
 				return
 			}
 
 			this.#slide = slide
 			this.#canPan = !isWithin(event, sealedRegionSelector, slide.stage)
-			if (this.#zoom.stopPan()) {
+			if (this.#zoom.stopPan() && this.#canPan) {
 				// A press catches the glide; its release must not become a tap.
 				this.#onStart()
 				this.#isPinching = true
@@ -107,7 +105,7 @@ export class Pinch {
 		}
 
 		this.#flush()
-		this.#contacts.set(event.pointerId, { isOnImage, x: event.clientX, y: event.clientY })
+		this.#contacts.set(event.pointerId, { isOnMedia, x: event.clientX, y: event.clientY })
 		if (
 			!this.#isPinching &&
 			this.#contacts.size === 2 &&
@@ -183,8 +181,8 @@ export class Pinch {
 		if (
 			first === undefined ||
 			this.#contacts.size > 2 ||
-			!first.isOnImage ||
-			second?.isOnImage === false
+			!first.isOnMedia ||
+			second?.isOnMedia === false
 		) {
 			return
 		}
@@ -206,7 +204,7 @@ export class Pinch {
 						anchor: this.#zoom.anchor(this.#slide!, points.center),
 						center: { x: points.center.x, y: points.center.y },
 						distance: points.distance,
-						width: box.width,
+						width: this.#zoom.gestureWidth(this.#slide!),
 					}
 		// Changing the finger count changes the midpoint without moving the
 		// media. Rebase it without injecting a false velocity into the release.
@@ -246,8 +244,8 @@ export class Pinch {
 		if (event.type === 'pointercancel' || this.#contacts.size === 0) {
 			const velocity = this.#velocity(event.timeStamp)
 			const shouldGlide = this.#isPinching
-			this.stop()
-			if (shouldGlide) {
+			const corrected = this.stop()
+			if (shouldGlide && !corrected) {
 				this.#zoom.fling(event.type === 'pointerup' ? velocity : { x: 0, y: 0 })
 			}
 		} else if (this.#isPinching) {

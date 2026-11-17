@@ -11,13 +11,20 @@ export class Zoom {
 	get current(): Slide | undefined {
 		return this.#slide
 	}
+	/** Raw drag coordinates before resistance, for catching beyond an edge. */
+	get dragOrigin(): Point {
+		const origin = this.#pan?.origin()
+		return origin === undefined ? { x: 0, y: 0 } : { x: -origin.x, y: -origin.y }
+	}
 	get position(): Point {
 		return this.#pan?.position ?? { x: 0, y: 0 }
 	}
 	#fitted: Box = { height: 0, width: 0, x: 0, y: 0 }
 	#isPinched = false
+	#maximumWidth = 0
 	readonly #onChange: () => void
 	#pan: Pan | undefined
+	#pinchPoint: Point | undefined
 	#slide: Slide | undefined
 	constructor(onChange: () => void) {
 		this.#onChange = onChange
@@ -29,24 +36,34 @@ export class Zoom {
 		const pan = this.#slide === slide ? this.#pan : undefined
 		const origin = pan?.origin()
 		const stage = slide.stage.getBoundingClientRect()
+		const frame = slide.frame.getBoundingClientRect()
 		return {
-			x: (point.x - (origin === undefined ? box.x : stage.x + origin.x)) / box.width,
-			y: (point.y - (origin === undefined ? box.y : stage.y + origin.y)) / box.height,
+			x: (point.x - box.x - (origin === undefined ? 0 : stage.x + origin.x - frame.x)) / box.width,
+			y: (point.y - box.y - (origin === undefined ? 0 : stage.y + origin.y - frame.y)) / box.height,
 		}
 	}
 
 	/** Restore the fitted layout, or load the final image size after a pinch. */
-	finishPinch() {
+	finishPinch(): boolean {
 		const slide = this.#slide
 		if (slide === undefined || !this.#isPinched) {
-			return
+			return false
 		}
 
-		if (slide.frame.getBoundingClientRect().width <= this.#fitted.width + 1) {
+		const { width } = slide.frame.getBoundingClientRect()
+		if (width <= this.#fitted.width + 1) {
 			this.set(slide, undefined)
-		} else {
-			prepareSlideImage(slide)
+			return true
 		}
+
+		if (width > this.#maximumWidth) {
+			this.set(slide, this.#maximumWidth, this.#pinchPoint)
+			this.#isPinched = true
+			return true
+		}
+
+		prepareSlideImage(slide)
+		return false
 	}
 
 	/** Continue a released touch pan, or settle an overshoot without momentum. */
@@ -62,6 +79,24 @@ export class Zoom {
 
 		this.#untrack()
 		this.#onChange()
+	}
+
+	/** Undo scale resistance when fingers change or catch a return transition. */
+	gestureWidth(slide: Slide): number {
+		const { width } = slide.layer.getBoundingClientRect()
+		const minimum =
+			this.#slide === slide ? this.#fitted.width : slide.frame.getBoundingClientRect().width
+		if (width < minimum) {
+			return Math.max(0, minimum + (width - minimum) / 0.15)
+		}
+
+		const maximum = this.#slide === slide ? this.#maximumWidth : minimum * 8
+		if (width > maximum) {
+			const distance = width - maximum
+			return maximum + distance / (0.05 * Math.max(0.01, 1 - distance / (maximum * 0.1)))
+		}
+
+		return width
 	}
 
 	/** Pan by a discrete wheel or keyboard step, within the shared limits. */
@@ -83,18 +118,24 @@ export class Zoom {
 			this.reset()
 			this.#measureFit(slide)
 			// Moving two fingers together on fitted media must not hide its caption.
-			if (width <= this.#fitted.width + 1) {
+			if (Math.abs(width - this.#fitted.width) <= 1) {
 				return
 			}
 
-			this.#track(slide)
+			this.#track(slide, this.#fitted.width)
 		}
 
 		const currentWidth = slide.frame.getBoundingClientRect().width
-		width = Math.min(
-			Math.max(width, this.#fitted.width),
-			Math.max(this.#fitted.width * 8, currentWidth),
-		)
+		if (width < this.#fitted.width) {
+			width = this.#fitted.width + (width - this.#fitted.width) * 0.15
+		} else if (width > this.#maximumWidth) {
+			const distance = width - this.#maximumWidth
+			width =
+				this.#maximumWidth +
+				(distance * 0.05) / (1 + (distance * 0.05) / (this.#maximumWidth * 0.1))
+		}
+
+		this.#pinchPoint = { ...point }
 		this.#isPinched ||= isStarting || Math.abs(width - currentWidth) > 0.5
 		slide.element.dataset.zoomed = ''
 		slide.frame.style.setProperty('--amk-lightbox-zoomed-width', `${width}px`)
@@ -176,7 +217,7 @@ export class Zoom {
 		} else {
 			if (this.#slide !== slide) {
 				this.#measureFit(slide)
-				this.#track(slide)
+				this.#track(slide, width)
 			}
 
 			slide.element.dataset.zoomed = ''
@@ -256,8 +297,9 @@ export class Zoom {
 		)
 	}
 
-	#track(slide: Slide) {
+	#track(slide: Slide, width: number) {
 		this.#slide = slide
+		this.#maximumWidth = Math.max(this.#fitted.width * 8, width)
 		this.#pan = new Pan(slide)
 		slide.stage.focus({ preventScroll: true })
 		slide.stage.addEventListener('wheel', this.#handleWheel, { passive: false })
@@ -273,5 +315,7 @@ export class Zoom {
 		this.#pan = undefined
 		this.#isPinched = false
 		this.#fitted.width = 0
+		this.#maximumWidth = 0
+		this.#pinchPoint = undefined
 	}
 }
