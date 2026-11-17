@@ -11,6 +11,7 @@ import {
 	currentLayer,
 	currentStage,
 	gallery,
+	isHidden,
 	item,
 	mount,
 	query,
@@ -201,7 +202,7 @@ describe('zoom', () => {
 		const fixture = mount(zoomable('fill') + zoomable('fill', 'aurora', 1600))
 		await openLightbox(boxes(fixture)[0]!)
 		const button = query(document, '.amk-lightbox-zoom', HTMLButtonElement)
-		expect(button.hidden).toBe(false)
+		expect(isHidden(button)).toBe(false)
 		expect(button.ariaPressed).toBe('false')
 
 		button.focus()
@@ -220,18 +221,18 @@ describe('zoom', () => {
 
 	it('shows the Zoom button for a secondary preset and hides it on fit items', async () => {
 		await openLightbox(boxes(mount(gallery(['a', 'b'])))[0]!)
-		expect(query(document, '.amk-lightbox-zoom').hidden).toBe(true)
+		expect(isHidden(query(document, '.amk-lightbox-zoom'))).toBe(true)
 		await close()
 
 		const fixture = mount(`${zoomable('fill')}${item(block('plain'), 'data-gallery="z"')}`)
 		await openLightbox(boxes(fixture)[0]!)
 		const button = query(document, '.amk-lightbox-zoom', HTMLButtonElement)
-		expect(button.hidden).toBe(false)
+		expect(isHidden(button)).toBe(false)
 		expect(button.ariaDisabled).toBe('false')
 
 		await userEvent.click(query(document, '.amk-lightbox-next'))
 		await expect.poll(activeSlideLabel).toBe('2 of 2')
-		await expect.poll(() => button.hidden).toBe(true)
+		await expect.poll(() => isHidden(button)).toBe(true)
 	})
 
 	it('closes from a zoomed state onto the page', async () => {

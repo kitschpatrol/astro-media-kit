@@ -170,7 +170,6 @@ it('sizes and positions the close and zoom buttons independently of gallery arro
 	root.style.setProperty('--amk-lightbox-zoom-inset', '22px 34px auto auto')
 	const close = query(root, '.amk-lightbox-close')
 	const zoom = query(root, '.amk-lightbox-zoom')
-	zoom.hidden = false
 	expect(next.getBoundingClientRect().width).toBe(52)
 	expect(next.getBoundingClientRect().height).toBe(88)
 	expect(close.getBoundingClientRect().width).toBe(44)

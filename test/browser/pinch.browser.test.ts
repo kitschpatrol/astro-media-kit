@@ -8,6 +8,7 @@ import {
 	currentLayer,
 	currentStage,
 	frames,
+	isHidden,
 	middleOf,
 	mount,
 	openZoomable,
@@ -40,7 +41,7 @@ it.each(['fit', 'fill', 'native'])(
 			controls.toJSON(),
 		)
 		const zoom = query(viewer(), '.amk-lightbox-zoom', HTMLButtonElement)
-		expect(zoom.hidden).toBe(false)
+		expect(isHidden(zoom)).toBe(false)
 		expect(zoom.ariaPressed).toBe('true')
 		zoom.focus()
 		await userEvent.keyboard(' ')
@@ -48,7 +49,7 @@ it.each(['fit', 'fill', 'native'])(
 		expect(currentLayer().getBoundingClientRect().width).toBeCloseTo(width, 0)
 		expect(viewer().open).toBe(true)
 		expect(document.activeElement).toBe(level === 'fit' ? currentStage() : zoom)
-		expect(zoom.hidden).toBe(level === 'fit')
+		expect(isHidden(zoom)).toBe(level === 'fit')
 	},
 )
 

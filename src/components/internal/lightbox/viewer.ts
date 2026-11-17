@@ -97,7 +97,6 @@ class Viewer {
 		},
 	})
 	readonly #zoomButton: HTMLButtonElement
-	#zoomVisibility = 0
 
 	get #isNavigable(): boolean {
 		return this.#state === 'open' || this.#state === 'opening'
@@ -1394,30 +1393,16 @@ class Viewer {
 			;(slide?.stage ?? this.#dialog).focus({ preventScroll: true })
 		}
 
+		// Inert at once, out of reach of focus and input. Its styles fade it out
+		// and then hide it, still showing the icon it had
 		const button = this.#zoomButton
 		button.inert = isHidden
-		if (!isHidden) {
-			this.#zoomVisibility++
-			delete button.dataset.hiding
-			button.hidden = false
-			button.ariaPressed = String(isZoomed)
-			button.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
-		} else if (button.hidden !== true && !Object.hasOwn(button.dataset, 'hiding')) {
-			const visibility = ++this.#zoomVisibility
-			// Preserve the reset icon while it fades. Inert removes its focus and
-			// input immediately; hidden follows the opacity transition in every engine.
-			button.dataset.hiding = ''
-			void settle(button).then(() => {
-				if (visibility !== this.#zoomVisibility) {
-					return
-				}
-
-				button.hidden = true
-				button.ariaPressed = 'false'
-				button.ariaDisabled = 'true'
-				delete button.dataset.hiding
-			})
+		if (isHidden) {
+			return
 		}
+
+		button.ariaPressed = String(isZoomed)
+		button.ariaDisabled = String(!isZoomed && (this.#state !== 'open' || !canZoom))
 	}
 }
 

@@ -304,6 +304,11 @@ export async function openZoomable(level = 'fit'): Promise<HTMLElement> {
 	return fixture
 }
 
+/** Whether an element's styles hide it: not while it is still fading out. */
+export function isHidden(element: Element): boolean {
+	return getComputedStyle(element).visibility === 'hidden'
+}
+
 /** The current slide's layer, which shows the subject wherever it is drawn. */
 export function currentLayer(): HTMLElement {
 	return query(document, '.amk-lightbox-slide:not([inert]) .amk-lightbox-layer')

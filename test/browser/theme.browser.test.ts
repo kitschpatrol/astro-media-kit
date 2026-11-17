@@ -107,7 +107,7 @@ it("draws the configured icons and labels on the viewer's own buttons, which swi
 		const zoom = dialog.querySelector<HTMLElement>('.amk-lightbox-zoom')!
 		const zoomIn = zoom.querySelector<HTMLElement>('[data-amk-icon="zoom-in"]')!
 		const zoomOut = zoom.querySelector<HTMLElement>('[data-amk-icon="zoom-out"]')!
-		await expect.poll(() => zoom.hidden).toBe(false)
+		await expect.poll(() => view.getComputedStyle(zoom).visibility).toBe('visible')
 		// The button answers once the opening transition has run; the neighboring
 		// video's spinner animates for as long as the player exists
 		await expect

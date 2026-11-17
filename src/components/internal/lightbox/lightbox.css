@@ -633,11 +633,6 @@
 	opacity: calc(var(--amk-lightbox-resolved-icon-opacity) * 0.3);
 }
 
-/* The class sets display, which would otherwise outrank the hidden attribute */
-.amk-lightbox-button[hidden] {
-	display: none;
-}
-
 .amk-lightbox-zoom {
 	inset: var(
 		--amk-lightbox-zoom-inset,
@@ -718,15 +713,22 @@
 	opacity: var(--amk-lightbox-drag-opacity, 1);
 }
 
-.amk-lightbox[data-state='open'] .amk-lightbox-zoom[data-hiding] {
-	pointer-events: none;
-	opacity: 0;
+/* The zoom button is inert while it has nothing to do: it fades out, still
+   showing the icon it had, and is hidden once the fade has run */
+.amk-lightbox .amk-lightbox-zoom {
+	transition:
+		opacity var(--amk-lightbox-duration) var(--amk-lightbox-easing),
+		background-color var(--amk-lightbox-resolved-control-transition-duration)
+			var(--amk-lightbox-easing),
+		visibility var(--amk-lightbox-duration);
 }
 
-@starting-style {
-	.amk-lightbox[data-state='open'] .amk-lightbox-zoom {
-		opacity: 0;
-	}
+.amk-lightbox .amk-lightbox-zoom[inert] {
+	visibility: hidden;
+}
+
+.amk-lightbox[data-state='open'] .amk-lightbox-zoom[inert] {
+	opacity: 0;
 }
 
 /* A zoomed subject covers its caption. One pinched smaller, to close, dims it

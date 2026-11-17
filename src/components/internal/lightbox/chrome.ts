@@ -56,7 +56,7 @@ export function viewerMarkup(theme: ViewerTheme = configured): string {
 		<button class="amk-lightbox-button amk-lightbox-close" type="button" data-action="close" aria-label="${label('close')}">
 			${icon('close')}
 		</button>
-		<button class="amk-lightbox-button amk-lightbox-zoom" type="button" data-action="zoom" aria-label="${label('zoom')}" aria-pressed="false" hidden>
+		<button class="amk-lightbox-button amk-lightbox-zoom" type="button" data-action="zoom" aria-label="${label('zoom')}" aria-pressed="false" inert>
 			${icon('zoom-in')}
 			${icon('zoom-out')}
 		</button>
