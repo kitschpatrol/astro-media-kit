@@ -130,6 +130,7 @@ function setUp(root: HTMLElement): Carousel {
 			announced = current
 			status.textContent = describeSlide(slide)
 		},
+		panPageWhenZoomed: true,
 		stage() {
 			// Nothing zooms in the page
 		},

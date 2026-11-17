@@ -53,6 +53,12 @@ export const mobileGallery = defineBrowserCommand<
 			await page.waitForFunction(() =>
 				document.getAnimations().every((animation) => animation.playState !== 'running'),
 			)
+			await page.waitForFunction(
+				() =>
+					document.querySelector(
+						'.amk-carousel-track[data-moving], .amk-lightbox-track[data-moving]',
+					) === null,
+			)
 			await page.evaluate(async () => {
 				for (let i = 0; i < 2; i++) {
 					await new Promise((resolve) => {

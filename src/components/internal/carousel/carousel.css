@@ -119,6 +119,14 @@
 	overflow-x: hidden;
 }
 
+/* At browser zoom, panning belongs to the magnified page. A contained track
+   otherwise traps the visual viewport too, and native scrolling would turn
+   slides instead of moving the page. Buttons and keyboard navigation remain. */
+.amk-carousel-track[data-page-zoomed] {
+	overflow-x: hidden;
+	overscroll-behavior: auto;
+}
+
 .amk-carousel-track[data-dragging] {
 	cursor: grabbing;
 	/* stylelint-disable-next-line property-no-vendor-prefix -- Safari 26 and 27 only honor the prefixed form */
@@ -315,6 +323,10 @@
 @media (scripting: enabled) {
 	.amk-carousel-slide {
 		touch-action: pan-y pinch-zoom;
+	}
+
+	.amk-carousel-track[data-page-zoomed] .amk-carousel-slide {
+		touch-action: pan-x pan-y pinch-zoom;
 	}
 }
 

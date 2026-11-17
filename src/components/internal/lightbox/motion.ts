@@ -33,6 +33,8 @@ type MotionOptions = {
 	onMove: (position: number) => void
 	onPrepare: (index: number) => void
 	onRest: () => void
+	/** Let a magnified page pan over an embedded carousel. */
+	panPageWhenZoomed?: boolean
 	stage: () => HTMLElement | undefined
 }
 
@@ -189,6 +191,7 @@ export class CarouselMotion {
 	#ease: undefined | { aim: number; at: number; frame: number }
 	#glide: Glide | undefined
 	#index = 0
+	#isPageZoomed = false
 	/** Whether the press now underway reached the track, if one is. */
 	#isPressSeen = false
 	#isTouching = false
@@ -239,6 +242,12 @@ export class CarouselMotion {
 			signal,
 		})
 		track.addEventListener('wheel', this.#handleWheel, { passive: false, signal })
+		if (options.panPageWhenZoomed !== true) {
+			return
+		}
+
+		window.visualViewport?.addEventListener('resize', this.#syncPageZoom, { signal })
+		this.#syncPageZoom()
 	}
 
 	configure(count: number, index: number) {
@@ -254,6 +263,7 @@ export class CarouselMotion {
 	destroy() {
 		this.#controller.abort()
 		this.stop()
+		delete this.#track.dataset.pageZoomed
 		if (this.#shouldIgnoreClick) {
 			this.#ignoreClick(false)
 		}
@@ -916,20 +926,11 @@ export class CarouselMotion {
 			return
 		}
 
-		this.#stopGlide()
-		this.#cancelDrag()
+		this.#yieldToNative()
 		if (event.touches.length > 1) {
 			// Adding a finger is not a tap on the content, even if the first
 			// finger had not moved far enough to start a drag.
 			this.#ignoreClick(true)
-		}
-
-		this.#dropWheel()
-		this.#target = undefined
-		this.#owner = 'native'
-		// Clear synthetic overshoot before the browser takes over scrolling.
-		if (this.#overflow !== 0) {
-			this.render(Math.min(Math.max(this.#position, 0), (this.#count - 1) * this.#width))
 		}
 	}
 
@@ -943,6 +944,7 @@ export class CarouselMotion {
 		const stage = this.#options.stage()
 		if (
 			!this.#options.canNavigate() ||
+			this.#isPageZoomed ||
 			this.#width === 0 ||
 			event.ctrlKey ||
 			(stage !== undefined && event.composedPath().includes(stage))
@@ -1051,6 +1053,7 @@ export class CarouselMotion {
 				(!isTouch && !isOnPlayerSurface(event, this.#track)))
 		if (
 			!this.#options.canNavigate() ||
+			(isTouch && this.#isPageZoomed) ||
 			isKeptByTarget(event, this.#track, stage) ||
 			(!canDismiss && !isCatch && keepsSideways)
 		) {
@@ -1235,6 +1238,23 @@ export class CarouselMotion {
 		this.#glide = undefined
 	}
 
+	readonly #syncPageZoom = () => {
+		// Compare viewport widths so this also works on pages whose initial
+		// scale is below 1. Allow a pixel of rounding at the initial size.
+		const viewport = window.visualViewport
+		const isZoomed = viewport !== null && viewport.width < document.documentElement.clientWidth - 1
+		if (isZoomed === this.#isPageZoomed) {
+			return
+		}
+
+		this.#isPageZoomed = isZoomed
+		this.#track.toggleAttribute('data-page-zoomed', isZoomed)
+		// Do not clear touch ownership: a pinch may still have fingers down,
+		// and its final release is what permits navigation to settle again.
+		this.#yieldToNative()
+		this.#scheduleRealign()
+	}
+
 	/**
 	 * The wheel gesture an event belongs to, begun anew for the first, and for
 	 * one momentum can't have sent once let go: one across the track, since
@@ -1262,6 +1282,18 @@ export class CarouselMotion {
 		}
 
 		return wheel
+	}
+
+	#yieldToNative() {
+		this.#stopGlide()
+		this.#cancelDrag()
+		this.#dropWheel()
+		this.#target = undefined
+		this.#owner = 'native'
+		// Clear synthetic overshoot before the browser takes over scrolling.
+		if (this.#overflow !== 0) {
+			this.render(Math.min(Math.max(this.#position, 0), (this.#count - 1) * this.#width))
+		}
 	}
 }
 
