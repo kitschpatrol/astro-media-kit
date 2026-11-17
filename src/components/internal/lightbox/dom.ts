@@ -220,7 +220,9 @@ export function isWithin(event: Event, selector: string, boundary: Element): boo
 export function move(parent: Element, node: Element, reference?: ChildNode): boolean {
 	const before = reference?.parentNode === parent ? reference : undefined
 	if ('moveBefore' in parent) {
-		const restorePaint = suspendPlayerPaint(node)
+		// Only on the way into the viewer, whose translucent backdrop shows it
+		const restorePaint =
+			parent.closest(viewerSelector) === null ? undefined : suspendPlayerPaint(node)
 		try {
 			// eslint-disable-next-line unicorn/no-null -- The DOM API takes null to mean "append"
 			parent.moveBefore(node, before ?? null)
