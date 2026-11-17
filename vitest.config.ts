@@ -254,12 +254,14 @@ const touchUp = defineBrowserCommand(async (context) => {
 	}
 })
 
-const contacts = new WeakMap<Page, CDPSession>()
+type TouchPoint = { id: number; x: number; y: number }
+const contacts = new WeakMap<Page, { points: TouchPoint[]; session: CDPSession }>()
 
 /**
- * Set all fingers currently down, retaining their identities across calls. The
- * protocol emits starts and ends for added and removed contacts, including a
- * release outside the element where another finger started the gesture.
+ * Set all fingers currently down, retaining their identities across calls.
+ * Explicit starts and ends are necessary: omitting a contact from touchMove
+ * leaves it held. touchEnd accepts the contacts to release; an empty list
+ * releases every contact, despite the protocol's older parameter comments.
  */
 const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: number; y: number }>]>(
 	async (context, points) => {
@@ -267,31 +269,51 @@ const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: numbe
 			return false
 		}
 
-		let session = contacts.get(context.page)
+		let held = contacts.get(context.page)
 		if (points.length === 0) {
-			if (session !== undefined) {
+			if (held !== undefined) {
 				contacts.delete(context.page)
 				try {
-					await session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
+					await held.session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
 				} finally {
-					await session.detach()
+					await held.session.detach()
 				}
 			}
 
 			return true
 		}
 
-		const type = session === undefined ? 'touchStart' : 'touchMove'
-		if (session === undefined) {
-			session = await context.page.context().newCDPSession(context.page)
-			contacts.set(context.page, session)
+		if (held === undefined) {
+			held = { points: [], session: await context.page.context().newCDPSession(context.page) }
+			contacts.set(context.page, held)
 		}
 
 		const frame = await context.frame()
 		const touchPoints = await Promise.all(
 			points.map(async ({ id, x, y }) => ({ ...(await toWindow(frame, x, y)), id })),
 		)
-		await session.send('Input.dispatchTouchEvent', { touchPoints, type })
+		const removed = held.points.filter((before) =>
+			touchPoints.every((point) => point.id !== before.id),
+		)
+		const added = touchPoints.filter((point) =>
+			held.points.every((before) => before.id !== point.id),
+		)
+		if (removed.length > 0) {
+			await held.session.send('Input.dispatchTouchEvent', {
+				touchPoints: removed,
+				type: 'touchEnd',
+			})
+		}
+
+		if (added.length > 0) {
+			await held.session.send('Input.dispatchTouchEvent', {
+				touchPoints: added,
+				type: 'touchStart',
+			})
+		}
+
+		await held.session.send('Input.dispatchTouchEvent', { touchPoints, type: 'touchMove' })
+		held.points = touchPoints
 		return true
 	},
 )

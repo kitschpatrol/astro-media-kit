@@ -30,6 +30,29 @@ function touch(target: Element, type: string, identifiers: number[]) {
 	target.dispatchEvent(event)
 }
 
+it('delivers separate native starts and ends for individual fingers', async ({ skip }) => {
+	const fixture = mount('<div style="position:fixed;inset:0;touch-action:none"></div>')
+	const target = query(fixture, 'div')
+	const events: string[] = []
+	const record = (event: TouchEvent) => {
+		events.push(`${event.type}:${event.touches.length}`)
+	}
+
+	target.addEventListener('touchstart', record)
+	target.addEventListener('touchend', record)
+	const first = { id: 1, x: 300, y: 300 }
+	if (!(await commands.touchContacts([first]))) {
+		skip()
+		return
+	}
+
+	const second = { id: 2, x: 400, y: 300 }
+	await commands.touchContacts([first, second])
+	await commands.touchContacts([second])
+	await commands.touchContacts([])
+	expect(events).toEqual(['touchstart:1', 'touchstart:2', 'touchend:1', 'touchend:0'])
+})
+
 it.each(['touchend', 'touchcancel'])(
 	'recovers navigation when the final %s is outside the track',
 	async (ending) => {
