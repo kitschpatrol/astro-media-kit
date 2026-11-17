@@ -34,7 +34,7 @@ type MotionOptions = {
 	onMove: (position: number) => void
 	onPrepare: (index: number) => void
 	onRest: () => void
-	/** Move an enlarged subject independently of native scrolling. */
+	/** Move the enlarged subject of a stage, which `stage` needs to return one. */
 	pan?: {
 		end: (velocity: Point) => void
 		move: (point: Point) => void
@@ -787,10 +787,7 @@ export class CarouselMotion {
 	/** Capture on the track, whose cursor is used even while a stage is moving. */
 	#grabPan(drag: Drag, pointerId: number) {
 		drag.samples[0]!.position = 0
-		drag.origin = this.#options.pan?.position() ?? {
-			x: drag.stage!.scrollLeft,
-			y: drag.stage!.scrollTop,
-		}
+		drag.origin = this.#options.pan?.position() ?? { x: 0, y: 0 }
 		this.#owner = 'drag'
 		this.#track.dataset.dragging = ''
 		drag.stage!.dataset.dragging = ''
@@ -905,14 +902,8 @@ export class CarouselMotion {
 			while (event.timeStamp - (drag.samples[0]?.time ?? event.timeStamp) > flickWindow) {
 				drag.samples.shift()
 			}
-		} else if (this.#options.pan === undefined) {
-			drag.stage.scrollTo({
-				behavior: 'instant',
-				left: origin.x - distanceX,
-				top: origin.y - distanceY,
-			})
 		} else {
-			this.#options.pan.move({ x: origin.x - distanceX, y: origin.y - distanceY })
+			this.#options.pan?.move({ x: origin.x - distanceX, y: origin.y - distanceY })
 			this.#samplePan(drag, { x: distanceX, y: distanceY }, event.timeStamp)
 		}
 	}
@@ -1096,7 +1087,8 @@ export class CarouselMotion {
 		if (
 			!this.#options.canNavigate() ||
 			(isTouch && this.#isPageZoomed) ||
-			isKeptByTarget(event, this.#track, stage, this.#options.pan !== undefined) ||
+			// A control keeps its press, whatever the track is doing
+			isWithin(event, controlSelector, this.#track) ||
 			(!canDismiss && !isCatch && keepsSideways)
 		) {
 			return
@@ -1385,26 +1377,6 @@ function isOnPlayerSurface(event: PointerEvent, track: HTMLElement): boolean {
 }
 
 /**
- * Whether a press belongs to what it landed on, whatever the track is doing: a
- * control, or a native scroll container when no custom pan handler is
- * supplied.
- */
-function isKeptByTarget(
-	event: PointerEvent,
-	track: HTMLElement,
-	stage: HTMLElement | undefined,
-	hasPan: boolean,
-): boolean {
-	const isTouch = event.pointerType !== 'mouse'
-	return (
-		isWithin(event, controlSelector, track) ||
-		(stage !== undefined &&
-			!hasPan &&
-			(isTouch || (event.target === stage && isOnScrollbar(event, stage))))
-	)
-}
-
-/**
  * Map the part of a track position past `least` or `most` through `map`, for a
  * track `size` wide, keeping the part between them.
  */
@@ -1418,14 +1390,6 @@ function mapPast(
 	const inside = Math.min(Math.max(position, least), most)
 	const beyond = position - inside
 	return inside + Math.sign(beyond) * map(Math.abs(beyond), size)
-}
-
-/** Whether a press landed on one of `element`'s own scrollbars. */
-function isOnScrollbar(event: PointerEvent, element: HTMLElement): boolean {
-	const box = element.getBoundingClientRect()
-	const x = event.clientX - box.left - element.clientLeft
-	const y = event.clientY - box.top - element.clientTop
-	return x < 0 || y < 0 || x >= element.clientWidth || y >= element.clientHeight
 }
 
 /**
