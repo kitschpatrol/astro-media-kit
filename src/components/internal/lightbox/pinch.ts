@@ -46,13 +46,6 @@ export class Pinch {
 		this.#onStart = onStart
 		this.#onClose = onClose
 		root.addEventListener('pointerdown', this.#down, { capture: true })
-		root.addEventListener(
-			'wheel',
-			() => {
-				this.#zoom.stopPan()
-			},
-			{ passive: true },
-		)
 	}
 
 	/**
