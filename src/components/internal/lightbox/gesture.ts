@@ -36,11 +36,22 @@ const releaseWindow = 60
 /** How far, in px, a single pointer moves before it pans rather than presses. */
 const dragDistance = 6
 
+/** How long, in ms, after its last step a wheel or trackpad zoom is let go. */
+const stepRest = 150
+
+/**
+ * The most one wheel event zooms, in hundredths of its exponent. A trackpad
+ * pinch arrives in steps far smaller; a notch of a mouse wheel is far larger,
+ * and would otherwise nearly triple the subject.
+ */
+const largestStep = 25
+
 /**
  * Holds the current slide's subject under fingers, a mouse, or a pen. Two
  * fingers pinch and move it; one finger, or a pressed mouse or pen, pans it
  * while it is enlarged, the same way whichever it is. A gesture owns its
- * pointers until they have all lifted.
+ * pointers until they have all lifted. A trackpad pinch, or a wheel turned with
+ * Ctrl or Command held, zooms it in steps about the pointer.
  */
 export class SubjectGesture {
 	#basis: Basis | undefined
@@ -59,6 +70,10 @@ export class SubjectGesture {
 	#previous: Point | undefined
 	readonly #samples: Sample[] = []
 	#slide: Slide | undefined
+	/** The scale Safari last reported for the trackpad pinch under way. */
+	#stepScale = 1
+	/** Counts down to the end of a run of wheel or trackpad zoom steps. */
+	#stepTimer: ReturnType<typeof setTimeout> | undefined
 	#travel: Point = { x: 0, y: 0 }
 	readonly #zoom: Zoom
 
@@ -66,6 +81,10 @@ export class SubjectGesture {
 		this.#zoom = zoom
 		this.#options = options
 		root.addEventListener('pointerdown', this.#down, { capture: true })
+		root.addEventListener('wheel', this.#wheel, { capture: true, passive: false })
+		for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+			root.addEventListener(type, this.#trackpadPinch, { capture: true })
+		}
 	}
 
 	/**
@@ -83,7 +102,10 @@ export class SubjectGesture {
 
 		this.#controller?.abort()
 		this.#controller = undefined
-		if (this.#isHolding) {
+		const isStepping = this.#stepTimer !== undefined
+		clearTimeout(this.#stepTimer)
+		this.#stepTimer = undefined
+		if (isStepping || this.#isHolding) {
 			outcome = this.#zoom.finishPinch(ending)
 		}
 
@@ -122,7 +144,7 @@ export class SubjectGesture {
 			this.#basis.width * scale,
 			this.#basis.anchor,
 			points.center,
-			this.#contacts.size > 1,
+			this.#contacts.size > 1 ? 'free' : 'elastic',
 		)
 		this.#record(points.center)
 	}
@@ -145,6 +167,8 @@ export class SubjectGesture {
 			event.composedPath().includes(slide.stage) &&
 			!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
 		if (this.#contacts.size === 0) {
+			// A press ends a run of wheel or trackpad zoom steps where it is
+			this.#stepsDone()
 			if (!isOnMedia || !event.isPrimary || event.button !== 0 || !this.#start(event, slide)) {
 				return
 			}
@@ -344,6 +368,69 @@ export class SubjectGesture {
 		return true
 	}
 
+	/**
+	 * Zoom by one step of a wheel or trackpad run, and let go once it rests: the
+	 * layout, with the image's resolution, then catches up with the size
+	 * reached.
+	 */
+	#step(slide: Slide, factor: number, point: Point) {
+		const isFirst = this.#stepTimer === undefined
+		clearTimeout(this.#stepTimer)
+		this.#zoom.zoomBy(slide, factor, point, isFirst)
+		this.#stepTimer = setTimeout(this.#stepsDone, stepRest)
+	}
+
+	readonly #stepsDone = () => {
+		if (this.#stepTimer === undefined) {
+			return
+		}
+
+		if (this.stop('release') === 'kept') {
+			this.#zoom.fling()
+		}
+	}
+
+	/** The slide a wheel or trackpad zoom over `event` resizes, if any. */
+	#stepSlide(event: Event): Slide | undefined {
+		const slide = this.#options.slide()
+		return slide !== undefined &&
+			this.#contacts.size === 0 &&
+			this.#options.canPinch(slide) &&
+			event.composedPath().includes(slide.stage) &&
+			!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
+			? slide
+			: undefined
+	}
+
+	/**
+	 * Safari reports a trackpad pinch in events of its own, with the scale since
+	 * it began. It sends them for fingers on a touchscreen too, which are already
+	 * being followed as pointers.
+	 */
+	readonly #trackpadPinch = (event: Event) => {
+		const slide = this.#stepSlide(event)
+		if (slide === undefined) {
+			return
+		}
+
+		// Otherwise Safari zooms the page under the viewer
+		event.preventDefault()
+		// No standard describes these events, so no type does either
+		const { clientX, clientY, scale } = event as Event & {
+			clientX: number
+			clientY: number
+			scale: number
+		}
+		if (event.type === 'gesturestart') {
+			this.#stepScale = 1
+		} else if (event.type === 'gestureend') {
+			this.#stepsDone()
+		} else if (scale > 0) {
+			this.#step(slide, scale / this.#stepScale, { x: clientX, y: clientY })
+			this.#stepScale = scale
+		}
+	}
+
 	readonly #up = (event: PointerEvent) => {
 		// A pen captured by what it pressed gives that up as the stage captures
 		// it, which is no loss of the drag
@@ -385,5 +472,28 @@ export class SubjectGesture {
 
 		const elapsed = Math.max(8, Math.min(last.time - first.time, releaseWindow))
 		return { x: (last.x - first.x) / elapsed, y: (last.y - first.y) / elapsed }
+	}
+
+	/**
+	 * Other browsers report a trackpad pinch as a wheel turned with Ctrl held,
+	 * which is also how a mouse asks to zoom, as is Command on a Mac. A plain
+	 * wheel is left alone, to pan or to turn slides.
+	 */
+	readonly #wheel = (event: WheelEvent) => {
+		if (!event.ctrlKey && !event.metaKey) {
+			return
+		}
+
+		const slide = this.#stepSlide(event)
+		if (slide === undefined) {
+			return
+		}
+
+		// Otherwise the browser zooms the page under the viewer
+		event.preventDefault()
+		event.stopPropagation()
+		const unit = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? 1 : 16
+		const step = Math.max(-largestStep, Math.min(largestStep, event.deltaY * unit))
+		this.#step(slide, Math.exp(-step / 100), { x: event.clientX, y: event.clientY })
 	}
 }

@@ -207,13 +207,18 @@ export class Zoom {
 	 * PhotoSwipe does. Two fingers place the subject freely, and a single one
 	 * resists past the pan limits. A size past either limit resists too, except
 	 * that a subject pinched smaller from fitted follows the fingers as they are,
-	 * dimming the viewer, to close on release.
+	 * dimming the viewer, to close on release. A step of a wheel or a trackpad
+	 * clamps instead: it stops at the limits, in size and in place.
 	 */
-	pinch(slide: Slide, width: number, anchor: Point, point: Point, isFree: boolean) {
+	pinch(slide: Slide, width: number, anchor: Point, point: Point, resistance: Resistance) {
 		const isStarting = this.#slide !== slide
 		if (isStarting) {
 			this.reset()
 			this.#measureFit(slide)
+			if (resistance === 'clamp') {
+				width = Math.max(width, this.#fitted.width)
+			}
+
 			// Moving two fingers together on fitted media must not hide its caption.
 			if (Math.abs(width - this.#fitted.width) <= 1) {
 				return
@@ -233,7 +238,9 @@ export class Zoom {
 		}
 
 		let fade: number | undefined
-		if (width < fit && this.#canClose) {
+		if (resistance === 'clamp') {
+			width = settledWidth(width, { fit, maximum: this.#maximumWidth })
+		} else if (width < fit && this.#canClose) {
 			;({ fade, width } = shrink(width, fit))
 		} else {
 			width = resist(width, { fit, maximum: this.#maximumWidth })
@@ -245,7 +252,7 @@ export class Zoom {
 		this.#enter(slide)
 		this.#size(slide, width, true)
 		setLayerStyle(slide.layer, identity, false)
-		this.#place(width, anchor, point, isFree || fade !== undefined ? 'free' : 'elastic')
+		this.#place(width, anchor, point, fade === undefined ? resistance : 'free')
 		if (isStarting) {
 			this.#options.onChange()
 		}
@@ -369,6 +376,32 @@ export class Zoom {
 		}
 
 		return (this.#pan?.stop() ?? false) || settling !== undefined
+	}
+
+	/**
+	 * Resize by a step of a turned wheel or a trackpad pinch, about `point` in
+	 * the viewport, within the limits. The first step of a run looks the subject
+	 * up where it is drawn, and catches a transition it is in; the rest work from
+	 * that without reading the page. `finishPinch` ends the run.
+	 */
+	zoomBy(slide: Slide, factor: number, point: Point, isFirst: boolean) {
+		this.stopPan()
+		const pan = this.#slide === slide ? this.#pan : undefined
+		if (isFirst || pan === undefined) {
+			const anchor = this.anchor(slide, point, true)
+			this.pinch(slide, this.gestureWidth(slide) * factor, anchor, point, 'clamp')
+			return
+		}
+
+		const { at, stage } = pan
+		const size = this.#sizeOf(this.#width)
+		this.pinch(
+			slide,
+			this.#width * factor,
+			{ x: (point.x - stage.x - at.x) / size.x, y: (point.y - stage.y - at.y) / size.y },
+			point,
+			'clamp',
+		)
 	}
 
 	/** Put the frame, and the caption, back into the slide's fitted layout. */
