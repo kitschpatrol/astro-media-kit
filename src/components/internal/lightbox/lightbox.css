@@ -89,7 +89,7 @@
 	   keeps its measured size */
 	.amk-zoom[data-lifted],
 	.amk-zoom[data-image-returning],
-	.amk-zoom[data-player-returning] {
+	.amk-zoom[data-returning] {
 		position: relative;
 	}
 

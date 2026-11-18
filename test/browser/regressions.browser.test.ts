@@ -134,8 +134,9 @@ it('leaves a decorative image copy while preserving the original element', async
 	expect(viewer().querySelector('img')).toBe(original)
 	viewer().close()
 	await frames()
-	expect(copy.isConnected).toBe(false)
 	expect(subjectOf(box)).toBe(original)
+	// The copy covers the image until it has decoded in the page
+	await expect.poll(() => copy.isConnected).toBe(false)
 })
 
 it('keeps loaded thumbnails drawable on every frame when neighboring pictures are lifted', async () => {

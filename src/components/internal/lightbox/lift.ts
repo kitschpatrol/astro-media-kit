@@ -13,14 +13,14 @@ import { releasePreparation, restorePreparedClone } from './prepare'
 import { releaseWarmup } from './warm-image'
 
 /**
- * How long, in ms, a returning player stays covered at most, should its poster
+ * How long, in ms, a returning subject stays covered at most, should its image
  * never decode.
  */
-const posterDecodeLimit = 1000
+const returnDecodeLimit = 1000
 
 /**
- * How to finish each return still under way, by item: its player is back in the
- * page, under its copy, until it can draw itself.
+ * How to finish each return still under way, by item: its subject is back in
+ * the page, under its copy, until it can draw itself.
  */
 const returns = new WeakMap<HTMLElement, () => void>()
 
@@ -207,6 +207,12 @@ function copyForViewer(subject: Element): Element {
  * the player is out of view, and once it is back draws nothing for a moment,
  * which shows the player's black, or on iOS a draft of it in one corner. So a
  * player showing its poster stays covered until the poster is decoded again.
+ *
+ * An image can change candidates as it gets its own `sizes` back. Chromium
+ * takes the largest one in its memory cache, which outlasts a reload, and not
+ * at every selection: an image the page has shown at full size starts there,
+ * steps down for the viewer, and back up on return, drawing nothing until that
+ * is decoded. So an image stays covered until the candidate it settles on is.
  */
 function uncover(item: HTMLElement, subject: Element, placeholder: HTMLElement | undefined) {
 	let isDone = false
@@ -220,32 +226,43 @@ function uncover(item: HTMLElement, subject: Element, placeholder: HTMLElement |
 			returns.delete(item)
 		}
 
-		delete item.dataset.playerReturning
+		delete item.dataset.returning
 		removePlaceholder(placeholder)
 		releaseControlPreview(subject)
 	}
 
 	const poster = subject.querySelector<HTMLImageElement>(':scope media-poster[data-visible] img')
-	if (placeholder === undefined || poster === null) {
+	const visible = rendered(subject)
+	const image = poster ?? (visible instanceof HTMLImageElement ? visible : undefined)
+	if (placeholder === undefined || image === undefined) {
 		finish()
 		return
 	}
 
-	// Positioned, as while lifted, for the copy laid over the player
-	item.dataset.playerReturning = ''
+	// Positioned, as while lifted, for the copy laid over the subject
+	item.dataset.returning = ''
 	returns.set(item, finish)
 	const uncoverDecoded = async () => {
+		if (image !== poster) {
+			// It selects its candidate once the task that returned it is over
+			await new Promise<void>((resolve) => {
+				requestAnimationFrame(() => {
+					resolve()
+				})
+			})
+		}
+
 		try {
-			await poster.decode()
+			await image.decode()
 		} catch {
-			// A poster that can't be decoded draws as it is
+			// An image that can't be decoded draws as it is
 		}
 
 		requestAnimationFrame(finish)
 	}
 
 	void uncoverDecoded()
-	setTimeout(finish, posterDecodeLimit)
+	setTimeout(finish, returnDecodeLimit)
 }
 
 /**

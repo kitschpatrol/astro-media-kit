@@ -218,6 +218,29 @@ describe('lifting', () => {
 		expect(box!.style.marginTop).toBe('4px')
 	})
 
+	it('keeps a returned image under its page copy until it has decoded', async () => {
+		const fixture = mount(imageItem('', 'tile', '?return-cover'))
+		const [box] = boxes(fixture)
+		const image = query(fixture, 'img', HTMLImageElement)
+		await image.decode()
+		await openLightbox(box!)
+		await expect.poll(() => image.dataset.zoomImagePending).toBeUndefined()
+		// The image may change candidates as it gets its own sizes back, and
+		// draws nothing while a new one decodes
+		const decoded = Promise.withResolvers<undefined>()
+		image.decode = async () => decoded.promise
+
+		await closeLightbox()
+		await frames(3)
+		expect(image.parentElement).toBe(box)
+		expect(box!.querySelector('[data-amk-preview]')).not.toBeNull()
+		expect(getComputedStyle(box!).position).toBe('relative')
+
+		decoded.resolve(undefined)
+		await expect.poll(() => box!.querySelector('[data-amk-preview]')).toBeNull()
+		expect(getComputedStyle(box!).position).toBe('static')
+	})
+
 	it('starts the transition exactly on top of the subject in the page', async () => {
 		const fixture = mount(item(block('a', 'aspect-ratio: 3 / 2'), 'style="width: 300px"'))
 		const [box] = boxes(fixture)
@@ -315,8 +338,9 @@ describe('lifting', () => {
 		expect(box.querySelector('[data-amk-preview]')).not.toBeNull()
 		await closing
 		expect(subject.parentElement).toBe(box)
-		expect(box.querySelector('[data-amk-preview]')).toBeNull()
 		expect(viewer().open).toBe(false)
+		// The copy covers the image until it has decoded in the page
+		await expect.poll(() => box.querySelector('[data-amk-preview]')).toBeNull()
 	})
 
 	it('can restore while closing without affecting a newly opened viewer', async () => {

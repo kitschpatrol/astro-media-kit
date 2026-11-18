@@ -354,7 +354,7 @@ it('keeps its poster copy over the player as it returns, until the poster can be
 	decoding.resolve(undefined)
 	await expect.poll(() => copy.isConnected).toBe(false)
 	expect(controls.isConnected).toBe(false)
-	expect(Object.hasOwn(item.dataset, 'playerReturning')).toBe(false)
+	expect(Object.hasOwn(item.dataset, 'returning')).toBe(false)
 })
 
 it('replaces a poster copy still covering a returning player when it lifts again', async () => {
