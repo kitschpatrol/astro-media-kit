@@ -515,9 +515,7 @@
 	}
 }
 
-/* A lifted subject leaves its place and lands on it as it is, over the preview
-   left on the page. Only a text link's media, which has no place there, fades:
-   in quickly at first as it grows out of the link, then gently. */
+/* HTML content and media opened from a text link fade in as they expand. */
 .amk-lightbox-layer {
 	position: absolute;
 	inset: 0;
@@ -540,8 +538,8 @@
 		var(--amk-lightbox-follow-easing), cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-/* Closing mirrors it: the subject shrinks ahead of traveling home, and a
-   link's media fades as it shrinks back into the link */
+/* On close the subject shrinks ahead of traveling home. HTML content and
+   media opened from a link use the closing fade duration. */
 .amk-lightbox[data-state='closing'] .amk-lightbox-layer,
 .amk-lightbox-slide[data-ghost] .amk-lightbox-layer {
 	transition-timing-function:

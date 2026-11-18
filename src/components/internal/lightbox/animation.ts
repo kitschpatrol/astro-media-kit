@@ -1,6 +1,7 @@
 import type { Box } from './geometry'
-import type { LayerStyle, Measurement, Point } from './types'
+import type { LayerStyle, Lift, Measurement, Point } from './types'
 import { mapFrameToBox } from './geometry'
+import { isImageOrVideo } from './media'
 
 /** The untransformed layer. */
 export const identity: LayerStyle = {
@@ -45,12 +46,30 @@ export function layerStyle(
 	}
 }
 
+/** The page end of an opening or closing transition, including its fade. */
+export function pageStyle(frame: Box, target: Box, lift: Lift): LayerStyle {
+	if (lift.kind === 'link') {
+		return linkStyle(frame, target)
+	}
+
+	const style = layerStyle(frame, target, lift)
+	if (
+		lift.kind === 'move' &&
+		lift.subject instanceof HTMLElement &&
+		!isImageOrVideo(lift.subject)
+	) {
+		style.opacity = '0'
+	}
+
+	return style
+}
+
 /**
  * The layer style that centers a frame at `frame` on a link at `target`, as
  * tall as the link's text and transparent: where the link's media grows out
  * from, and shrinks back into.
  */
-export function linkStyle(frame: Box, target: Box): LayerStyle {
+function linkStyle(frame: Box, target: Box): LayerStyle {
 	const scale = frame.height > 0 ? Math.min(1, target.height / frame.height) : 1
 	const x = target.x + target.width / 2 - frame.x - frame.width / 2
 	const y = target.y + target.height / 2 - frame.y - frame.height / 2

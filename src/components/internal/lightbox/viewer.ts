@@ -1,7 +1,7 @@
 import type { Box } from './geometry'
 import type { LayerStyle, Lift, Measurement, Point, Slide } from './types'
 import { fillLabel } from '../labels'
-import { identity, layerStyle, linkStyle, setLayerStyle, settle } from './animation'
+import { identity, layerStyle, pageStyle, setLayerStyle, settle } from './animation'
 import { viewerLabels, viewerMarkup } from './chrome'
 import {
 	anonymize,
@@ -23,7 +23,7 @@ import { SubjectGesture } from './gesture'
 import { refreshImagePreview } from './image-preview'
 import { dropSlides, followLayout, liftSlide, measure, thumbnailGeometry } from './lift'
 import { readyToShow } from './link'
-import { canPinch, hasZoomLevel, zoomWidth } from './media'
+import { hasZoomLevel, isImageOrVideo, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
 import { carouselTrackHiding, followInCarousels, revealCarouselItem } from './page-carousels'
 import {
@@ -171,7 +171,7 @@ class Viewer {
 				this.#zoom.current === this.#slides[this.#index] ? this.#zoom.current?.stage : undefined,
 		})
 		this.#gesture = new SubjectGesture(this.#dialog, this.#zoom, {
-			canPinch: (slide) => slide.lift !== undefined && canPinch(slide.lift.subject),
+			canPinch: (slide) => slide.lift !== undefined && isImageOrVideo(slide.lift.subject),
 			onClose: () => {
 				void this.close()
 			},
@@ -342,17 +342,14 @@ class Viewer {
 			return true
 		}
 
-		const isLink = isLinkItem(lift.item)
 		const frame = slide.frame.getBoundingClientRect()
-		lift.from = isLink
-			? linkStyle(frame, current.target)
-			: layerStyle(frame, current.target, current)
+		lift.from = pageStyle(frame, current.target, lift)
 		const start = current.position === undefined ? identity : lift.from
 		setLayerStyle(slide.layer, start, false)
 		// Commit the start values, including the backdrop's and the controls'
 		// opacity, so the changes below transition from them
 		slide.layer.getAnimations()
-		if (isLink) {
+		if (lift.kind === 'link') {
 			// A link's media has only just started loading: the backdrop and the
 			// controls come up meanwhile, and the media once it can show
 			this.#dialog.dataset.state = 'open'
@@ -973,10 +970,10 @@ class Viewer {
 
 		// The space held in the page may have followed a resize since
 		const home = lift.item.getBoundingClientRect()
-		if (isLinkItem(lift.item)) {
+		if (lift.kind === 'link') {
 			return isOpening && lift.from !== undefined && isSameBox(home, lift.home)
 				? lift.from
-				: linkStyle(slide.frame.getBoundingClientRect(), home)
+				: pageStyle(slide.frame.getBoundingClientRect(), home, lift)
 		}
 
 		const scaleX = lift.home.width > 0 ? home.width / lift.home.width : 1
@@ -989,7 +986,7 @@ class Viewer {
 		}
 		return isOpening && lift.from !== undefined && isSameBox(target, lift.target)
 			? lift.from
-			: layerStyle(slide.frame.getBoundingClientRect(), target, lift)
+			: pageStyle(slide.frame.getBoundingClientRect(), target, lift)
 	}
 
 	/**

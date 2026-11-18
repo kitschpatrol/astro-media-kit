@@ -30,10 +30,10 @@ function nativeWidth(item: HTMLElement, subject: Element): number | undefined {
 }
 
 /**
- * Whether two fingers pinch a subject to resize it: an image, or a video,
- * whether the kit's player, an embed's, or the browser's own.
+ * Whether the subject displays an image or video, including a video presented
+ * by the kit's player or an embedded provider.
  */
-export function canPinch(subject: Element): boolean {
+export function isImageOrVideo(subject: Element): boolean {
 	const media = rendered(subject)
 	return (
 		media instanceof HTMLImageElement ||

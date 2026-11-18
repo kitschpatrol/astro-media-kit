@@ -309,7 +309,8 @@ describe('lifting', () => {
 	it.each([
 		['an image', () => imageItem()],
 		['an image without a placeholder', () => imageItem('data-placeholder="none"')],
-		['HTML', () => item(block('a'))],
+		['a video', () => item('<video width="240" height="160"></video>')],
+		['inline SVG artwork', () => item('<svg width="240" height="160"><circle r="40" /></svg>')],
 	])('lifts and lands %s as it is, without fading', async (_name, markup) => {
 		const fixture = mount(markup())
 		await fixture.querySelector('img')?.decode()
@@ -324,6 +325,25 @@ describe('lifting', () => {
 		expect(getComputedStyle(layer).opacity).toBe('1')
 		await closing
 		expect(viewer().open).toBe(false)
+	})
+
+	it('fades HTML in as it grows from its page box and out as it returns', async () => {
+		const box = boxes(mount(item(block('card'))))[0]!
+		const card = query(box, '.subject')
+		const opening = openLightbox(box)
+		const layer = currentLayer()
+		const fadeFrames = () =>
+			(fadeOf(layer)?.effect as KeyframeEffect | undefined)
+				?.getKeyframes()
+				.map(({ opacity }) => Number(opacity))
+		expect(fadeFrames()).toEqual([0, 1])
+		await opening
+		expect(card.parentElement).toBe(layer)
+		expect(getComputedStyle(layer).opacity).toBe('1')
+		const closing = closeLightbox()
+		expect(fadeFrames()).toEqual([1, 0])
+		await closing
+		expect(card.parentElement).toBe(box)
 	})
 
 	it('keeps an image over its placeholder until it lands', async () => {
