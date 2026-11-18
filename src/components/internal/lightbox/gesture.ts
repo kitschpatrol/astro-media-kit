@@ -33,6 +33,12 @@ type GestureOptions = {
  */
 const releaseWindow = 60
 
+/**
+ * How long, in ms, a pointer can rest before it lifts and still coast. Longer,
+ * and it had stopped: the pan stays where it was let go.
+ */
+const longestRest = 80
+
 /** How far, in px, a single pointer moves before it pans rather than presses. */
 const dragDistance = 6
 
@@ -465,7 +471,7 @@ export class SubjectGesture {
 	#velocity(time: number): Point {
 		const first = this.#samples[0]
 		const last = this.#samples.at(-1)
-		if (first === undefined || last === undefined || time - last.time > 80) {
+		if (first === undefined || last === undefined || time - last.time > longestRest) {
 			return { x: 0, y: 0 }
 		}
 
