@@ -4,6 +4,7 @@ import { fillLabel } from '../labels'
 import { identity, layerStyle, linkStyle, setLayerStyle, settle } from './animation'
 import { viewerLabels, viewerMarkup } from './chrome'
 import {
+	anonymize,
 	arrowKeySelector,
 	captionOf,
 	interactiveSelector,
@@ -1484,9 +1485,7 @@ function createSlide(item: HTMLElement, index: number, count: number): Slide {
 			caption.append(node.cloneNode(true))
 		}
 
-		for (const withId of caption.querySelectorAll('[id]')) {
-			withId.removeAttribute('id')
-		}
+		anonymize(caption)
 
 		// A copied control has none of the original's behavior; links still work
 		for (const control of caption.querySelectorAll(

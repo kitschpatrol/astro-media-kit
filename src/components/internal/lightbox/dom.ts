@@ -92,6 +92,17 @@ export const textEntrySelector = [
 ].join(',')
 
 /**
+ * Take from a copy what identifies its original in the document: the ids and
+ * names, on it and everything in it, that only one element may have.
+ */
+export function anonymize(copy: Element) {
+	for (const element of [copy, ...copy.querySelectorAll('*')]) {
+		element.removeAttribute('id')
+		element.removeAttribute('name')
+	}
+}
+
+/**
  * The caption to copy beside an item's content: its figure's, or, for a link,
  * the one rendered into its template.
  */

@@ -2,7 +2,7 @@ import type { Box, Fit } from './geometry'
 import type { Lift, Measurement, Point, Slide } from './types'
 import { isPlainMarkup } from './clone-placeholder'
 import { releaseControlPreview, retainControlPreview } from './control-preview'
-import { isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
+import { anonymize, isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
 import { lengthOf } from './geometry'
 import { releaseImagePreview, retainImage, returnImagePreview } from './image-preview'
 import { isVectorImage, ratioOf } from './media'
@@ -43,7 +43,10 @@ export function dropSlides(slides: Slide[]) {
 			releaseControls(lift.subject)
 			releasePreparation(lift.subject)
 			lift.subject.remove()
-			releaseInstance(item)
+			if (!lift.isCopy) {
+				releaseInstance(item)
+			}
+
 			delete item.dataset.lifted
 			continue
 		}
@@ -186,11 +189,7 @@ function staysInPage(item: HTMLElement, subject: Element): boolean {
 /** A copy of ordinary markup for the viewer, without the original's identity. */
 function copyForViewer(subject: Element): Element {
 	const copy = subject.cloneNode(true) as Element
-	for (const element of [copy, ...copy.querySelectorAll('*')]) {
-		element.removeAttribute('id')
-		element.removeAttribute('name')
-	}
-
+	anonymize(copy)
 	return copy
 }
 
@@ -319,9 +318,8 @@ function createProbe(lift: Lift): HTMLElement | undefined {
 	// The copy is laid out as the subject was in the page, not as the viewer
 	// has prepared it
 	restorePreparedClone(subject, probe)
-	for (const element of [probe, ...probe.querySelectorAll('*')]) {
-		element.removeAttribute('id')
-		element.removeAttribute('name')
+	anonymize(probe)
+	for (const element of [probe, ...probe.querySelectorAll('img')]) {
 		if (element instanceof HTMLImageElement) {
 			element.alt = ''
 		}
