@@ -41,12 +41,6 @@ type ZoomOptions = {
 /** A frame's width and position in its stage. */
 type Geometry = Point & { width: number }
 
-/**
- * The largest frame, in device pixels, kept on a compositor layer of its own.
- * Pinching a larger one back out would have every one of its tiles drawn.
- */
-const compositedPixels = 32_000_000
-
 /** Owns the single zoomed slide, its geometry, and caption interactivity. */
 export class Zoom {
 	get current(): Slide | undefined {
@@ -380,7 +374,7 @@ export class Zoom {
 	/** Put the frame, and the caption, back into the slide's fitted layout. */
 	#clear(slide: Slide) {
 		this.#leave(slide)
-		for (const property of ['--amk-lightbox-zoomed-width', 'translate', 'scale', 'will-change']) {
+		for (const property of ['--amk-lightbox-zoomed-width', 'translate', 'scale']) {
 			slide.frame.style.removeProperty(property)
 		}
 	}
@@ -556,9 +550,6 @@ export class Zoom {
 		this.#layoutWidth = width
 		style.removeProperty('scale')
 		style.setProperty('--amk-lightbox-zoomed-width', `${width}px`)
-		const size = this.#sizeOf(width)
-		style.willChange =
-			size.x * size.y * devicePixelRatio ** 2 <= compositedPixels ? 'transform' : ''
 	}
 
 	/** The frame's size at a width, with x for its width and y for its height. */

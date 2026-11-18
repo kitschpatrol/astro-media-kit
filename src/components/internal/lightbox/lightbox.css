@@ -458,8 +458,12 @@
 	background: transparent;
 }
 
-/* A held pinch scales the frame from the corner its translation places */
+/* A held pinch scales the frame from the corner its translation places. On a
+   layer of its own at every size, so a pan or a pinch moves pixels already
+   drawn rather than drawing the media again each frame; the browser draws
+   only the tiles of a large layer that are in view */
 .amk-lightbox-slide[data-zoomed] .amk-lightbox-frame {
+	will-change: transform;
 	position: absolute;
 	top: 0;
 	left: 0;
