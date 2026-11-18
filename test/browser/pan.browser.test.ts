@@ -61,6 +61,23 @@ it.each([
 	expect(after.y + after.height * anchor.y).toBeCloseTo(point.y, 0)
 })
 
+it('follows a single finger as it moves, without waiting for a frame', async () => {
+	await openZoomable()
+	await pinch(3)
+	lift()
+	const { x, y } = middleOf(currentStage())
+	const before = currentLayer().getBoundingClientRect()
+	pointer('pointerdown', 1, x, y)
+	pointer('pointermove', 1, x - 40, y - 20)
+	// Read in the same task as the move
+	const moved = currentLayer().getBoundingClientRect()
+	expect(moved.x).toBeCloseTo(before.x - 40, 0)
+	expect(moved.y).toBeCloseTo(before.y - 20, 0)
+	pointer('pointermove', 1, x - 90, y - 50)
+	expect(currentLayer().getBoundingClientRect().x).toBeCloseTo(before.x - 90, 0)
+	lift()
+})
+
 it.each([1, 2])('coasts after a %i-finger pan and stays on the same slide', async (fingers) => {
 	await openZoomable()
 	await pinch(3)

@@ -107,6 +107,26 @@ export class SubjectGesture {
 		return outcome
 	}
 
+	/** Place the subject under the contacts as they are now. */
+	#apply() {
+		const points = this.#points()
+		if (points === undefined || this.#basis === undefined || this.#slide === undefined) {
+			return
+		}
+
+		// Two fingers only move a subject that doesn't pinch
+		const scale =
+			this.#canPinch && this.#basis.distance > 0 ? points.distance / this.#basis.distance : 1
+		this.#zoom.pinch(
+			this.#slide,
+			this.#basis.width * scale,
+			this.#basis.anchor,
+			points.center,
+			this.#contacts.size > 1,
+		)
+		this.#record(points.center)
+	}
+
 	/** The contact an event moves or lifts, if it is one of this gesture's. */
 	#contactOf(event: PointerEvent): Contact | undefined {
 		return (event.pointerType === 'touch') === this.#isTouch
@@ -152,6 +172,7 @@ export class SubjectGesture {
 		this.#rebase(event.timeStamp)
 	}
 
+	/** Apply a pair of moves still waiting for their frame, ahead of it. */
 	readonly #flush = () => {
 		if (this.#frame === undefined) {
 			return
@@ -159,22 +180,7 @@ export class SubjectGesture {
 
 		cancelAnimationFrame(this.#frame)
 		this.#frame = undefined
-		const points = this.#points()
-		if (points === undefined || this.#basis === undefined || this.#slide === undefined) {
-			return
-		}
-
-		// Two fingers only move a subject that doesn't pinch
-		const scale =
-			this.#canPinch && this.#basis.distance > 0 ? points.distance / this.#basis.distance : 1
-		this.#zoom.pinch(
-			this.#slide,
-			this.#basis.width * scale,
-			this.#basis.anchor,
-			points.center,
-			this.#contacts.size > 1,
-		)
-		this.#record(points.center)
+		this.#apply()
 	}
 
 	/**
@@ -218,6 +224,15 @@ export class SubjectGesture {
 
 		event.preventDefault()
 		event.stopImmediatePropagation()
+		if (this.#contacts.size === 1) {
+			// A single pointer is followed as it moves. Waiting for a frame adds
+			// nothing, and trails the finger wherever the browser holds frames
+			// back, as Safari does in Low Power Mode.
+			this.#flush()
+			this.#apply()
+			return
+		}
+
 		// Both contacts can move in one input sample. Measure their final pair
 		// once per frame so a two-finger pan does not briefly look like a pinch.
 		this.#frame ??= requestAnimationFrame(this.#flush)
