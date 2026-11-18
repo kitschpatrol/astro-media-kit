@@ -262,7 +262,6 @@ const definitions = {
 			nativeWidth: [undefined, photo.width, 640],
 			placeholder: [undefined, 'auto', 'none'],
 			scope: [undefined, '.component-preview'],
-			vector: [undefined, true, false],
 		},
 		title: 'Zoomer',
 	},

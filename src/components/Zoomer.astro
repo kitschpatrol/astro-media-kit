@@ -6,9 +6,8 @@ import { icons } from './internal/theme'
 /**
  * Wraps content the lightbox can lift into a full-screen viewer. The wrapper
  * carries everything the client needs as attributes, rendered here: the
- * gallery, the zoom level, the scope, the media's native width, whether it is
- * vector artwork, and the semantics of an opener, so the script enhances
- * nothing on load.
+ * gallery, the zoom level, the scope, the media's native width, and the
+ * semantics of an opener, so the script enhances nothing on load.
  */
 export type Props = {
 	/** Enable lifting, optionally grouping items into a named gallery. */
@@ -42,12 +41,6 @@ export type Props = {
 	placeholder?: 'auto' | 'none' | undefined
 	/** Nearest ancestor that bounds the gallery. */
 	scope?: string | undefined
-	/**
-	 * The media is vector artwork, such as an SVG image, wherever it is served
-	 * from. The viewer shows a copy and leaves the original in the page, sharp at
-	 * any page zoom. Without it, an image at a `.svg` address counts as one.
-	 */
-	vector?: boolean | undefined
 }
 
 const {
@@ -59,7 +52,6 @@ const {
 	nativeWidth,
 	placeholder = 'auto',
 	scope,
-	vector = false,
 } = Astro.props
 const isEnabled = enabled !== false && enabled !== ''
 const hasHref = href !== undefined && href !== ''
@@ -81,7 +73,6 @@ const isButton = !isLink && !interactive
 		data-native-width={nativeWidth !== undefined && nativeWidth > 0 ? nativeWidth : undefined}
 		data-placeholder={placeholder === 'none' ? placeholder : undefined}
 		data-scope={scope}
-		data-vector={vector ? '' : undefined}
 		data-zoom-indicator={indicator ? '' : undefined}
 		data-zoom-interactive={interactive ? '' : undefined}
 		href={isLink ? href : undefined}

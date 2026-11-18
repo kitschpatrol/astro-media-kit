@@ -33,15 +33,22 @@ describe('zoom server markup', () => {
 	it('marks vector artwork on the server, whatever address it is served from', async () => {
 		const $ = await fixture.readHTML('/zoom-vector/')
 		for (const id of ['vector-image', 'vector-picture']) {
-			const item = $(`#${id} .amk-zoom`)
-			expect(item).toHaveLength(1)
-			expect(item.attr('data-vector')).toBe('')
+			const images = $(`#${id} .amk-zoom img`)
+			expect(images.length).toBeGreaterThan(0)
+			for (const image of images) {
+				expect($(image).attr('data-vector')).toBe('')
+			}
+
+			// On the image whose artwork it is, not as a setting of the wrapper
+			expect($(`#${id} .amk-zoom`).attr('data-vector')).toBeUndefined()
 		}
 
 		for (const id of ['bitmap-image', 'bitmap-picture']) {
-			const item = $(`#${id} .amk-zoom`)
-			expect(item).toHaveLength(1)
-			expect(item.attr('data-vector')).toBeUndefined()
+			const images = $(`#${id} .amk-zoom img`)
+			expect(images.length).toBeGreaterThan(0)
+			for (const image of images) {
+				expect($(image).attr('data-vector')).toBeUndefined()
+			}
 		}
 	})
 

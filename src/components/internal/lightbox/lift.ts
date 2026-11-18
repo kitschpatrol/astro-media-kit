@@ -166,20 +166,19 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 
 /**
  * Whether a subject stays in the page while the viewer shows a copy of it: an
- * SVG image whose place a copy would otherwise take, as the component that
- * rendered it says, or as its address does for an image wrapped by hand. A
- * bitmap's copy draws the pixels the original has decoded, but a second element
- * showing an SVG draws the artwork again, and flashes on iPadOS as it takes the
- * original's place in the page. A copy in the viewer arrives out of view, or
- * over the original as it opens, and the page's own element stays as sharp as
- * it is, however far the page is zoomed.
+ * SVG image whose place a copy would otherwise take. A bitmap's copy draws the
+ * pixels the original has decoded, but a second element showing an SVG draws
+ * the artwork again, and flashes on iPadOS as it takes the original's place in
+ * the page. A copy in the viewer arrives out of view, or over the original as
+ * it opens, and the page's own element stays as sharp as it is, however far the
+ * page is zoomed.
  */
 function staysInPage(item: HTMLElement, subject: Element): boolean {
 	const visible = rendered(subject)
 	return (
 		item.dataset.placeholder !== 'none' &&
 		visible instanceof HTMLImageElement &&
-		(Object.hasOwn(item.dataset, 'vector') || isVectorImage(visible)) &&
+		isVectorImage(visible) &&
 		isPlainMarkup(subject)
 	)
 }

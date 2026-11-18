@@ -280,6 +280,12 @@ if (image.srcSet.values.length > 0) {
 	imgAdditionalAttributes.srcset = image.srcSet.attribute
 }
 
+// Vector artwork, wherever it is served from: the lightbox shows a copy of it
+// and leaves this element in the page.
+if (image.options.format === 'svg') {
+	imgAdditionalAttributes['data-vector'] = ''
+}
+
 if (import.meta.env.DEV) {
 	imgAdditionalAttributes['data-image-component'] = 'true'
 }

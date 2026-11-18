@@ -6,14 +6,9 @@ import type { GetImageResult } from 'astro'
  * shows one of its pixels per CSS pixel, which is the largest width descriptor
  * the browser can select. Neither flattens picture formats or themes; the
  * viewer lifts the real responsive element. Density candidates have no single
- * native width, so the viewer measures those once they load. An SVG is vector
- * artwork, which the viewer shows a copy of rather than moving.
+ * native width, so the viewer measures those once they load.
  */
-export function zoomTarget(image: GetImageResult): {
-	href: string
-	nativeWidth?: number
-	vector: boolean
-} {
+export function zoomTarget(image: GetImageResult): { href: string; nativeWidth?: number } {
 	let href = image.src
 	let largest = 0
 	let nativeWidth = image.srcSet.values.length === 0 ? Number(image.attributes.width) : undefined
@@ -30,5 +25,5 @@ export function zoomTarget(image: GetImageResult): {
 		}
 	}
 
-	return { href, nativeWidth, vector: image.options.format === 'svg' }
+	return { href, nativeWidth }
 }

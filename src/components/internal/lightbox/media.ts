@@ -44,10 +44,14 @@ export function canPinch(subject: Element): boolean {
 	)
 }
 
-/** Whether an image shows vector artwork, going by its address. */
+/**
+ * Whether an image shows vector artwork: as the component that rendered it says
+ * with `data-vector`, or as its address does for any other image.
+ */
 export function isVectorImage(image: HTMLImageElement): boolean {
 	const source = image.currentSrc
 	return (
+		Object.hasOwn(image.dataset, 'vector') ||
 		source.startsWith('data:image/svg+xml') ||
 		(URL.parse(source, document.baseURI)?.pathname.toLowerCase().endsWith('.svg') ?? false)
 	)

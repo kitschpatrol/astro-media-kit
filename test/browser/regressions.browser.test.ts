@@ -1150,9 +1150,9 @@ it.each([true, false])(
 		try {
 			const fixture = mount(
 				item(
-					`<img src="${address}" width="900" height="900" alt=""
+					`<img src="${address}" width="900" height="900" alt="" ${hinted ? 'data-vector' : ''}
 						style="display: block; width: 100%; height: auto" />`,
-					`${hinted ? 'data-vector ' : ''}style="width: 200px"`,
+					'style="width: 200px"',
 				),
 			)
 			const box = boxes(fixture)[0]!

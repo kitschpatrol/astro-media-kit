@@ -422,6 +422,13 @@ if (fallbackImage.srcSet.values.length > 0) {
 	imgAdditionalAttributes.srcset = fallbackImage.srcSet.attribute
 }
 
+// Vector artwork, wherever it is served from, when a source or the fallback is
+// an SVG: the lightbox shows a copy of it and leaves this element in the page.
+const isVector = formats.includes('svg') || resultFallbackFormat === 'svg'
+if (isVector) {
+	imgAdditionalAttributes['data-vector'] = ''
+}
+
 if (import.meta.env.DEV) {
 	imgAdditionalAttributes['data-image-component'] = 'true'
 }
@@ -449,6 +456,10 @@ if (fallbackImageDark) {
 	const imgAdditionalAttributesDark: HTMLAttributes<'img'> = {}
 	if (fallbackImageDark.srcSet.values.length > 0) {
 		imgAdditionalAttributesDark.srcset = fallbackImageDark.srcSet.attribute
+	}
+
+	if (isVector) {
+		imgAdditionalAttributesDark['data-vector'] = ''
 	}
 
 	if (import.meta.env.DEV) {
@@ -519,7 +530,6 @@ if (isSelector && hasDarkMode) {
 		{...zoomTarget(fallbackImage)}
 		indicator={zoomIndicator}
 		slot="media-component"
-		vector={formats.includes('svg') || resultFallbackFormat === 'svg'}
 	>
 		{isSelector && hasDarkMode ? (
 			<div
