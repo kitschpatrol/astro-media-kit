@@ -282,15 +282,18 @@ export class SubjectGesture {
 
 	#rebase(time: number) {
 		const points = this.#points()
-		const box = this.#slide?.layer.getBoundingClientRect()
+		const hold =
+			points === undefined || this.#slide === undefined
+				? undefined
+				: this.#zoom.grasp(this.#slide, points.center, this.#contacts.size > 1 ? 'free' : 'elastic')
 		this.#basis =
-			points === undefined || box === undefined || box.width <= 0 || box.height <= 0
+			points === undefined || hold === undefined
 				? undefined
 				: {
-						anchor: this.#zoom.anchor(this.#slide!, points.center, this.#contacts.size > 1),
+						anchor: hold.anchor,
 						center: { x: points.center.x, y: points.center.y },
 						distance: points.distance,
-						width: this.#zoom.gestureWidth(this.#slide!),
+						width: hold.width,
 					}
 		// Changing the finger count changes the midpoint without moving the
 		// media. Rebase it without injecting a false velocity into the release.
@@ -374,9 +377,8 @@ export class SubjectGesture {
 	 * reached.
 	 */
 	#step(slide: Slide, factor: number, point: Point) {
-		const isFirst = this.#stepTimer === undefined
 		clearTimeout(this.#stepTimer)
-		this.#zoom.zoomBy(slide, factor, point, isFirst)
+		this.#zoom.zoomBy(slide, factor, point)
 		this.#stepTimer = setTimeout(this.#stepsDone, stepRest)
 	}
 

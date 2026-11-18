@@ -56,6 +56,11 @@ export class Zoom {
 	#closesOnPinch = true
 	#fade: number | undefined
 	#fitted: Box = { height: 0, width: 0, x: 0, y: 0 }
+	/**
+	 * Whether contacts, or a run of wheel steps, have moved the subject and not
+	 * yet let go.
+	 */
+	#isHeld = false
 	#isPinched = false
 	/** The width the frame is laid out at, which a held pinch scales. */
 	#layoutWidth = 0
@@ -73,26 +78,6 @@ export class Zoom {
 	}
 
 	/**
-	 * Where in the subject a held point is, so that it stays there when fingers
-	 * change. Free placement follows the point as drawn; a single finger's
-	 * resists past a pan limit, and continues from the position that draws here.
-	 */
-	anchor(slide: Slide, point: Point, isFree: boolean): Point {
-		const box = slide.layer.getBoundingClientRect()
-		const pan = this.#slide === slide ? this.#pan : undefined
-		// Fingers have just landed or changed: the one time a gesture reads the
-		// stage, which its moves then place the subject in without looking again
-		pan?.measure()
-		const origin = isFree || this.isShrinking ? undefined : pan?.origin()
-		const stage = slide.stage.getBoundingClientRect()
-		const frame = slide.frame.getBoundingClientRect()
-		return {
-			x: (point.x - box.x - (origin === undefined ? 0 : stage.x + origin.x - frame.x)) / box.width,
-			y: (point.y - box.y - (origin === undefined ? 0 : stage.y + origin.y - frame.y)) / box.height,
-		}
-	}
-
-	/**
 	 * End a pinch as PhotoSwipe does. Released smaller than fit, having started
 	 * fitted, it closes the viewer from where it is held. Otherwise a size past
 	 * either limit springs back to it about the pinched point, and the layout,
@@ -103,6 +88,7 @@ export class Zoom {
 		const slide = this.#slide
 		const canClose = this.#canClose
 		this.#canClose = false
+		this.#isHeld = false
 		if (slide === undefined || this.#pan === undefined) {
 			return 'kept'
 		}
@@ -174,20 +160,50 @@ export class Zoom {
 		this.#options.onChange()
 	}
 
-	/** Undo scale resistance when fingers change or catch a return transition. */
-	gestureWidth(slide: Slide): number {
-		const { width } = slide.layer.getBoundingClientRect()
-		const minimum =
-			this.#slide === slide ? this.#fitted.width : slide.frame.getBoundingClientRect().width
-		// A pinch to close follows the fingers as they are
-		if (width < minimum && this.isShrinking) {
-			return width
+	/**
+	 * Look a slide's subject up as contacts land on it or change, or as a run of
+	 * wheel steps begins: read the stage, once for every move that follows, and
+	 * say what the contacts have hold of. `width` is the width they ask for, with
+	 * any resistance undone, and `anchor` where in the subject `point` is, so a
+	 * move carries on from where the subject is drawn, whether held past a limit
+	 * or caught in a transition. Free and clamped placement follow the point as
+	 * drawn; a single finger's resists past a pan limit, and continues from the
+	 * position that draws here.
+	 */
+	grasp(
+		slide: Slide,
+		point: Point,
+		resistance: Resistance,
+	): undefined | { anchor: Point; width: number } {
+		const box = slide.layer.getBoundingClientRect()
+		if (box.width <= 0 || box.height <= 0) {
+			return undefined
 		}
 
-		return requestedWidth(width, {
-			fit: minimum,
-			maximum: this.#slide === slide ? this.#maximumWidth : maximumWidth(minimum),
-		})
+		const frame = slide.frame.getBoundingClientRect()
+		const stage = slide.stage.getBoundingClientRect()
+		const isTracked = this.#slide === slide
+		const pan = isTracked ? this.#pan : undefined
+		pan?.measure()
+		const origin = resistance !== 'elastic' || this.isShrinking ? undefined : pan?.origin()
+		const fit = isTracked ? this.#fitted.width : frame.width
+		return {
+			anchor: {
+				x:
+					(point.x - box.x - (origin === undefined ? 0 : stage.x + origin.x - frame.x)) / box.width,
+				y:
+					(point.y - box.y - (origin === undefined ? 0 : stage.y + origin.y - frame.y)) /
+					box.height,
+			},
+			// A pinch to close follows the fingers as they are
+			width:
+				box.width < fit && this.isShrinking
+					? box.width
+					: requestedWidth(box.width, {
+							fit,
+							maximum: isTracked ? this.#maximumWidth : maximumWidth(fit),
+						}),
+		}
 	}
 
 	/**
@@ -231,7 +247,14 @@ export class Zoom {
 			this.#canClose = this.#closesOnPinch
 		}
 
-		this.#dropSettle()
+		if (!this.#isHeld) {
+			// The first move of a hold takes the subject over from whatever was
+			// moving it: a settle, or a zoom's transition
+			this.#isHeld = true
+			this.#dropSettle()
+			setLayerStyle(slide.layer, identity, false)
+		}
+
 		const fit = this.#fitted.width
 		if (isPastClosing(width, fit)) {
 			this.#canClose = false
@@ -251,7 +274,6 @@ export class Zoom {
 		this.#setFade(fade)
 		this.#enter(slide)
 		this.#size(slide, width, true)
-		setLayerStyle(slide.layer, identity, false)
 		this.#place(width, anchor, point, fade === undefined ? resistance : 'free')
 		if (isStarting) {
 			this.#options.onChange()
@@ -321,6 +343,7 @@ export class Zoom {
 
 		const from = slide.layer.getBoundingClientRect()
 		this.#isPinched = false
+		this.#isHeld = false
 		if (slide.lift !== undefined) {
 			refreshImagePreview(slide.lift.subject)
 		}
@@ -381,15 +404,18 @@ export class Zoom {
 	/**
 	 * Resize by a step of a turned wheel or a trackpad pinch, about `point` in
 	 * the viewport, within the limits. The first step of a run looks the subject
-	 * up where it is drawn, and catches a transition it is in; the rest work from
-	 * that without reading the page. `finishPinch` ends the run.
+	 * up where it is drawn; the rest work from that without reading the page.
+	 * `finishPinch` ends the run.
 	 */
-	zoomBy(slide: Slide, factor: number, point: Point, isFirst: boolean) {
-		this.stopPan()
+	zoomBy(slide: Slide, factor: number, point: Point) {
 		const pan = this.#slide === slide ? this.#pan : undefined
-		if (isFirst || pan === undefined) {
-			const anchor = this.anchor(slide, point, true)
-			this.pinch(slide, this.gestureWidth(slide) * factor, anchor, point, 'clamp')
+		if (pan === undefined || !this.#isHeld) {
+			this.stopPan()
+			const hold = this.grasp(slide, point, 'clamp')
+			if (hold !== undefined) {
+				this.pinch(slide, hold.width * factor, hold.anchor, point, 'clamp')
+			}
+
 			return
 		}
 
@@ -612,6 +638,7 @@ export class Zoom {
 		this.#slide = undefined
 		this.#pan = undefined
 		this.#isPinched = false
+		this.#isHeld = false
 		this.#canClose = false
 		this.#fade = undefined
 		this.#fitted.width = 0
