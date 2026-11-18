@@ -40,8 +40,10 @@ export type PrefixedProps = {
 	 * viewport (cropping the overflowing axis), and `'native'` zooms to 100% (1:1
 	 * pixels).
 	 *
-	 * Touchscreen pinch zoom and panning are available for images and videos at
-	 * every level. While pinched in, the Zoom button resets the media to fit.
+	 * At every level, images and videos also zoom with a pinch, on a touchscreen
+	 * or a trackpad, and with the wheel while Ctrl or Command is held, and pan
+	 * while enlarged. While zoomed that way, the Zoom button resets the media to
+	 * fit.
 	 *
 	 * @default 'fit'
 	 */
