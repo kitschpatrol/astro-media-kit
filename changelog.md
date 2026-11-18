@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] - 2026-11-17
+
+### Added
+
+- Pinch images and videos in the lightbox on a touchscreen to zoom at every `zoomLevel`, including `"fit"`. Once enlarged, a pinch can cross the fitted size and stretch past either zoom limit with resistance, then springs back into range on release. The Zoom button resets pinched media to fit, and lifting the fingers does not activate a tap. Inside the viewer, this pinch replaces the browser's own page zoom.
+- Zoom lightbox images and videos about the pointer with a trackpad pinch (Safari's gesture events included), or by turning the mouse wheel with Ctrl or Command held. Zooming stops at the fitted size and at the zoom limit rather than closing or stretching past them, and a plain wheel still pans and turns slides.
+- Close the lightbox by pinching fitted media smaller. The media follows the fingers, the backdrop, controls, and caption fade as it shrinks, and letting go sends it home to its thumbnail. Set `--amk-lightbox-pinch-to-close` to `0` to have it resist and spring back instead.
+- Add the `--amk-lightbox-max-zoom` property (default `8`), for how many times its fitted size media can be pinched to, and `--amk-lightbox-pan-padding` (default `32px`), for how far panned media stays from each edge of the viewer. Both are read as a zoom begins.
+- Pace the lightbox's opening and closing travel and growth separately, with new `--amk-lightbox-lead-easing` and `--amk-lightbox-follow-easing` properties. By default the content now travels ahead of its growth on the way up and shrinks ahead of its travel on the way home. A zoom inside the viewer keeps one curve for both.
+
+### Changed
+
+- Pan zoomed lightbox media the same way with a finger, mouse, or pen. A pull past an edge gives with resistance, a quick release coasts with momentum, a new press catches it without clicking, and a mouse drag shows a grabbing hand. Two fingers move the media freely and it springs back within limits on release. Zoomed media now moves inside a clipped, transparent viewport rather than a scroll container, so it no longer shows scrollbars; the wheel and arrow keys still pan it. Reduced motion disables momentum and animated returns.
+- Keep a zoomed lightbox item's zoom, and the point at its center, through window resizes and rotations instead of resetting it to fit.
+- Show the lightbox Zoom button only for items with a secondary `zoomLevel`, or while media is zoomed in. On other items it now fades out and becomes inert instead of staying visible but disabled, including in galleries that mix both kinds of item.
+
+### Fixed
+
+- Recover lightbox gallery swipes after multi-finger touches that start or end outside the track, such as on a control, and stop treating an added finger as a tap on the content.
+- Keep the lightbox and its controls on the visible screen when it opens on a page that is already pinch-zoomed, and keep multi-finger gestures in the viewer from scrolling the page behind it.
+- Let a pinch-zoomed page pan over inline carousels instead of turning their slides. The carousel's buttons and keyboard navigation still work.
+- Stop Chromium from briefly painting opaque frames behind the translucent lightbox when a video player moves into the viewer.
+- Stop SVG thumbnails flickering on iPadOS when the lightbox opens: vector artwork now stays in the page, sharp at any page zoom, while the viewer shows a copy. `Image` and `Picture` mark their SVG output with `data-vector`, and an image wrapped by hand counts as vector artwork when its address ends in `.svg` or it carries `data-vector`.
+- Stop Safari, including on iPadOS, from returning focus with a visible ring to a video player's container after closing a lightbox opened from that player.
+
+### Documentation
+
+- Lay out the viewer's gestures in the readme as a table by input (touch, mouse, trackpad, and keyboard), followed by notes on moving between items, closing, zooming, panning, and players.
+- Describe pinch, trackpad, and Ctrl or Command wheel zoom at every level in the `zoomLevel` and `Zoomer` `level` prop docs. Document the new lightbox pan, zoom-limit, pinch-to-close, and easing properties, and how vector artwork stays in the page.
+
+### Maintenance
+
+- Move the pinch and pan math (size resistance, the pinch-to-close regime, the settle spring, pan limits, edge resistance, and the release coast) into pure modules covered by Node unit tests. Route all input on a zoomed subject through one gesture handler. Remove the unreachable native-scroll panning paths, and consolidate duplicated viewer helpers, including the drag dimming, id stripping, and page carousel following.
+- Add browser coverage for pinch, touch and mouse panning, wheel and trackpad zoom, elastic zoom, video pinch, multitouch recovery, scroll containment, resizing, mobile galleries and carousels, SVG lifting, and player paint. New test commands drive multi-finger CDP touches with individual releases, open a top-level mobile page with a real visual viewport, and capture Chromium compositor frames.
+- Speed up the browser suite by sharing one opener across the zoom, pinch, and pan tests, testing the pan's spring back once per axis, and moving the mouse home in one step after each test, which takes about three minutes off a twenty-one-minute run.
+
 ## [0.10.0] - 2026-11-16
 
 ### Changed
@@ -558,3 +594,4 @@ No notable changes.
 [0.8.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.7.1...v0.8.0
 [0.9.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.8.0...v0.9.0
 [0.10.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...v0.10.0
+[0.10.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.0...v0.10.1
