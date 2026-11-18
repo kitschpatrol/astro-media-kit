@@ -1,4 +1,4 @@
-import type { ImageInputFormat } from 'astro'
+import type { ImageInputFormat, ImageMetadata } from 'astro'
 import { describe, expect, it, vi } from 'vitest'
 import type { GetImageResult } from '../src/components/utils/image-orchestration'
 import {
@@ -499,6 +499,36 @@ describe('getMimeType', () => {
 		expect(getMimeType(stubImage({ format: 'webp', src: '/foo.webp' }))).toBe('image/webp')
 		expect(getMimeType(stubImage({ format: 'jpg', src: '/foo.jpg' }))).toBe('image/jpeg')
 		expect(getMimeType(stubImage({ format: 'svg', src: '/foo.svg' }))).toBe('image/svg+xml')
+	})
+
+	// A passthrough image service sets no output format
+	function passedThrough(src: string, source: ImageMetadata | string = src): GetImageResult {
+		return { ...stubImage({ src }), options: { src: source } }
+	}
+
+	// A dev server's address for an imported image
+	const href = '/@fs/src/assets/photo.webp?origWidth=200&origHeight=100&origFormat=webp'
+	const endpointSrc = `/_image?href=${encodeURIComponent(href)}&w=480&h=240`
+
+	it('reads the format from a file address when the service sets none', () => {
+		expect(getMimeType(passedThrough('/_astro/photo.abc123.jpg'))).toBe('image/jpeg')
+		expect(getMimeType(passedThrough('/_astro/photo.abc123.jpg', jpgMeta))).toBe('image/jpeg')
+		expect(getMimeType(passedThrough('https://example.com/photo.png'))).toBe('image/png')
+	})
+
+	it('ignores a query and a fragment after the file name', () => {
+		expect(getMimeType(passedThrough('/_astro/photo.abc123.png?dpl=4.2'))).toBe('image/png')
+		expect(getMimeType(passedThrough('/_astro/vector.svg#icon.jpg'))).toBe('image/svg+xml')
+	})
+
+	it("takes the imported image's format at an endpoint address", () => {
+		expect(getMimeType(passedThrough(endpointSrc, webpMeta))).toBe('image/webp')
+		expect(getMimeType(passedThrough(endpointSrc, jpgMeta))).toBe('image/jpeg')
+	})
+
+	it('resolves no type when neither the address nor the image tells the format', () => {
+		expect(getMimeType(passedThrough(endpointSrc))).toBeUndefined()
+		expect(getMimeType(passedThrough('https://example.com/photo'))).toBeUndefined()
 	})
 })
 

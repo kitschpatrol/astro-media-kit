@@ -1,0 +1,26 @@
+---
+import { Picture } from 'astro-media-kit/components'
+import penguinLight from '../assets/penguin-light.jpg'
+---
+
+<html>
+	<body>
+		<Picture
+			alt="a penguin"
+			darkMode="[data-theme='dark']"
+			fallbackFormat={{ avif: 'webp', tiff: 'webp', unknown: 'webp', webp: 'webp' }}
+			formats={{ svg: ['svg'] }}
+			pictureAttributes={{ id: 'rules' }}
+			sizes="(max-width: 768px) 100vw, 50vw"
+			src={penguinLight}
+			widths={[480, 960]}
+		/>
+		<Picture
+			alt="a remote image"
+			height={200}
+			pictureAttributes={{ id: 'remote' }}
+			src="https://example.com/photo"
+			width={300}
+		/>
+	</body>
+</html>

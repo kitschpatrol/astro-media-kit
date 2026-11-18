@@ -492,9 +492,27 @@ export function resolveSizesAttribute(
 	return userSizes === undefined && allowAuto ? `auto, ${sizes}` : sizes
 }
 
-/** Resolve the MIME `type` attribute for a `<source>` element. */
-export function getMimeType(image: GetImageResult): string {
-	return mime.lookup(image.options.format ?? image.src) ?? `image/${String(image.options.format)}`
+const QUERY_OR_FRAGMENT_REGEX = /[?#]/v
+
+/**
+ * Resolve the MIME `type` attribute for a `<source>` element, or `undefined`
+ * where the output format can't be told, so the attribute is left off: a
+ * browser skips a source of a type it doesn't know.
+ *
+ * An image service that passes images through untouched, as Astro's no-op
+ * service does, sets no output format. The address ends in a file name in a
+ * static build, which tells the format. On a dev server, and on a page rendered
+ * on demand, it is the image endpoint's, and an imported image's own format
+ * stands in.
+ */
+export function getMimeType(image: GetImageResult): string | undefined {
+	const { format, src } = image.options
+	if (format !== undefined) {
+		return mime.lookup(format) ?? `image/${format}`
+	}
+
+	const [path = ''] = image.src.split(QUERY_OR_FRAGMENT_REGEX, 1)
+	return mime.lookup(path) ?? (isESMImportedImage(src) ? mime.lookup(src.format) : undefined)
 }
 
 /**
