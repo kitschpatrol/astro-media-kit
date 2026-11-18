@@ -194,6 +194,22 @@ it.each([
 	},
 )
 
+it('enables native zoom when a viewer copy finishes loading its density candidate', async () => {
+	const root = mount(
+		item(
+			`<img data-zoom-photo srcset="/media/tile-2400.jpg?cold-image=${crypto.randomUUID()} 1x" width="2400" height="2400" alt="Tile" style="width:100%;height:auto">`,
+			'data-level="native" style="width:160px"',
+		),
+	)
+	await openLightbox(boxes(root)[0]!)
+	const button = query(viewer(), '.amk-lightbox-zoom', HTMLButtonElement)
+	const slide = query(viewer(), '.amk-lightbox-slide')
+	expect(button.ariaDisabled).toBe('true')
+	expect(Object.hasOwn(slide.dataset, 'zoomable')).toBe(false)
+	await expect.poll(() => button.ariaDisabled).toBe('false')
+	expect(Object.hasOwn(slide.dataset, 'zoomable')).toBe(true)
+})
+
 it('waits for decoding before capturing an image with no loaded thumbnail', async () => {
 	const root = mount(
 		item(

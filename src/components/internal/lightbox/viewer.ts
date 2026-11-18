@@ -122,6 +122,22 @@ class Viewer {
 		this.#dialog.addEventListener('dragstart', preventDefault)
 		this.#dialog.addEventListener('pointerover', this.#prepareZoom)
 		this.#dialog.addEventListener('focusin', this.#prepareZoom)
+		// A native zoom preset can depend on the displayed image's natural width,
+		// which a new viewer copy may acquire after the opening transition.
+		this.#dialog.addEventListener(
+			'load',
+			(event) => {
+				const slide = this.#activeSlide
+				if (
+					event.target instanceof HTMLImageElement &&
+					slide?.item.dataset.level === 'native' &&
+					slide.lift?.subject.contains(event.target)
+				) {
+					this.#updateZoomState()
+				}
+			},
+			{ capture: true },
+		)
 		this.#motion = new CarouselMotion(this.#track, {
 			canNavigate: () => this.#isNavigable,
 			dismissible: () => {
