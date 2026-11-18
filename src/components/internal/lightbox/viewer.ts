@@ -25,6 +25,7 @@ import { dropSlides, followLayout, liftSlide, measure } from './lift'
 import { readyToShow } from './link'
 import { canPinch, hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
+import { carouselTrackHiding, followInCarousels, revealCarouselItem } from './page-carousels'
 import {
 	closeInactiveTooltips,
 	floatControls,
@@ -149,9 +150,16 @@ class Viewer {
 				setLayerStyle(layer, { ...identity, translate: `0 ${distance}px` }, false)
 			},
 			onMove: (position) => {
-				if (this.#isNavigable) {
-					this.#followInCarousels(position)
+				if (!this.#isNavigable) {
+					return
 				}
+
+				const index = Math.floor(position)
+				followInCarousels(
+					this.#slides[index]?.item,
+					this.#slides[index + 1]?.item,
+					position - index,
+				)
 			},
 			onPrepare: (index) => {
 				this.#liftAround(index)
@@ -610,33 +618,6 @@ class Viewer {
 		// Any later close or restore bumps the generation
 		if (generation === this.#generation) {
 			this.restore()
-		}
-	}
-
-	/**
-	 * Move page carousels along with the viewer, `position` slides along its
-	 * track. One holding both items the viewer is between moves as far between
-	 * their slides; one holding only one of them shows its slide while that item
-	 * is the nearer.
-	 */
-	#followInCarousels(position: number) {
-		const index = Math.floor(position)
-		const progress = position - index
-		const starts = carouselSlidesOf(this.#slides[index]?.item)
-		const ends = carouselSlidesOf(progress === 0 ? undefined : this.#slides[index + 1]?.item)
-		for (const [track, start] of starts) {
-			const end = ends.get(track)
-			if (end !== undefined) {
-				followCarousel(track, start + (end - start) * progress)
-			} else if (progress < 0.5) {
-				followCarousel(track, start)
-			}
-		}
-
-		for (const [track, end] of ends) {
-			if (progress >= 0.5 && !starts.has(track)) {
-				followCarousel(track, end)
-			}
 		}
 	}
 
@@ -1519,68 +1500,6 @@ function describeSlide(slide: Slide): string {
 	const name = texts.map((text) => text?.trim() ?? '').find((text) => text !== '') ?? ''
 	const label = slide.element.getAttribute('aria-label') ?? ''
 	return name === '' ? label : `${label}, ${name}`
-}
-
-/**
- * The page carousel slides holding `item`, by the track each is in: one for
- * every carousel it is nested in, innermost first.
- */
-function carouselSlidesOf(item: Element | undefined): Map<HTMLElement, number> {
-	const slides = new Map<HTMLElement, number>()
-	let slide = item?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
-	while (slide !== undefined) {
-		const track = slide.parentElement
-		if (track?.classList.contains('amk-carousel-track') === true) {
-			slides.set(track, [...track.children].indexOf(slide))
-		}
-
-		slide = track?.closest<HTMLElement>('.amk-carousel-slide') ?? undefined
-	}
-
-	return slides
-}
-
-/**
- * Have a page carousel's controller show its track `position` slides along, or
- * scroll a track without one to the nearest slide, where it would snap to.
- */
-function followCarousel(track: HTMLElement, position: number) {
-	const follow = new CustomEvent('amk-carousel-follow', { cancelable: true, detail: position })
-	if (track.dispatchEvent(follow)) {
-		scrollToSlide(track, Math.round(position))
-	}
-}
-
-/** Reveal the selected slide in its page carousels without moving the document. */
-function revealCarouselItem(item: Element) {
-	for (const [track, index] of carouselSlidesOf(item)) {
-		const reveal = new CustomEvent('amk-carousel-reveal', { cancelable: true, detail: index })
-		// Let a controller cancel its spring; tracks without one still work.
-		if (track.dispatchEvent(reveal)) {
-			scrollToSlide(track, index)
-		}
-	}
-}
-
-function scrollToSlide(track: HTMLElement, index: number) {
-	const direction = track.matches(':dir(rtl)') ? -1 : 1
-	track.scrollTo({ behavior: 'instant', left: direction * index * track.clientWidth })
-}
-
-/**
- * The track of the page carousel that has `element` in a slide out of view, if
- * one has. With carousels nested, the outermost such one's, as an inner track
- * is out of view along with the slide it is in.
- */
-function carouselTrackHiding(element: Element): HTMLElement | undefined {
-	let track: HTMLElement | undefined
-	let slide = element.closest('.amk-carousel-slide[inert]') ?? undefined
-	while (slide !== undefined) {
-		track = slide.parentElement ?? undefined
-		slide = track?.closest('.amk-carousel-slide[inert]') ?? undefined
-	}
-
-	return track
 }
 
 function isInViewport(box: Box): boolean {
