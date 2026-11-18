@@ -536,6 +536,7 @@ if (isSelector && hasDarkMode) {
 				{...pictureAttributes}
 				class:list={[pictureAttributes.class, 'amk-picture', selectorClass]}
 				data-dark-mode={darkMode}
+				data-zoom-photo={isZoomEnabled ? '' : undefined}
 			>
 				<picture class="amk-dark">
 					{optimizedImagesDark.map((image) => (
@@ -573,7 +574,7 @@ if (isSelector && hasDarkMode) {
 				</picture>
 			</div>
 		) : (
-			<picture {...pictureAttributes}>
+			<picture {...pictureAttributes} data-zoom-photo={isZoomEnabled ? '' : undefined}>
 				{hasDarkMode &&
 					optimizedImagesDark.map((image) => (
 						<source

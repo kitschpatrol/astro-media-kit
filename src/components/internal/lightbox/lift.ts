@@ -1,5 +1,5 @@
 import type { Box, Fit } from './geometry'
-import type { Lift, Measurement, Point, Slide } from './types'
+import type { Lift, Margins, Measurement, Point, Slide, WrapperSize } from './types'
 import { isPlainMarkup } from './clone-placeholder'
 import { releaseControlPreview, retainControlPreview } from './control-preview'
 import { anonymize, isLinkItem, move, releaseInstance, rendered, subjectOf } from './dom'
@@ -9,7 +9,7 @@ import { isVectorImage, ratioOf } from './media'
 import { retainPictureThemes } from './picture-theme'
 import { createPlaceholder, placePlaceholder, removePlaceholder } from './placeholder'
 import { adoptControls, closePopups, refreshPopups, releaseControls } from './player-controls'
-import { releasePreparation, restorePreparedClone } from './prepare'
+import { prepareSlideImage, releasePreparation, restorePreparedClone } from './prepare'
 import { releaseWarmup } from './warm-image'
 
 /**
@@ -35,18 +35,18 @@ export function dropSlides(slides: Slide[]) {
 
 		slide.lift = undefined
 		const { item } = lift
-		if (lift.isCopy || isLinkItem(item)) {
+		if (lift.kind !== 'move') {
 			lift.releasePictureThemes()
 			releaseImagePreview(lift.subject)
 			// A link's media, like a copy of what stays in the page, is for the
 			// viewer alone: it goes away, and the next use starts afresh
-			releaseControls(lift.subject)
-			releasePreparation(lift.subject)
-			lift.subject.remove()
-			if (!lift.isCopy) {
+			if (lift.kind === 'link') {
+				releaseControls(lift.subject)
 				releaseInstance(item)
 			}
 
+			lift.subject.remove()
+			releasePreparation(lift.subject, false)
 			delete item.dataset.lifted
 			continue
 		}
@@ -64,7 +64,7 @@ export function dropSlides(slides: Slide[]) {
 		lift.probe?.remove()
 		uncover(item, lift.subject, lift.placeholder)
 
-		lift.releaseMargins?.()
+		lift.releaseMargins()
 		item.style.removeProperty('--amk-lightbox-placeholder-width')
 		item.style.removeProperty('--amk-lightbox-placeholder-height')
 		item.style.removeProperty('--amk-lightbox-placeholder-ratio')
@@ -98,7 +98,7 @@ export function dropSlides(slides: Slide[]) {
 	}
 }
 
-/** Move one subject from the page into its slide. */
+/** Mount a responsive copy, a link instance, or the original live content. */
 export function liftSlide(slide: Slide, measurement: Measurement) {
 	if (slide.lift !== undefined) {
 		return
@@ -107,41 +107,72 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	// A copy still covering the subject from its last return makes way for the new one
 	returns.get(measurement.item)?.()
 
-	const { item } = measurement
-	// A link's media was never in the page, and vector artwork never leaves it:
-	// nothing holds its place or stands in
-	const isLink = isLinkItem(item)
-	const isCopy = !isLink && staysInPage(item, measurement.subject)
-	const subject = isCopy ? copyForViewer(measurement.subject) : measurement.subject
-	const isAway = !isLink && !isCopy
-	if (isAway) {
+	const { item, kind } = measurement
+	if (kind === 'copy') {
+		const original = measurement.subject
+		const thumbnail = rendered(original)
+		const subject = copyForViewer(original, slide.frame.offsetWidth)
+		const releasePictureThemes = retainPictureThemes(subject, item, () => {
+			prepareSlideImage(slide)
+		})
+		slide.lift = { ...measurement, kind, original, releasePictureThemes, subject }
+		slide.layer.append(subject)
+		retainImage(subject, slide.layer, thumbnail)
+		item.dataset.lifted = 'copy'
+		releaseWarmup(original)
+		return
+	}
+
+	const { subject } = measurement
+	if (measurement.kind === 'move') {
 		retainControlPreview(item, subject)
+		const placeholder = createPlaceholder(item, subject)
+		retainImage(subject, slide.layer)
+		const releasePictureThemes = retainPictureThemes(subject, item)
+		const hadStyle = item.hasAttribute('style')
+		const { hasOwnHeight, hold } = holdOf(item, subject, measurement.wrapper)
+		slide.lift = {
+			...measurement,
+			hadStyle,
+			nextSibling: subject.nextSibling ?? undefined,
+			placeholder: placeholder?.element,
+			placeholderBox: placeholder?.box,
+			probe: undefined,
+			releaseMargins: holdMargins(item, measurement.margins, hasOwnHeight),
+			releasePictureThemes,
+		}
+		item.dataset.lifted = hold
+		moveIntoSlide(slide, subject)
+		if (hold === 'size') {
+			item.style.setProperty('--amk-lightbox-placeholder-width', measurement.wrapper.width)
+			item.style.setProperty('--amk-lightbox-placeholder-height', measurement.wrapper.height)
+		} else if (hold === 'ratio') {
+			item.style.setProperty(
+				'--amk-lightbox-placeholder-ratio',
+				`${lengthOf(measurement.wrapper.width)} / ${lengthOf(measurement.wrapper.height)}`,
+			)
+		}
+
+		if (placeholder !== undefined) {
+			placePlaceholder(item, placeholder, measurement.home, hold !== 'size')
+		}
+	} else {
+		retainImage(subject, slide.layer)
+		slide.lift = {
+			...measurement,
+			kind: 'link',
+			releasePictureThemes: retainPictureThemes(subject, item),
+		}
+		item.dataset.lifted = ''
+		moveIntoSlide(slide, subject)
+		// A link's media only connects on first use.
+		subject.dispatchEvent(new Event('amk-media-connected', { bubbles: true }))
 	}
 
-	const placeholder = isAway ? createPlaceholder(item, subject) : undefined
-	retainImage(subject, slide.layer)
-	slide.lift = {
-		...measurement,
-		hadStyle: item.hasAttribute('style'),
-		isCopy,
-		nextSibling: subject.nextSibling ?? undefined,
-		placeholder: placeholder?.element,
-		placeholderBox: placeholder?.box,
-		probe: undefined,
-		releaseMargins: undefined,
-		releasePictureThemes: retainPictureThemes(subject, item),
-		subject,
-	}
-	// On the slide, where both the frame and a stage beside a caption read it
-	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
-	const { hasOwnHeight, hold } = isAway
-		? holdOf(item, subject, measurement.wrapper)
-		: { hasOwnHeight: true, hold: '' as const }
-	item.dataset.lifted = hold
-	if (isAway) {
-		slide.lift.releaseMargins = holdMargins(item, measurement.margins, hasOwnHeight)
-	}
+	releaseWarmup(subject)
+}
 
+function moveIntoSlide(slide: Slide, subject: Element) {
 	// A popup still on its way out can't be carried by a move in this task
 	if (closePopups(subject)) {
 		refreshPopups(subject)
@@ -152,39 +183,17 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 	}
 
 	adoptControls(subject)
-	if (isLink) {
-		// The kit's media script sets up the media that is in the page as it
-		// loads; this media has only just arrived
-		subject.dispatchEvent(new Event('amk-media-connected', { bubbles: true }))
-	}
-
-	if (hold === 'size') {
-		item.style.setProperty('--amk-lightbox-placeholder-width', measurement.wrapper.width)
-		item.style.setProperty('--amk-lightbox-placeholder-height', measurement.wrapper.height)
-	} else if (hold === 'ratio') {
-		item.style.setProperty(
-			'--amk-lightbox-placeholder-ratio',
-			`${lengthOf(measurement.wrapper.width)} / ${lengthOf(measurement.wrapper.height)}`,
-		)
-	}
-
-	if (placeholder !== undefined) {
-		placePlaceholder(item, placeholder, measurement.home, hold !== 'size')
-	}
-
-	releaseWarmup(measurement.subject)
 }
 
 /**
- * Whether a subject stays in the page while the viewer shows a copy of it: an
- * SVG image whose place a copy would otherwise take. A bitmap's copy draws the
- * pixels the original has decoded, but a second element showing an SVG draws
- * the artwork again, and flashes on iPadOS as it takes the original's place in
- * the page. A copy in the viewer arrives out of view, or over the original as
- * it opens, and the page's own element stays as sharp as it is, however far the
- * page is zoomed.
+ * Built-in photos own their viewer copy. Standalone SVGs also keep their
+ * original in place to avoid a repaint at the page's zoom level on iPadOS.
  */
 function staysInPage(item: HTMLElement, subject: Element): boolean {
+	if (subject.matches('[data-zoom-photo]')) {
+		return true
+	}
+
 	const visible = rendered(subject)
 	return (
 		item.dataset.placeholder !== 'none' &&
@@ -195,9 +204,30 @@ function staysInPage(item: HTMLElement, subject: Element): boolean {
 }
 
 /** A copy of ordinary markup for the viewer, without the original's identity. */
-function copyForViewer(subject: Element): Element {
-	const copy = subject.cloneNode(true) as Element
+function copyForViewer(subject: Element, width: number): Element {
+	// Assemble in an inert document so handlers and page-sized source hints
+	// cannot start work before the copy is mounted in the dialog.
+	const inert = document.createElement('template').content.ownerDocument
+	const copy = inert.importNode(subject, true)
 	anonymize(copy)
+	for (const element of [copy, ...copy.querySelectorAll('*')]) {
+		// Set the initial hint before connecting any image. A hidden theme
+		// branch can wait until it becomes the displayed picture.
+		if (element instanceof HTMLImageElement) {
+			element.loading = 'lazy'
+		}
+
+		if (width > 0 && element.matches('img, source')) {
+			element.setAttribute('sizes', `${width}px`)
+		}
+
+		for (const name of element.getAttributeNames()) {
+			if (name.startsWith('on')) {
+				element.removeAttribute(name)
+			}
+		}
+	}
+
 	return copy
 }
 
@@ -275,7 +305,7 @@ function uncover(item: HTMLElement, subject: Element, placeholder: HTMLElement |
  */
 export function followLayout(lift: Lift) {
 	const { item } = lift
-	if (item.dataset.lifted !== 'size' || lift.probe !== undefined) {
+	if (lift.kind !== 'move' || item.dataset.lifted !== 'size' || lift.probe !== undefined) {
 		return
 	}
 
@@ -369,7 +399,7 @@ type Hold = '' | 'ratio' | 'size'
 function holdOf(
 	item: HTMLElement,
 	subject: Element,
-	wrapper: Measurement['wrapper'],
+	wrapper: WrapperSize,
 ): { hasOwnHeight: boolean; hold: Hold } {
 	const width = lengthOf(wrapper.width)
 	const height = lengthOf(wrapper.height)
@@ -420,11 +450,7 @@ function override(style: CSSStyleDeclaration, property: string, value: string): 
  * own back. A margin below only passes an item that gets its height from its
  * content.
  */
-function holdMargins(
-	item: HTMLElement,
-	margins: Measurement['margins'],
-	hasOwnHeight: boolean,
-): () => void {
+function holdMargins(item: HTMLElement, margins: Margins, hasOwnHeight: boolean): () => void {
 	const releases: Array<() => void> = []
 	if (margins.top !== undefined) {
 		releases.push(override(item.style, 'margin-top', `${margins.top}px`))
@@ -606,28 +632,42 @@ export function measure(item: HTMLElement): Measurement | undefined {
 
 	const visible = rendered(subject)
 	const home = item.getBoundingClientRect()
-	const rect = visible.getBoundingClientRect()
-	const style = getComputedStyle(visible)
-	// Layout sizes, unaffected by transforms such as a hover zoom
-	const itemStyle = getComputedStyle(item)
-	const { width, height } = itemStyle
-	const target = { height: rect.height, width: rect.width, x: rect.x, y: rect.y }
-
-	return {
-		fit: fitOf(visible, style.objectFit),
+	const geometry = thumbnailGeometry(visible)
+	const { target } = geometry
+	const measurement = {
+		...geometry,
 		home: { height: home.height, width: home.width, x: home.x, y: home.y },
 		item,
-		margins: {
-			bottom: passingMargin(item, itemStyle, subject, 'bottom'),
-			top: passingMargin(item, itemStyle, subject, 'top'),
-		},
-		offset: { ...target, x: rect.x - home.x, y: rect.y - home.y },
-		position: positionOf(style.objectPosition),
-		radius: radiusOf(style.borderTopLeftRadius, target),
+		offset: { ...target, x: target.x - home.x, y: target.y - home.y },
 		ratio: ratioOf(visible, target),
 		subject,
+	}
+	if (staysInPage(item, subject)) {
+		return { ...measurement, kind: 'copy' }
+	}
+
+	const style = getComputedStyle(item)
+	return {
+		...measurement,
+		kind: 'move',
+		margins: {
+			bottom: passingMargin(item, style, subject, 'bottom'),
+			top: passingMargin(item, style, subject, 'top'),
+		},
+		wrapper: { width: style.width, height: style.height },
+	}
+}
+
+/** The crop and border box to animate from or return to in the page. */
+export function thumbnailGeometry(visible: Element) {
+	const { height, width, x, y } = visible.getBoundingClientRect()
+	const target = { height, width, x, y }
+	const style = getComputedStyle(visible)
+	return {
+		fit: fitOf(visible, style.objectFit),
+		position: positionOf(style.objectPosition),
+		radius: radiusOf(style.borderTopLeftRadius, target),
 		target,
-		wrapper: { width, height },
 	}
 }
 
@@ -642,14 +682,13 @@ function measureLink(item: HTMLElement, subject: Element): Measurement {
 		fit: 'contain',
 		home: box,
 		item,
-		margins: { bottom: undefined, top: undefined },
+		kind: 'link',
 		offset: { ...box, x: 0, y: 0 },
 		position: { x: 0.5, y: 0.5 },
 		radius: 0,
 		ratio: ratioOf(rendered(subject), { height: 0, width: 0, x: 0, y: 0 }),
 		subject,
 		target: box,
-		wrapper: { width: '', height: '' },
 	}
 }
 

@@ -29,10 +29,12 @@ it('lays the rendered links out as blocks from the bundled stylesheet alone', as
 	expect(getComputedStyle(query(fixture, '#video .amk-zoom')).cursor).not.toBe('zoom-in')
 })
 
-it('opens a rendered picture gallery within its scope, lifting the real picture', async () => {
+it('opens viewer-owned photos within the rendered gallery’s scope', async () => {
 	const fixture = await mountPage('/zoom/')
 	const [picture, image] = boxes(query(fixture, '#first'))
 	const original = query(picture!, 'picture')
+	const neighbor = image!.firstElementChild
+	const markup = original.outerHTML
 	for (const img of fixture.querySelectorAll<HTMLImageElement>(':scope #first img')) {
 		await expect.poll(() => img.complete && img.naturalWidth > 0).toBe(true)
 	}
@@ -41,10 +43,17 @@ it('opens a rendered picture gallery within its scope, lifting the real picture'
 
 	await expect.poll(() => viewer().dataset.state).toBe('open')
 	expect(activeSlideLabel()).toBe('1 of 2')
-	expect(currentLayer().firstElementChild).toBe(original)
+	const copy = query(currentLayer(), 'picture')
+	expect(copy).not.toBe(original)
+	expect(query(copy, 'source', HTMLSourceElement).srcset).toBe(
+		query(original, 'source', HTMLSourceElement).srcset,
+	)
+	expect(original.parentElement).toBe(picture)
+	expect(original.outerHTML).toBe(markup)
 	// The neighbor follows once the opening transition settles
 	await expect.poll(() => isLifted(image!)).toBe(true)
-	expect(query(picture!, '[data-amk-preview]').matches('picture')).toBe(true)
+	expect(image!.firstElementChild).toBe(neighbor)
+	expect(picture!.querySelector('[data-amk-preview]')).toBeNull()
 	expect(document.querySelectorAll('#second .amk-zoom[data-lifted]')).toHaveLength(0)
 	const caption = query(viewer(), '.amk-lightbox-caption')
 	expect(caption.textContent).toContain('Picture caption')
@@ -67,7 +76,7 @@ it('zooms a rendered picture to the width the server supplied', async () => {
 	expect(fitted).toBeLessThan(960)
 })
 
-it('lifts the visible image of a themed picture pair', async () => {
+it('opens a themed picture from the visible thumbnail', async () => {
 	const fixture = await mountPage('/zoom/')
 	const themed = boxes(query(fixture, '#second'))[0]!
 	const [dark, light] = themed.querySelectorAll('img')
@@ -78,8 +87,10 @@ it('lifts the visible image of a themed picture pair', async () => {
 	const start = currentLayer().getBoundingClientRect()
 	await opening
 
-	expect(viewer().contains(dark!)).toBe(true)
-	expect(viewer().contains(light!)).toBe(true)
+	expect(themed.contains(dark!)).toBe(true)
+	expect(themed.contains(light!)).toBe(true)
+	expect(query(currentLayer(), '.amk-light img').checkVisibility()).toBe(true)
+	expect(query(currentLayer(), '.amk-dark img').checkVisibility()).toBe(false)
 	expect(start.width).toBeCloseTo(240, 0)
 	await close()
 	expect(themed.querySelectorAll('img')).toHaveLength(2)

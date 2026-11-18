@@ -155,13 +155,23 @@ it.each([false, true])(
 	},
 )
 
-it.each([false, true])(
-	'loads the native candidate when a touch click zooms a warmed image (picture=%s)',
-	async (picture) => {
+it.each([
+	[false, false],
+	[true, false],
+	[false, true],
+	[true, true],
+])(
+	'loads the native candidate when a touch click zooms a warmed image (picture=%s, viewer copy=%s)',
+	async (picture, copy) => {
 		const { box, original } = await responsiveFixture(picture)
+		if (copy) {
+			query(box, ':scope > :first-child').dataset.zoomPhoto = ''
+		}
+
 		box.focus()
 		await openLightbox(box)
-		await expect.poll(() => original.currentSrc).toContain('-960.jpg')
+		const viewed = query(currentLayer(), 'img[srcset]', HTMLImageElement)
+		await expect.poll(() => viewed.currentSrc).toContain('-960.jpg')
 		const layer = currentLayer()
 		const bounds = layer.getBoundingClientRect()
 		layer.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'touch' }))
@@ -176,7 +186,9 @@ it.each([false, true])(
 		)
 		await liftDone()
 		expect(layer.getBoundingClientRect().width).toBeCloseTo(2400, 0)
-		await expect.poll(() => original.currentSrc).toContain('-2400.jpg')
+		await expect.poll(() => viewed.currentSrc).toContain('-2400.jpg')
+		expect(original.currentSrc).toContain(copy ? '-480.jpg' : '-2400.jpg')
+
 		await closeLightbox()
 		expect(original.sizes).toBe('auto, 160px')
 	},
@@ -388,3 +400,39 @@ it('retains the fitted candidate during a later native zoom upgrade', async () =
 		await page.viewport(1280, 800)
 	}
 })
+
+it.each([false, true])(
+	'keeps a cropped page photo in place through a slow upgrade, close, and reopen (picture=%s)',
+	async (picture) => {
+		const { box, original } = await fixture({ automatic: true, picture })
+		query(box, ':scope > :first-child').dataset.zoomPhoto = ''
+		Object.assign(original.style, { height: '90px', objectFit: 'cover', objectPosition: '25% 75%' })
+		const markup = box.firstElementChild!.outerHTML
+		const { height, width, x, y } = original.getBoundingClientRect()
+		const thumbnail = original.currentSrc
+		const assertHome = () => {
+			expect(box.contains(original)).toBe(true)
+			expect(box.firstElementChild!.outerHTML).toBe(markup)
+			expect(original.getBoundingClientRect()).toMatchObject({ height, width, x, y })
+			expect(original.currentSrc).toBe(thumbnail)
+			expect(box.querySelector('[data-amk-preview]')).toBeNull()
+		}
+
+		await openLightbox(box)
+		expectVisibleBitmap()
+		query(viewer(), '.amk-lightbox-zoom').click()
+		await frames()
+		expectVisibleBitmap()
+		assertHome()
+		await closeLightbox(true)
+		assertHome()
+		await openLightbox(box)
+		const copy = query(currentLayer(), 'img[data-zoom-image-pending]', HTMLImageElement)
+		expectVisibleBitmap()
+		await expect.poll(() => copy.currentSrc).toContain('-1600.webp')
+		await expect.poll(() => viewer().querySelector('.amk-lightbox-image-preview')).toBeNull()
+		assertHome()
+		await closeLightbox()
+		assertHome()
+	},
+)

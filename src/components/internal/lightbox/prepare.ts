@@ -79,7 +79,7 @@ export function prepareImage(subject: Element, width: number) {
  * Restore attributes still owned by this preparation, without undoing author
  * edits.
  */
-export function releasePreparation(subject: Element) {
+export function releasePreparation(subject: Element, restore = true) {
 	const preparation = preparations.get(subject)
 	if (preparation === undefined) {
 		return
@@ -87,7 +87,9 @@ export function releasePreparation(subject: Element) {
 
 	preparation.controller.abort()
 	preparations.delete(subject)
-	restoreAttributes(preparation.attributes)
+	if (restore) {
+		restoreAttributes(preparation.attributes)
+	}
 }
 
 /**

@@ -318,6 +318,7 @@ const captionProps = await toCaptionProps(
 	<Zoomer {...zoomerProps} {...zoomTarget(image)} indicator={zoomIndicator} slot="media-component">
 		<img
 			alt={alt}
+			data-zoom-photo={['', false, undefined].includes(zoom) ? undefined : ''}
 			src={image.src}
 			{...imgAttributes}
 			class:list={[className, imgClassName, 'amk']}

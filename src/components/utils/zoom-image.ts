@@ -5,7 +5,7 @@ import type { GetImageResult } from 'astro'
  * back to, which is the largest candidate, and the width at which the image
  * shows one of its pixels per CSS pixel, which is the largest width descriptor
  * the browser can select. Neither flattens picture formats or themes; the
- * viewer lifts the real responsive element. Density candidates have no single
+ * viewer uses its own responsive image. Density candidates have no single
  * native width, so the viewer measures those once they load.
  */
 export function zoomTarget(image: GetImageResult): { href: string; nativeWidth?: number } {

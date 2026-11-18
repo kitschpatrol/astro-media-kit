@@ -11,18 +11,12 @@ export type LayerStyle = {
 	translate: string
 }
 
-/** Everything read from the page before a subject is lifted. */
-export type Measurement = {
+/** Geometry shared by every kind of slide content. */
+type SlideGeometry = {
 	fit: Fit
 	/** The item's border box in the viewport. */
 	home: Box
 	item: HTMLElement
-	/**
-	 * The margin the item needs at each edge to stay where it is without its
-	 * subject, in pixels: its own, collapsed with those the subject puts past it.
-	 * Undefined at an edge the subject puts no margin past.
-	 */
-	margins: { bottom: number | undefined; top: number | undefined }
 	/** The visible content box relative to the item's border box. */
 	offset: Box
 	position: Point | undefined
@@ -31,20 +25,19 @@ export type Measurement = {
 	subject: Element
 	/** The visible content box in the viewport. */
 	target: Box
-	/** The item's own layout size, which holds its place in the page. */
-	wrapper: { width: string; height: string }
 }
 
-/** A subject that has been lifted into a slide, and how to put it back. */
-export type Lift = Measurement & {
-	/** The start of the opening transition, reused to reverse it exactly. */
-	from?: LayerStyle
+export type Margins = { bottom: number | undefined; top: number | undefined }
+export type WrapperSize = { width: string; height: string }
+
+/** Only a subject that leaves the page needs its wrapper held in place. */
+export type Measurement = SlideGeometry &
+	({ kind: 'copy' | 'link' } | { kind: 'move'; margins: Margins; wrapper: WrapperSize })
+
+/** Page state to restore after moving a live subject. */
+type MovedContent = {
 	hadStyle: boolean
-	/**
-	 * Whether the subject is a copy made for the viewer, of an original that
-	 * stays in the page.
-	 */
-	isCopy: boolean
+	kind: 'move'
 	nextSibling: ChildNode | undefined
 	/** A decorative placeholder left in the page, if enabled. */
 	placeholder: HTMLElement | undefined
@@ -56,10 +49,14 @@ export type Lift = Measurement & {
 	 */
 	probe: HTMLElement | undefined
 	/** Give the item its own margins back when the subject returns. */
-	releaseMargins: (() => void) | undefined
-	/** Restore selector-based picture variants when the subject returns. */
-	releasePictureThemes: () => void
+	releaseMargins: () => void
 }
+
+/** The mounted content and the state needed to release it. */
+export type Lift = SlideGeometry & {
+	from?: LayerStyle
+	releasePictureThemes: () => void
+} & (MovedContent | { kind: 'copy'; original: Element } | { kind: 'link' })
 
 export type Slide = {
 	/** A copy of the item's figcaption, if it has one. */

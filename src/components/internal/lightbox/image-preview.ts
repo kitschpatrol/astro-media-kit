@@ -29,7 +29,7 @@ const presentation = [
 ]
 
 /** Keep loaded pixels available while moving or enlarging a responsive image. */
-export function retainImage(subject: Element, layer: HTMLElement) {
+export function retainImage(subject: Element, layer: HTMLElement, thumbnail?: Element) {
 	const previous = retained.get(subject)
 	if (previous !== undefined) {
 		previous.lift(layer)
@@ -245,7 +245,13 @@ export function retainImage(subject: Element, layer: HTMLElement) {
 			refresh()
 		},
 	})
-	refresh()
+	// A freshly mounted copy can still be waiting on its very first request.
+	// Seed its handoff with the pixels already visible on the page.
+	if (thumbnail instanceof HTMLImageElement) {
+		hasPixels = capture(thumbnail)
+	}
+
+	refresh(!hasPixels)
 }
 
 /** Cover another sizing change with the last successfully displayed candidate. */

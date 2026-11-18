@@ -61,9 +61,9 @@ export function prepareLightbox(item: HTMLElement) {
 }
 
 /**
- * Open an item and its gallery, lifting its original subject. Resolves to
- * `true` after the opening transition, or to `false` straight away when the
- * item has no subject or the viewer is already showing.
+ * Open an item and its gallery in the viewer. Resolves to `true` after the
+ * opening transition, or to `false` straight away when the item has no subject
+ * or the viewer is already showing.
  *
  * @throws {SyntaxError} When the item's `data-scope` isn't a valid selector.
  */

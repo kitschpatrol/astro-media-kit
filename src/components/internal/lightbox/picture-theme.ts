@@ -1,7 +1,11 @@
 const pairSelector = '.amk-picture[data-dark-mode]'
 
 /** Keep selector-based pictures following their page theme while lifted. */
-export function retainPictureThemes(subject: Element, item: HTMLElement): () => void {
+export function retainPictureThemes(
+	subject: Element,
+	item: HTMLElement,
+	onChange?: () => void,
+): () => void {
 	const pairs = [...subject.querySelectorAll<HTMLElement>(pairSelector)]
 	if (subject instanceof HTMLElement && subject.matches(pairSelector)) {
 		pairs.unshift(subject)
@@ -45,7 +49,10 @@ export function retainPictureThemes(subject: Element, item: HTMLElement): () => 
 		}
 	}
 
-	const observer = new MutationObserver(update)
+	const observer = new MutationObserver(() => {
+		update()
+		onChange?.()
+	})
 	for (const { contexts } of themes) {
 		for (const context of contexts) {
 			observer.observe(context, { attributes: true })

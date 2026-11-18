@@ -48,7 +48,10 @@ export type PrefixedProps = {
 	 * @default 'fit'
 	 */
 	zoomLevel?: Props['level']
-	/** Preview left on the page while the original is lifted. */
+	/**
+	 * Whether to show the page thumbnail or preview while the item is in the
+	 * viewer.
+	 */
 	zoomPlaceholder?: Props['placeholder']
 	/**
 	 * CSS selector defining a gallery scope boundary. When set, galleries cannot

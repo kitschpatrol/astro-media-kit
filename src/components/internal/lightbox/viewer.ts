@@ -21,7 +21,7 @@ import {
 import { lengthOf } from './geometry'
 import { SubjectGesture } from './gesture'
 import { refreshImagePreview } from './image-preview'
-import { dropSlides, followLayout, liftSlide, measure } from './lift'
+import { dropSlides, followLayout, liftSlide, measure, thumbnailGeometry } from './lift'
 import { readyToShow } from './link'
 import { canPinch, hasZoomLevel, zoomWidth } from './media'
 import { CarouselMotion, trackWidth } from './motion'
@@ -966,6 +966,11 @@ class Viewer {
 	 * path in sync instead of restarting at full duration.
 	 */
 	#homeStyle(slide: Slide, lift: Lift, isOpening: boolean): LayerStyle {
+		if (lift.kind === 'copy') {
+			const geometry = thumbnailGeometry(rendered(lift.original))
+			return layerStyle(slide.frame.getBoundingClientRect(), geometry.target, geometry)
+		}
+
 		// The space held in the page may have followed a resize since
 		const home = lift.item.getBoundingClientRect()
 		if (isLinkItem(lift.item)) {
@@ -1037,8 +1042,9 @@ class Viewer {
 	 * viewer, so its sound is tracked from here.
 	 */
 	#lift(slide: Slide, measurement: Measurement) {
+		slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
+		this.#placeCaption(slide, measurement.ratio)
 		liftSlide(slide, measurement)
-		this.#placeCaption(slide)
 		prepareSlideImage(slide)
 		if (isLinkItem(measurement.item)) {
 			beginVolumes([measurement.subject], undefined)
@@ -1122,8 +1128,8 @@ class Viewer {
 	 * Put a slide's caption beside its subject when the free space there can hold
 	 * it, which costs the subject nothing, or below it otherwise.
 	 */
-	#placeCaption(slide: Slide) {
-		if (slide.caption === undefined || slide.lift === undefined) {
+	#placeCaption(slide: Slide, ratio = slide.lift?.ratio) {
+		if (ratio === undefined || slide.caption === undefined) {
 			return
 		}
 
@@ -1132,7 +1138,7 @@ class Viewer {
 			slide.element.clientWidth - lengthOf(style.paddingLeft) - lengthOf(style.paddingRight)
 		const height =
 			slide.element.clientHeight - lengthOf(style.paddingTop) - lengthOf(style.paddingBottom)
-		const fitted = Math.min(width, height * slide.lift.ratio)
+		const fitted = Math.min(width, height * ratio)
 		const captionWidth = lengthOf(style.getPropertyValue('--amk-lightbox-caption-width'))
 		slide.element.dataset.caption = width - fitted >= captionWidth ? 'aside' : 'below'
 

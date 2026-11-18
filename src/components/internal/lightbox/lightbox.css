@@ -87,10 +87,15 @@
 	   A wrapper that gets its width from its container keeps the subject's
 	   aspect ratio, so the space follows a resize; one sized by its content
 	   keeps its measured size */
-	.amk-zoom[data-lifted],
+	.amk-zoom[data-lifted]:not([data-lifted='copy']),
 	.amk-zoom[data-image-returning],
 	.amk-zoom[data-returning] {
 		position: relative;
+	}
+
+	/* A viewer-owned photo leaves its thumbnail in normal page layout. */
+	.amk-zoom[data-lifted='copy'][data-placeholder='none'] > [data-zoom-photo] {
+		opacity: 0 !important;
 	}
 
 	.amk-zoom[data-lifted='ratio'] {
