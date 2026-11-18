@@ -156,6 +156,68 @@ describe('lifting', () => {
 		expect(after.getBoundingClientRect().top).toBeCloseTo(afterBefore.top, 1)
 	})
 
+	it.each([
+		['', ''],
+		[' while a transform draws it larger', '; transform: scale(1.05)'],
+	])('keeps the margins a subject puts past its item%s', async (_, transform) => {
+		// As a content rule gives the image in a picture: with no edge of the
+		// picture's or the item's in their way, they collapse through both
+		const fixture = mount(
+			`<p class="before" style="margin: 0 0 8px">before</p>
+			${item(
+				`<picture><source srcset="/media/tile-480.jpg" /><img src="/media/tile-480.jpg" alt=""
+					width="240" height="240" style="display: block; margin: 16px 0 24px${transform}" /></picture>`,
+			)}
+			<p class="after" style="margin: 12px 0 0">after</p>`,
+		)
+		const [box] = boxes(fixture)
+		const after = query(fixture, '.after')
+		await query(fixture, 'img', HTMLImageElement).decode()
+		const tops = () => [box!, after].map((element) => element.getBoundingClientRect().top)
+		const [boxTop, afterTop] = tops()
+		const beforeBottom = query(fixture, '.before').getBoundingClientRect().bottom
+		expect(boxTop! - beforeBottom).toBeCloseTo(16, 1)
+		expect(afterTop! - box!.getBoundingClientRect().bottom).toBeCloseTo(24, 1)
+
+		await openLightbox(box!)
+		expect(isLifted(box!)).toBe(true)
+		expect(tops()[0]).toBeCloseTo(boxTop!, 1)
+		expect(tops()[1]).toBeCloseTo(afterTop!, 1)
+
+		await closeLightbox()
+		expect(tops()[0]).toBeCloseTo(boxTop!, 1)
+		expect(tops()[1]).toBeCloseTo(afterTop!, 1)
+		expect(box!.hasAttribute('style')).toBe(false)
+	})
+
+	it('leaves alone a margin that an item with a height of its own contains', async () => {
+		const fixture = mount(
+			`<div style="height: 8px"></div>
+			${item(
+				`<img src="/media/tile-480.jpg" alt="" width="240" height="240"
+					style="display: block; width: 100%; height: 100%; margin: 16px 0 24px; object-fit: cover" />`,
+				'style="width: 240px; height: 160px; margin: 4px 0"',
+			)}
+			<p class="after" style="margin: 0">after</p>`,
+		)
+		const [box] = boxes(fixture)
+		const after = query(fixture, '.after')
+		await query(fixture, 'img', HTMLImageElement).decode()
+		const tops = () => [box!, after].map((element) => element.getBoundingClientRect().top)
+		const [boxTop, afterTop] = tops()
+		// The margin above passes the item, and the one below overflows it
+		expect(afterTop! - box!.getBoundingClientRect().bottom).toBeCloseTo(4, 1)
+
+		await openLightbox(box!)
+		expect(tops()[0]).toBeCloseTo(boxTop!, 1)
+		expect(tops()[1]).toBeCloseTo(afterTop!, 1)
+
+		await closeLightbox()
+		expect(tops()[0]).toBeCloseTo(boxTop!, 1)
+		expect(tops()[1]).toBeCloseTo(afterTop!, 1)
+		expect(box!.style.marginTop).toBe('4px')
+	})
+
 	it('starts the transition exactly on top of the subject in the page', async () => {
 		const fixture = mount(item(block('a', 'aspect-ratio: 3 / 2'), 'style="width: 300px"'))
 		const [box] = boxes(fixture)

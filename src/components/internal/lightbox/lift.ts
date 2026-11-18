@@ -64,6 +64,7 @@ export function dropSlides(slides: Slide[]) {
 		lift.probe?.remove()
 		uncover(item, lift.subject, lift.placeholder)
 
+		lift.releaseMargins?.()
 		item.style.removeProperty('--amk-lightbox-placeholder-width')
 		item.style.removeProperty('--amk-lightbox-placeholder-height')
 		item.style.removeProperty('--amk-lightbox-placeholder-ratio')
@@ -127,13 +128,20 @@ export function liftSlide(slide: Slide, measurement: Measurement) {
 		placeholder: placeholder?.element,
 		placeholderBox: placeholder?.box,
 		probe: undefined,
+		releaseMargins: undefined,
 		releasePictureThemes: retainPictureThemes(subject, item),
 		subject,
 	}
 	// On the slide, where both the frame and a stage beside a caption read it
 	slide.element.style.setProperty('--amk-lightbox-ratio', String(measurement.ratio))
-	const hold = isAway ? holdOf(item, subject, measurement.wrapper) : ''
+	const { hasOwnHeight, hold } = isAway
+		? holdOf(item, subject, measurement.wrapper)
+		: { hasOwnHeight: true, hold: '' as const }
 	item.dataset.lifted = hold
+	if (isAway) {
+		slide.lift.releaseMargins = holdMargins(item, measurement.margins, hasOwnHeight)
+	}
+
 	// A popup still on its way out can't be carried by a move in this task
 	if (closePopups(subject)) {
 		refreshPopups(subject)
@@ -332,43 +340,184 @@ function createProbe(lift: Lift): HTMLElement | undefined {
 type Hold = '' | 'ratio' | 'size'
 
 /**
- * Measure the wrapper without its subject to decide how to hold its space. One
- * that keeps its width gets it from its container, so the subject's aspect
- * ratio holds the height and the space follows a resize. One that collapses is
- * sized by its content, so its measured size holds. One that keeps both needs
- * no hold. The subject is taken out of flow for the measurement rather than out
- * of the wrapper: it stays put, and the wrapper's layout is current, which it
- * isn't in Chromium right after a state-preserving move out of it.
+ * Measure the wrapper without its subject to decide how to hold its space, and
+ * whether its height is its own, not its content's. One that keeps its width
+ * gets it from its container, so the subject's aspect ratio holds the height
+ * and the space follows a resize. One that collapses is sized by its content,
+ * so its measured size holds. One that keeps both needs no hold. The subject is
+ * taken out of flow for the measurement rather than out of the wrapper: it
+ * stays put, and the wrapper's layout is current, which it isn't in Chromium
+ * right after a state-preserving move out of it.
  */
-function holdOf(item: HTMLElement, subject: Element, wrapper: Measurement['wrapper']): Hold {
+function holdOf(
+	item: HTMLElement,
+	subject: Element,
+	wrapper: Measurement['wrapper'],
+): { hasOwnHeight: boolean; hold: Hold } {
 	const width = lengthOf(wrapper.width)
 	const height = lengthOf(wrapper.height)
 	if (!Number.isFinite(width) || !Number.isFinite(height)) {
-		return 'size'
+		return { hasOwnHeight: false, hold: 'size' }
 	}
 
 	const style =
 		subject instanceof HTMLElement || subject instanceof SVGElement ? subject.style : undefined
-	const position = style?.getPropertyValue('position')
-	const priority = style?.getPropertyPriority('position')
 	const { emptyWidth, emptyHeight } = withScrollKept(item, () => {
-		style?.setProperty('position', 'absolute', 'important')
+		const restore = style === undefined ? undefined : override(style, 'position', 'absolute')
 		const empty = getComputedStyle(item)
 		const measured = { emptyWidth: lengthOf(empty.width), emptyHeight: lengthOf(empty.height) }
-		if (position === undefined || position === '') {
-			style?.removeProperty('position')
-		} else {
-			style?.setProperty('position', position, priority)
-		}
-
+		restore?.()
 		return measured
 	})
 
+	const hasOwnHeight = Math.abs(emptyHeight - height) < 0.5
 	if (!(Math.abs(emptyWidth - width) < 0.5)) {
-		return 'size'
+		return { hasOwnHeight, hold: 'size' }
 	}
 
-	return Math.abs(emptyHeight - height) < 0.5 ? '' : 'ratio'
+	return { hasOwnHeight, hold: hasOwnHeight ? '' : 'ratio' }
+}
+
+/**
+ * Set an inline style that overrides any other, and return how to put back what
+ * was there.
+ */
+function override(style: CSSStyleDeclaration, property: string, value: string): () => void {
+	const previous = style.getPropertyValue(property)
+	const priority = style.getPropertyPriority(property)
+	style.setProperty(property, value, 'important')
+	return () => {
+		if (previous === '') {
+			style.removeProperty(property)
+		} else {
+			style.setProperty(property, previous, priority)
+		}
+	}
+}
+
+/**
+ * Keep an item where its subject's margins had it. A block's margins collapse
+ * with those of the content at its edges, which then lie outside it: they would
+ * leave with the subject, and the item and all that follows it would move up
+ * the page. So the item takes them as its own, and what is returned puts its
+ * own back. A margin below only passes an item that gets its height from its
+ * content.
+ */
+function holdMargins(
+	item: HTMLElement,
+	margins: Measurement['margins'],
+	hasOwnHeight: boolean,
+): () => void {
+	const releases: Array<() => void> = []
+	if (margins.top !== undefined) {
+		releases.push(override(item.style, 'margin-top', `${margins.top}px`))
+	}
+
+	if (!hasOwnHeight && margins.bottom !== undefined) {
+		releases.push(override(item.style, 'margin-bottom', `${margins.bottom}px`))
+	}
+
+	return () => {
+		for (const release of releases) {
+			release()
+		}
+	}
+}
+
+/**
+ * The margin an item needs at one edge to stay where it is without its subject:
+ * its own, collapsed with those the subject and its content put past that edge.
+ * Undefined when they put none past it, as with an item that isn't a block, or
+ * has padding or a border there.
+ */
+function passingMargin(
+	item: HTMLElement,
+	style: CSSStyleDeclaration,
+	subject: Element,
+	edge: Edge,
+): number | undefined {
+	const [own, padding, border] =
+		edge === 'top'
+			? [style.marginTop, style.paddingTop, style.borderTopWidth]
+			: [style.marginBottom, style.paddingBottom, style.borderBottomWidth]
+	if (style.display !== 'block' || lengthOf(padding) !== 0 || lengthOf(border) !== 0) {
+		return undefined
+	}
+
+	const margins: number[] = []
+	collectMargins(subject, edge, layoutEdge(item, edge), margins)
+	if (margins.every((margin) => margin === 0)) {
+		return undefined
+	}
+
+	// Adjoining margins collapse to the largest, less the most negative
+	const adjoining = [lengthOf(own), ...margins]
+	const collapsed = Math.max(0, ...adjoining) + Math.min(0, ...adjoining)
+	return Number.isFinite(collapsed) ? collapsed : undefined
+}
+
+type Edge = 'bottom' | 'top'
+
+/**
+ * Collect the margins that `element` and its content have at the edge of their
+ * item that lies at `line`. A margin lies outside the item when its box sits
+ * right at the item's edge: inside, it would hold the box off. Only the first
+ * boxes in flow from that edge can, so the search ends at one with a height,
+ * which is what true reports.
+ */
+function collectMargins(element: Element, edge: Edge, line: number, margins: number[]): boolean {
+	const style = getComputedStyle(element)
+	if (
+		style.display === 'none' ||
+		style.position === 'absolute' ||
+		style.position === 'fixed' ||
+		style.float !== 'none'
+	) {
+		return false
+	}
+
+	if (!(element instanceof HTMLElement)) {
+		return true
+	}
+
+	// An inline box around a block has its content's height in some browsers
+	// only, and one without a box has none: either is looked through
+	const isBox = style.display !== 'contents' && element.offsetHeight > 0
+	if (isBox) {
+		if (layoutEdge(element, edge) !== line) {
+			return true
+		}
+
+		if (style.display !== 'inline') {
+			margins.push(lengthOf(edge === 'top' ? style.marginTop : style.marginBottom))
+		}
+	}
+
+	const children = edge === 'top' ? [...element.children] : [...element.children].toReversed()
+	for (const child of children) {
+		if (collectMargins(child, edge, line, margins)) {
+			return true
+		}
+	}
+
+	return isBox
+}
+
+/**
+ * How far down the page an element's border box starts or ends, as laid out: a
+ * transform, such as a hover zoom, draws it elsewhere without moving it.
+ */
+function layoutEdge(element: HTMLElement, edge: Edge): number {
+	let top = element.offsetTop
+	for (
+		let parent = element.offsetParent;
+		parent instanceof HTMLElement;
+		parent = parent.offsetParent
+	) {
+		top += parent.offsetTop + parent.clientTop
+	}
+
+	return edge === 'top' ? top : top + element.offsetHeight
 }
 
 /**
@@ -443,13 +592,18 @@ export function measure(item: HTMLElement): Measurement | undefined {
 	const rect = visible.getBoundingClientRect()
 	const style = getComputedStyle(visible)
 	// Layout sizes, unaffected by transforms such as a hover zoom
-	const { width, height } = getComputedStyle(item)
+	const itemStyle = getComputedStyle(item)
+	const { width, height } = itemStyle
 	const target = { height: rect.height, width: rect.width, x: rect.x, y: rect.y }
 
 	return {
 		fit: fitOf(visible, style.objectFit),
 		home: { height: home.height, width: home.width, x: home.x, y: home.y },
 		item,
+		margins: {
+			bottom: passingMargin(item, itemStyle, subject, 'bottom'),
+			top: passingMargin(item, itemStyle, subject, 'top'),
+		},
 		offset: { ...target, x: rect.x - home.x, y: rect.y - home.y },
 		position: positionOf(style.objectPosition),
 		radius: radiusOf(style.borderTopLeftRadius, target),
@@ -471,6 +625,7 @@ function measureLink(item: HTMLElement, subject: Element): Measurement {
 		fit: 'contain',
 		home: box,
 		item,
+		margins: { bottom: undefined, top: undefined },
 		offset: { ...box, x: 0, y: 0 },
 		position: { x: 0.5, y: 0.5 },
 		radius: 0,

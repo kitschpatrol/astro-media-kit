@@ -17,6 +17,12 @@ export type Measurement = {
 	/** The item's border box in the viewport. */
 	home: Box
 	item: HTMLElement
+	/**
+	 * The margin the item needs at each edge to stay where it is without its
+	 * subject, in pixels: its own, collapsed with those the subject puts past it.
+	 * Undefined at an edge the subject puts no margin past.
+	 */
+	margins: { bottom: number | undefined; top: number | undefined }
 	/** The visible content box relative to the item's border box. */
 	offset: Box
 	position: Point | undefined
@@ -49,6 +55,8 @@ export type Lift = Measurement & {
 	 * laid out anew, which sizes the item as the subject would.
 	 */
 	probe: HTMLElement | undefined
+	/** Give the item its own margins back when the subject returns. */
+	releaseMargins: (() => void) | undefined
 	/** Restore selector-based picture variants when the subject returns. */
 	releasePictureThemes: () => void
 }
