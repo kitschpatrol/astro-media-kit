@@ -8,8 +8,6 @@
 /** The widths a subject settles between: its fitted layout, and its largest. */
 export type ZoomLimits = { fit: number; maximum: number }
 
-/** How many times its fitted width a subject can be pinched to, by default. */
-const largestZoom = 8
 /** How much of a pinch past the largest size the subject follows. */
 const upperFriction = 0.05
 /** How far past its largest size a subject stretches at most, as a share of it. */
@@ -29,7 +27,7 @@ const settleFrequency = 0.04
  * The largest width a subject fitted at `fit` can be held at: `zoom` times it,
  * or a preset zoom's width when that is larger still.
  */
-export function maximumWidth(fit: number, preset = 0, zoom = largestZoom): number {
+export function maximumWidth(fit: number, zoom: number, preset = 0): number {
 	return Math.max(fit * zoom, preset)
 }
 

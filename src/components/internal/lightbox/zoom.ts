@@ -134,7 +134,8 @@ export class Zoom {
 					? box.width
 					: requestedWidth(box.width, {
 							fit,
-							maximum: isTracked ? this.#maximumWidth : maximumWidth(fit),
+							// Not yet enlarged, so nowhere near any limit
+							maximum: isTracked ? this.#maximumWidth : Infinity,
 						}),
 		}
 	}
@@ -600,7 +601,12 @@ export class Zoom {
 		// The viewer's own settings, read as a zoom begins
 		const style = getComputedStyle(slide.stage)
 		const zoom = Number(style.getPropertyValue('--amk-lightbox-max-zoom'))
-		this.#maximumWidth = maximumWidth(this.#fitted.width, width, zoom >= 1 ? zoom : undefined)
+		// The property is registered, so it is always a number: no smaller than 1
+		this.#maximumWidth = maximumWidth(
+			this.#fitted.width,
+			Number.isFinite(zoom) ? Math.max(1, zoom) : 1,
+			width,
+		)
 		this.#closesOnPinch = style.getPropertyValue('--amk-lightbox-pinch-to-close').trim() !== '0'
 		this.#pan = new Pan(slide)
 		slide.stage.focus({ preventScroll: true })

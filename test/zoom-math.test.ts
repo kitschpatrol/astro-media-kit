@@ -9,16 +9,16 @@ import {
 	shrink,
 } from '../src/components/internal/lightbox/zoom-math'
 
-const limits = { fit: 720, maximum: maximumWidth(720) }
+const limits = { fit: 720, maximum: maximumWidth(720, 8) }
 
 describe('zoom limits', () => {
 	it('lets a subject grow to a multiple of its fitted width, or a larger preset', () => {
-		expect(maximumWidth(720)).toBe(5760)
-		expect(maximumWidth(720, 2400)).toBe(5760)
-		expect(maximumWidth(100, 2400)).toBe(2400)
-		expect(maximumWidth(720, 0, 3)).toBe(2160)
-		expect(maximumWidth(720, 2400, 3)).toBe(2400)
-		expect(maximumWidth(720, 0, 1)).toBe(720)
+		expect(maximumWidth(720, 8)).toBe(5760)
+		expect(maximumWidth(720, 8, 2400)).toBe(5760)
+		expect(maximumWidth(100, 8, 2400)).toBe(2400)
+		expect(maximumWidth(720, 3)).toBe(2160)
+		expect(maximumWidth(720, 3, 2400)).toBe(2400)
+		expect(maximumWidth(720, 1)).toBe(720)
 	})
 
 	it('settles a size let go past a limit on that limit, and leaves one between them', () => {

@@ -30,7 +30,7 @@ export class Pan {
 	#bounds: Bounds = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
 	#frame: number | undefined
 	#media: Point = { x: 0, y: 0 }
-	#padding = 32
+	#padding = 0
 	readonly #slide: Slide
 	#stage: Point = { x: 0, y: 0 }
 
@@ -55,10 +55,9 @@ export class Pan {
 	measure() {
 		const { stage } = this.#slide
 		const box = stage.getBoundingClientRect()
-		const configured = lengthOf(
-			getComputedStyle(stage).getPropertyValue('--amk-lightbox-pan-padding'),
-		)
-		this.#padding = Number.isFinite(configured) ? Math.max(0, configured) : 32
+		// The property is registered, so it always computes to a length
+		const padding = lengthOf(getComputedStyle(stage).getPropertyValue('--amk-lightbox-pan-padding'))
+		this.#padding = Number.isFinite(padding) ? Math.max(0, padding) : 0
 		this.#stage = { x: box.x, y: box.y }
 		this.#viewport = { x: box.width, y: box.height }
 	}
