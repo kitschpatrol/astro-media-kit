@@ -37,6 +37,12 @@ const mouseMove = defineBrowserCommand<[x: number, y: number]>(async (context, x
 	await context.page.mouse.move(point.x, point.y, { steps: 8 })
 })
 
+/** Jump the mouse to the test page's corner, where it rests between tests. */
+const mouseHome = defineBrowserCommand(async (context) => {
+	const point = await toWindow(await context.frame(), 5, 5)
+	await context.page.mouse.move(point.x, point.y)
+})
+
 /** Release the mouse where it is. */
 const mouseUp = defineBrowserCommand(async (context) => {
 	await context.page.mouse.up()
@@ -417,6 +423,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
 								mobileGallery,
 								mouseDown,
 								mouseFlick,
+								mouseHome,
 								mouseMove,
 								mouseUp,
 								mouseWheel,

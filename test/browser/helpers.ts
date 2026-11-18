@@ -18,6 +18,7 @@ declare module 'vitest/browser' {
 		) => Promise<false | MobileSnapshot[]>
 		mouseDown: (x: number, y: number) => Promise<void>
 		mouseFlick: (x: number, y: number) => Promise<void>
+		mouseHome: () => Promise<void>
 		mouseMove: (x: number, y: number) => Promise<void>
 		mouseUp: () => Promise<void>
 		mouseWheel: (deltaX: number, deltaY: number) => Promise<void>
@@ -475,7 +476,7 @@ export async function cleanUp(): Promise<void> {
 	}
 
 	// The next hover must enter its target even if a new fixture has the same layout.
-	await commands.mouseMove(5, 5)
+	await commands.mouseHome()
 }
 
 /** Wait for fixture media metadata, recovering one stalled WebKit load. */
