@@ -114,6 +114,14 @@
 		visibility: hidden !important;
 	}
 
+	/* An empty in-flow box carries the negative part of a mixed margin while
+	   the adjacent lifted item carries the positive part. */
+	[data-amk-margin] {
+		all: initial !important;
+		display: block !important;
+		margin-top: var(--amk-lightbox-negative-margin) !important;
+	}
+
 	/* Decorative copies keep their content styling, but not layout or input. */
 	[data-amk-preview] {
 		pointer-events: none !important;

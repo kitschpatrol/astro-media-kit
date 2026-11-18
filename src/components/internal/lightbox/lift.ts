@@ -452,12 +452,31 @@ function override(style: CSSStyleDeclaration, property: string, value: string): 
  */
 function holdMargins(item: HTMLElement, margins: Margins, hasOwnHeight: boolean): () => void {
 	const releases: Array<() => void> = []
-	if (margins.top !== undefined) {
-		releases.push(override(item.style, 'margin-top', `${margins.top}px`))
-	}
+	for (const edge of ['top', 'bottom'] as const) {
+		const margin = margins[edge]
+		if (margin === undefined || (edge === 'bottom' && hasOwnHeight)) {
+			continue
+		}
 
-	if (!hasOwnHeight && margins.bottom !== undefined) {
-		releases.push(override(item.style, 'margin-bottom', `${margins.bottom}px`))
+		const { negative, positive } = margin
+		if (positive > 0 && negative < 0) {
+			// A later collapse with a sibling or ancestor must still see both
+			// extrema. An empty block's own margins adjoin across its box.
+			const spacer = document.createElement('span')
+			spacer.dataset.amkMargin = ''
+			spacer.style.setProperty('--amk-lightbox-negative-margin', `${negative}px`)
+			if (edge === 'top') {
+				item.before(spacer)
+			} else {
+				item.after(spacer)
+			}
+
+			releases.push(() => {
+				spacer.remove()
+			})
+		}
+
+		releases.push(override(item.style, `margin-${edge}`, `${positive > 0 ? positive : negative}px`))
 	}
 
 	return () => {
@@ -478,7 +497,7 @@ function passingMargin(
 	style: CSSStyleDeclaration,
 	subject: Element,
 	edge: Edge,
-): number | undefined {
+): Margins[Edge] {
 	const [own, padding, border] =
 		edge === 'top'
 			? [style.marginTop, style.paddingTop, style.borderTopWidth]
@@ -495,8 +514,9 @@ function passingMargin(
 
 	// Adjoining margins collapse to the largest, less the most negative
 	const adjoining = [lengthOf(own), ...margins]
-	const collapsed = Math.max(0, ...adjoining) + Math.min(0, ...adjoining)
-	return Number.isFinite(collapsed) ? collapsed : undefined
+	const positive = Math.max(0, ...adjoining)
+	const negative = Math.min(0, ...adjoining)
+	return Number.isFinite(positive) && Number.isFinite(negative) ? { negative, positive } : undefined
 }
 
 type Edge = 'bottom' | 'top'

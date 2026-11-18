@@ -27,7 +27,8 @@ type SlideGeometry = {
 	target: Box
 }
 
-export type Margins = { bottom: number | undefined; top: number | undefined }
+type AdjoiningMargins = { negative: number; positive: number }
+export type Margins = { bottom: AdjoiningMargins | undefined; top: AdjoiningMargins | undefined }
 export type WrapperSize = { width: string; height: string }
 
 /** Only a subject that leaves the page needs its wrapper held in place. */

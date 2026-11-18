@@ -190,6 +190,35 @@ describe('lifting', () => {
 		expect(box!.hasAttribute('style')).toBe(false)
 	})
 
+	it.each([
+		[10, -4, -8, 2],
+		[-4, 10, 14, 10],
+	])(
+		'preserves adjoining sibling margins with wrapper %ipx and subject %ipx',
+		async (own, child, sibling, gap) => {
+			const fixture = mount(
+				`<p style="margin: 0 0 ${sibling}px">before</p>
+			${item(block('a', `height: 160px; margin: ${child}px 0`), `style="margin: ${own}px 0"`)}
+			<p style="margin: ${sibling}px 0 0">after</p>`,
+			)
+			const [box] = boxes(fixture)
+			const [before, after] = fixture.querySelectorAll('p')
+			const gaps = () => {
+				const rect = box!.getBoundingClientRect()
+				return [
+					rect.top - before!.getBoundingClientRect().bottom,
+					after!.getBoundingClientRect().top - rect.bottom,
+				]
+			}
+
+			expect(gaps()).toEqual([gap, gap])
+			await openLightbox(box!)
+			expect(gaps()).toEqual([gap, gap])
+			await closeLightbox()
+			expect(gaps()).toEqual([gap, gap])
+		},
+	)
+
 	it('leaves alone a margin that an item with a height of its own contains', async () => {
 		const fixture = mount(
 			`<div style="height: 8px"></div>
