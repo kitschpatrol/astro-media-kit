@@ -526,6 +526,12 @@ describe('getMimeType', () => {
 		expect(getMimeType(passedThrough(endpointSrc, jpgMeta))).toBe('image/jpeg')
 	})
 
+	it('ignores non-image types inferred from a passthrough endpoint', () => {
+		const endpoint = '/asset.bin?filename=photo.png'
+		expect(getMimeType(passedThrough(endpoint, jpgMeta))).toBe('image/jpeg')
+		expect(getMimeType(passedThrough(endpoint))).toBeUndefined()
+	})
+
 	it('resolves no type when neither the address nor the image tells the format', () => {
 		expect(getMimeType(passedThrough(endpointSrc))).toBeUndefined()
 		expect(getMimeType(passedThrough('https://example.com/photo'))).toBeUndefined()

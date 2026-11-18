@@ -512,7 +512,12 @@ export function getMimeType(image: GetImageResult): string | undefined {
 	}
 
 	const [path = ''] = image.src.split(QUERY_OR_FRAGMENT_REGEX, 1)
-	return mime.lookup(path) ?? (isESMImportedImage(src) ? mime.lookup(src.format) : undefined)
+	const type = mime.lookup(path)
+	if (type?.startsWith('image/')) {
+		return type
+	}
+
+	return isESMImportedImage(src) ? mime.lookup(src.format) : undefined
 }
 
 /**
