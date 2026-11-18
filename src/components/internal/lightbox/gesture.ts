@@ -1,5 +1,5 @@
 import type { Point, Slide } from './types'
-import type { PinchEnding, PinchOutcome, Zoom } from './zoom'
+import type { HoldEnding, HoldOutcome, Zoom } from './zoom'
 import {
 	controlSelector,
 	isOnPlayerSurface,
@@ -90,10 +90,10 @@ export class SubjectGesture {
 	/**
 	 * Release gesture listeners before closing, resizing, or changing slides,
 	 * which cut a held gesture short, or as its pointers lift. Returns what
-	 * became of a pinch.
+	 * became of the hold.
 	 */
-	stop(ending: PinchEnding = 'interrupt'): PinchOutcome {
-		let outcome: PinchOutcome = 'kept'
+	stop(ending: HoldEnding = 'interrupt'): HoldOutcome {
+		let outcome: HoldOutcome = 'kept'
 		this.#zoom.stopPan(this.#isHolding)
 		if (this.#frame !== undefined) {
 			cancelAnimationFrame(this.#frame)
@@ -106,7 +106,7 @@ export class SubjectGesture {
 		clearTimeout(this.#stepTimer)
 		this.#stepTimer = undefined
 		if (isStepping || this.#isHolding) {
-			outcome = this.#zoom.finishPinch(ending)
+			outcome = this.#zoom.release(ending)
 		}
 
 		const stage = this.#slide?.stage
@@ -139,7 +139,7 @@ export class SubjectGesture {
 		// Two fingers only move a subject that doesn't pinch
 		const scale =
 			this.#canPinch && this.#basis.distance > 0 ? points.distance / this.#basis.distance : 1
-		this.#zoom.pinch(
+		this.#zoom.hold(
 			this.#slide,
 			this.#basis.width * scale,
 			this.#basis.anchor,
@@ -388,7 +388,7 @@ export class SubjectGesture {
 		}
 
 		if (this.stop('release') === 'kept') {
-			this.#zoom.fling()
+			this.#zoom.coast()
 		}
 	}
 
@@ -458,7 +458,7 @@ export class SubjectGesture {
 			if (outcome === 'close') {
 				this.#options.onClose()
 			} else if (wasHolding && outcome === 'kept') {
-				this.#zoom.fling(isReleased ? velocity : { x: 0, y: 0 })
+				this.#zoom.coast(isReleased ? velocity : { x: 0, y: 0 })
 			}
 		} else if (this.#isHolding) {
 			this.#rebase(event.timeStamp)

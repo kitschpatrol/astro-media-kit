@@ -17,16 +17,17 @@ import {
 } from './zoom-math'
 
 /**
- * How a pinch ended: its fingers lifted, the browser took them away, or
- * something else, such as closing or a resize, cut it short.
+ * How a hold on the subject ended: its contacts lifted or its wheel run came to
+ * rest, the browser took the contacts away, or something else, such as closing
+ * or a resize, cut it short.
  */
-export type PinchEnding = 'cancel' | 'interrupt' | 'release'
+export type HoldEnding = 'cancel' | 'interrupt' | 'release'
 
 /**
- * What ending a pinch led to: the viewer should close, the subject stays as it
- * is held and may coast, or it is settling back within its limits.
+ * What letting go led to: the viewer should close, the subject stays as it was
+ * held and may coast, or it is settling back within its limits.
  */
-export type PinchOutcome = 'close' | 'kept' | 'settling'
+export type HoldOutcome = 'close' | 'kept' | 'settling'
 
 type ZoomOptions = {
 	/** The zoomed slide, or whether it counts as enlarged, changed. */
@@ -56,18 +57,19 @@ export class Zoom {
 	#closesOnPinch = true
 	#fade: number | undefined
 	#fitted: Box = { height: 0, width: 0, x: 0, y: 0 }
+	#heldPoint: Point | undefined
 	/**
 	 * Whether contacts, or a run of wheel steps, have moved the subject and not
 	 * yet let go.
 	 */
 	#isHeld = false
-	#isPinched = false
+	/** Whether the subject's size is one a hand gave it, rather than a preset. */
+	#isSizedByHand = false
 	/** The width the frame is laid out at, which a held pinch scales. */
 	#layoutWidth = 0
 	#maximumWidth = 0
 	readonly #options: ZoomOptions
 	#pan: Pan | undefined
-	#pinchPoint: Point | undefined
 	#settling: undefined | { finish: () => void; frame: number }
 	#slide: Slide | undefined
 	/** The width the frame is drawn at. */
@@ -77,76 +79,8 @@ export class Zoom {
 		this.#options = options
 	}
 
-	/**
-	 * End a pinch as PhotoSwipe does. Released smaller than fit, having started
-	 * fitted, it closes the viewer from where it is held. Otherwise a size past
-	 * either limit springs back to it about the pinched point, and the layout,
-	 * with the image's resolution, catches up with the size held. Cut short by
-	 * something else, the subject is left as held for that to take over.
-	 */
-	finishPinch(ending: PinchEnding): PinchOutcome {
-		const slide = this.#slide
-		const canClose = this.#canClose
-		this.#canClose = false
-		this.#isHeld = false
-		if (slide === undefined || this.#pan === undefined) {
-			return 'kept'
-		}
-
-		if (!this.#isPinched) {
-			// A pan of a preset size leaves nothing to settle
-			this.#size(slide, this.#layoutWidth)
-			return 'kept'
-		}
-
-		const fit = this.#fitted.width
-		const width = this.#width
-		if (ending === 'release' && canClose && width < fit) {
-			// Laid out as held, where the way home starts. Closing takes over the
-			// viewer's dimming from here.
-			this.#size(slide, width)
-			this.#fade = undefined
-			return 'close'
-		}
-
-		this.#setFade(undefined)
-		if (ending === 'interrupt') {
-			this.#size(slide, width)
-			return 'kept'
-		}
-
-		const target = settledWidth(width, { fit, maximum: this.#maximumWidth })
-		const isFit = target <= fit + 1
-		if (target === width && !isFit) {
-			this.#size(slide, width)
-			prepareSlideImage(slide)
-			return 'kept'
-		}
-
-		const from = { ...this.#pan.at, width }
-		if (isFit) {
-			this.#settle(slide, from, { x: this.#fitted.x, y: this.#fitted.y, width: fit }, true)
-			return 'settling'
-		}
-
-		const stage = slide.stage.getBoundingClientRect()
-		const point = this.#pinchPoint ?? {
-			x: stage.x + stage.width / 2,
-			y: stage.y + stage.height / 2,
-		}
-		const held = { x: point.x - stage.x, y: point.y - stage.y }
-		const scale = target / width
-		this.#pan.setLimits(this.#fitted, this.#sizeOf(target))
-		const to = this.#pan.bound({
-			x: held.x - (held.x - from.x) * scale,
-			y: held.y - (held.y - from.y) * scale,
-		})
-		this.#settle(slide, from, { width: target, ...to }, false)
-		return 'settling'
-	}
-
 	/** Continue a released touch pan, or settle an overshoot without momentum. */
-	fling(velocity?: Point) {
+	coast(velocity?: Point) {
 		this.#pan?.release(velocity)
 	}
 
@@ -207,18 +141,6 @@ export class Zoom {
 	}
 
 	/**
-	 * Pan by a discrete wheel or keyboard step, within the shared limits: the
-	 * view moves by `point`, as a scroll would, so the subject moves against it.
-	 */
-	panBy(point: Point) {
-		this.stopPan()
-		const at = this.#pan?.at
-		if (at !== undefined) {
-			this.#pan?.move({ x: at.x - point.x, y: at.y - point.y })
-		}
-	}
-
-	/**
 	 * Resize about the point under the fingers, independently of the preset, as
 	 * PhotoSwipe does. Two fingers place the subject freely, and a single one
 	 * resists past the pan limits. A size past either limit resists too, except
@@ -226,7 +148,7 @@ export class Zoom {
 	 * dimming the viewer, to close on release. A step of a wheel or a trackpad
 	 * clamps instead: it stops at the limits, in size and in place.
 	 */
-	pinch(slide: Slide, width: number, anchor: Point, point: Point, resistance: Resistance) {
+	hold(slide: Slide, width: number, anchor: Point, point: Point, resistance: Resistance) {
 		const isStarting = this.#slide !== slide
 		if (isStarting) {
 			this.reset()
@@ -269,8 +191,8 @@ export class Zoom {
 			width = resist(width, { fit, maximum: this.#maximumWidth })
 		}
 
-		this.#pinchPoint = { ...point }
-		this.#isPinched ||= isStarting || Math.abs(width - this.#width) > 0.5
+		this.#heldPoint = { ...point }
+		this.#isSizedByHand ||= isStarting || Math.abs(width - this.#width) > 0.5
 		this.#setFade(fade)
 		this.#enter(slide)
 		this.#size(slide, width, true)
@@ -278,6 +200,87 @@ export class Zoom {
 		if (isStarting) {
 			this.#options.onChange()
 		}
+	}
+
+	/**
+	 * Pan by a discrete wheel or keyboard step, within the shared limits: the
+	 * view moves by `point`, as a scroll would, so the subject moves against it.
+	 */
+	panBy(point: Point) {
+		this.stopPan()
+		const at = this.#pan?.at
+		if (at !== undefined) {
+			this.#pan?.move({ x: at.x - point.x, y: at.y - point.y })
+		}
+	}
+
+	/**
+	 * Let go of the subject, as PhotoSwipe ends a pinch. Released smaller than
+	 * fit by a pinch that began fitted, it closes the viewer from where it is
+	 * held. Otherwise a size past either limit springs back to it about the held
+	 * point, and the layout, with the image's resolution, catches up with the
+	 * size held. Cut short by something else, the subject is left as held for
+	 * that to take over.
+	 */
+	release(ending: HoldEnding): HoldOutcome {
+		const slide = this.#slide
+		const canClose = this.#canClose
+		this.#canClose = false
+		this.#isHeld = false
+		if (slide === undefined || this.#pan === undefined) {
+			return 'kept'
+		}
+
+		if (!this.#isSizedByHand) {
+			// A pan of a preset size leaves nothing to settle
+			this.#size(slide, this.#layoutWidth)
+			return 'kept'
+		}
+
+		const fit = this.#fitted.width
+		const width = this.#width
+		if (ending === 'release' && canClose && width < fit) {
+			// Laid out as held, where the way home starts. Closing takes over the
+			// viewer's dimming from here.
+			this.#size(slide, width)
+			this.#fade = undefined
+			return 'close'
+		}
+
+		this.#setFade(undefined)
+		if (ending === 'interrupt') {
+			this.#size(slide, width)
+			return 'kept'
+		}
+
+		const target = settledWidth(width, { fit, maximum: this.#maximumWidth })
+		const isFit = target <= fit + 1
+		if (target === width && !isFit) {
+			this.#size(slide, width)
+			prepareSlideImage(slide)
+			return 'kept'
+		}
+
+		const from = { ...this.#pan.at, width }
+		if (isFit) {
+			this.#settle(slide, from, { x: this.#fitted.x, y: this.#fitted.y, width: fit }, true)
+			return 'settling'
+		}
+
+		const stage = slide.stage.getBoundingClientRect()
+		const point = this.#heldPoint ?? {
+			x: stage.x + stage.width / 2,
+			y: stage.y + stage.height / 2,
+		}
+		const held = { x: point.x - stage.x, y: point.y - stage.y }
+		const scale = target / width
+		this.#pan.setLimits(this.#fitted, this.#sizeOf(target))
+		const to = this.#pan.bound({
+			x: held.x - (held.x - from.x) * scale,
+			y: held.y - (held.y - from.y) * scale,
+		})
+		this.#settle(slide, from, { width: target, ...to }, false)
+		return 'settling'
 	}
 
 	/** Restore fitting once a navigated-away slide is out of view. */
@@ -310,12 +313,12 @@ export class Zoom {
 		this.#measureFit(slide)
 		this.#enter(slide)
 		slide.frame.style.translate = translate
-		if (this.#isPinched && this.#layoutWidth <= this.#fitted.width) {
+		if (this.#isSizedByHand && this.#layoutWidth <= this.#fitted.width) {
 			this.reset()
 			return
 		}
 
-		if (!this.#isPinched && slide.item.dataset.level === 'fill' && slide.lift !== undefined) {
+		if (!this.#isSizedByHand && slide.item.dataset.level === 'fill' && slide.lift !== undefined) {
 			this.#size(
 				slide,
 				Math.max(slide.element.clientWidth, slide.element.clientHeight * slide.lift.ratio),
@@ -342,7 +345,7 @@ export class Zoom {
 		}
 
 		const from = slide.layer.getBoundingClientRect()
-		this.#isPinched = false
+		this.#isSizedByHand = false
 		this.#isHeld = false
 		if (slide.lift !== undefined) {
 			refreshImagePreview(slide.lift.subject)
@@ -384,7 +387,7 @@ export class Zoom {
 	}
 
 	/**
-	 * Catch momentum at its current position without resetting the zoom. A pinch
+	 * Catch momentum at its current position without resetting the zoom. A size
 	 * still settling lands at once, unless `hold` leaves it where it is, for the
 	 * fingers that caught it.
 	 */
@@ -405,7 +408,7 @@ export class Zoom {
 	 * Resize by a step of a turned wheel or a trackpad pinch, about `point` in
 	 * the viewport, within the limits. The first step of a run looks the subject
 	 * up where it is drawn; the rest work from that without reading the page.
-	 * `finishPinch` ends the run.
+	 * `release` ends the run.
 	 */
 	zoomBy(slide: Slide, factor: number, point: Point) {
 		const pan = this.#slide === slide ? this.#pan : undefined
@@ -413,7 +416,7 @@ export class Zoom {
 			this.stopPan()
 			const hold = this.grasp(slide, point, 'clamp')
 			if (hold !== undefined) {
-				this.pinch(slide, hold.width * factor, hold.anchor, point, 'clamp')
+				this.hold(slide, hold.width * factor, hold.anchor, point, 'clamp')
 			}
 
 			return
@@ -421,7 +424,7 @@ export class Zoom {
 
 		const { at, stage } = pan
 		const size = this.#sizeOf(this.#width)
-		this.pinch(
+		this.hold(
 			slide,
 			this.#width * factor,
 			{ x: (point.x - stage.x - at.x) / size.x, y: (point.y - stage.y - at.y) / size.y },
@@ -438,7 +441,7 @@ export class Zoom {
 		}
 	}
 
-	/** Leave a pinch that was settling where it is drawn. */
+	/** Leave a subject that was settling where it is drawn. */
 	#dropSettle() {
 		if (this.#settling === undefined) {
 			return
@@ -637,7 +640,7 @@ export class Zoom {
 		this.#slide?.stage.removeEventListener('wheel', this.#handleWheel)
 		this.#slide = undefined
 		this.#pan = undefined
-		this.#isPinched = false
+		this.#isSizedByHand = false
 		this.#isHeld = false
 		this.#canClose = false
 		this.#fade = undefined
@@ -645,6 +648,6 @@ export class Zoom {
 		this.#maximumWidth = 0
 		this.#layoutWidth = 0
 		this.#width = 0
-		this.#pinchPoint = undefined
+		this.#heldPoint = undefined
 	}
 }
