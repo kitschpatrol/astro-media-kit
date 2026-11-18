@@ -2,7 +2,6 @@ import type { Box } from './geometry'
 import type { Resistance } from './pan'
 import type { Point, Slide } from './types'
 import { identity, layerStyle, setLayerStyle } from './animation'
-import { controlSelector, isWithin } from './dom'
 import { refreshImagePreview } from './image-preview'
 import { Pan } from './pan'
 import { prepareSlideImage } from './prepare'
@@ -477,29 +476,6 @@ export class Zoom {
 		}
 	}
 
-	readonly #handleWheel = (event: WheelEvent) => {
-		const slide = this.#slide
-		if (
-			slide === undefined ||
-			event.ctrlKey ||
-			isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
-		) {
-			return
-		}
-
-		event.preventDefault()
-		const unit =
-			event.deltaMode === WheelEvent.DOM_DELTA_LINE
-				? 16
-				: event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-					? slide.stage.clientHeight
-					: 1
-		this.panBy({
-			x: (event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX) * unit,
-			y: (event.shiftKey && event.deltaX === 0 ? 0 : event.deltaY) * unit,
-		})
-	}
-
 	/** Return the stage, and the caption, to the slide's flow. */
 	#leave(slide: Slide) {
 		delete slide.element.dataset.zoomed
@@ -628,7 +604,6 @@ export class Zoom {
 		this.#closesOnPinch = style.getPropertyValue('--amk-lightbox-pinch-to-close').trim() !== '0'
 		this.#pan = new Pan(slide)
 		slide.stage.focus({ preventScroll: true })
-		slide.stage.addEventListener('wheel', this.#handleWheel, { passive: false })
 		if (slide.caption !== undefined) {
 			slide.caption.inert = true
 		}
@@ -637,7 +612,6 @@ export class Zoom {
 	#untrack() {
 		this.#dropSettle()
 		this.#pan?.stop()
-		this.#slide?.stage.removeEventListener('wheel', this.#handleWheel)
 		this.#slide = undefined
 		this.#pan = undefined
 		this.#isSizedByHand = false

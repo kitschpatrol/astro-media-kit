@@ -163,9 +163,7 @@ export class SubjectGesture {
 		}
 
 		const isTouch = event.pointerType === 'touch'
-		const isOnMedia =
-			event.composedPath().includes(slide.stage) &&
-			!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
+		const isOnMedia = isOverSubject(event, slide)
 		if (this.#contacts.size === 0) {
 			// A press ends a run of wheel or trackpad zoom steps where it is
 			this.#stepsDone()
@@ -398,8 +396,7 @@ export class SubjectGesture {
 		return slide !== undefined &&
 			this.#contacts.size === 0 &&
 			this.#options.canPinch(slide) &&
-			event.composedPath().includes(slide.stage) &&
-			!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
+			isOverSubject(event, slide)
 			? slide
 			: undefined
 	}
@@ -479,23 +476,53 @@ export class SubjectGesture {
 	/**
 	 * Other browsers report a trackpad pinch as a wheel turned with Ctrl held,
 	 * which is also how a mouse asks to zoom, as is Command on a Mac. A plain
-	 * wheel is left alone, to pan or to turn slides.
+	 * wheel pans an enlarged subject, and is otherwise left alone, to turn
+	 * slides.
 	 */
 	readonly #wheel = (event: WheelEvent) => {
-		if (!event.ctrlKey && !event.metaKey) {
+		if (event.ctrlKey || event.metaKey) {
+			const slide = this.#stepSlide(event)
+			if (slide === undefined) {
+				return
+			}
+
+			// Otherwise the browser zooms the page under the viewer
+			event.preventDefault()
+			event.stopPropagation()
+			const unit = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? 1 : 16
+			const step = Math.max(-largestStep, Math.min(largestStep, event.deltaY * unit))
+			this.#step(slide, Math.exp(-step / 100), { x: event.clientX, y: event.clientY })
 			return
 		}
 
-		const slide = this.#stepSlide(event)
-		if (slide === undefined) {
+		const slide = this.#options.slide()
+		if (slide === undefined || this.#zoom.current !== slide || !isOverSubject(event, slide)) {
 			return
 		}
 
-		// Otherwise the browser zooms the page under the viewer
+		// Shift turns a wheel that only goes up and down sideways
 		event.preventDefault()
-		event.stopPropagation()
-		const unit = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? 1 : 16
-		const step = Math.max(-largestStep, Math.min(largestStep, event.deltaY * unit))
-		this.#step(slide, Math.exp(-step / 100), { x: event.clientX, y: event.clientY })
+		const unit =
+			event.deltaMode === WheelEvent.DOM_DELTA_LINE
+				? 16
+				: event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+					? slide.stage.clientHeight
+					: 1
+		const isTurned = event.shiftKey && event.deltaX === 0
+		this.#zoom.panBy({
+			x: (isTurned ? event.deltaY : event.deltaX) * unit,
+			y: (isTurned ? 0 : event.deltaY) * unit,
+		})
 	}
+}
+
+/**
+ * Whether an event is on a slide's subject, or the space its stage gives it,
+ * rather than on a control or a popup of the subject's own.
+ */
+function isOverSubject(event: Event, slide: Slide): boolean {
+	return (
+		event.composedPath().includes(slide.stage) &&
+		!isWithin(event, `${controlSelector},media-controls,[data-popup]`, slide.stage)
+	)
 }
