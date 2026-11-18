@@ -1,5 +1,5 @@
 import type { Box } from './geometry'
-import type { LayerStyle, Lift, Measurement, Point, Slide } from './types'
+import type { LayerStyle, Measurement, Point, Slide } from './types'
 import { fillLabel } from '../labels'
 import { identity, layerStyle, pageStyle, setLayerStyle, settle } from './animation'
 import { viewerLabels, viewerMarkup } from './chrome'
@@ -260,13 +260,11 @@ class Viewer {
 			}
 		}
 
-		const lift = slide?.lift
-		if (slide === undefined || lift === undefined || !this.#canReturn(lift)) {
+		if (slide === undefined || !this.#sendHome(slide, isOpening)) {
 			this.restore()
 			return
 		}
 
-		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, isOpening))
 		await this.#finishClose(slide, generation)
 	}
 
@@ -472,20 +470,6 @@ class Viewer {
 
 		this.#announcedSlide = slide
 		this.#status.textContent = slide === undefined ? '' : describeSlide(slide)
-	}
-
-	/**
-	 * Whether a lifted subject has a place to animate back to: not if its item
-	 * was removed or hidden, if its position in the page isn't known, or if it
-	 * had no size there (an image that never loaded).
-	 */
-	#canReturn(lift: Lift): boolean {
-		return (
-			lift.item.checkVisibility() &&
-			lift.position !== undefined &&
-			lift.offset.width > 0 &&
-			lift.offset.height > 0
-		)
 	}
 
 	/**
@@ -949,12 +933,8 @@ class Viewer {
 			return
 		}
 
-		const { lift } = slide
-		if (
-			lift === undefined ||
-			!this.#canReturn(lift) ||
-			!isInViewport(lift.item.getBoundingClientRect())
-		) {
+		const style = this.#homeStyle(slide, isOpening)
+		if (style === undefined || !isInViewport(slide.item.getBoundingClientRect())) {
 			dropSlides([slide])
 			slide.element.remove()
 			return
@@ -963,7 +943,7 @@ class Viewer {
 		// On its way home from here, however far up it got
 		delete slide.element.dataset.opening
 		if (isOpening) {
-			setLayerStyle(slide.layer, this.#homeStyle(slide, lift, true))
+			setLayerStyle(slide.layer, style)
 		}
 
 		this.#zoom.forget(slide)
@@ -978,14 +958,31 @@ class Viewer {
 	 * opening, the exact start values are reused, so every property retraces its
 	 * path in sync instead of restarting at full duration.
 	 */
-	#homeStyle(slide: Slide, lift: Lift, isOpening: boolean): LayerStyle {
+	#homeStyle(slide: Slide, isOpening: boolean): LayerStyle | undefined {
+		const { lift } = slide
+		if (!lift?.item.checkVisibility()) {
+			return undefined
+		}
+
+		const geometry = lift.kind === 'copy' ? thumbnailGeometry(rendered(lift.original)) : lift
+		if (
+			geometry.position === undefined ||
+			geometry.target.width <= 0 ||
+			geometry.target.height <= 0
+		) {
+			return undefined
+		}
+
 		if (lift.kind === 'copy') {
-			const geometry = thumbnailGeometry(rendered(lift.original))
 			return layerStyle(slide.frame.getBoundingClientRect(), geometry.target, geometry)
 		}
 
 		// The space held in the page may have followed a resize since
 		const home = lift.item.getBoundingClientRect()
+		if (home.width <= 0 || home.height <= 0) {
+			return undefined
+		}
+
 		if (lift.kind === 'link') {
 			return isOpening && lift.from !== undefined && isSameBox(home, lift.home)
 				? lift.from
@@ -1231,13 +1228,13 @@ class Viewer {
 	 * Point a slide's layer at where its item is now, or report that it has no
 	 * place to go back to.
 	 */
-	#sendHome(slide: Slide): boolean {
-		const { lift } = slide
-		if (lift === undefined || !this.#canReturn(lift)) {
+	#sendHome(slide: Slide, isOpening = false): boolean {
+		const style = this.#homeStyle(slide, isOpening)
+		if (style === undefined) {
 			return false
 		}
 
-		setLayerStyle(slide.layer, this.#homeStyle(slide, lift, false))
+		setLayerStyle(slide.layer, style)
 		return true
 	}
 

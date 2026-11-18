@@ -11,10 +11,27 @@ import {
 	query,
 	setUpLightbox,
 	transitionsDone,
+	viewer,
 } from './helpers'
 
 setUpLightbox()
 afterEach(cleanUp)
+
+it('skips the return animation if the thumbnail is hidden inside a visible wrapper', async () => {
+	const fixture = mount(imageItem())
+	const [box] = boxes(fixture)
+	box!.style.height = '240px'
+	const image = query(box!, 'img', HTMLImageElement)
+	image.dataset.zoomPhoto = ''
+	await image.decode()
+	await openLightbox(box!)
+
+	image.style.display = 'none'
+	expect(box!.getBoundingClientRect().width).toBeGreaterThan(0)
+	const closing = closeLightbox()
+	expect(viewer().open).toBe(false)
+	await closing
+})
 
 it.each(['above', 'below'] as const)(
 	'closes toward a thumbnail %s the viewport without scrolling the page',
