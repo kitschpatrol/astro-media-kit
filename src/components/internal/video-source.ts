@@ -74,12 +74,17 @@ function configureVimeoMute(element: VimeoVideoElement): void {
 	})
 }
 
-/** Wait for attachment so startup errors reach the player and its error dialog. */
+/**
+ * Wait for attachment so startup errors reach the player and its error dialog.
+ * Aborting `signal` gives up the wait. Only a wait holds on to the signal, so a
+ * page's signal never keeps media the page has since removed.
+ */
 export function setMediaSourceWhenReady(
 	element: HTMLElement,
 	src: string,
-	options?: string,
-): () => void {
+	options: string | undefined,
+	signal: AbortSignal,
+): void {
 	const player = element.closest<
 		HTMLElement & {
 			store: { subscribe: (listener: () => void) => () => void; target: unknown }
@@ -87,9 +92,7 @@ export function setMediaSourceWhenReady(
 	>('audio-player, video-player')
 	if (!player || Boolean(player.store.target)) {
 		setVideoSource(element, src, options)
-		return () => {
-			/* Source was assigned synchronously; nothing to cancel. */
-		}
+		return
 	}
 
 	const unsubscribe = player.store.subscribe(() => {
@@ -98,7 +101,8 @@ export function setMediaSourceWhenReady(
 		}
 
 		unsubscribe()
+		signal.removeEventListener('abort', unsubscribe)
 		setVideoSource(element, src, options)
 	})
-	return unsubscribe
+	signal.addEventListener('abort', unsubscribe, { once: true })
 }
