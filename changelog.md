@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries are drafted with LLM assistance via [Chagent](https://github.com/kitschpatrol/chagent).
 
+## [0.11.1] - 2026-11-19
+
+### Fixed
+
+- Load the optional tldraw and Apple Photos Vite plugins as ES modules while Astro reads its config. This fixes `ERR_PACKAGE_PATH_NOT_EXPORTED` for ESM-only dependencies under `tsx`. Report a missing peer only when its `mediaKit()` option is enabled, and surface other import errors during config loading.
+
+### Maintenance
+
+- Restore pnpm workspace skill installation into `.claude/skills` for Claude Code.
+
 ## [0.11.0] - 2026-11-19
 
 ### Changed
@@ -625,3 +635,4 @@ No notable changes.
 [0.10.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...v0.10.0
 [0.10.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.0...v0.10.1
 [0.11.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.1...v0.11.0
+[0.11.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.11.0...v0.11.1
