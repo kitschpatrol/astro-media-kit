@@ -94,7 +94,8 @@
 	}
 
 	/* A viewer-owned photo leaves its thumbnail in normal page layout. */
-	.amk-zoom[data-lifted='copy'][data-placeholder='none'] > [data-zoom-photo] {
+	:where(.amk-zoom[data-lifted='copy'][data-placeholder='none']) > [data-zoom-photo],
+	:where(.amk-zoom[data-lifted='copy'][data-placeholder='none']) > [data-zoom-photo] img {
 		opacity: 0 !important;
 	}
 

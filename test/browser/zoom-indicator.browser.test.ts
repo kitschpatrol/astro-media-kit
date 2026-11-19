@@ -265,23 +265,32 @@ it.each(['#builtin', '#captioned', '#selector'])(
 	},
 )
 
-it('fades the indicator with an explicitly disabled thumbnail preview', async () => {
-	const fixture = await mountPage('/zoom-indicator/')
-	const opener = query(fixture, '#builtin .amk-zoom')
-	// Image and Picture emit this attribute for zoomPlaceholder="none".
-	opener.dataset.placeholder = 'none'
-	const photo = query(opener, '[data-zoom-photo]')
-	const { width, height } = photo.getBoundingClientRect()
-	const indicator = query(opener, '.amk-zoom-indicator')
-	await openLightbox(opener)
-	expect(opener.querySelector('[data-amk-preview]')).toBeNull()
-	expect(getComputedStyle(photo).opacity).toBe('0')
-	expect(photo.getBoundingClientRect()).toMatchObject({ width, height })
-	await expect.poll(() => getComputedStyle(indicator).filter).toBe('opacity(0)')
-	await close()
-	expect(getComputedStyle(photo).opacity).toBe('1')
-	await expect.poll(() => getComputedStyle(indicator).filter).toBe('opacity(1)')
-})
+it.each(['#builtin', '#captioned'])(
+	'hides the %s thumbnail and indicator with its preview disabled',
+	async (selector) => {
+		const fixture = await mountPage('/zoom-indicator/')
+		const opener = query(fixture, `${selector} .amk-zoom`)
+		// Image and Picture emit this attribute for zoomPlaceholder="none".
+		opener.dataset.placeholder = 'none'
+		const photo = query(opener, '[data-zoom-photo]')
+		if (photo instanceof HTMLPictureElement) {
+			photo.style.display = 'contents'
+		}
+
+		const image = query(opener, 'img', HTMLImageElement)
+		const { width, height } = image.getBoundingClientRect()
+		expect(width).toBeGreaterThan(0)
+		const indicator = query(opener, '.amk-zoom-indicator')
+		await openLightbox(opener)
+		expect(opener.querySelector('[data-amk-preview]')).toBeNull()
+		expect(getComputedStyle(image).opacity).toBe('0')
+		expect(image.getBoundingClientRect()).toMatchObject({ width, height })
+		await expect.poll(() => getComputedStyle(indicator).filter).toBe('opacity(0)')
+		await close()
+		expect(getComputedStyle(image).opacity).toBe('1')
+		await expect.poll(() => getComputedStyle(indicator).filter).toBe('opacity(1)')
+	},
+)
 
 it('crossfades page indicators as the active overlay item changes', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
