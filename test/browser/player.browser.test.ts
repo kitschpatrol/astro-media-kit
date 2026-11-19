@@ -706,7 +706,7 @@ it('retains the shared background until a returning idle video finishes its long
 
 it(
 	'lets idle hiding replace a long crossfade before restoring the bar background',
-	{ timeout: 10_000 },
+	{ timeout: 15_000 },
 	async () => {
 		const { item, player } = await mountPlayer()
 		const other = query(document, '#video-minimal .amk-zoom')
@@ -715,7 +715,8 @@ it(
 		const first = query(player, '.amk-controls')
 		const second = query(other, '.amk-controls')
 		first.style.setProperty('--amk-duration', '100ms')
-		second.style.setProperty('--amk-duration', '2s')
+		// Well past the 1.5 s idle delay, which a busy runner's timer can overrun
+		second.style.setProperty('--amk-duration', '3s')
 		await query(other, 'video', HTMLVideoElement).play()
 		await openLightbox(item)
 		await expect.poll(() => getComputedStyle(first).opacity).toBe('1')
