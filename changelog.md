@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries are drafted with LLM assistance via [Chagent](https://github.com/kitschpatrol/chagent).
 
+## [0.11.2] - 2026-11-19
+
+### Fixed
+
+- Fix Astro config loading when the optional tldraw or Apple Photos plugin is missing and its `mediaKit()` option is disabled. When the option is enabled, name the package to install. Surface other resolution and import errors during config loading.
+
+### Maintenance
+
+- Add Astro build regression tests for consumer projects with neither optional plugin installed and with only the tldraw plugin installed. Verify that builds succeed when missing plugins are disabled and name the missing dependency when enabled.
+
 ## [0.11.1] - 2026-11-19
 
 ### Fixed
@@ -636,3 +646,4 @@ No notable changes.
 [0.10.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.0...v0.10.1
 [0.11.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.1...v0.11.0
 [0.11.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.11.0...v0.11.1
+[0.11.2]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.11.1...v0.11.2
