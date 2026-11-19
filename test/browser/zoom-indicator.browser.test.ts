@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import videoStyles from '../../src/components/internal/amk-video.css?inline'
-import { openLightbox } from '../../src/components/internal/lightbox/lightbox'
+import { closeLightbox, openLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
 	activeSlideLabel,
 	cleanUp,
@@ -291,6 +291,31 @@ it.each(['#builtin', '#captioned'])(
 		await expect.poll(() => getComputedStyle(indicator).filter).toBe('opacity(1)')
 	},
 )
+
+it('keeps the indicator above the page preview until a returning image decodes', async () => {
+	const fixture = await mountPage('/zoom-indicator/')
+	const opener = query(fixture, '#builtin .amk-zoom')
+	const image = query(opener, 'img', HTMLImageElement)
+	// Standalone Zoomer images move into the viewer.
+	delete image.dataset.zoomPhoto
+	image.loading = 'eager'
+	await expect.poll(() => image.complete && image.naturalWidth > 0).toBe(true)
+	await image.decode()
+	await openLightbox(opener)
+	await expect.poll(() => image.dataset.zoomImagePending).toBeUndefined()
+	const decoded = Promise.withResolvers<undefined>()
+	image.decode = async () => decoded.promise
+	try {
+		await closeLightbox()
+		expect(opener.dataset.imageReturning).toBeUndefined()
+		expect(opener.dataset.returning).toBeDefined()
+		expect(opener.querySelector('[data-amk-preview]')).not.toBeNull()
+		const indicator = query(opener, '.amk-zoom-indicator')
+		expect(getComputedStyle(indicator).zIndex).toBe('1')
+	} finally {
+		decoded.resolve(undefined)
+	}
+})
 
 it('crossfades page indicators as the active overlay item changes', async () => {
 	const fixture = await mountPage('/zoom-indicator/')
