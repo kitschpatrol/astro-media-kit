@@ -95,7 +95,9 @@ export async function mountPage(path: string): Promise<HTMLElement> {
 		script.remove()
 	}
 
-	fixture.append(...page.body.childNodes)
+	// Imported rather than moved: players adopted from the parsed document are
+	// never collected, and WebKit kills a page holding a whole file's worth
+	fixture.append(...Array.from(page.body.childNodes, (node) => document.importNode(node, true)))
 	document.body.append(fixture)
 	fixtures.push(fixture)
 	return fixture
