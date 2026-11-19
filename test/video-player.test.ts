@@ -48,6 +48,27 @@ describe('media sources', () => {
 		audioAssignment.mockRestore()
 	})
 
+	it('holds on to no media from the page signal once its source is set', async () => {
+		await import('../src/components/internal/videojs-media')
+		document.body.innerHTML = '<div class="amk"><video data-src="/clip.mp4"></video></div>'
+		const added = vi.spyOn(AbortSignal.prototype, 'addEventListener')
+		const removed = vi.spyOn(AbortSignal.prototype, 'removeEventListener')
+		document.dispatchEvent(new Event('astro:page-load'))
+		const video = document.querySelector('video')!
+		await vi.waitFor(() => expect(video.getAttribute('src')).toBe('/clip.mp4'))
+		const held = new Set(
+			added.mock.calls.filter(([type]) => type === 'abort').map((call) => call[1]),
+		)
+		for (const [, listener] of removed.mock.calls) {
+			held.delete(listener)
+		}
+
+		added.mockRestore()
+		removed.mockRestore()
+		document.dispatchEvent(new Event('astro:before-swap'))
+		expect(held.size).toBe(0)
+	})
+
 	it('recognizes local and signed HLS manifests independently of their host', () => {
 		for (const src of [
 			'/clip.m3u8',
@@ -75,10 +96,11 @@ describe('media sources', () => {
 				target: undefined as HTMLElement | undefined,
 			}
 			Object.defineProperty(player, 'store', { value: store })
-			const cancel = setMediaSourceWhenReady(media, '/cancelled.mp4')
-			cancel()
+			const page = new AbortController()
+			setMediaSourceWhenReady(media, '/cancelled.mp4', undefined, page.signal)
+			page.abort()
 			expect(listeners.size).toBe(0)
-			setMediaSourceWhenReady(media, '/clip.mp4')
+			setMediaSourceWhenReady(media, '/clip.mp4', undefined, new AbortController().signal)
 			expect(media.hasAttribute('src')).toBe(false)
 			store.target = media
 			for (const listener of listeners) {
@@ -89,6 +111,37 @@ describe('media sources', () => {
 			expect(listeners.size).toBe(0)
 		},
 	)
+
+	it('leaves no listener on the page signal once a waiting source is set', () => {
+		const player = document.createElement('video-player')
+		const media = document.createElement('video')
+		player.append(media)
+		const listeners = new Set<() => void>()
+		const store = {
+			subscribe(listener: () => void) {
+				listeners.add(listener)
+				return () => listeners.delete(listener)
+			},
+			target: undefined as HTMLElement | undefined,
+		}
+		Object.defineProperty(player, 'store', { value: store })
+		const { signal } = new AbortController()
+		const held = new Set<unknown>()
+		vi.spyOn(signal, 'addEventListener').mockImplementation((_type, listener) => {
+			held.add(listener)
+		})
+		vi.spyOn(signal, 'removeEventListener').mockImplementation((_type, listener) => {
+			held.delete(listener)
+		})
+		setMediaSourceWhenReady(media, '/clip.mp4', undefined, signal)
+		store.target = media
+		for (const listener of listeners) {
+			listener()
+		}
+
+		expect(media.getAttribute('src')).toBe('/clip.mp4')
+		expect(held.size).toBe(0)
+	})
 })
 
 describe('lifted player controls', () => {

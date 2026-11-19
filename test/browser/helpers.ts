@@ -95,7 +95,9 @@ export async function mountPage(path: string): Promise<HTMLElement> {
 		script.remove()
 	}
 
-	fixture.append(...page.body.childNodes)
+	// Imported rather than moved: players adopted from the parsed document are
+	// never collected, and WebKit kills a page holding a whole file's worth
+	fixture.append(...Array.from(page.body.childNodes, (node) => document.importNode(node, true)))
 	document.body.append(fixture)
 	fixtures.push(fixture)
 	return fixture
@@ -175,10 +177,19 @@ export async function replayWheel(
 	const start = performance.now()
 	for (const [time, deltaX, deltaY] of events) {
 		const isLate = late !== undefined && time >= late[0] && time < late[1]
-		const wait = start + (isLate ? late[1] : time) - performance.now()
-		if (wait > 0) {
-			await new Promise((resolve) => {
-				setTimeout(resolve, wait)
+		const due = start + (isLate ? late[1] : time)
+		// Wake on frames as well as the timer: the motion counts frames without
+		// events, and a busy runner can render while timers wait
+		while (performance.now() < due) {
+			await new Promise<void>((resolve) => {
+				const finish = () => {
+					clearTimeout(timer)
+					cancelAnimationFrame(frame)
+					resolve()
+				}
+
+				const timer = setTimeout(finish, due - performance.now())
+				const frame = requestAnimationFrame(finish)
 			})
 		}
 

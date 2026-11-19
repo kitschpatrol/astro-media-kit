@@ -1163,7 +1163,10 @@ it.each([true, false])(
 			// Hinted, the page keeps its element and the viewer shows a copy
 			expect(box.firstElementChild === original).toBe(hinted)
 			expect(viewer().contains(original)).toBe(!hinted)
-			expect(viewer().querySelectorAll(':scope .amk-lightbox-layer img')).toHaveLength(1)
+			// Its opening preview stays until the image in the viewer decodes
+			await expect
+				.poll(() => viewer().querySelectorAll(':scope .amk-lightbox-layer img'))
+				.toHaveLength(1)
 			await closeLightbox()
 			await expect.poll(() => viewer().open).toBe(false)
 			expect(box.firstElementChild).toBe(original)

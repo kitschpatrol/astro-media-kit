@@ -11,6 +11,7 @@ import {
 	close,
 	currentLayer,
 	currentStage,
+	frames,
 	gallery,
 	isLifted,
 	item,
@@ -690,7 +691,9 @@ describe('galleries', () => {
 				400,
 				flick.filter(([time]) => time < 420),
 			)
-			await settle(120)
+			// The catch waits for frames as well as time, and a busy runner's
+			// frames come further apart
+			await Promise.all([settle(120), frames(4)])
 			const caught = trackOffset()
 			expect(betweenSlides()).toBeGreaterThan(5)
 			await settle(80)

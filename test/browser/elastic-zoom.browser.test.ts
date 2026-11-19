@@ -198,9 +198,15 @@ it.each([0.2, 6])(
 		const { x, y } = await pinch(scale)
 		const held = currentLayer().getBoundingClientRect()
 		lift()
-		// Part of the way back to its limit
-		await frames(3)
-		const before = currentLayer().getBoundingClientRect()
+		// Part of the way back to its limit, on the first frame that moves it: a
+		// busy runner's frames can come far enough apart to finish the spring in
+		// a few
+		let before = held
+		for (let frame = 0; frame < 10 && Math.abs(before.width - held.width) <= 1; frame++) {
+			await frames(1)
+			before = currentLayer().getBoundingClientRect()
+		}
+
 		expect(Math.abs(before.width - held.width)).toBeGreaterThan(1)
 		expect(Math.abs(before.width - fitted.width * (scale < 1 ? 1 : 8))).toBeGreaterThan(1)
 		pointer('pointerdown', 1, x - 50, y)

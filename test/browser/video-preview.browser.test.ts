@@ -94,7 +94,13 @@ it.each([0, 1])(
 		expect(canvas.width).toBe(0)
 		expect(canvas.height).toBe(0)
 		const closedCount = draw.mock.calls.length
+		// Firefox has no frame to draw until a seek lands, so the reopened
+		// preview would show the poster for as long as a slow seek takes
+		const seeked = new Promise((resolve) => {
+			video.addEventListener('seeked', resolve, { once: true })
+		})
 		video.currentTime += 1
+		await seeked
 		await frames(6)
 		expect(draw).toHaveBeenCalledTimes(closedCount)
 

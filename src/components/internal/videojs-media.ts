@@ -26,12 +26,12 @@ async function initializeMedia(root: ParentNode = document): Promise<void> {
 				return
 			}
 
-			const cleanup = setMediaSourceWhenReady(
+			setMediaSourceWhenReady(
 				element,
 				element.dataset.src ?? '',
 				element.dataset.hlsOptions,
+				signal,
 			)
-			signal.addEventListener('abort', cleanup, { once: true })
 		}),
 	)
 }

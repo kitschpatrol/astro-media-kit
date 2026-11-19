@@ -65,8 +65,9 @@ const mouseFlick = defineBrowserCommand<[x: number, y: number]>(async (context, 
 
 		// Keep native hit testing and pointer capture, while specifying a quick
 		// gesture even when a busy CI runner takes longer to dispatch its events.
+		// The window captures first, ahead of the document listeners a press adds.
 		for (const type of ['pointermove', 'pointerup'] as const) {
-			document.addEventListener(type, stamp, { capture: true, signal: controller.signal })
+			addEventListener(type, stamp, { capture: true, signal: controller.signal })
 		}
 
 		return controller
