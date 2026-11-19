@@ -106,15 +106,22 @@ async function perform(page: Page, action: MobileAction, session: CDPSession | u
 		}
 
 		case 'pinch': {
-			const point = await page.evaluate(() => ({
-				x: (visualViewport?.width ?? innerWidth) / 2,
-				y: (visualViewport?.height ?? innerHeight) / 2,
-			}))
-			await session!.send('Input.synthesizePinchGesture', {
-				...point,
-				gestureSourceType: 'touch',
-				scaleFactor: action.scale,
-			})
+			// Chromium's synthetic pinch can deliver pointer events without zooming
+			// the page. Move two contacts in the changing visual viewport instead.
+			// Keep both fingers clear of the gallery buttons at the viewport edges.
+			const startRadius = 0.3 / Math.max(1, action.scale)
+			await touchGesture(session!, async (at) =>
+				page.evaluate(
+					(radius) => {
+						const { width, height } = window.visualViewport!
+						return [
+							{ id: 0, x: width * (0.5 - radius), y: height / 2 },
+							{ id: 1, x: width * (0.5 + radius), y: height / 2 },
+						]
+					},
+					startRadius * (1 + (action.scale - 1) * at),
+				),
+			)
 			return
 		}
 
@@ -150,16 +157,28 @@ async function tap(page: Page, selector: string, index = 0) {
 
 async function drag(session: CDPSession, action: Extract<MobileAction, { type: 'drag' }>) {
 	const count = action.fingers ?? 1
-	const points = (at: number) =>
+	await touchGesture(session, (at) =>
 		Array.from({ length: count }, (_, id) => ({
 			id,
 			x: action.x + (id - (count - 1) / 2) * 60 + action.dx * at,
 			y: action.y + action.dy * at,
-		}))
-	await session.send('Input.dispatchTouchEvent', { touchPoints: points(0), type: 'touchStart' })
+		})),
+	)
+}
+
+type TouchPoint = { id: number; x: number; y: number }
+
+async function touchGesture(
+	session: CDPSession,
+	points: (at: number) => Promise<TouchPoint[]> | TouchPoint[],
+) {
+	await session.send('Input.dispatchTouchEvent', {
+		touchPoints: await points(0),
+		type: 'touchStart',
+	})
 	for (let i = 1; i <= 12; i++) {
 		await session.send('Input.dispatchTouchEvent', {
-			touchPoints: points(i / 12),
+			touchPoints: await points(i / 12),
 			type: 'touchMove',
 		})
 		await new Promise((resolve) => {

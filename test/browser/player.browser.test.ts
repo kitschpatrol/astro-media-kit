@@ -819,6 +819,8 @@ it('preserves playback, the original node, and author display styling through a 
 	const subject = item.firstElementChild as HTMLElement
 	const video = query(player, 'video', HTMLVideoElement)
 	subject.style.setProperty('display', 'inline-block', 'important')
+	// WebKit can report playing while its offscreen video stays on the first frame.
+	video.scrollIntoView({ behavior: 'instant', block: 'center' })
 	await video.play()
 	await expect.poll(() => video.currentTime).toBeGreaterThan(0.2)
 	const events: string[] = []
