@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, onTestFinished, vi } from 'vitest'
 import { commands } from 'vitest/browser'
 import { closeLightbox } from '../../src/components/internal/lightbox/lightbox'
 import {
@@ -23,7 +23,11 @@ afterEach(async () => {
 	await cleanUp()
 })
 
-async function drag(fingers = 1) {
+async function drag(fingers = 1, releaseDelay = 0) {
+	// The gesture's samples are 16 ms apart even when CI takes longer to paint them.
+	let time = performance.now()
+	const clock = vi.spyOn(PointerEvent.prototype, 'timeStamp', 'get').mockImplementation(() => time)
+	onTestFinished(() => clock.mockRestore())
 	const { x, y } = middleOf(currentStage())
 	pointer('pointerdown', 1, x - 50, y)
 	if (fingers === 2) {
@@ -31,6 +35,7 @@ async function drag(fingers = 1) {
 	}
 
 	for (let i = 1; i <= 4; i++) {
+		time += 16
 		pointer('pointermove', 1, x - 50 - i * 25, y - i * 15)
 		if (fingers === 2) {
 			pointer('pointermove', 2, x + 50 - i * 25, y - i * 15)
@@ -38,6 +43,8 @@ async function drag(fingers = 1) {
 
 		await frames()
 	}
+
+	time += releaseDelay
 }
 
 it.each([
@@ -178,10 +185,8 @@ it.each(['pause', 'cancel', 'reduced motion'])('does not coast after a %s', asyn
 		await commands.emulateReducedMotion(true)
 	}
 
-	await drag()
-	if (ending === 'pause') {
-		await settle(120)
-	} else if (ending === 'cancel') {
+	await drag(1, ending === 'pause' ? 120 : 0)
+	if (ending === 'cancel') {
 		pointer('pointercancel', 1, 0, 0)
 	}
 
@@ -216,7 +221,10 @@ it.for([1, 2])('preserves native %i-finger release velocity', async (fingers, { 
 		contacts.push({ id: 2, x: x + 50, y })
 	}
 
-	if (!(await commands.touchContacts(contacts))) {
+	// CDP timestamps are seconds since the UNIX epoch. Replay a quick pan even
+	// when the round trip for each set of native contacts takes several frames.
+	let timestamp = Date.now() / 1000
+	if (!(await commands.touchContacts(contacts, timestamp))) {
 		skip()
 		return
 	}
@@ -227,12 +235,13 @@ it.for([1, 2])('preserves native %i-finger release velocity', async (fingers, { 
 			contact.y -= 15
 		}
 
-		await commands.touchContacts(contacts)
+		timestamp += 0.016
+		await commands.touchContacts(contacts, timestamp)
 		await frames()
 	}
 
 	const before = currentLayer().getBoundingClientRect()
-	await commands.touchContacts([])
+	await commands.touchContacts([], timestamp + 0.016)
 	await expect.poll(() => currentLayer().getBoundingClientRect().x).toBeLessThan(before.x - 10)
 	expect(activeSlideLabel()).toBe('1 of 2')
 })

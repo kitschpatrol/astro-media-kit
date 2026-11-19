@@ -28,36 +28,50 @@ async function open() {
 	return query(viewer(), '.amk-lightbox-zoom', HTMLButtonElement)
 }
 
+/** Hold the fade halfway through as soon as the reset control becomes inert. */
+async function pinchToFit(button: HTMLButtonElement) {
+	const observer = new MutationObserver(() => {
+		if (!button.inert) {
+			return
+		}
+
+		for (const transition of button.getAnimations()) {
+			transition.pause()
+			transition.currentTime = 40
+		}
+
+		observer.disconnect()
+	})
+	observer.observe(button, { attributeFilter: ['inert'], attributes: true })
+	try {
+		await pinch(0.4)
+		lift()
+		await expect.poll(() => fadeOf(button)?.playState).toBe('paused')
+	} finally {
+		observer.disconnect()
+	}
+}
+
 it('fades the reset icon before hiding it, moving focus and disabling input immediately', async () => {
 	const button = await open()
 	button.focus()
-	await pinch(0.4)
-	lift()
-	// The image springs back to fit first
-	await expect.poll(() => fadeOf(button)).toBeDefined()
-	const fade = fadeOf(button)
-	fade!.pause()
-	fade!.currentTime = 40
+	await pinchToFit(button)
 	expect(isHidden(button)).toBe(false)
 	expect(button.inert).toBe(true)
 	expect(button.ariaPressed).toBe('true')
 	expect(document.activeElement).toBe(currentStage())
 	expect(Number(getComputedStyle(button).opacity)).toBeGreaterThan(0)
 	expect(Number(getComputedStyle(button).opacity)).toBeLessThan(1)
-	fade!.finish()
+	for (const transition of button.getAnimations()) {
+		transition.finish()
+	}
+
 	await expect.poll(() => isHidden(button)).toBe(true)
 })
 
 it('reverses a pending fade when another pinch needs the reset control', async () => {
 	const button = await open()
-	await pinch(0.4)
-	lift()
-	await expect.poll(() => fadeOf(button)).toBeDefined()
-	const fades = button.getAnimations()
-	for (const fade of fades) {
-		fade.pause()
-		fade.currentTime = 40
-	}
+	await pinchToFit(button)
 
 	await pinch(2)
 	lift()

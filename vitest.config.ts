@@ -270,8 +270,8 @@ const contacts = new WeakMap<Page, { points: TouchPoint[]; session: CDPSession }
  * leaves it held. touchEnd accepts the contacts to release; an empty list
  * releases every contact, despite the protocol's older parameter comments.
  */
-const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: number; y: number }>]>(
-	async (context, points) => {
+const touchContacts = defineBrowserCommand<[points: TouchPoint[], timestamp?: number]>(
+	async (context, points, timestamp) => {
 		if (context.page.context().browser()?.browserType().name() !== 'chromium') {
 			return false
 		}
@@ -281,7 +281,11 @@ const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: numbe
 			if (held !== undefined) {
 				contacts.delete(context.page)
 				try {
-					await held.session.send('Input.dispatchTouchEvent', { touchPoints: [], type: 'touchEnd' })
+					await held.session.send('Input.dispatchTouchEvent', {
+						timestamp,
+						touchPoints: [],
+						type: 'touchEnd',
+					})
 				} finally {
 					await held.session.detach()
 				}
@@ -307,6 +311,7 @@ const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: numbe
 		)
 		if (removed.length > 0) {
 			await held.session.send('Input.dispatchTouchEvent', {
+				timestamp,
 				touchPoints: removed,
 				type: 'touchEnd',
 			})
@@ -314,12 +319,17 @@ const touchContacts = defineBrowserCommand<[points: Array<{ id: number; x: numbe
 
 		if (added.length > 0) {
 			await held.session.send('Input.dispatchTouchEvent', {
+				timestamp,
 				touchPoints: added,
 				type: 'touchStart',
 			})
 		}
 
-		await held.session.send('Input.dispatchTouchEvent', { touchPoints, type: 'touchMove' })
+		await held.session.send('Input.dispatchTouchEvent', {
+			timestamp,
+			touchPoints,
+			type: 'touchMove',
+		})
 		held.points = touchPoints
 		return true
 	},
