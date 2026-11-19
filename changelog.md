@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Entries are drafted with LLM assistance via [Chagent](https://github.com/kitschpatrol/chagent).
+
+## [0.11.0] - 2026-11-19
+
+### Changed
+
+- **Breaking:** Keep `Image` and `Picture` thumbnails in the page when the lightbox opens. The viewer uses a separate responsive copy that follows the page theme and shows the thumbnail’s pixels until its selected image decodes. IDs and event handlers stay on the original. Set `zoomPlaceholder="none"` to hide the thumbnail while preserving its space.
+- Fade ordinary HTML wrapped in `Zoomer` as it expands from its page box and shrinks back to it. The transition uses `--amk-lightbox-open-fade-duration` and `--amk-lightbox-close-fade-duration`.
+
+### Fixed
+
+- Let browsers select `Picture` sources with passthrough image services such as the Astro Cloudflare adapter’s `imageService: 'passthrough'`. Use the image’s MIME type when known and omit the `<source>` element’s `type` when the format is unknown.
+- Refresh the native zoom control when a lightbox image finishes loading, so zoom becomes available if the image’s intrinsic width allows it. This also covers density-based `srcset` candidates.
+- Animate lightbox photos back to the thumbnail’s current position and crop. Skip the return animation if the thumbnail loses its rendered box or its `object-position` stops being a pair of percentages, even when the wrapper stays visible.
+- Prevent the page from shifting when `Zoomer` lifts content with collapsing vertical margins, including when positive and negative margins meet those of neighboring elements.
+- Prevent a blank flash when a lifted `Zoomer` image returns and selects a new responsive candidate. Keep its page preview visible while the image decodes, with the zoom indicator above the preview.
+- Return focus to the current thumbnail without an unwanted outline after opening a gallery with a pointer and navigating with the keyboard. Tabbing to the thumbnail again shows its normal focus ring.
+- Fix a memory leak that retained removed audio and video elements until the next Astro navigation, including players created by `ZoomLink` after their lightbox slides were released.
+
+### Documentation
+
+- Document which lightbox elements move, when neighboring video players enter the viewer, and how placeholders, responsive image sizing, and loading previews work. Explain how the lightbox fade durations apply to ordinary `Zoomer` HTML.
+
+### Maintenance
+
+- Stabilize browser tests on CI with timestamped gesture replays, waits for animation frames and video seeks, and fixture mounting that lets WebKit release old players. Raise the CI job timeout from 30 to 45 minutes. ([#3](https://github.com/kitschpatrol/astro-media-kit/pull/3))
+- Update the Video.js player and its HLS, Vimeo, and YouTube adapters to `^10.5.0`, and `exiftool-vendored` to `^39.4.0`.
+- Refresh Astro, Vitest, and `modern-web-guidance` for development. Update the `chagent` release tool to `^0.8.0` and exempt version `0.8.0` from pnpm’s minimum release age check.
+
 ## [0.10.1] - 2026-11-17
 
 ### Added
@@ -595,3 +624,4 @@ No notable changes.
 [0.9.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.8.0...v0.9.0
 [0.10.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.9.0...v0.10.0
 [0.10.1]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.0...v0.10.1
+[0.11.0]: https://github.com/kitschpatrol/astro-media-kit/compare/v0.10.1...v0.11.0
