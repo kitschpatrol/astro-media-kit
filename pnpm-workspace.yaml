@@ -46,3 +46,4 @@ publicHoistPattern:
 skills:
   dirs:
     - .agents/skills
+    - .claude/skills
