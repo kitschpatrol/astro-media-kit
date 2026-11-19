@@ -937,6 +937,33 @@ describe('galleries', () => {
 		expect(document.activeElement).toBe(items[2])
 	})
 
+	it.each(['Escape', 'backdrop'])(
+		'returns to the current thumbnail without an outline after a click, ArrowRight and %s',
+		async (dismissal) => {
+			const items = boxes(mount(gallery(['a', 'b', 'c'])))
+			await userEvent.click(items[0]!)
+			await expect.poll(() => viewer().dataset.state).toBe('open')
+			await userEvent.keyboard('{ArrowRight}')
+			await expect.poll(activeSlideLabel).toBe('2 of 3')
+			if (dismissal === 'Escape') {
+				await userEvent.keyboard('{Escape}')
+			} else {
+				await transitionsDone()
+				await userEvent.click(query(viewer(), '.amk-lightbox-slide:not([inert])'), {
+					position: { x: 4, y: 4 },
+				})
+			}
+
+			await expect.poll(() => viewer().open).toBe(false)
+			expect(document.activeElement).toBe(items[1])
+			expect(getComputedStyle(items[1]!).outlineStyle).toBe('none')
+
+			await userEvent.keyboard('{Tab}{Shift>}{Tab}{/Shift}')
+			expect(document.activeElement).toBe(items[1])
+			expect(getComputedStyle(items[1]!).outlineStyle).not.toBe('none')
+		},
+	)
+
 	it('focuses the item showing on close after Next is pressed from the keyboard', async () => {
 		const fixture = mount(gallery(['a', 'b', 'c']))
 		const items = boxes(fixture)
@@ -955,6 +982,7 @@ describe('galleries', () => {
 		await expect.poll(() => viewer().open).toBe(false)
 
 		expect(document.activeElement).toBe(items[2])
+		expect(items[2]!.matches(':focus-visible')).toBe(true)
 	})
 
 	it('keeps neighbors in the page while animating, so their places never visibly empty', async () => {

@@ -67,10 +67,16 @@ export function prepareLightbox(item: HTMLElement) {
  *
  * @throws {SyntaxError} When the item's `data-scope` isn't a valid selector.
  */
-export async function openLightbox(item: HTMLElement): Promise<boolean> {
+export async function openLightbox(item: HTMLElement, fromPointer = false): Promise<boolean> {
 	const subject = subjectOf(item)
 	if (subject === undefined) {
 		return false
+	}
+
+	// A pointer press can focus the item or its expand button. Restoring that
+	// focus after Escape would leave a ring or reopen the button's tooltip.
+	if (fromPointer) {
+		blurWithin(item)
 	}
 
 	// A player's open popups, such as a tooltip under the pointer or the volume
@@ -82,7 +88,7 @@ export async function openLightbox(item: HTMLElement): Promise<boolean> {
 	}
 
 	const items = galleryOf(item)
-	const isOpened = await openViewer(items, items.indexOf(item), openLightbox)
+	const isOpened = await openViewer(items, items.indexOf(item), openLightbox, fromPointer)
 	releaseIntent(item)
 	return isOpened
 }
@@ -145,14 +151,7 @@ function handleClick(event: MouseEvent) {
 		const item = path.slice(at + 1).find(isItem)
 		if (item !== undefined) {
 			event.preventDefault()
-			// A pointer-opened dialog must not restore keyboard-visible focus to
-			// this button after Escape, which also reopens its tooltip. Keyboard
-			// and virtual clicks keep normal focus restoration.
-			if (isPointerClick(event)) {
-				blurWithin(item)
-			}
-
-			void openLightbox(item)
+			void openLightbox(item, isPointerClick(event))
 		}
 
 		return
@@ -164,14 +163,7 @@ function handleClick(event: MouseEvent) {
 	}
 
 	event.preventDefault()
-	// As with the opener button: a pointer-opened dialog must not restore
-	// keyboard-visible focus to the item after Escape, which would leave its
-	// indicator in the active state
-	if (isPointerClick(event)) {
-		blurWithin(item)
-	}
-
-	void openLightbox(item)
+	void openLightbox(item, isPointerClick(event))
 }
 
 /**

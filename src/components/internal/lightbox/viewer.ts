@@ -40,7 +40,7 @@ import { Zoom } from './zoom'
 type State = 'closing' | 'idle' | 'open' | 'opening'
 
 /** Opens an item and its gallery, as `openLightbox()` does. */
-type Opener = (item: HTMLElement) => Promise<boolean>
+type Opener = (item: HTMLElement, fromPointer: boolean) => Promise<boolean>
 
 /** How far one arrow key press pans a zoomed subject, in pixels. */
 const panStep = 80
@@ -76,6 +76,7 @@ class Viewer {
 	#index = 0
 	/** Whether the keyboard has navigated since the viewer opened. */
 	#isKeyboardNavigated = false
+	#isPointerOpened = false
 	readonly #motion: CarouselMotion
 	readonly #next: HTMLButtonElement
 	#openedIndex = 0
@@ -277,7 +278,12 @@ class Viewer {
 	 * finishes gliding home. `openItem` opens an item clicked under the viewer
 	 * meanwhile.
 	 */
-	async open(items: HTMLElement[], index: number, openItem: Opener): Promise<boolean> {
+	async open(
+		items: HTMLElement[],
+		index: number,
+		openItem: Opener,
+		fromPointer: boolean,
+	): Promise<boolean> {
 		if (!this.#dialog.isConnected) {
 			// The page replaced <body>, as client-side routers do
 			this.restore()
@@ -311,6 +317,7 @@ class Viewer {
 		this.#index = index
 		this.#openedIndex = index
 		this.#isKeyboardNavigated = false
+		this.#isPointerOpened = fromPointer
 		this.#setPageItem(current.item)
 
 		this.#slides = items.map((each, position) => createSlide(each, position, items.length))
@@ -427,17 +434,29 @@ class Viewer {
 		document.removeEventListener('keydown', this.#handlePlayerKeydown, { capture: true })
 		this.#zoom.reset()
 
-		// Closing returns focus to whatever opened the viewer. After navigating
-		// from the keyboard, the item now showing is the better place to continue
-		// from. After navigating with a pointer it is left alone, since the key
-		// that closes the viewer would otherwise light its focus ring
+		// After keyboard navigation, Tab continues from the item now showing.
+		// Keep the page's original focus indication so using arrows in a
+		// pointer-opened viewer doesn't leave a ring on the thumbnail.
 		if (
 			hasNavigated &&
 			this.#isKeyboardNavigated &&
 			current?.item.isConnected === true &&
 			current.item.tabIndex >= 0
 		) {
-			current.item.focus({ preventScroll: true })
+			const { item } = current
+			item.focus({ focusVisible: this.#isPointerOpened ? false : undefined, preventScroll: true })
+			if (this.#isPointerOpened && document.activeElement === item) {
+				// WebKit can mark the item focus-visible again on Escape keyup.
+				// Scope the outline override to this visit to the thumbnail.
+				item.dataset.zoomPointerFocus = ''
+				item.addEventListener(
+					'blur',
+					() => {
+						delete item.dataset.zoomPointerFocus
+					},
+					{ once: true },
+				)
+			}
 		} else if (previousFocus !== undefined) {
 			// A page carousel that followed the viewer may have taken the opener
 			// out of view, inert, where focus can't return: its track takes focus
@@ -1102,7 +1121,7 @@ class Viewer {
 			return false
 		}
 
-		void this.#openItem(item)
+		void this.#openItem(item, true)
 		return true
 	}
 
@@ -1426,9 +1445,10 @@ export async function openViewer(
 	items: HTMLElement[],
 	index: number,
 	openItem: Opener,
+	fromPointer: boolean,
 ): Promise<boolean> {
 	viewer ??= new Viewer()
-	return viewer.open(items, index, openItem)
+	return viewer.open(items, index, openItem, fromPointer)
 }
 
 function createSlide(item: HTMLElement, index: number, count: number): Slide {
