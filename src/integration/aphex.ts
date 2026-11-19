@@ -1,7 +1,12 @@
 // eslint-disable-next-line ts/ban-ts-comment -- `@ts-expect-error` would fail wherever the peer is installed
 // @ts-ignore -- An optional peer: exact types where installed, `any` where not
 import type aphexVitePluginFn from '@kitschpatrol/unplugin-aphex/vite'
-import { requireOptionalVitePlugin } from './optional-peer'
+import { importOptionalVitePlugin } from './optional-peer'
+
+const getAphexVitePlugin = (await importOptionalVitePlugin(
+	'@kitschpatrol/unplugin-aphex',
+	'aphex',
+)) as () => typeof aphexVitePluginFn
 
 /** Options type extracted from the unplugin-aphex Vite plugin function. */
 type UnpluginAphexOptions = NonNullable<Parameters<typeof aphexVitePluginFn>[0]>
@@ -33,11 +38,7 @@ export function vitePluginMediaKitAphex(
 	// TS2742: inferred return references non-portable Vite paths from unplugin-aphex's node_modules
 ): unknown {
 	const { enabled: _, ...pluginOptions } = config
-	const { default: aphexVitePlugin } = requireOptionalVitePlugin(
-		'@kitschpatrol/unplugin-aphex',
-		'aphex',
-	) as { default: typeof aphexVitePluginFn }
-	return aphexVitePlugin({
+	return getAphexVitePlugin()({
 		...pluginOptions,
 		// Always return file paths so Astro's image pipeline can produce ImageMetadata
 		returnMetadata: false,
