@@ -343,9 +343,21 @@ export class CarouselMotion {
 		}
 	}
 
+	/**
+	 * Take the track's new width, stopping whatever moves it. A wheel gesture
+	 * already let go is kept: the momentum still arriving is its own, and would
+	 * otherwise start a gesture that turns another slide.
+	 */
 	resize(width: number) {
+		const wheel = this.#wheel
 		this.stop()
 		this.#width = width
+		if (wheel === undefined || wheel.phase === 'held') {
+			return
+		}
+
+		this.#wheel = wheel
+		this.#awaitWheel(wheel)
 	}
 
 	/** Step from the slide being navigated to, or else from the current one. */

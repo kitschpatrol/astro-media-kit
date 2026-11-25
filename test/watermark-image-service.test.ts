@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import watermarkService from '../src/integration/watermark-image-service'
 
 type WatermarkFlags = { angle: number; minDimension: number; opacity: number }
@@ -45,9 +45,13 @@ async function runTransform(
 	)
 }
 
-// Sharp + librsvg can have significant cold-start cost on Windows CI (font
-// cache init), so allow extra time for the first composite.
-describe('watermark image service', { timeout: 30_000 }, () => {
+describe('watermark image service', () => {
+	// The first text render builds librsvg's font cache, which has taken over
+	// 30 seconds on Windows CI. Paying it in a hook keeps it out of every test.
+	beforeAll(async () => {
+		await runTransform(await makePng(400, 300), defaultWatermarkConfig)
+	})
+
 	it('stamps a PNG variant above the min dimension', async () => {
 		const input = await makePng(400, 300)
 		const result = await runTransform(input, defaultWatermarkConfig)

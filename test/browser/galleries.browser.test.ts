@@ -695,7 +695,9 @@ describe('galleries', () => {
 			// frames come further apart
 			await Promise.all([settle(120), frames(4)])
 			const caught = trackOffset()
-			expect(betweenSlides()).toBeGreaterThan(5)
+			// The motion catches a glide 2 px or more from its slide, and lets one
+			// nearer arrive. Later frames catch it nearer, so no more is asked
+			expect(betweenSlides()).toBeGreaterThanOrEqual(2)
 			await settle(80)
 			expect(trackOffset()).toBe(caught)
 

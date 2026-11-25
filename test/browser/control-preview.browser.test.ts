@@ -3,7 +3,7 @@ import { closeLightbox, openLightbox } from '../../src/components/internal/light
 import '../../src/components/internal/videojs-ui'
 import '../../src/components/internal/videojs-media'
 import '../../src/components/internal/amk-video.css'
-import { cleanUp, mountPage, query, setUpLightbox, viewer } from './helpers'
+import { cleanUp, mountPage, query, setUpLightbox, viewer, waitForMedia } from './helpers'
 
 setUpLightbox()
 afterEach(cleanUp)
@@ -35,7 +35,7 @@ async function playerPage() {
 		.poll(() => query(player, 'media-play-button').getAttribute('aria-label'))
 		.toBe('Play')
 	await expect.poll(() => player.querySelector(':scope .amk-icon svg')).not.toBeNull()
-	await expect.poll(() => query(player, 'video', HTMLVideoElement).readyState).toBeGreaterThan(0)
+	await waitForMedia(query(player, 'video', HTMLVideoElement))
 	await expect
 		.poll(() => query(player, 'media-time[type="duration"]').getAttribute('datetime'))
 		.toBe('PT8S')

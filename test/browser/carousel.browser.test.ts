@@ -486,6 +486,28 @@ it('swipes to the next slide under touch without opening the lightbox', async ({
 	expect(document.querySelector('dialog.amk-lightbox[open]')).toBeNull()
 })
 
+it.for([150, 300])(
+	'turns only one slide for a trackpad flick when the carousel resizes %i ms in',
+	async (at) => {
+		const { carousel, track } = await mountCarousel()
+		const middle = middleOf(track)
+		const resize = setTimeout(() => {
+			carousel.style.width = `${carousel.clientWidth + 10}px`
+		}, at)
+		try {
+			await replayWheel(middle.x, middle.y, trackpadSwipe('quick flick right'))
+		} finally {
+			clearTimeout(resize)
+		}
+
+		await expect.poll(() => Object.hasOwn(track.dataset, 'moving')).toBe(false)
+		// Momentum still arriving after the resize is no new gesture
+		await settle(200)
+		expect(slideAt(track)).toBe(1)
+		expect(currentDot(carousel)).toBe('Slide 2')
+	},
+)
+
 it('turns a slide for a trackpad flick, and leaves vertical scrolling to the page', async () => {
 	const { carousel, track } = await mountCarousel()
 	const middle = middleOf(track)
